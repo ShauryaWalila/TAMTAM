@@ -10,3 +10,4 @@ finance in trips
 time calculator
 option for tamtam in settings to send whatsapp to unknown number
 faceid for finance
+places to go(in trip)

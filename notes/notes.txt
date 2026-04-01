@@ -1,14 +1,13 @@
 goal
 games asking way
 suggestions
-places to go(in trip)
 tasks & reminderss(location, time and ddate based reminders)
 things to do(ine specific places, dreams)
 places to go(overall)
+wishlist with geolocation
 Geofencing: We can eventually add a feature where your phone notifies you: "Hey, you're near that place you and [Girlfriend] saved as a Dream Destination 2 years ago!"
 small games
 yt section
 widget
 a status thing for us on dashboard showing what we aree doing(likee pooping, studying, nothing, etc)
-wishlist with geolocation
 exam mode

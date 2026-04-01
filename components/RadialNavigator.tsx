@@ -28,7 +28,7 @@ const NAV_ITEMS = [
   { id: 'journal', path: '/journal', label: 'JOURNAL', icon: BookHeart, color: '#AF52DE' },
   { id: 'our-life', path: '/our-life', label: 'LIFE', icon: Map, color: '#34C759' },
   { id: 'finance', path: '/finance', label: 'FINANCE', icon: Wallet, color: '#FF9500' },
-  { id: 'draw', path: '/draw', label: 'DRAW', icon: Palette, color: '#5856D6' },
+  { id: 'wishlist', path: '/wishlist', label: 'WISH', icon: Heart, color: '#5856D6' },
   { id: 'settings', path: '/settings', label: 'SETTINGS', color: '#8E8E93', icon: Settings },
 ];
 

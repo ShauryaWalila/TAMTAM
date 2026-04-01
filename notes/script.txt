@@ -61,8 +61,12 @@ create table tasks (
 );
 
 -- ENABLE REALTIME FOR ALL
-alter publication supabase_realtime add table posts, moments, trips, places, finances, tasks;
-
+alter publication supabase_realtime add table  moments;
+alter publication supabase_realtime add table posts;
+alter publication supabase_realtime add table trips;
+alter publication supabase_realtime add table places;
+alter publication supabase_realtime add table finances;
+alter publication supabase_realtime add table tasks;
 
 
 
@@ -232,12 +236,689 @@ CREATE TABLE profiles (
    ALTER TABLE places ALTER COLUMN category TYPE TEXT;
 
 
---------------------------------------------28-02-26--------------------------------------------------
+
 
 
    ALTER TABLE places DROP COLUMN IF EXISTS location_link;
 
 
 
+---------------------------------30-03-26-------------------------------------
+
+
+ALTER TABLE trips ADD COLUMN IF NOT EXISTS location_name TEXT;
+     ALTER TABLE trips ADD COLUMN IF NOT EXISTS description TEXT;
+    
+     -- 2. BUCKET: Items we find but haven't assigned to a day yet
+     CREATE TABLE IF NOT EXISTS bucket_items (
+       id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+       trip_id uuid REFERENCES trips(id) ON DELETE CASCADE,
+       name TEXT NOT NULL,
+      type TEXT CHECK (type IN ('place', 'activity')),
+      category TEXT, -- e.g., 'cafe', 'museum', 'shopping'
+      latitude FLOAT8,
+      longitude FLOAT8,
+      notes TEXT,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+   
+    -- 3. WARDROBE: Inventory of actual clothes
+    CREATE TABLE IF NOT EXISTS wardrobe (
+      id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+      user_id TEXT NOT NULL, -- To distinguish between the 2 users
+      name TEXT NOT NULL,
+      type TEXT, -- e.g., 'top', 'bottom', 'accessory'
+      category TEXT, -- e.g., 'casual', 'formal', 'winter'
+      image_url TEXT,
+      is_in_wardrobe BOOLEAN DEFAULT true, -- If we still own it
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+   
+    -- 4. ITINERARY: The actual plan divided by days
+    CREATE TABLE IF NOT EXISTS itinerary_items (
+      id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+      trip_id uuid REFERENCES trips(id) ON DELETE CASCADE,
+      bucket_item_id uuid REFERENCES bucket_items(id) ON DELETE CASCADE,
+      day_number INTEGER NOT NULL DEFAULT 1,
+      sequence INTEGER NOT NULL DEFAULT 0, -- For swappable sequence
+      notes TEXT,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+   
+    -- 5. OUTFITS: Linking specific clothes to an itinerary stop
+    CREATE TABLE IF NOT EXISTS itinerary_outfits (
+      itinerary_item_id uuid REFERENCES itinerary_items(id) ON DELETE CASCADE,
+      wardrobe_item_id uuid REFERENCES wardrobe(id) ON DELETE CASCADE,
+      PRIMARY KEY (itinerary_item_id, wardrobe_item_id)
+    );
+   
+    -- 6. SHARED CANVAS: For freeform drawing/brainstorming
+    CREATE TABLE IF NOT EXISTS trip_canvas (
+      trip_id uuid REFERENCES trips(id) ON DELETE CASCADE PRIMARY KEY,
+      paths JSONB DEFAULT '[]'::jsonb, -- Stores the drawing data
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+
+
+
+
+    --------------------------
+
+
+    ALTER TABLE trips ADD COLUMN IF NOT EXISTS location_name TEXT;
+     ALTER TABLE trips ADD COLUMN IF NOT EXISTS start_date DATE;
+     ALTER TABLE trips ADD COLUMN IF NOT EXISTS end_date DATE;
+     ALTER TABLE trips ADD COLUMN IF NOT EXISTS description TEXT;
+     ALTER TABLE trips ADD COLUMN IF NOT EXISTS is_passed BOOLEAN DEFAULT false;
+    
+    -- ==========================================
+    -- 2. THE BUCKET (Ideas/Locations/Activities)
+    -- ==========================================
+    CREATE TABLE IF NOT EXISTS bucket_items (
+      id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+      trip_id uuid REFERENCES trips(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      type TEXT CHECK (type IN ('place', 'activity')),
+      category TEXT, -- e.g., 'eat', 'visit', 'adventure', 'cafe'
+      latitude FLOAT8,
+      longitude FLOAT8,
+      notes TEXT,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+   
+    -- ==========================================
+    -- 3. WARDROBE (Inventory)
+    -- ==========================================
+    CREATE TABLE IF NOT EXISTS wardrobe (
+      id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      type TEXT, -- e.g., 'top', 'bottom', 'shoes', 'dress'
+      category TEXT, -- e.g., 'casual', 'formal', 'beach', 'winter'
+      image_url TEXT,
+      is_in_wardrobe BOOLEAN DEFAULT true,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+   
+    -- ==========================================
+    -- 4. ITINERARY (The Daily Schedule)
+    -- ==========================================
+    CREATE TABLE IF NOT EXISTS itinerary_items (
+      id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+      trip_id uuid REFERENCES trips(id) ON DELETE CASCADE,
+      bucket_item_id uuid REFERENCES bucket_items(id) ON DELETE CASCADE,
+      day_number INTEGER NOT NULL DEFAULT 1,
+      sequence INTEGER NOT NULL DEFAULT 0,
+      is_completed BOOLEAN DEFAULT false,
+      notes TEXT,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+   
+    -- ==========================================
+    -- 5. OUTFITS (Planning what to wear)
+    -- ==========================================
+    CREATE TABLE IF NOT EXISTS itinerary_outfits (
+      itinerary_item_id uuid REFERENCES itinerary_items(id) ON DELETE CASCADE,
+      wardrobe_item_id uuid REFERENCES wardrobe(id) ON DELETE CASCADE,
+      PRIMARY KEY (itinerary_item_id, wardrobe_item_id)
+    );
+   
+    -- ==========================================
+    -- 6. SHARED CANVAS (Drawing/Brainstorming)
+    -- ==========================================
+    CREATE TABLE IF NOT EXISTS trip_canvas (
+      trip_id uuid REFERENCES trips(id) ON DELETE CASCADE PRIMARY KEY,
+      paths JSONB DEFAULT '[]'::jsonb,
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+   
+    -- ==========================================
+    -- 7. REALTIME & SECURITY (IMPORTANT)
+    -- ==========================================
+   
+    -- Enable Realtime for all planning tables
+    ALTER PUBLICATION supabase_realtime ADD TABLE bucket_items, wardrobe, itinerary_items, itinerary_outfits,
+   trip_canvas;
+   
+    -- Enable Row Level Security
+    ALTER TABLE bucket_items ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE wardrobe ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE itinerary_items ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE itinerary_outfits ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE trip_canvas ENABLE ROW LEVEL SECURITY;
+   
+    -- Simple Policies: Allow all authenticated users to read/write (for your shared life)
+    CREATE POLICY "Allow all access to bucket_items" ON bucket_items FOR ALL USING (true) WITH CHECK (true);
+    CREATE POLICY "Allow all access to wardrobe" ON wardrobe FOR ALL USING (true) WITH CHECK (true);
+    CREATE POLICY "Allow all access to itinerary_items" ON itinerary_items FOR ALL USING (true) WITH CHECK (true);
+    CREATE POLICY "Allow all access to itinerary_outfits" ON itinerary_outfits FOR ALL USING (true) WITH CHECK (true);
+    CREATE POLICY "Allow all access to trip_canvas" ON trip_canvas FOR ALL USING (true) WITH CHECK (true);
+   
+    -- ==========================================
+    -- 8. INDEXES (For Performance)
+    -- ==========================================
+    CREATE INDEX IF NOT EXISTS idx_bucket_trip_id ON bucket_items(trip_id);
+
+
+
+
+------------------------------------------------
+
+
+ ALTER TABLE trips ADD COLUMN IF NOT EXISTS location_name TEXT;
+     ALTER TABLE trips ADD COLUMN IF NOT EXISTS start_date DATE;
+     ALTER TABLE trips ADD COLUMN IF NOT EXISTS end_date DATE;
+     ALTER TABLE trips ADD COLUMN IF NOT EXISTS description TEXT;
+     ALTER TABLE trips ADD COLUMN IF NOT EXISTS is_passed BOOLEAN DEFAULT false;
+    
+    -- ========================================================
+    -- 2. BUCKET ITEMS (Ideas/Locations/Activities)
+    -- ========================================================
+    CREATE TABLE IF NOT EXISTS bucket_items (
+      id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+      trip_id uuid REFERENCES trips(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      type TEXT CHECK (type IN ('place', 'activity')),
+      category TEXT, -- 'eat', 'visit', 'activity'
+      latitude FLOAT8,
+      longitude FLOAT8,
+      notes TEXT,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+   
+    -- ========================================================
+    -- 3. WARDROBE (Text-based Inventory)
+    -- ========================================================
+    CREATE TABLE IF NOT EXISTS wardrobe (
+      id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+      user_id TEXT NOT NULL, -- Distinguishes between the 2 users
+      name TEXT NOT NULL,
+      type TEXT, -- e.g., 'top', 'bottom', 'accessory'
+      category TEXT, -- e.g., 'Formal', 'Casual', 'Beach'
+      image_url TEXT, -- Optional for future use
+      is_in_wardrobe BOOLEAN DEFAULT true,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+   
+    -- ========================================================
+    -- 4. ITINERARY (The Daily Schedule)
+    -- ========================================================
+    CREATE TABLE IF NOT EXISTS itinerary_items (
+      id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+      trip_id uuid REFERENCES trips(id) ON DELETE CASCADE,
+      bucket_item_id uuid REFERENCES bucket_items(id) ON DELETE CASCADE,
+      day_number INTEGER NOT NULL DEFAULT 1,
+      sequence INTEGER NOT NULL DEFAULT 0,
+      is_completed BOOLEAN DEFAULT false,
+      notes TEXT,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+   
+    -- ========================================================
+    -- 5. OUTFITS (Connecting Wardrobe to Itinerary Stops)
+    -- ========================================================
+    CREATE TABLE IF NOT EXISTS itinerary_outfits (
+      itinerary_item_id uuid REFERENCES itinerary_items(id) ON DELETE CASCADE,
+      wardrobe_item_id uuid REFERENCES wardrobe(id) ON DELETE CASCADE,
+      PRIMARY KEY (itinerary_item_id, wardrobe_item_id)
+    );
+   
+    -- ========================================================
+    -- 6. SHARED CANVAS (Drawing/Brainstorming)
+    -- ========================================================
+    CREATE TABLE IF NOT EXISTS trip_canvas (
+      trip_id uuid REFERENCES trips(id) ON DELETE CASCADE PRIMARY KEY,
+      paths JSONB DEFAULT '[]'::jsonb,
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+   
+    -- ========================================================
+    -- 7. REALTIME ENABLEMENT
+    -- ========================================================
+    -- This makes sure both phones sync drawings and lists instantly
+    ALTER PUBLICATION supabase_realtime ADD TABLE trip_canvas;
+   
+    -- ========================================================
+    -- 8. SECURITY POLICIES (RLS)
+    -- ========================================================
+    ALTER TABLE bucket_items ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE wardrobe ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE itinerary_items ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE itinerary_outfits ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE trip_canvas ENABLE ROW LEVEL SECURITY;
+   
+    CREATE POLICY "Shared bucket" ON bucket_items FOR ALL USING (true) WITH CHECK (true);
+    CREATE POLICY "Shared wardrobe" ON wardrobe FOR ALL USING (true) WITH CHECK (true);
+    CREATE POLICY "Shared itinerary" ON itinerary_items FOR ALL USING (true) WITH CHECK (true);
+    CREATE POLICY "Shared outfits" ON itinerary_outfits FOR ALL USING (true) WITH CHECK (true);
+    CREATE POLICY "Shared canvas" ON trip_canvas FOR ALL USING (true) WITH CHECK (true);
+   
+    -- ========================================================
+    -- 9. PERFORMANCE INDEXES
+    -- ========================================================
+    CREATE INDEX IF NOT EXISTS idx_bucket_trip ON bucket_items(trip_id);
+
+
+
+
+    ALTER TABLE trips ADD COLUMN IF NOT EXISTS latitude FLOAT8;
+    ALTER TABLE trips ADD COLUMN IF NOT EXISTS longitude FLOAT8;
+   
+    -- Also ensure the location_name column exists
+    ALTER TABLE trips ADD COLUMN IF NOT EXISTS location_name TEXT;
+
+
+
+
+ALTER TABLE trip_canvas ENABLE ROW LEVEL SECURITY;
+   
+    -- Allow all authenticated users to do everything (simplest for a 2-person private app)
+    CREATE POLICY "Allow everything for partners" ON trip_canvas
+        FOR ALL
+        TO authenticated
+        USING (true)
+        WITH CHECK (true);
+
+
+
+
+ALTER TABLE wardrobe ADD COLUMN IF NOT EXISTS description TEXT;
+
+
+
+CREATE TABLE IF NOT EXISTS wardrobe_categories (
+       id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+       name TEXT UNIQUE NOT NULL,
+       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+     );
+    
+     -- Enable Realtime
+     ALTER PUBLICATION supabase_realtime ADD TABLE wardrobe_categories;
+  
+   -- Add some initial categories
+   INSERT INTO wardrobe_categories (name) VALUES
+   ('T-Shirt'), ('Shorts'), ('Dress'), ('Party Dress'),('Normal Dress'),('Skirt'),('Casual Shoes'),('Slippers'),('Formal Shoes')
+   ON CONFLICT (name) DO NOTHING;
+
+
+
+   ALTER TABLE wardrobe_categories ENABLE ROW LEVEL SECURITY;
+    
+     CREATE POLICY "Allow public read access" ON wardrobe_categories
+       FOR SELECT USING (true);
+    
+     CREATE POLICY "Allow authenticated insert" ON wardrobe_categories
+       FOR INSERT TO authenticated WITH CHECK (true);
+    
+    CREATE POLICY "Allow authenticated delete" ON wardrobe_categories
+      FOR DELETE TO authenticated USING (true);
+
+      
+
+
+
+      ALTER TABLE wardrobe
+     ADD COLUMN IF NOT EXISTS color_hexes TEXT[] DEFAULT ARRAY['#ccc', '#bbb'];
+    
+     -- Ensure description and basic color text columns exist (in case they were missing)
+     ALTER TABLE wardrobe
+     ADD COLUMN IF NOT EXISTS description TEXT,
+     ADD COLUMN IF NOT EXISTS color TEXT;
+    
+    -- Verify the columns are there
+    COMMENT ON COLUMN wardrobe.color_hexes IS 'Stores two hex codes for the AI-generated gradient swatch';
+
+
+
+
+
+
+    ALTER TABLE wardrobe
+DROP COLUMN IF EXISTS color,
+DROP COLUMN IF EXISTS color_hexes;
+-- (Optional) Add a descriptive comment to the table
+COMMENT ON TABLE wardrobe IS 'Stores basic clothing item details for trip planning.';
+
+
+
+
+
+
+CREATE TABLE IF NOT EXISTS trip_wardrobe (
+       id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+       trip_id uuid REFERENCES trips(id) ON DELETE CASCADE,
+       wardrobe_item_id uuid REFERENCES wardrobe(id) ON DELETE CASCADE,
+       user_id TEXT NOT NULL, -- The person who hanged it
+       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    
+       -- Prevent hanging the same item twice in the same trip
+      UNIQUE(trip_id, wardrobe_item_id)
+    );
+   
+    -- 2. Add helpful comments
+    COMMENT ON TABLE trip_wardrobe IS 'Shared rack of clothes committed to a specific trip by any participant.';
+   
+    -- 3. Enable Realtime so both users see updates instantly
+    ALTER PUBLICATION supabase_realtime ADD TABLE trip_wardrobe;
+
+
+
+
+
+
+
+    CREATE TABLE IF NOT EXISTS trip_wardrobe (
+       trip_id uuid REFERENCES trips(id) ON DELETE CASCADE,
+       wardrobe_item_id uuid REFERENCES wardrobe(id) ON DELETE CASCADE,
+       user_id TEXT NOT NULL,
+       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+       PRIMARY KEY (trip_id, wardrobe_item_id)
+     );
+   
+    -- 2. Add 'hotel' to category examples (Informational)
+    -- The category column in bucket_items is already TEXT, so it supports 'hotel'
+    -- but we ensure the notes column is ready for the "Type • Address" string
+    COMMENT ON COLUMN bucket_items.category IS 'eat, hotel, activity, visit';
+   
+    -- 3. Enable Realtime for the new table
+    -- This ensures the Wardrobe UI updates instantly when you add/remove items
+    ALTER PUBLICATION supabase_realtime ADD TABLE trip_wardrobe;
+   
+    -- 4. Add RLS Policies (Optional but recommended)
+    -- Replace 'authenticated' with your auth setup if needed
+    ALTER TABLE trip_wardrobe ENABLE ROW LEVEL SECURITY;
+   
+    CREATE POLICY "Users can manage their own trip wardrobe"
+    ON trip_wardrobe FOR ALL
+    USING (auth.uid()::text = user_id);
+
+
+
+
+
+
+
+    CREATE TABLE IF NOT EXISTS bucket_categories (
+       id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+       name TEXT NOT NULL,
+       icon TEXT DEFAULT 'Tag',
+       color TEXT DEFAULT '#666666',
+       trip_id uuid REFERENCES trips(id) ON DELETE CASCADE, -- Shared across the trip
+       user_id TEXT NOT NULL, -- Who created it
+       is_system BOOLEAN DEFAULT false,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      UNIQUE(trip_id, name) -- Prevents duplicate categories in the same trip
+    );
+   
+    -- 2. Enable Realtime for collaborative UI updates
+    -- This ensures the categories show up on both users' screens instantly
+    ALTER PUBLICATION supabase_realtime ADD TABLE bucket_categories;
+   
+    -- 3. Update RLS Policies
+    -- Adjust according to your existing auth setup
+    ALTER TABLE bucket_categories ENABLE ROW LEVEL SECURITY;
+   
+    CREATE POLICY "Anyone can manage trip categories"
+    ON bucket_categories FOR ALL
+    USING (true); -- Allow shared management within the app context
+
+
+
+
+
+
+    CREATE TABLE IF NOT EXISTS bucket_categories (
+       id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+       trip_id uuid REFERENCES trips(id) ON DELETE CASCADE,
+       user_id TEXT,
+       name TEXT NOT NULL,
+       icon TEXT, -- 'Utensils', 'Building2', etc.
+       color TEXT, -- Hex code
+       is_system BOOLEAN DEFAULT false,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      UNIQUE(trip_id, name)
+    );
+   
+    -- 2. Enable Realtime for the new table
+    ALTER PUBLICATION supabase_realtime ADD TABLE bucket_categories;
+   
+    -- 3. Ensure Itinerary Items has a notes column (if not already there)
+    ALTER TABLE itinerary_items ADD COLUMN IF NOT EXISTS notes TEXT;
+
+
+
+
 
    
+    -- 2. Optional: Add a helper to ensure sequence numbers are always clean
+    -- This helps when two people add items at the exact same time
+    ALTER TABLE itinerary_items ALTER COLUMN sequence SET DEFAULT 0;
+
+
+
+
+
+     DELETE FROM itinerary_items a
+     USING itinerary_items b
+     WHERE a.id < b.id
+       AND a.trip_id = b.trip_id
+       AND a.bucket_item_id = b.bucket_item_id
+       AND a.day_number = b.day_number;
+    
+     -- 2. Add a Unique Constraint
+    -- This is the permanent fix for "double adding"
+    ALTER TABLE itinerary_items
+    ADD CONSTRAINT unique_trip_day_bucket_item UNIQUE (trip_id, day_number, bucket_item_id);
+   
+    -- 3. Ensure Category is available for easy filtering
+    ALTER TABLE itinerary_items ADD COLUMN IF NOT EXISTS category TEXT;
+   
+
+
+
+
+
+
+
+ ALTER TABLE wardrobe
+     ADD COLUMN IF NOT EXISTS target_user TEXT;
+    
+     -- Initialize target_user for existing items to match the creator
+     UPDATE wardrobe SET target_user = user_id WHERE target_user IS NULL;
+    
+    
+    -- 2. ENSURE TRIP_WARDROBE EXISTS (The "Shared Trip Rack")
+    -- This table stores which clothes are "hanged" for a specific trip
+    CREATE TABLE IF NOT EXISTS trip_wardrobe (
+      trip_id UUID REFERENCES trips(id) ON DELETE CASCADE,
+      wardrobe_item_id UUID REFERENCES wardrobe(id) ON DELETE CASCADE,
+      user_id TEXT NOT NULL, -- Who added it to the rack
+      PRIMARY KEY (trip_id, wardrobe_item_id)
+    );
+   
+   
+    -- 3. ENSURE ITINERARY_OUTFITS EXISTS
+    -- This table links clothes to specific locations in your day plan
+    CREATE TABLE IF NOT EXISTS itinerary_outfits (
+      itinerary_item_id UUID REFERENCES itinerary_items(id) ON DELETE CASCADE,
+      wardrobe_item_id UUID REFERENCES wardrobe(id) ON DELETE CASCADE,
+      PRIMARY KEY (itinerary_item_id, wardrobe_item_id)
+    );
+   
+   
+    -- 4. ENABLE REAL-TIME SYNC
+    -- This is critical! It makes sure when one of you drags an item,
+    -- it pops up on the other person's phone instantly.
+    -- If the publication doesn't exist, this might fail, so we use a safe approach:
+   
+    CREATE PUBLICATION supabase_realtime FOR TABLE
+      wardrobe,
+      trip_wardrobe,
+      itinerary_items,
+      itinerary_outfits,
+      trips,
+      bucket_items;
+   
+    -- 5. ENABLE ROW LEVEL SECURITY (Optional but recommended)
+    -- If you have RLS enabled, ensure these tables allow both of you to read/write
+    ALTER TABLE trip_wardrobe ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE itinerary_outfits ENABLE ROW LEVEL SECURITY;
+
+
+
+
+
+    ALTER PUBLICATION supabase_realtime ADD TABLE bucket_categories;
+
+
+
+
+
+
+    ALTER TABLE wardrobe
+      ADD COLUMN IF NOT EXISTS target_user TEXT;
+     
+     -- Initialize target_user for existing items to match the creator (pratishth or love)
+     UPDATE wardrobe SET target_user = user_id WHERE target_user IS NULL;
+    
+    
+     -- ==========================================================
+     -- 2. SHARED TRIP RACK (TRIP_WARDROBE)
+     -- ==========================================================
+    
+     -- This table handles the "hanged" items for a specific trip.
+     -- This is the SHARED bridge between your personal wardrobes.
+     CREATE TABLE IF NOT EXISTS trip_wardrobe (
+       id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+       trip_id UUID REFERENCES trips(id) ON DELETE CASCADE,
+       wardrobe_item_id UUID REFERENCES wardrobe(id) ON DELETE CASCADE,
+       added_by TEXT NOT NULL, -- The user who 'hanged' the item
+       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+       UNIQUE(trip_id, wardrobe_item_id) -- Prevents adding the same item twice to a trip
+     );
+    
+    
+     -- ==========================================================
+     -- 3. ITINERARY OUTFITS (LINKING CLOTHES TO LOCATIONS)
+     -- ==========================================================
+    
+     -- This table saves which clothes are dragged onto which specific location in your day
+     CREATE TABLE IF NOT EXISTS itinerary_outfits (
+       id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+       itinerary_item_id UUID REFERENCES itinerary_items(id) ON DELETE CASCADE,
+       wardrobe_item_id UUID REFERENCES wardrobe(id) ON DELETE CASCADE,
+       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+       UNIQUE(itinerary_item_id, wardrobe_item_id) -- Prevents duplicate links for same item/location
+     );
+    
+    
+     -- ==========================================================
+     -- 4. BUCKET & CATEGORIES (FOR THE DIAL/SLIDER)
+     -- ==========================================================
+    
+     -- Ensure the categories table exists for the slider/dial in Plan Mode
+     CREATE TABLE IF NOT EXISTS bucket_categories (
+       id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+       trip_id UUID REFERENCES trips(id) ON DELETE CASCADE,
+       name TEXT NOT NULL,
+       icon TEXT,
+       color TEXT,
+       user_id TEXT,
+       is_system BOOLEAN DEFAULT false,
+       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+     );
+    
+    
+     -- ==========================================================
+     -- 5. ENABLE REALTIME SYNC (THE "INSTANT" MAGIC)
+     -- ==========================================================
+    
+     
+     CREATE PUBLICATION supabase_realtime FOR TABLE
+       wardrobe,
+       trip_wardrobe,
+       itinerary_items,
+       itinerary_outfits,
+       bucket_items,
+       bucket_categories,
+       trips;
+    
+    
+     -- ==========================================================
+     -- 6. SECURITY POLICIES (RLS)
+     -- ==========================================================
+    
+     -- Enable Row Level Security
+     ALTER TABLE trip_wardrobe ENABLE ROW LEVEL SECURITY;
+     ALTER TABLE itinerary_outfits ENABLE ROW LEVEL SECURITY;
+     ALTER TABLE bucket_categories ENABLE ROW LEVEL SECURITY;
+    
+     -- Create open policies so both of you can view and edit shared trip data
+     -- (Since this is a private app for the two of you)
+     DO $$
+     BEGIN
+         IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow all access to trip_wardrobe') THEN
+             CREATE POLICY "Allow all access to trip_wardrobe" ON trip_wardrobe FOR ALL USING (true) WITH CHECK
+   (true);
+         END IF;
+    
+         IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow all access to itinerary_outfits') THEN
+             CREATE POLICY "Allow all access to itinerary_outfits" ON itinerary_outfits FOR ALL USING (true) WITH
+   CHECK (true);
+         END IF;
+    
+         IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow all access to bucket_categories') THEN
+             CREATE POLICY "Allow all access to bucket_categories" ON bucket_categories FOR ALL USING (true) WITH
+   CHECK (true);
+        END IF;
+    END $$;
+
+
+
+
+
+    ALTER TABLE itinerary_items ADD COLUMN IF NOT EXISTS target_time TEXT;
+    ALTER TABLE itinerary_items ADD COLUMN IF NOT EXISTS notes TEXT;
+
+
+
+    ALTER TABLE itinerary_items ADD COLUMN IF NOT EXISTS is_custom BOOLEAN DEFAULT false;
+    ALTER TABLE itinerary_items ADD COLUMN IF NOT EXISTS custom_label TEXT;
+
+
+
+
+    ALTER TABLE finances ADD COLUMN IF NOT EXISTS type TEXT DEFAULT 'debit';
+
+
+
+
+    CREATE TABLE IF NOT EXISTS user_balances (
+       user_id TEXT PRIMARY KEY,
+       balance NUMERIC DEFAULT 0
+     );
+    
+     -- 2. Create table for Trip Starting Money
+     CREATE TABLE IF NOT EXISTS trip_balances (
+       trip_id UUID REFERENCES trips(id) ON DELETE CASCADE,
+      user_id TEXT NOT NULL,
+      start_balance NUMERIC DEFAULT 0,
+      PRIMARY KEY (trip_id, user_id)
+    );
+   
+    -- 3. Enable Realtime Sync so balance updates instantly for both of you
+    ALTER PUBLICATION supabase_realtime ADD TABLE user_balances, trip_balances;
+   
+    -- 4. Enable RLS with open policies (since it's a private app)
+    ALTER TABLE user_balances ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE trip_balances ENABLE ROW LEVEL SECURITY;
+    CREATE POLICY "Allow all access to user_balances" ON user_balances FOR ALL USING (true) WITH CHECK (true);
+    CREATE POLICY "Allow all access to trip_balances" ON trip_balances FOR ALL USING (true) WITH CHECK (true);
+
+
+
+
+
+
+    
