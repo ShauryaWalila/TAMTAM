@@ -1,0 +1,243 @@
+-- 1. POSTS (Journal, Pics, Stickers)
+create table posts (
+  id uuid default gen_random_uuid() primary key,
+  created_at timestamp with time zone default now(),
+  type text not null, -- 'text', 'image', 'sticker', 'draw'
+  content text not null,
+  user_id text not null
+);
+
+-- 2. MOMENTS (Message of the Moment)
+create table moments (
+  id uuid default gen_random_uuid() primary key,
+  created_at timestamp with time zone default now(),
+  message text not null,
+  user_id text not null
+);
+
+-- 3. TRIPS (Travel Planning & Memories)
+create table trips (
+  id uuid default gen_random_uuid() primary key,
+  created_at timestamp with time zone default now(),
+  title text not null,
+  start_date date,
+  end_date date,
+  status text default 'planned', -- 'planned', 'ongoing', 'completed'
+  cover_image text
+);
+
+-- 4. PLACES (Map Integration for Trips & Dreams)
+create table places (
+  id uuid default gen_random_uuid() primary key,
+  trip_id uuid references trips(id),
+  name text not null,
+  latitude float8 not null,
+  longitude float8 not null,
+  category text, -- 'dream', 'visited', 'restaurant', etc.
+  notes text,
+  image_url text
+);
+
+-- 5. FINANCES (Shared History & Trip Expenses)
+create table finances (
+  id uuid default gen_random_uuid() primary key,
+  created_at timestamp with time zone default now(),
+  trip_id uuid references trips(id), -- optional, can be null for general expenses
+  amount decimal(12,2) not null,
+  category text not null,
+  description text,
+  payer_id text not null -- who paid
+);
+
+-- 6. TASKS (Shared Life Goals & To-Dos)
+create table tasks (
+  id uuid default gen_random_uuid() primary key,
+  created_at timestamp with time zone default now(),
+  title text not null,
+  description text,
+  is_completed boolean default false,
+  due_date timestamp with time zone,
+  category text -- 'life', 'work', 'dream'
+);
+
+-- ENABLE REALTIME FOR ALL
+alter publication supabase_realtime add table posts, moments, trips, places, finances, tasks;
+
+
+
+
+
+
+ALTER TABLE posts
+ADD COLUMN reactions jsonb DEFAULT '{}'::jsonb,
+ADD COLUMN seen_by text[] DEFAULT '{}'::text[];
+
+
+CREATE TABLE profiles (
+       id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+       username text UNIQUE NOT NULL,
+       avatar_url text,
+       updated_at timestamp with time zone DEFAULT now()
+     );
+    
+     -- Enable Realtime
+    ALTER PUBLICATION supabase_realtime ADD TABLE profiles;
+
+
+    ALTER TABLE profiles ADD COLUMN push_token text;
+
+    ALTER TABLE moments ADD CONSTRAINT moments_user_id_key UNIQUE (user_id);
+   
+    -- Optional: Add initial rows for both users if they don't exist
+    INSERT INTO moments (message, user_id) VALUES ('Thinking of you always... ❤️', 'pratishth') ON CONFLICT (user_id)
+     DO NOTHING;
+    INSERT INTO moments (message, user_id) VALUES ('Thinking of you always... ❤️', 'love') ON CONFLICT (user_id) DO
+     NOTHING;
+
+
+     INSERT INTO profiles (username)
+     VALUES ('pratishth'), ('love')
+     ON CONFLICT (username) DO NOTHING;
+    
+     -- If you already have 'supriya' in the DB, you can update it to 'love'
+     -- to match your login.tsx logic:
+     UPDATE profiles SET username = 'love' WHERE username = 'supriya';
+     UPDATE moments SET user_id = 'love' WHERE user_id = 'supriya';
+    UPDATE posts SET user_id = 'love' WHERE user_id = 'supriya';
+
+
+
+
+
+     create table timetable (
+       id uuid default gen_random_uuid() primary key,
+       created_at timestamp with time zone default now(),
+       day text not null, -- 'Mon', 'Tue', etc.
+       time text not null, -- '09:00 AM'
+       activity text not null,
+       user_id text not null
+     );
+   
+   
+    -- ENABLE REALTIME FOR ALL
+    alter publication supabase_realtime add table timetable;
+
+
+    ALTER TABLE timetable ADD COLUMN end_time text;
+
+
+
+
+
+    create table meetings (
+       id uuid default gen_random_uuid() primary key,
+       created_at timestamp with time zone default now(),
+       type text not null, -- 'date' or 'recurring'
+       date date, -- stores the specific date if type is 'date'
+       recurring_type text, -- stores 'weekend', 'biweekly', or 'monthly'
+       occasion_name text, -- optional name like 'Anniversary'
+       user_id text not null
+    );
+   
+    -- 2. Enable Realtime so the countdown updates instantly for both of you
+    alter publication supabase_realtime add table meetings;
+
+
+
+    ALTER TABLE meetings ADD COLUMN weekday text;
+   ALTER TABLE meetings ADD COLUMN day_of_month integer;
+   ALTER TABLE meetings ADD COLUMN time text;
+   ALTER TABLE meetings ADD COLUMN is_recurring boolean default false;
+
+
+
+
+   ALTER TABLE meetings ADD COLUMN frequency text default 'once';
+   ALTER TABLE meetings ADD COLUMN is_recurring boolean default false;
+   ALTER TABLE meetings ADD COLUMN weekday text;
+   ALTER TABLE meetings ADD COLUMN day_of_month integer;
+   ALTER TABLE meetings ADD COLUMN time text;
+
+
+
+   ALTER TABLE finances ADD COLUMN type text DEFAULT 'debit';
+    
+     -- 2. Rename 'payer_id' to 'user_id' to match our app logic
+     ALTER TABLE finances RENAME COLUMN payer_id TO user_id;
+    
+     -- 3. The 'trip_id' column can stay (it doesn't hurt anything),
+     -- but if you really want to remove it, you can run:
+     -- ALTER TABLE finances DROP COLUMN trip_id;
+   
+    -- 4. Enable Realtime if you haven't yet
+    ALTER PUBLICATION supabase_realtime ADD TABLE finances;
+
+
+
+
+
+
+    create table targets (
+       id uuid default gen_random_uuid() primary key,
+       created_at timestamp with time zone default now(),
+       title text not null,
+       target_amount decimal(12,2) not null,
+       current_amount decimal(12,2) default 0,
+       category text,
+       user_id text not null
+    );
+
+     alter publication supabase_realtime add table targets;
+
+
+
+
+     ALTER TABLE targets ADD COLUMN type text DEFAULT 'budget'; -- 'budget' or 'savings'
+    ALTER TABLE targets ADD COLUMN period text DEFAULT 'monthly'; -- 'weekly', 'monthly', 'custom'
+    ALTER TABLE targets ADD COLUMN start_date date DEFAULT CURRENT_DATE;
+    ALTER TABLE targets ADD COLUMN end_date date DEFAULT (CURRENT_DATE + INTERVAL '1 month');
+   
+    -- Enable Realtime if not already done
+    ALTER PUBLICATION supabase_realtime ADD TABLE targets;
+
+
+
+
+
+
+    create table calendar_events (
+       id uuid default gen_random_uuid() primary key,
+       created_at timestamp with time zone default now(),
+       event_date date not null, -- Stores the date of the event
+       title text not null,      -- What the event is
+       user_id text not null     -- Who added it
+     );
+    alter publication supabase_realtime add table calendar_events;
+
+
+
+    ALTER TABLE calendar_events ADD COLUMN frequency text DEFAULT 'once';
+
+
+
+
+
+    ALTER TABLE places ADD COLUMN IF NOT EXISTS sequence INTEGER;
+   ALTER TABLE places ADD COLUMN IF NOT EXISTS images TEXT[] DEFAULT '{}';
+   ALTER TABLE places ADD COLUMN IF NOT EXISTS date_stamp TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+   ALTER TABLE places ADD COLUMN IF NOT EXISTS activity_details JSONB;
+  
+   -- 2. Update category to include new types if needed (optional)
+   -- This just ensures the column can handle whatever text we send
+   ALTER TABLE places ALTER COLUMN category TYPE TEXT;
+
+
+--------------------------------------------28-02-26--------------------------------------------------
+
+
+   ALTER TABLE places DROP COLUMN IF EXISTS location_link;
+
+
+
+
+   
