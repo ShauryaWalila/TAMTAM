@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Dimensions, Modal, TextInput, ActivityIndicator, Alert, Image, DeviceEventEmitter, Linking, FlatList, ScrollView, Platform, Share } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
-import { Search, Plus, X, Navigation as NavIcon, Globe, MapPin, Heart, MessageCircle, ArrowRight, Trash2, Map as MapIcon, ChevronDown, Sparkles, Copy, ExternalLink, MapPinned, ChevronRight } from 'lucide-react-native';
+import { Search, Plus, X, Navigation as NavIcon, Globe, MapPin, Heart, MessageCircle, ArrowRight, Trash2, Map as MapIcon, ChevronDown, Sparkles, Copy, ExternalLink, MapPinned, ChevronRight, Users, Wifi } from 'lucide-react-native';
 import { MotiView, AnimatePresence } from 'moti';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,6 +11,7 @@ import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { View as ThemedView } from '@/components/Themed';
 import SmartLocationPicker from '@/components/Map/SmartLocationPicker';
+import { registerProximityAlerts } from '@/lib/location';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -34,6 +35,8 @@ export default function WishlistScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState('');
+  const [partnerName, setPartnerName] = useState('');
+  const [isSynced, setIsSynced] = useState(false);
 
   // Modals
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
@@ -48,19 +51,39 @@ export default function WishlistScreen() {
 
   useEffect(() => {
     init();
-    const sub = supabase.channel('wishlist_sync').on('postgres_changes', { event: '*', schema: 'public', table: 'wishlist' }, fetchWishlist).subscribe();
-    return () => { supabase.removeChannel(sub); };
+    
+    // 🔗 REAL-TIME SUBSCRIPTION
+    const wishlistChannel = supabase.channel('wishlist_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'wishlist' }, (payload) => {
+        setIsSynced(true);
+        fetchWishlist();
+        setTimeout(() => setIsSynced(false), 2000);
+      })
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') setIsSynced(true);
+      });
+
+    return () => {
+      supabase.removeChannel(wishlistChannel);
+    };
   }, []);
 
   const init = async () => {
     const name = await SecureStore.getItemAsync('user_name');
-    if (name) setCurrentUserId(name);
+    if (name) {
+      setCurrentUserId(name);
+      setPartnerName(name.toLowerCase() === 'pratishth' ? 'Love' : 'Pratishth');
+    }
     fetchWishlist();
   };
 
   const fetchWishlist = async () => {
     const { data } = await supabase.from('wishlist').select('*').order('created_at', { ascending: false });
-    if (data) setWishlist(data);
+    if (data) {
+      setWishlist(data);
+      // Register proximity alerts for wishlist items
+      registerProximityAlerts(data.map(item => ({ ...item, type: 'wishlist' })));
+    }
     setLoading(false);
   };
 
@@ -75,7 +98,7 @@ export default function WishlistScreen() {
 
   const saveToWishlist = async () => {
     if (!newName || !newCoords) {
-      Alert.alert("Missing Info", "Please capture a location from the map first! ❤️");
+      Alert.alert("Missing Info", "Please capture a location first! ❤️");
       return;
     }
     setIsSaving(true);
@@ -90,8 +113,6 @@ export default function WishlistScreen() {
     if (!error) {
       setNewName(''); setNewComments(''); setNewCoords(null);
       setIsAddModalVisible(false);
-      fetchWishlist();
-      Alert.alert("Wish Saved!", "Added to our shared map ✨");
     } else {
       Alert.alert("Error", error.message);
     }
@@ -110,7 +131,7 @@ export default function WishlistScreen() {
     const url = `https://www.google.com/maps/search/?api=1&query=${item.latitude},${item.longitude}`;
     try {
       await Share.share({
-        message: `Check out this place from our TAMTAM wishlist: ${item.name}\n\n${item.comments}\n\n${url}`,
+        message: `Check out this spot from our shared wishlist: ${item.name}\n\n${item.comments}\n\n${url}`,
       });
     } catch (error) {
       Alert.alert('Error sharing place');
@@ -118,12 +139,11 @@ export default function WishlistScreen() {
   };
 
   const deleteItem = async (id: string) => {
-    Alert.alert("Remove from Wishlist?", "This place will be gone from our map.", [
+    Alert.alert("Remove from Wishlist?", "This place will be gone from our shared map.", [
       { text: "Keep it", style: 'cancel' },
       { text: "Remove", style: 'destructive', onPress: async () => {
         await supabase.from('wishlist').delete().eq('id', id);
         setSelectedPin(null);
-        fetchWishlist();
       }}
     ]);
   };
@@ -145,8 +165,9 @@ export default function WishlistScreen() {
             onPress={() => setSelectedPin(item)}
           >
             <MotiView 
-              from={{ scale: 0 }}
-              animate={{ scale: 1 }}
+              from={{ scale: 0, translateY: 20 }}
+              animate={{ scale: 1, translateY: 0 }}
+              transition={{ type: 'spring', damping: 15 }}
               style={styles.customMarker}
             >
               <View style={[styles.markerIcon, { backgroundColor: theme.tint }]}>
@@ -158,13 +179,25 @@ export default function WishlistScreen() {
         ))}
       </MapView>
 
-      {/* 🔍 SEARCH BAR */}
-      <View style={[styles.searchContainer, { top: insets.top + 10 }]}>
+      <View style={[styles.topOverlay, { top: insets.top + 10 }]}>
+        <View style={styles.statusRow}>
+          <BlurView intensity={60} tint={colorScheme} style={styles.syncBadge}>
+            <Users size={12} color={theme.tint} />
+            <Text style={[styles.syncText, { color: theme.text }]}>Shared with {partnerName}</Text>
+            {isSynced && (
+              <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} style={styles.liveIndicator}>
+                <Wifi size={10} color="#34C759" />
+                <Text style={styles.liveText}>LIVE</Text>
+              </MotiView>
+            )}
+          </BlurView>
+        </View>
+
         <BlurView intensity={80} tint={colorScheme} style={styles.searchBlur}>
           <Search size={20} color={theme.tabIconDefault} style={styles.searchIcon} />
           <TextInput
             style={[styles.searchInput, { color: theme.text }]}
-            placeholder="Search wishes & keywords..."
+            placeholder="Search our wishes & keywords..."
             placeholderTextColor={theme.tabIconDefault}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -177,7 +210,6 @@ export default function WishlistScreen() {
         </BlurView>
       </View>
 
-      {/* 📍 PIN DETAILS CARD */}
       <AnimatePresence>
         {selectedPin && (
           <MotiView 
@@ -222,20 +254,19 @@ export default function WishlistScreen() {
         )}
       </AnimatePresence>
 
-      {/* ➕ ADD WISHLIST MODAL */}
       <Modal visible={isAddModalVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <BlurView intensity={100} tint={colorScheme} style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <Sparkles size={24} color={theme.tint} />
-                <Text style={[styles.modalTitle, { color: theme.text }]}>New Wish</Text>
+                <Text style={[styles.modalTitle, { color: theme.text }]}>New Shared Wish</Text>
               </View>
               <TouchableOpacity onPress={() => setIsAddModalVisible(false)} style={styles.modalCloseBtn}><X size={24} color={theme.text} /></TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
-              <Text style={styles.fieldLabel}>STEP 1: CAPTURE LOCATION</Text>
+              <Text style={styles.fieldLabel}>1. WHERE ARE WE GOING?</Text>
               <TouchableOpacity 
                 style={[styles.locationTrigger, { backgroundColor: theme.background, borderColor: newCoords ? theme.tint : 'rgba(0,0,0,0.1)' }]} 
                 onPress={() => setIsWebViewVisible(true)}
@@ -250,7 +281,7 @@ export default function WishlistScreen() {
                 <ChevronRight size={20} color={theme.tabIconDefault} />
               </TouchableOpacity>
 
-              <Text style={[styles.fieldLabel, { marginTop: 25 }]}>STEP 2: NAME & COMMENTS</Text>
+              <Text style={[styles.fieldLabel, { marginTop: 25 }]}>2. NAME & DETAILS</Text>
               <View style={[styles.inputContainer, { backgroundColor: theme.background }]}>
                 <TextInput 
                   style={[styles.input, { color: theme.text }]} 
@@ -264,7 +295,7 @@ export default function WishlistScreen() {
               <View style={[styles.inputContainer, { backgroundColor: theme.background, marginTop: 15, height: 120 }]}>
                 <TextInput 
                   style={[styles.input, { color: theme.text, height: 100, textAlignVertical: 'top' }]} 
-                  placeholder="Why do we want to go here? (Keywords help search)" 
+                  placeholder="Why do we want to go here? (Tags: pizza, date, romantic, trip...)" 
                   placeholderTextColor={theme.tabIconDefault}
                   multiline
                   value={newComments}
@@ -278,13 +309,12 @@ export default function WishlistScreen() {
                 activeOpacity={0.8}
                 style={[styles.saveBtn, { backgroundColor: theme.tint, opacity: (newName && newCoords) ? 1 : 0.5 }]}
               >
-                {isSaving ? <ActivityIndicator color="white" /> : <><Heart size={20} color="white" fill="white" /><Text style={styles.saveBtnText}>Save to Our Wishlist</Text></>}
+                {isSaving ? <ActivityIndicator color="white" /> : <><Heart size={20} color="white" fill="white" /><Text style={styles.saveBtnText}>Add to Our Life</Text></>}
               </TouchableOpacity>
             </ScrollView>
           </BlurView>
         </View>
 
-        {/* SMART MAP CAPTURE */}
         <Modal visible={isWebViewVisible} animationType="slide">
           <SmartLocationPicker 
             title="Find Our Spot"
@@ -303,7 +333,12 @@ export default function WishlistScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   map: { width: '100%', height: '100%' },
-  searchContainer: { position: 'absolute', left: 20, right: 20, zIndex: 100 },
+  topOverlay: { position: 'absolute', left: 20, right: 20, zIndex: 100 },
+  statusRow: { marginBottom: 10, alignItems: 'flex-start' },
+  syncBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, overflow: 'hidden' },
+  syncText: { fontSize: 10, fontWeight: '800', letterSpacing: 0.5 },
+  liveIndicator: { flexDirection: 'row', alignItems: 'center', gap: 4, marginLeft: 8, paddingLeft: 8, borderLeftWidth: 1, borderLeftColor: 'rgba(0,0,0,0.1)' },
+  liveText: { fontSize: 9, fontWeight: '900', color: '#34C759' },
   searchBlur: { height: 64, borderRadius: 24, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, overflow: 'hidden', elevation: 12, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 10 },
   searchIcon: { marginRight: 12 },
   searchInput: { flex: 1, fontSize: 16, fontWeight: '700' },
@@ -340,11 +375,4 @@ const styles = StyleSheet.create({
   input: { fontSize: 17, fontWeight: '700' },
   saveBtn: { height: 64, borderRadius: 22, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, marginTop: 35, elevation: 8, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 10 },
   saveBtnText: { color: 'white', fontSize: 18, fontWeight: '900' },
-  webHeader: { height: 110, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.05)' },
-  webBack: { padding: 10 },
-  webTitle: { fontSize: 18, fontWeight: '900' },
-  doneBtn: { paddingHorizontal: 22, paddingVertical: 12, borderRadius: 15 },
-  doneBtnText: { color: 'white', fontWeight: '900', fontSize: 15 },
-  webFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, padding: 20 },
-  webHintText: { fontSize: 13, fontWeight: '700' }
 });

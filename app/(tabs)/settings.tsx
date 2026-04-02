@@ -18,6 +18,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { format } from 'date-fns';
 import Wardrobe from '@/components/PlanMode/Wardrobe';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Notifications from 'expo-notifications';
 
 export default function SettingsScreen() {
   const colorScheme = useColorScheme() ?? 'light';
@@ -154,6 +155,17 @@ export default function SettingsScreen() {
     }
   };
 
+  const triggerTestNotification = async () => {
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "✨ Shared Memory Nearby!",
+        body: "Hey! You're near a spot where you shared a memory. ❤️",
+        sound: true,
+      },
+      trigger: null,
+    });
+  };
+
   const handleLogout = async () => {
     Alert.alert("Logout", "Leaving our world?", [
       { text: "Stay", style: "cancel" },
@@ -223,6 +235,7 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.tint }]}>Account</Text>
           <SettingsItem icon={<User color={theme.text} size={22} />} label="Personal Information" theme={theme} />
+          <SettingsItem icon={<Bell color={theme.tint} size={22} />} label="Test Proximity Alert" theme={theme} onPress={triggerTestNotification} />
           <SettingsItem icon={<MessageSquareHeart color={theme.text} size={22} />} label="Message of the Moment" theme={theme} onPress={() => router.push('/motm')} />
           <SettingsItem icon={<HeartHandshake color={theme.text} size={22} />} label="Next Meet" theme={theme} onPress={() => router.push('/next-meet')} />
           <SettingsItem icon={<Bell color={theme.text} size={22} />} label="Notifications" theme={theme} right={<Switch value={isNotificationsEnabled} onValueChange={toggleNotifications} trackColor={{ true: theme.tint }} />} showChevron={false} />

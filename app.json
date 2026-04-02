@@ -19,7 +19,11 @@
         "NSCameraUsageDescription": "TAMTAM needs access to your camera.",
         "NSPhotoLibraryUsageDescription": "TAMTAM needs access to your photos.",
         "NSMicrophoneUsageDescription": "TAMTAM needs access to your voice.",
-        "NSFaceIDUsageDescription": "TAMTAM needs access to FaceID to secure your finances."
+        "NSFaceIDUsageDescription": "TAMTAM needs access to FaceID to secure your finances.",
+        "NSLocationWhenInUseUsageDescription": "TAMTAM needs location access to show you on the map and find shared places.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "TAMTAM needs background location to alert you when you are near shared memories and wishlist spots.",
+        "NSLocationAlwaysUsageDescription": "TAMTAM needs background location to alert you when you are near shared memories.",
+        "UIBackgroundModes": ["location", "fetch"]
       }
     },
     "android": {
@@ -29,7 +33,13 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -41,8 +51,16 @@
       "expo-font",
       "expo-web-browser",
       "expo-secure-store",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "expo-location",
+      "expo-notifications",
+      "expo-task-manager"
     ],
+    "extra": {
+      "eas": {
+        "projectId": "77777777-7777-7777-7777-777777777777"
+      }
+    },
     "experiments": {
       "typedRoutes": true
     }

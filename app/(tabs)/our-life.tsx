@@ -5,7 +5,6 @@ import * as Location from 'expo-location';
 import { Map as MapIcon, MapPin, Plane, Plus, Search, Layers, X, Navigation as NavIcon, Menu, Sparkles, CheckCircle2 } from 'lucide-react-native';
 import { MotiView, AnimatePresence } from 'moti';
 import { BlurView } from 'expo-blur';
-import { WebView } from 'react-native-webview';
 import * as SecureStore from 'expo-secure-store';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
@@ -22,6 +21,8 @@ import PolaroidPopup from '@/components/Map/PolaroidPopup';
 import AddPinModal from '@/components/Map/AddPinModal';
 import PlansListScreen from '@/app/our-life/plans-list';
 import TripWorkspace from '@/components/PlanMode/TripWorkspace';
+import SmartLocationPicker from '@/components/Map/SmartLocationPicker';
+import { registerProximityAlerts } from '@/lib/location';
 
 // @ts-ignore
 import PinAsset from '../../assets/images/pin.png';
@@ -104,7 +105,13 @@ export default function OurLifeScreen() {
       query = query.is('trip_id', null);
     }
     const { data } = await query;
-    if (data) setPins(data);
+    if (data) {
+      setPins(data);
+      // Register proximity alerts for shared memories
+      if (!activeTripId) {
+        registerProximityAlerts(data.map(p => ({ ...p, type: 'memory' })));
+      }
+    }
   };
 
   const closeActivePin = () => {
@@ -292,26 +299,19 @@ export default function OurLifeScreen() {
         </AnimatePresence>
 
         <Modal visible={searchVisible} animationType="slide">
-          <View style={styles.searchModal}>
-            <View style={[styles.searchHeader, { paddingTop: insets.top }]}>
-              <Text style={styles.searchTitle}>Explore Map</Text>
-              <TouchableOpacity onPress={() => setSearchVisible(false)}><X size={24} color="#000" /></TouchableOpacity>
-            </View>
-            <WebView 
-              source={{ uri: 'https://www.google.com/maps' }} 
-              style={{ flex: 1 }} 
-              onNavigationStateChange={(navState) => {
-                const url = navState.url;
-                const coordRegex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
-                const match = url.match(coordRegex);
-                if (match) {
-                  const lat = parseFloat(match[1]);
-                  const lng = parseFloat(match[2]);
-                  mapRef.current?.animateToRegion({ latitude: lat, longitude: lng, latitudeDelta: 0.01, longitudeDelta: 0.01 }, 1000);
-                }
-              }}
-            />
-          </View>
+          <SmartLocationPicker 
+            title="Explore Map"
+            onLocationCaptured={(data) => {
+              mapRef.current?.animateToRegion({ 
+                latitude: data.lat, 
+                longitude: data.lng, 
+                latitudeDelta: 0.01, 
+                longitudeDelta: 0.01 
+              }, 1000);
+              setSearchVisible(false);
+            }}
+            onClose={() => setSearchVisible(false)}
+          />
         </Modal>
 
         <AddPinModal 

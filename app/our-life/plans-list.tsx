@@ -4,13 +4,13 @@ import { Search, Plus, Calendar, MapPin, ChevronRight, Clock, X, Save, Globe } f
 import { BlurView } from 'expo-blur';
 import { format } from 'date-fns';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { WebView } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { View as ThemedView, Text as ThemedText } from '@/components/Themed';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { supabase } from '@/lib/supabase';
+import SmartLocationPicker from '@/components/Map/SmartLocationPicker';
 
 const { width, height } = Dimensions.get('window');
 
@@ -45,22 +45,6 @@ export default function PlansListScreen({ onSelectTrip, onClose }: PlansListProp
     const { data } = await supabase.from('trips').select('*').order('created_at', { ascending: false });
     if (data) { setPlans(data); setFilteredPlans(data); }
     setIsLoading(false);
-  };
-
-  const handleWebViewChange = (navState: any) => {
-    const url = navState.url;
-    const coordRegex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
-    const match = url.match(coordRegex);
-    if (match) {
-      const lat = parseFloat(match[1]);
-      const lng = parseFloat(match[2]);
-      setNewCoords({ lat, lng });
-      const nameMatch = url.match(/\/place\/([^/]+)\//);
-      if (nameMatch) {
-        const placeName = decodeURIComponent(nameMatch[1].replace(/\+/g, ' '));
-        setNewLocation(placeName);
-      }
-    }
   };
 
   const handleCreatePlan = async () => {
@@ -185,17 +169,16 @@ export default function PlansListScreen({ onSelectTrip, onClose }: PlansListProp
           </BlurView>
         </View>
 
+        {/* SMART MAP CAPTURE */}
         <Modal visible={showLocationPicker} animationType="slide">
-          <View style={{ flex: 1 }}>
-            <View style={[styles.webHeader, { paddingTop: insets.top }]}>
-              <Text style={styles.webTitle}>Pin Your Destination</Text>
-              <TouchableOpacity onPress={() => setShowLocationPicker(false)} style={styles.webDone}>
-                <Text style={{ color: Colors[colorScheme].tint, fontWeight: 'bold' }}>DONE</Text>
-              </TouchableOpacity>
-            </View>
-            <WebView source={{ uri: 'https://www.google.com/maps' }} onNavigationStateChange={handleWebViewChange} style={{ flex: 1 }} />
-            <View style={styles.webHint}><Text style={styles.webHintText}>Search and click your destination. The capture is automatic.</Text></View>
-          </View>
+          <SmartLocationPicker 
+            title="Pin Your Destination"
+            onLocationCaptured={(data) => {
+              setNewCoords({ lat: data.lat, lng: data.lng });
+              setNewLocation(data.name);
+            }}
+            onClose={() => setShowLocationPicker(false)}
+          />
         </Modal>
       </Modal>
     </ThemedView>
@@ -228,9 +211,4 @@ const styles = StyleSheet.create({
   dateVal: { fontSize: 16, fontWeight: 'bold' },
   saveBtn: { marginTop: 30, padding: 18, borderRadius: 15, alignItems: 'center' },
   saveBtnText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
-  webHeader: { height: 100, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#eee' },
-  webTitle: { fontSize: 16, fontWeight: 'bold' },
-  webDone: { padding: 10 },
-  webHint: { padding: 15, backgroundColor: '#f9f9f9', alignItems: 'center' },
-  webHintText: { fontSize: 12, color: '#666', textAlign: 'center' }
 });

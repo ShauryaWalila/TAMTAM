@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Modal, FlatList, Dimensions, TextInput, KeyboardAvoidingView, Platform, Pressable, Image } from 'react-native';
-import { MapPin, X, Utensils, Camera, Building2, Landmark, Plus, Map as MapIcon, ChevronRight, Globe, Search, Tag, Sparkles, Save, Trash2, Edit3 } from 'lucide-react-native';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Modal, FlatList, Dimensions, TextInput, KeyboardAvoidingView, Platform, Pressable, Image, DeviceEventEmitter } from 'react-native';
+import { MapPin, X, Utensils, Camera, Building2, Landmark, Plus, Map as MapIcon, ChevronRight, Globe, Search, Tag, Sparkles, Save, Trash2, Edit3, Bell, BellOff, BellRing } from 'lucide-react-native';
 import { BlurView } from 'expo-blur';
 import { MotiView, AnimatePresence } from 'moti';
-import { WebView } from 'react-native-webview';
 
 import { supabase } from '@/lib/supabase';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
+import SmartLocationPicker from '@/components/Map/SmartLocationPicker';
+import { registerProximityAlerts } from '@/lib/location';
 
 const { width, height } = Dimensions.get('window');
 
@@ -47,8 +48,6 @@ export default function Bucket({ tripId, userId, onSelectItem, tripLocation, tri
   const [activeTab, setActiveTab] = useState('');
   
   const [showWebView, setShowWebView] = useState(false);
-  const [isWebLoading, setIsWebLoading] = useState(true);
-  const [lastResolvedUrl, setLastResolvedUrl] = useState('');
 
   // Modals State
   const [showPicker, setShowPicker] = useState(false);
@@ -78,6 +77,12 @@ export default function Bucket({ tripId, userId, onSelectItem, tripLocation, tri
     }
   }, [tripId, userId]);
 
+  useEffect(() => {
+    // Update active geofences when items change
+    const alertItems = items.filter(i => i.is_alert_enabled && i.latitude && i.longitude);
+    registerProximityAlerts(alertItems.map(i => ({ ...i, type: 'trip_bucket' })));
+  }, [items]);
+
   const fetchCategories = async () => {
     let { data } = await supabase.from('bucket_categories').select('*').eq('trip_id', tripId).order('name', { ascending: true });
     if (data && data.length === 0) {
@@ -96,6 +101,14 @@ export default function Bucket({ tripId, userId, onSelectItem, tripLocation, tri
     const { data } = await supabase.from('bucket_items').select('*').eq('trip_id', tripId);
     if (data) setItems(data);
     setLoading(false);
+  };
+
+  const toggleAlert = async (item: any) => {
+    const newValue = !item.is_alert_enabled;
+    const { error } = await supabase.from('bucket_items').update({ is_alert_enabled: newValue }).eq('id', item.id);
+    if (!error) {
+      // Logic handled by useEffect real-time refresh
+    }
   };
 
   const deleteItem = async (id: string) => {
@@ -164,24 +177,10 @@ export default function Bucket({ tripId, userId, onSelectItem, tripLocation, tri
     }
   };
 
-  const handleWebViewStateChange = async (navState: any) => {
-    const url = navState.url;
-    if (url === lastResolvedUrl || !url.includes('/place/')) return;
-
-    const coordRegex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
-    const match = url.match(coordRegex);
-    const nameMatch = url.match(/\/place\/([^/]+)\//);
-    
-    if (match && nameMatch) {
-      setLastResolvedUrl(url);
-      const lat = parseFloat(match[1]);
-      const lng = parseFloat(match[2]);
-      const rawName = decodeURIComponent(nameMatch[1].replace(/\+/g, ' '));
-
-      const resolved = await reverseGeocodeAndCategorize(lat, lng, rawName);
-      setPendingLocation(resolved);
-      setShowPicker(true);
-    }
+  const onLocationCaptured = async (data: { name: string, lat: number, lng: number }) => {
+    const resolved = await reverseGeocodeAndCategorize(data.lat, data.lng, data.name);
+    setPendingLocation(resolved);
+    setShowPicker(true);
   };
 
   const saveNewItem = async (categoryName: string) => {
@@ -296,9 +295,14 @@ export default function Bucket({ tripId, userId, onSelectItem, tripLocation, tri
                       {item.notes ? <Text style={[styles.itemNote, { color: secondaryText }]} numberOfLines={2}>{item.notes}</Text> : null}
                     </View>
                   </Pressable>
-                  <TouchableOpacity onPress={() => { setEditingItem({...item}); setShowEdit(true); }} style={styles.editBtn}>
-                    <Edit3 size={20} color={theme.tint} />
-                  </TouchableOpacity>
+                  <View style={styles.cardActions}>
+                    <TouchableOpacity onPress={() => toggleAlert(item)} style={[styles.alertBtn, { backgroundColor: item.is_alert_enabled ? theme.tint + '20' : 'transparent' }]}>
+                      {item.is_alert_enabled ? <BellRing size={20} color={theme.tint} /> : <BellOff size={20} color={secondaryText} opacity={0.5} />}
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => { setEditingItem({...item}); setShowEdit(true); }} style={styles.editBtn}>
+                      <Edit3 size={20} color={theme.tint} />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </MotiView>
             )}
@@ -307,6 +311,7 @@ export default function Bucket({ tripId, userId, onSelectItem, tripLocation, tri
         )}
       </View>
 
+      {/* Picker Modal */}
       <Modal visible={showPicker} transparent animationType="slide">
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
           <View style={styles.pickerOverlay}>
@@ -385,49 +390,13 @@ export default function Bucket({ tripId, userId, onSelectItem, tripLocation, tri
         </KeyboardAvoidingView>
       </Modal>
 
-      <Modal visible={showWebView} animationType="slide" presentationStyle="fullScreen">
-        <View style={{ flex: 1, backgroundColor: theme.background }}>
-          <BlurView intensity={90} tint={colorScheme} style={styles.webHeader}>
-            <TouchableOpacity onPress={() => setShowWebView(false)} style={styles.webCloseBtn}><X size={24} color={theme.text} /></TouchableOpacity>
-            <Text style={[styles.webTitle, { color: theme.text }]}>Google Maps Discovery</Text>
-            <View style={{ width: 40 }} />
-          </BlurView>
-          <View style={{ flex: 1 }}>
-            <WebView 
-              source={{ uri: `https://www.google.com/maps/search/${encodeURIComponent(activeTab + ' in ' + (tripLocationName || ''))}` }} 
-              onNavigationStateChange={handleWebViewStateChange}
-              onLoadStart={() => setIsWebLoading(true)}
-              onLoadEnd={() => setIsWebLoading(false)}
-              style={{ flex: 1 }} 
-              userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.1 Safari/605.1.15"
-              injectedJavaScript={`
-                (function() {
-                  const hideBanner = () => {
-                    const banners = [
-                      document.querySelector('.ml-app-banner'),
-                      document.querySelector('[aria-label=\"Google Maps\"]'),
-                      document.querySelector('.app-banner'),
-                      document.querySelector('.smartbanner')
-                    ];
-                    banners.forEach(b => { if(b) b.style.display = 'none'; });
-
-                    const buttons = document.querySelectorAll('button');
-                    buttons.forEach(btn => {
-                      if(btn.innerText.includes('Stay on web') || btn.innerText.includes('Continue on web')) {
-                        btn.click();
-                      }
-                    });
-                  };
-                  hideBanner();
-                  setTimeout(hideBanner, 1000);
-                  setTimeout(hideBanner, 3000);
-                })();
-                true;
-              `}
-            />
-            {isWebLoading && <View style={[StyleSheet.absoluteFill, { justifyContent: 'center', alignItems: 'center', backgroundColor: isDark ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.7)' }]}><ActivityIndicator size="large" color={theme.tint} /></View>}
-          </View>
-        </View>
+      {/* SMART MAP CAPTURE */}
+      <Modal visible={showWebView} animationType="slide">
+        <SmartLocationPicker 
+          title="Google Maps Discovery"
+          onLocationCaptured={onLocationCaptured}
+          onClose={() => setShowWebView(false)}
+        />
       </Modal>
     </View>
   );
@@ -438,7 +407,6 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 25, paddingTop: 80 },
   headerSubtitle: { fontSize: 8, fontWeight: '900', letterSpacing: 1.5 },
   headerTitle: { fontSize: 24, fontWeight: '900' },
-  globeCircle: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
   bucketCircle: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
   closeCircle: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(0,0,0,0.05)', justifyContent: 'center', alignItems: 'center', marginLeft: 10 },
   tabsWrapper: { maxHeight: 60, marginBottom: 15 },
@@ -453,13 +421,12 @@ const styles = StyleSheet.create({
   itemInfo: { flex: 1, marginLeft: 15 },
   itemName: { fontSize: 17, fontWeight: '700' },
   itemNote: { fontSize: 12, marginTop: 3, lineHeight: 16 },
-  editBtn: { padding: 20 },
+  cardActions: { flexDirection: 'row', alignItems: 'center' },
+  alertBtn: { padding: 15, borderRadius: 15 },
+  editBtn: { padding: 15 },
   emptyState: { alignItems: 'center', marginTop: 60 },
   emptyText: { marginTop: 15, fontSize: 16, fontWeight: '700' },
   addBtn: { flexDirection: 'row', alignItems: 'center', marginTop: 20, borderWidth: 1, paddingHorizontal: 15, paddingVertical: 8, borderRadius: 20 },
-  webHeader: { height: 110, paddingTop: 55, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.05)' },
-  webCloseBtn: { padding: 8, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.03)' },
-  webTitle: { fontSize: 17, fontWeight: '800', letterSpacing: 0.5 },
   pickerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalOverlayCenter: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
   editContent: { borderRadius: 32, padding: 25, overflow: 'hidden', maxHeight: '90%' },

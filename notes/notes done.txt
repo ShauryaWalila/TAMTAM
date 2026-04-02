@@ -11,3 +11,5 @@ time calculator
 option for tamtam in settings to send whatsapp to unknown number
 faceid for finance
 places to go(in trip)
+things to do(ine specific places, dreams)
+places to go(overall)
