@@ -8,10 +8,11 @@ import * as SecureStore from 'expo-secure-store';
 import { format, differenceInDays, differenceInSeconds, startOfDay, addDays, nextDay, set, isAfter, isBefore, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from 'date-fns';
 import { MotiView, AnimatePresence } from 'moti';
 import { BlurView } from 'expo-blur';
-import { Heart, MessageSquare, Calendar as CalendarIcon, Bell, Clock, Quote, Sparkles, Trophy, ChevronRight, Plus, X, Trash2, Settings2, CalendarDays, CalendarRange, PenLine, Stars, Timer, ChevronLeft } from 'lucide-react-native';
+import { Heart, MessageSquare, Calendar as CalendarIcon, Bell, Clock, Quote, Sparkles, Trophy, ChevronRight, Plus, X, Trash2, Settings2, CalendarDays, CalendarRange, PenLine, Stars, Timer, ChevronLeft, MessageSquareHeart, MapPin } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import LottieView from 'lottie-react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -177,54 +178,94 @@ export default function DashboardScreen() {
   }
 
   return (
-    <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
-      <ScrollView onScroll={handleScroll} scrollEventThrottle={16} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+    <ThemedView style={styles.container}>
+      <ScrollView 
+        onScroll={handleScroll} 
+        scrollEventThrottle={16} 
+        showsVerticalScrollIndicator={false} 
+        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 20 }]}
+      >
         
-        {/* ✨ HEADER */}
+        {/* ✨ RESTORED HEADER */}
         <View style={styles.header}>
           <View>
-            <Text style={[styles.greeting, { color: theme.text }]}>Us,</Text>
-            <Text style={[styles.subGreeting, { color: theme.tabIconDefault }]}>Forever & Always</Text>
+            <Text style={[styles.greeting, { color: theme.text }]}>Hello, Love</Text>
+            <Text style={[styles.subtitle, { color: theme.tabIconDefault }]}>Thinking of you today</Text>
           </View>
-          <TouchableOpacity onPress={() => DeviceEventEmitter.emit('show-navigator')} style={[styles.profileCircle, { backgroundColor: theme.card }]}>
-            <Sparkles color={theme.tint} size={24} />
+          <TouchableOpacity onPress={() => DeviceEventEmitter.emit('show-navigator')}>
+            <LottieView
+              autoPlay
+              loop
+              source={{ uri: 'https://assets9.lottiefiles.com/packages/lf20_at6mscsc.json' }} // Floating Heart
+              style={styles.lottieHeart}
+            />
           </TouchableOpacity>
         </View>
 
-        {/* ⏳ COUNTDOWN */}
-        <MotiView from={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} style={styles.countdownBox}>
-          <LinearGradient colors={[theme.tint, theme.secondary]} start={{x:0, y:0}} end={{x:1, y:1}} style={styles.countdownCard}>
-            <View style={styles.countdownHead}>
-              <Clock color="white" size={16} opacity={0.8} />
-              <Text style={styles.countdownLabel}>REUNION COUNTDOWN</Text>
-            </View>
+        {/* ⏳ RESTORED COUNTDOWN */}
+        <MotiView
+          from={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ type: 'spring', delay: 100 }}
+        >
+          <LinearGradient
+            colors={[theme.tint, theme.secondary]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.countdownCard}
+          >
+            <Sparkles color="rgba(255,255,255,0.3)" size={60} style={styles.sparkleIcon} />
+            <Text style={styles.countdownTitle}>Next Time We Meet</Text>
             <Text style={styles.countdownValue}>{countdown}</Text>
             {nextMeet?.occasion_name && <Text style={styles.occasionText}>{nextMeet.occasion_name.toUpperCase()}</Text>}
+            <View style={styles.meetingInfo}>
+              <CalendarIcon color="#FFF" size={16} />
+              <Text style={styles.meetingDate}>{nextMeet?.date || 'Coming Soon'}</Text>
+            </View>
           </LinearGradient>
         </MotiView>
 
-        {/* 💬 MESSAGE OF THE MOMENT */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Quote size={18} color={theme.tint} />
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>Moment for us</Text>
-          </View>
-          <View style={[styles.motmCard, { backgroundColor: theme.card }]}>
-            <Text style={[styles.motmText, { color: theme.text }]}>"{motm}"</Text>
+        {/* 💬 RESTORED MESSAGE OF THE MOMENT (Glassmorphism) */}
+        <MotiView 
+          from={{ opacity: 0, translateY: 20 }}
+          animate={{ opacity: 1, translateY: 0 }}
+          transition={{ type: 'timing', delay: 300 }}
+          style={styles.momentCardWrapper}
+        >
+          <BlurView 
+            intensity={colorScheme === 'dark' ? 40 : 80} 
+            tint={colorScheme}
+            style={[styles.momentCard, { borderColor: theme.tint + '40', borderWidth: 1 }]}
+          >
+            <View style={styles.momentHeader}>
+              <MessageSquareHeart color={theme.tint} size={22} />
+              <Text style={[styles.momentTitle, { color: theme.tabIconDefault }]}>Message of the Moment</Text>
+            </View>
+            <Text style={[styles.momentBody, { color: theme.text }]}>"{motm}"</Text>
             <View style={styles.motmFooter}>
               <Heart size={14} color={theme.tint} fill={theme.tint} />
               <Text style={[styles.motmAuthor, { color: theme.tabIconDefault }]}>FROM {partnerName.toUpperCase()}</Text>
             </View>
-          </View>
+          </BlurView>
+        </MotiView>
+
+        {/* 📊 RESTORED STATS GRID */}
+        <View style={styles.statsRow}>
+          <SummaryCard 
+            title="Our Days" 
+            value={stats.days} 
+            icon={<Heart color={theme.tint} size={20} fill={theme.tint} />} 
+            theme={theme} 
+          />
+          <SummaryCard 
+            title="Memories" 
+            value={stats.memories} 
+            icon={<MessageSquare color={theme.secondary} size={20} />} 
+            theme={theme} 
+          />
         </View>
 
-        {/* 📊 STATS GRID */}
-        <View style={styles.statsGrid}>
-          <StatCard icon={<Heart size={24} color="#FF2D55" fill="#FF2D55" />} label="Days Together" value={stats.days} color="#FF2D55" theme={theme} />
-          <StatCard icon={<MessageSquare size={24} color="#AF52DE" fill="#AF52DE" />} label="Memories" value={stats.memories} color="#AF52DE" theme={theme} />
-        </View>
-
-        {/* 📅 OUR ROUTINE */}
+        {/* 📅 OUR ROUTINE (Restored Styling) */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Clock size={18} color={theme.tint} />
@@ -254,7 +295,7 @@ export default function DashboardScreen() {
           </ScrollView>
         </View>
 
-        {/* 🗓️ SHARED CALENDAR */}
+        {/* 🗓️ SHARED CALENDAR (Restored Styling) */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <CalendarIcon size={18} color={theme.tint} />
@@ -325,12 +366,14 @@ export default function DashboardScreen() {
   );
 }
 
-function StatCard({ icon, label, value, color, theme }: any) {
+function SummaryCard({ title, value, icon, theme }: any) {
   return (
-    <View style={[styles.statCard, { backgroundColor: theme.card }]}>
-      <View style={[styles.statIconBox, { backgroundColor: color + '15' }]}>{icon}</View>
-      <Text style={[styles.statNum, { color: theme.text }]}>{value}</Text>
-      <Text style={[styles.statLabel, { color: theme.tabIconDefault }]}>{label.toUpperCase()}</Text>
+    <View style={[styles.summaryCard, { backgroundColor: theme.card }]}>
+      <View style={styles.summaryHeader}>
+        {icon}
+        <Text style={[styles.summaryTitle, { color: theme.tabIconDefault }]}>{title}</Text>
+      </View>
+      <Text style={[styles.summaryValue, { color: theme.text }]}>{value}</Text>
     </View>
   );
 }
@@ -372,29 +415,133 @@ function ManageModal({ visible, title, data, table, onClose, theme, fields, colo
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { padding: 20, paddingBottom: 120 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 30 },
-  greeting: { fontSize: 48, fontWeight: '900', letterSpacing: -2.5 },
-  subGreeting: { fontSize: 20, fontWeight: '600', marginTop: -8 },
-  profileCircle: { width: 50, height: 50, borderRadius: 25, justifyContent: 'center', alignItems: 'center', elevation: 2 },
-  countdownBox: { marginBottom: 30, borderRadius: 32, overflow: 'hidden', elevation: 12 },
-  countdownCard: { padding: 25 },
-  countdownHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
-  countdownLabel: { color: 'white', fontSize: 13, fontWeight: '900', letterSpacing: 2, opacity: 0.9 },
-  countdownValue: { color: 'white', fontSize: 56, fontWeight: '900', letterSpacing: -2.5 },
-  occasionText: { color: 'white', fontSize: 15, fontWeight: '800', marginTop: 5, letterSpacing: 1, opacity: 0.8 },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  greeting: {
+    fontSize: 32,
+    fontWeight: '800',
+    letterSpacing: -1,
+  },
+  subtitle: {
+    fontSize: 18,
+    marginTop: 4,
+    fontWeight: '500',
+  },
+  lottieHeart: {
+    width: 80,
+    height: 80,
+  },
+  countdownCard: {
+    padding: 24,
+    borderRadius: 32,
+    marginBottom: 30,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  sparkleIcon: {
+    position: 'absolute',
+    right: -10,
+    top: -10,
+  },
+  countdownTitle: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 14,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  countdownValue: {
+    color: '#FFF',
+    fontSize: 36,
+    fontWeight: '900',
+    marginVertical: 8,
+  },
+  meetingInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  meetingDate: {
+    color: '#FFF',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  momentCardWrapper: {
+    borderRadius: 28,
+    overflow: 'hidden',
+    marginBottom: 35,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  momentCard: {
+    padding: 24,
+  },
+  momentHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 8,
+  },
+  momentTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  momentBody: {
+    fontSize: 19,
+    fontWeight: '700',
+    fontStyle: 'italic',
+    lineHeight: 26,
+    letterSpacing: -0.2,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 35,
+  },
+  summaryCard: {
+    flex: 0.48,
+    padding: 20,
+    borderRadius: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  summaryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  summaryTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginLeft: 6,
+    textTransform: 'uppercase',
+  },
+  summaryValue: {
+    fontSize: 26,
+    fontWeight: '800',
+  },
   section: { marginBottom: 35 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 18, paddingLeft: 5 },
   sectionTitle: { fontSize: 20, fontWeight: '800', letterSpacing: -0.5 },
   manageBtn: { marginLeft: 'auto', padding: 8, borderRadius: 12, backgroundColor: 'rgba(150,150,150,0.1)' },
-  motmCard: { borderRadius: 32, padding: 28, elevation: 4, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 15 },
-  motmText: { fontSize: 22, fontWeight: '600', lineHeight: 32, fontStyle: 'italic' },
   motmFooter: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 20, borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.05)', paddingTop: 20 },
   motmAuthor: { fontSize: 12, fontWeight: '900', letterSpacing: 1.5 },
-  statsGrid: { flexDirection: 'row', gap: 15, marginBottom: 35 },
-  statCard: { flex: 1, borderRadius: 30, padding: 22, elevation: 3 },
-  statIconBox: { width: 48, height: 48, borderRadius: 16, justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
-  statNum: { fontSize: 34, fontWeight: '900', letterSpacing: -1 },
-  statLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 0.5, marginTop: 4 },
   timetableScroll: { gap: 15, paddingRight: 20 },
   dayCard: { width: 170, borderRadius: 28, padding: 20, minHeight: 150 },
   dayName: { fontSize: 14, fontWeight: '900', letterSpacing: 2, marginBottom: 18 },
@@ -428,5 +575,6 @@ const styles = StyleSheet.create({
   manageItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 20, borderBottomWidth: 1 },
   manageTitle: { fontSize: 17, fontWeight: '700' },
   manageSub: { fontSize: 13, fontWeight: '600', marginTop: 4 },
-  testLink: { padding: 30, alignItems: 'center', marginTop: 20, borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.05)' }
+  testLink: { padding: 30, alignItems: 'center', marginTop: 20, borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.05)' },
+  occasionText: { color: 'white', fontSize: 15, fontWeight: '800', marginTop: 5, letterSpacing: 1, opacity: 0.8 }
 });
