@@ -74,14 +74,14 @@ const CategoryTick = ({ index, scrollX, itemIndex }: { index: number, scrollX: A
 
 const CategoryDialItem = ({ cat, index, isSelected, theme, scrollX, activeDayItems, onRemoveItem, isDark }: any) => {
   return (
-    <View style={{ width: ITEM_WIDTH, alignItems: 'center', justifyContent: 'center' }}>
+    <View style={{ width: ITEM_WIDTH, height: '100%', alignItems: 'center' }}>
       <View style={styles.dialContentWrapper}>
         <AnimatePresence>
           {isSelected && (
             <MotiView
-              from={{ opacity: 0, scale: 0.9, translateY: 10 }}
+              from={{ opacity: 0, scale: 0.95, translateY: 10 }}
               animate={{ opacity: 1, scale: 1, translateY: 0 }}
-              exit={{ opacity: 0, scale: 0.9, translateY: -10 }}
+              exit={{ opacity: 0, scale: 0.95, translateY: -10 }}
               transition={{ type: 'timing', duration: 250 }}
               style={styles.itineraryListContainer}
             >
@@ -90,7 +90,11 @@ const CategoryDialItem = ({ cat, index, isSelected, theme, scrollX, activeDayIte
                   <Text style={[styles.emptyItineraryText, { color: '#aaa' }]}>Tap a map pin to add to your plan</Text>
                 </View>
               ) : (
-                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.itineraryScroll}>
+                <ScrollView 
+                  showsVerticalScrollIndicator={false} 
+                  contentContainerStyle={styles.itineraryScroll}
+                  style={{ flex: 1 }}
+                >
                   {activeDayItems.map((item: any, idx: number) => (
                     <MotiView 
                       key={item.id}
@@ -120,6 +124,7 @@ const CategoryDialItem = ({ cat, index, isSelected, theme, scrollX, activeDayIte
         </AnimatePresence>
       </View>
       
+      {/* 🎡 Dial moves to bottom */}
       <View style={styles.bottomTickTrack}>
         {[...Array(TICKS_PER_ITEM)].map((_, j) => (
           <CategoryTick key={`tick-${index}-${j}`} index={j} itemIndex={index} scrollX={scrollX} />
@@ -462,8 +467,8 @@ export default function TripWorkspace({ tripId, onBack, userId, mapRef, onMarker
         </TouchableOpacity>
       </View>
 
-      {/* 🚀 WORKSPACE FAB (Only visible at MIN height) */}
-      {currentSnap === 'min' && (
+      {/* 🚀 WORKSPACE FAB (Only visible at MIN height AND when no day is selected) */}
+      {currentSnap === 'min' && !selectedDay && (
         <View style={[styles.fabContainer, { bottom: 260 }]}>
           <AnimatePresence>
             {isWorkspaceMenuOpen && (

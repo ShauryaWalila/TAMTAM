@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { StyleSheet, Image, Dimensions, View, TouchableOpacity, FlatList, Animated, Text } from 'react-native';
+import { StyleSheet, Image, Dimensions, View, TouchableOpacity, FlatList, Animated, Text, Modal } from 'react-native';
 import { MotiView } from 'moti';
-import { X, Pencil, Sparkles } from 'lucide-react-native';
+import { X, Pencil, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { format } from 'date-fns';
 import { Link } from 'expo-router';
 import { MonoText } from '@/components/StyledText';
@@ -23,6 +23,8 @@ interface FloatingPopupProps {
 
 export default function FloatingPopup({ pin, onClose, onEdit, isPlanMode }: FloatingPopupProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isViewerVisible, setIsViewerVisible] = useState(false);
+  const viewerListRef = useRef<FlatList>(null);
   
   if (pin.isBucketPopup) {
     return (
@@ -85,79 +87,110 @@ export default function FloatingPopup({ pin, onClose, onEdit, isPlanMode }: Floa
   };
 
   return (
-    <MotiView
-      from={{ opacity: 0, scale: 0.9, translateY: 50 }}
-      animate={{ opacity: 1, scale: 1, translateY: 0 }}
-      transition={{ type: 'timing', duration: 400 }}
-      style={styles.container}
-    >
-      <View style={styles.photoWindow}>
-        <FlatList
-          data={images}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onViewableItemsChanged={onViewableItemsChanged}
-          viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
-          keyExtractor={(_, index) => index.toString()}
-          renderItem={({ item }) => (
-            <Image 
-              source={{ uri: item }} 
-              style={styles.actualPhoto} 
-              resizeMode="cover"
-            />
-          )}
+    <>
+      <MotiView
+        from={{ opacity: 0, scale: 0.9, translateY: 50 }}
+        animate={{ opacity: 1, scale: 1, translateY: 0 }}
+        transition={{ type: 'timing', duration: 400 }}
+        style={styles.container}
+      >
+        <View style={styles.photoWindow}>
+          <FlatList
+            data={images}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onViewableItemsChanged={onViewableItemsChanged}
+            viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
+            keyExtractor={(_, index) => index.toString()}
+            renderItem={({ item, index }) => (
+              <TouchableOpacity activeOpacity={0.9} onPress={() => { setActiveIndex(index); setIsViewerVisible(true); }}>
+                <Image 
+                  source={{ uri: item }} 
+                  style={styles.actualPhoto} 
+                  resizeMode="cover"
+                />
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+
+        <Image 
+          source={PolaroidFrame} 
+          style={styles.frameAsset} 
+          resizeMode="contain" 
+          pointerEvents="none"
         />
-      </View>
 
-      <Image 
-        source={PolaroidFrame} 
-        style={styles.frameAsset} 
-        resizeMode="contain" 
-        pointerEvents="none"
-      />
-
-      <View style={styles.controlsLayer} pointerEvents="box-none">
-        <View style={styles.topActions}>
-          <TouchableOpacity onPress={() => onEdit(pin)} activeOpacity={0.7}>
-            <View style={styles.actionButton}>
-              <Pencil size={14} color="#444" />
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={onClose} activeOpacity={0.7}>
-            <View style={styles.actionButton}>
-              <X size={16} color="#444" />
-            </View>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.dotsWrapper} pointerEvents="none">
-          {renderDots()}
-        </View>
-
-        {pin.isWorkspaceItem ? (
-          <View style={styles.bottomArea}>
-            <MonoText style={styles.notesText} numberOfLines={2}>
-              {pin.name}
-            </MonoText>
-            <MonoText style={styles.dateText}>
-              {pin.category?.toUpperCase() || 'PLACE'}
-            </MonoText>
+        <View style={styles.controlsLayer} pointerEvents="box-none">
+          <View style={styles.topActions}>
+            <TouchableOpacity onPress={() => onEdit(pin)} activeOpacity={0.7}>
+              <View style={styles.actionButton}>
+                <Pencil size={14} color="#444" />
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={onClose} activeOpacity={0.7}>
+              <View style={styles.actionButton}>
+                <X size={16} color="#444" />
+              </View>
+            </TouchableOpacity>
           </View>
-        ) : (
-          <Link href={{ pathname: "/our-life/pin-details", params: { id: pin.id } }} asChild>
-            <TouchableOpacity style={styles.bottomArea}>
+
+          <View style={styles.dotsWrapper} pointerEvents="none">
+            {renderDots()}
+          </View>
+
+          {pin.isWorkspaceItem ? (
+            <View style={styles.bottomArea}>
               <MonoText style={styles.notesText} numberOfLines={2}>
-                {pin.notes || pin.name || "Our beautiful day..."}
+                {pin.name}
               </MonoText>
               <MonoText style={styles.dateText}>
-                {pin.date_stamp ? format(new Date(pin.date_stamp), 'dd/MM/yyyy') : format(new Date(), 'dd/MM/yyyy')}
+                {pin.category?.toUpperCase() || 'PLACE'}
               </MonoText>
-            </TouchableOpacity>
-          </Link>
-        )}
-      </View>
-    </MotiView>
+            </View>
+          ) : (
+            <Link href={{ pathname: "/our-life/pin-details", params: { id: pin.id } }} asChild>
+              <TouchableOpacity style={styles.bottomArea}>
+                <MonoText style={styles.notesText} numberOfLines={2}>
+                  {pin.notes || pin.name || "Our beautiful day..."}
+                </MonoText>
+                <MonoText style={styles.dateText}>
+                  {pin.date_stamp ? format(new Date(pin.date_stamp), 'dd/MM/yyyy') : format(new Date(), 'dd/MM/yyyy')}
+                </MonoText>
+              </TouchableOpacity>
+            </Link>
+          )}
+        </View>
+      </MotiView>
+
+      <Modal visible={isViewerVisible} transparent animationType="fade">
+        <View style={styles.viewerOverlay}>
+          <TouchableOpacity style={styles.viewerClose} onPress={() => setIsViewerVisible(false)}>
+            <X size={30} color="white" />
+          </TouchableOpacity>
+          
+          <FlatList
+            ref={viewerListRef}
+            data={images}
+            horizontal
+            pagingEnabled
+            initialScrollIndex={activeIndex}
+            getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
+            keyExtractor={(_, i) => i.toString()}
+            renderItem={({ item }) => (
+              <View style={styles.viewerImageContainer}>
+                <Image source={{ uri: item }} style={styles.viewerImage} resizeMode="contain" />
+              </View>
+            )}
+          />
+
+          <View style={styles.viewerFooter}>
+            <Text style={styles.viewerCount}>{activeIndex + 1} / {images.length}</Text>
+          </View>
+        </View>
+      </Modal>
+    </>
   );
 }
 
@@ -318,5 +351,41 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: '#888',
+  },
+  viewerOverlay: {
+    flex: 1,
+    backgroundColor: '#000',
+    justifyContent: 'center',
+  },
+  viewerClose: {
+    position: 'absolute',
+    top: 60,
+    right: 30,
+    zIndex: 100,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    padding: 10,
+    borderRadius: 25,
+  },
+  viewerImageContainer: {
+    width: width,
+    height: height,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  viewerImage: {
+    width: width,
+    height: '100%',
+  },
+  viewerFooter: {
+    position: 'absolute',
+    bottom: 60,
+    width: '100%',
+    alignItems: 'center',
+  },
+  viewerCount: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '900',
+    letterSpacing: 2,
   }
 });

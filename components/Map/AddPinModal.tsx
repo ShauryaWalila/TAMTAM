@@ -95,22 +95,35 @@ export default function AddPinModal({ isVisible, onClose, coordinate, onSuccess,
 
   const handleDelete = async () => {
     if (!editingPin) return;
-    setIsDeleting(true);
-
-    try {
-      const { error } = await supabase
-        .from('places')
-        .delete()
-        .eq('id', editingPin.id);
-      if (error) throw error;
-      onSuccess();
-      onClose();
-    } catch (error) {
-      console.error('Error deleting pin:', error);
-      alert('Failed to delete pin.');
-    } finally {
-      setIsDeleting(false);
-    }
+    
+    Alert.alert(
+      "Delete Memory",
+      "Are you sure you want to permanently remove this memory from your life map? This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Delete", 
+          style: "destructive", 
+          onPress: async () => {
+            setIsDeleting(true);
+            try {
+              const { error } = await supabase
+                .from('places')
+                .delete()
+                .eq('id', editingPin.id);
+              if (error) throw error;
+              onSuccess();
+              onClose();
+            } catch (error) {
+              console.error('Error deleting pin:', error);
+              Alert.alert('Error', 'Failed to delete pin.');
+            } finally {
+              setIsDeleting(false);
+            }
+          }
+        }
+      ]
+    );
   };
 
   return (

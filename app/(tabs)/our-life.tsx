@@ -20,6 +20,7 @@ import FloatingPopup from '@/components/Map/FloatingPopup';
 import AddPinModal from '@/components/Map/AddPinModal';
 import PlansListScreen from '@/app/our-life/plans-list';
 import TripWorkspace from '@/components/PlanMode/TripWorkspace';
+import SmartLocationPicker from '@/components/Map/SmartLocationPicker';
 
 // @ts-ignore
 import PinAsset from "../../assets/images/pin.png";
@@ -276,7 +277,42 @@ export default function OurLifeScreen() {
           )}
         </AnimatePresence>
 
-        <AddPinModal isVisible={isAddModalVisible} onClose={() => { setIsAddModalVisible(false); setPendingCoordinate(null); setEditingPin(null); }} coordinate={pendingCoordinate} editingPin={editingPin} onSuccess={fetchPins} isPlanMode={isPlanMode} />
+        <AnimatePresence>
+          {searchVisible && (
+            <MotiView 
+              from={{ opacity: 0, translateY: -20 }}
+              animate={{ opacity: 1, translateY: 0 }}
+              exit={{ opacity: 0, translateY: -20 }}
+              style={[styles.searchOverlay, { top: insets.top + 10 }]}
+            >
+              <SmartLocationPicker 
+                title="Search Places"
+                onClose={() => setSearchVisible(false)}
+                onLocationCaptured={(loc) => {
+                  mapRef.current?.animateToRegion({
+                    latitude: loc.lat,
+                    longitude: loc.lng,
+                    latitudeDelta: LATITUDE_DELTA,
+                    longitudeDelta: LONGITUDE_DELTA
+                  }, 1000);
+                  setSearchVisible(false);
+                }}
+              />
+            </MotiView>
+          )}
+        </AnimatePresence>
+
+        <AddPinModal 
+          isVisible={isAddModalVisible} 
+          onClose={() => { setIsAddModalVisible(false); setPendingCoordinate(null); setEditingPin(null); }} 
+          coordinate={pendingCoordinate} 
+          editingPin={editingPin || activePin} 
+          onSuccess={() => {
+            fetchPins();
+            setActivePin(null);
+          }} 
+          isPlanMode={isPlanMode} 
+        />
       </View>
     </GestureHandlerRootView>
   );
