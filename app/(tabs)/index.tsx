@@ -1,60 +1,111 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { StyleSheet, ScrollView, Pressable, View, Dimensions, ActivityIndicator, Alert, TouchableOpacity, Image, DeviceEventEmitter, TextInput, Modal, FlatList } from 'react-native';
+import { StyleSheet, ScrollView, Pressable, View, Dimensions, Modal, TextInput, ActivityIndicator, Alert, TouchableOpacity, Image, DeviceEventEmitter } from 'react-native';
 import { Text, View as ThemedView } from '@/components/Themed';
+import { MotiView, AnimatePresence } from 'moti';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
+import { Heart, Calendar, MessageCircle, MapPin, ChevronRight, ChevronLeft, Sparkles, MessageSquareHeart, Clock, Plus, X, Trash2, Settings2, ChevronDown, CalendarDays, CalendarRange } from 'lucide-react-native';
+import { 
+  differenceInSeconds, format, isAfter, isBefore, addWeeks, addMonths, subMonths, set, setDay, 
+  startOfDay, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, 
+  isSameMonth, isSameDay, addYears, differenceInYears, differenceInDays 
+} from 'date-fns';
 import { supabase } from '@/lib/supabase';
-import * as SecureStore from 'expo-secure-store';
-import { format, differenceInDays, differenceInSeconds, startOfDay, addDays, nextDay, set, isAfter, isBefore, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from 'date-fns';
-import { MotiView, AnimatePresence } from 'moti';
-import { BlurView } from 'expo-blur';
-import { Heart, MessageSquare, Calendar as CalendarIcon, Bell, Clock, Quote, Sparkles, Trophy, ChevronRight, Plus, X, Trash2, Settings2, CalendarDays, CalendarRange, PenLine, Stars, Timer, ChevronLeft, MessageSquareHeart, MapPin } from 'lucide-react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { BlurView } from 'expo-blur';
 import LottieView from 'lottie-react-native';
+import * as SecureStore from 'expo-secure-store';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// 📅 ANNIVERSARY DATE
-const ANNIVERSARY_DATE = new Date('2024-01-01'); 
+// 📅 RELATIONSHIP START DATE
+const ANNIVERSARY_DATE = new Date(2023, 10, 10); // Nov 10, 2023
 
 const DAYS_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const DAY_MAP: Record<string, number> = { 'Sunday': 0, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5, 'Saturday': 6 };
+const DAY_MAP: Record<string, number> = {
+  'Sunday': 0, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5, 'Saturday': 6
+};
+
+const FREQUENCIES = [
+  { id: 'once', label: 'Once', icon: '✨' },
+  { id: 'weekly', label: 'Weekly', icon: '📅' },
+  { id: 'monthly', label: 'Monthly', icon: '🌙' },
+  { id: 'yearly', label: 'Yearly', icon: '🎂' },
+];
+
+const HOURS = Array.from({ length: 12 }, (_, i) => (i + 1).toString().padStart(2, '0'));
+const MINUTES = Array.from({ length: 12 }, (_, i) => (i * 5).toString().padStart(2, '0'));
+const PERIODS = ['AM', 'PM'];
+
+interface TimetableEvent {
+  id: string;
+  day: string;
+  time: string;
+  end_time?: string;
+  activity: string;
+  user_id: string;
+}
+
+interface CalendarEvent {
+  id: string;
+  event_date: string;
+  title: string;
+  user_id: string;
+  frequency: 'once' | 'weekly' | 'monthly' | 'yearly';
+}
 
 export default function DashboardScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
-  const insets = useSafeAreaInsets();
-  const router = useRouter();
-  
   const [currentUserName, setCurrentUserName] = useState<string | null>(null);
-  const [partnerName, setPartnerName] = useState<string>('');
+  const [partnerName, setPartnerName] = useState<string>('Love');
   
   // Data States
-  const [motm, setMotm] = useState<string>('Thinking of you...');
-  const [nextMeet, setNextMeet] = useState<any>(null);
-  const [countdown, setCountdown] = useState<string>('00:00:00');
-  const [stats, setStats] = useState({ memories: 0, days: 0 });
-  const [timetable, setTimetable] = useState<any[]>([]);
-  const [calendarEvents, setCalendarEvents] = useState<any[]>([]);
+  const [motm, setMotm] = useState<string>('Thinking of you soon...');
+  const [nextMeetingDate, setNextMeetingDate] = useState<Date | null>(null);
+  const [meetingOccasion, setMeetingOccasion] = useState<string | null>(null);
+  const [countdownText, setCountdownText] = useState('Meeting you soon');
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const [stats, setStats] = useState({ memories: 0 });
+  const [timetable, setTimetable] = useState<TimetableEvent[]>([]);
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Calendar States
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  // Relationship Calculation
+  const now = new Date();
+  const yearsTogether = differenceInYears(now, ANNIVERSARY_DATE);
+  const daysTogether = differenceInDays(now, addYears(ANNIVERSARY_DATE, yearsTogether));
+  const ourDaysText = `${yearsTogether}Y ${daysTogether}D`;
 
-  // Management Modals
-  const [isTimeModalVisible, setIsTimeModalVisible] = useState(false);
-  const [isCalModalVisible, setIsCalModalVisible] = useState(false);
+  // --- Routine States ---
+  const [selectedDay, setSelectedDay] = useState(DAYS_SHORT[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]);
+  const [showTimetableModal, setShowTimetableModal] = useState(false);
+  const [newTime, setNewTime] = useState('');
+  const [newEndTime, setNewEndTime] = useState('');
+  const [newActivity, setNewActivity] = useState('');
+
+  // --- Calendar States ---
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState(new Date());
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
+  const [newCalendarTitle, setNewCalendarTitle] = useState('');
+  const [newCalendarFreq, setNewCalendarFreq] = useState<'once' | 'weekly' | 'monthly' | 'yearly'>('once');
+  
+  // --- Common Picker States ---
+  const [showPicker, setShowPicker] = useState<'start' | 'end' | null>(null);
+  const [selHour, setSelHour] = useState('09');
+  const [selMin, setSelMin] = useState('00');
+  const [selPeriod, setSelPeriod] = useState('AM');
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     init();
-    const motmSub = supabase.channel('dashboard_motm').on('postgres_changes', { event: '*', schema: 'public', table: 'moments' }, () => fetchMOTM()).subscribe();
-    const meetSub = supabase.channel('dashboard_meet').on('postgres_changes', { event: '*', schema: 'public', table: 'meetings' }, () => fetchNextMeet()).subscribe();
-    const timeSub = supabase.channel('dashboard_time').on('postgres_changes', { event: '*', schema: 'public', table: 'timetable' }, () => fetchTimetable()).subscribe();
-    const calSub = supabase.channel('dashboard_cal').on('postgres_changes', { event: '*', schema: 'public', table: 'calendar_events' }, () => fetchCalendar()).subscribe();
-    const postsSub = supabase.channel('dashboard_posts').on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => fetchStats()).subscribe();
+    const motmSub = supabase.channel('db_motm').on('postgres_changes', { event: '*', schema: 'public', table: 'moments' }, () => fetchMOTM()).subscribe();
+    const meetSub = supabase.channel('db_meet').on('postgres_changes', { event: '*', schema: 'public', table: 'meetings' }, () => fetchNextMeet()).subscribe();
+    const timeSub = supabase.channel('db_time').on('postgres_changes', { event: '*', schema: 'public', table: 'timetable' }, () => fetchTimetable()).subscribe();
+    const calSub = supabase.channel('db_cal').on('postgres_changes', { event: '*', schema: 'public', table: 'calendar_events' }, () => fetchCalendarEvents()).subscribe();
+    const postsSub = supabase.channel('db_posts').on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => fetchStats()).subscribe();
 
     return () => {
       supabase.removeChannel(motmSub);
@@ -62,8 +113,9 @@ export default function DashboardScreen() {
       supabase.removeChannel(timeSub);
       supabase.removeChannel(calSub);
       supabase.removeChannel(postsSub);
+      if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, []);
+  }, [partnerName]);
 
   const init = async () => {
     const name = await SecureStore.getItemAsync('user_name');
@@ -71,7 +123,7 @@ export default function DashboardScreen() {
     const partner = name?.toLowerCase() === 'pratishth' ? 'love' : 'pratishth';
     setPartnerName(partner);
 
-    await Promise.all([fetchMOTM(partner), fetchNextMeet(), fetchStats(), fetchTimetable(), fetchCalendar()]);
+    await Promise.all([fetchMOTM(partner), fetchNextMeet(), fetchStats(), fetchTimetable(), fetchCalendarEvents()]);
     setLoading(false);
   };
 
@@ -82,62 +134,87 @@ export default function DashboardScreen() {
   };
 
   const fetchNextMeet = async () => {
-    const { data } = await supabase.from('meetings').select('*').limit(1).maybeSingle();
+    const { data } = await supabase.from('meetings').select('*').order('created_at', { ascending: false }).limit(1).maybeSingle();
     if (data) {
-      setNextMeet(data);
-      updateCountdown(data);
+      calculateNextDate(data);
+      setMeetingOccasion(data.occasion_name || null);
+    } else {
+      setCountdownText('Meeting you soon');
     }
   };
 
-  const parseTime = (timeStr: string) => {
-    if (!timeStr) return { h: 0, m: 0 };
-    const [t, period] = timeStr.split(' ');
-    let [h, m] = t.split(':').map(Number);
-    if (period === 'PM' && h < 12) h += 12;
-    if (period === 'AM' && h === 12) h = 0;
-    return { h, m };
-  };
-
-  const updateCountdown = (meet: any) => {
-    if (!meet) return;
+  const calculateNextDate = (data: any) => {
     const now = new Date();
-    let targetDate: Date = new Date();
+    let target: Date;
 
-    const { h, m } = parseTime(meet.time);
+    const meetingTimeStr = data.time || '12:00 AM';
+    const timeParts = meetingTimeStr.split(' ');
+    const [h, m] = timeParts[0].split(':').map(Number);
+    const period = timeParts[1];
+    let hours = h;
+    if (period === 'PM' && h !== 12) hours += 12;
+    if (period === 'AM' && h === 12) hours = 0;
 
-    if (meet.type === 'specific' && meet.date) {
-      targetDate = set(new Date(meet.date), { hours: h, minutes: m, seconds: 0 });
-    } else if (meet.type === 'weekly' && meet.weekday) {
-      const targetDay = DAY_MAP[meet.weekday];
-      targetDate = nextDay(now, targetDay as any);
-      targetDate = set(targetDate, { hours: h, minutes: m, seconds: 0 });
-      if (isBefore(targetDate, now)) targetDate = addDays(targetDate, 7);
-    } else if (meet.type === 'monthly' && meet.day_of_month) {
-      targetDate = set(now, { date: meet.day_of_month, hours: h, minutes: m, seconds: 0 });
-      if (isBefore(targetDate, now)) targetDate = addDays(targetDate, 30);
-    }
-
-    const diffInSecs = differenceInSeconds(targetDate, now);
-    if (diffInSecs <= 0) {
-      setCountdown("REUNION! ❤️");
+    if (data.type === 'specific' && data.date) {
+      target = set(new Date(data.date), { hours, minutes: m, seconds: 0, milliseconds: 0 });
+      if (!isAfter(target, now)) {
+        if (!data.is_recurring) {
+          setNextMeetingDate(null);
+          setCountdownText('Meeting you soon');
+          return;
+        } else {
+          while (!isAfter(target, now)) {
+            target = addMonths(target, 12);
+          }
+        }
+      }
+    } else if (data.type === 'weekly') {
+      const dayIdx = DAY_MAP[data.weekday || 'Friday'];
+      target = setDay(now, dayIdx, { weekStartsOn: 0 });
+      target = set(target, { hours, minutes: m, seconds: 0, milliseconds: 0 });
+      if (!isAfter(target, now)) {
+        target = addWeeks(target, 1);
+      }
+    } else if (data.type === 'monthly') {
+      target = set(now, { date: data.day_of_month || 1, hours, minutes: m, seconds: 0, milliseconds: 0 });
+      if (!isAfter(target, now)) {
+        target = addMonths(target, 1);
+      }
+    } else {
       return;
     }
 
-    const days = Math.floor(diffInSecs / 86400);
-    if (days >= 1) {
-      setCountdown(`${days} Days Left`);
-    } else {
-      const hrs = Math.floor(diffInSecs / 3600);
-      const mins = Math.floor((diffInSecs % 3600) / 60);
-      const secs = diffInSecs % 60;
-      setCountdown(`${hrs.toString().padStart(2,'0')}:${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`);
-    }
+    setNextMeetingDate(target);
+    startCountdown(target);
+  };
+
+  const startCountdown = (target: Date) => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    const update = () => {
+      const now = new Date();
+      const diffSeconds = differenceInSeconds(target, now);
+      if (diffSeconds <= 0) {
+        setCountdownText('It is time! ❤️');
+        if (timerRef.current) clearInterval(timerRef.current);
+        return;
+      }
+      const days = Math.floor(diffSeconds / (3600 * 24));
+      if (days >= 1) {
+        setCountdownText(`${days} Days Left`);
+      } else {
+        const hrs = Math.floor(diffSeconds / 3600).toString().padStart(2, '0');
+        const mins = Math.floor((diffSeconds % 3600) / 60).toString().padStart(2, '0');
+        const secs = (diffSeconds % 60).toString().padStart(2, '0');
+        setCountdownText(`${hrs}:${mins}:${secs}`);
+      }
+    };
+    update();
+    timerRef.current = setInterval(update, 1000);
   };
 
   const fetchStats = async () => {
     const { count } = await supabase.from('posts').select('*', { count: 'exact', head: true });
-    const days = differenceInDays(new Date(), ANNIVERSARY_DATE);
-    setStats({ memories: count || 0, days });
+    setStats({ memories: count || 0 });
   };
 
   const fetchTimetable = async () => {
@@ -145,22 +222,95 @@ export default function DashboardScreen() {
     if (data) setTimetable(data);
   };
 
-  const fetchCalendar = async () => {
+  const fetchCalendarEvents = async () => {
     const { data } = await supabase.from('calendar_events').select('*').order('event_date', { ascending: true });
     if (data) setCalendarEvents(data);
   };
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (nextMeet) updateCountdown(nextMeet);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [nextMeet]);
+  // --- Routine Logic ---
+  const timeToMinutes = (timeStr: string) => {
+    const [time, period] = timeStr.split(' ');
+    let [hours, minutes] = time.split(':').map(Number);
+    if (period === 'PM' && hours !== 12) hours += 12;
+    if (period === 'AM' && hours === 12) hours = 0;
+    return hours * 60 + minutes;
+  };
 
-  const handleScroll = (event: any) => {
-    const currentY = event.nativeEvent.contentOffset.y;
-    if (currentY <= 0) DeviceEventEmitter.emit('show-navigator');
-    else if (currentY > 20) DeviceEventEmitter.emit('hide-navigator');
+  const addRoutineEvent = async () => {
+    if (!newTime || !newActivity || !currentUserName) {
+      Alert.alert('Incomplete', 'Please set at least a start time and activity.');
+      return;
+    }
+    if (newEndTime) {
+      const startMins = timeToMinutes(newTime);
+      const endMins = timeToMinutes(newEndTime);
+      if (endMins <= startMins) {
+        Alert.alert('Invalid Time', 'End time must be after the start time.');
+        return;
+      }
+    }
+    setIsSaving(true);
+    const { error } = await supabase.from('timetable').insert([{
+      day: selectedDay,
+      time: newTime,
+      end_time: newEndTime || null,
+      activity: newActivity,
+      user_id: currentUserName.toLowerCase()
+    }]);
+    if (!error) {
+      setNewTime(''); setNewEndTime(''); setNewActivity('');
+      fetchTimetable();
+    }
+    setIsSaving(false);
+  };
+
+  const deleteRoutineEvent = async (id: string) => {
+    Alert.alert('Delete?', 'Remove activity?', [{ text: 'Cancel' }, { text: 'Delete', style: 'destructive', onPress: async () => {
+      await supabase.from('timetable').delete().eq('id', id);
+      fetchTimetable();
+    }}]);
+  };
+
+  // --- Calendar Logic ---
+  const isEventOnDay = (event: CalendarEvent, date: Date) => {
+    const eventDate = new Date(event.event_date);
+    if (isSameDay(eventDate, date)) return true;
+    if (isBefore(date, startOfDay(eventDate))) return false;
+    if (event.frequency === 'weekly') return eventDate.getDay() === date.getDay();
+    if (event.frequency === 'monthly') return eventDate.getDate() === date.getDate();
+    if (event.frequency === 'yearly') return eventDate.getDate() === date.getDate() && eventDate.getMonth() === date.getMonth();
+    return false;
+  };
+
+  const addCalendarEvent = async () => {
+    if (!newCalendarTitle || !currentUserName) return;
+    setIsSaving(true);
+    const { error } = await supabase.from('calendar_events').insert([{
+      event_date: format(selectedCalendarDate, 'yyyy-MM-dd'),
+      title: newCalendarTitle,
+      frequency: newCalendarFreq,
+      user_id: currentUserName.toLowerCase()
+    }]);
+    if (!error) {
+      setNewCalendarTitle(''); setNewCalendarFreq('once');
+      setShowCalendarModal(false);
+      fetchCalendarEvents();
+    }
+    setIsSaving(false);
+  };
+
+  const deleteCalendarEvent = async (id: string) => {
+    Alert.alert('Delete?', 'Remove event?', [{ text: 'Cancel' }, { text: 'Delete', style: 'destructive', onPress: async () => {
+      await supabase.from('calendar_events').delete().eq('id', id);
+      fetchCalendarEvents();
+    }}]);
+  };
+
+  const confirmTime = () => {
+    const timeStr = `${selHour}:${selMin} ${selPeriod}`;
+    if (showPicker === 'start') setNewTime(timeStr);
+    else if (showPicker === 'end') setNewEndTime(timeStr);
+    setShowPicker(null);
   };
 
   const calendarDays = useMemo(() => {
@@ -169,9 +319,7 @@ export default function DashboardScreen() {
     return eachDayOfInterval({ start, end });
   }, [currentMonth]);
 
-  const selectedDayEvents = useMemo(() => {
-    return calendarEvents.filter(e => isSameDay(new Date(e.event_date), selectedDate));
-  }, [calendarEvents, selectedDate]);
+  const selectedDayEvents = calendarEvents.filter(e => isEventOnDay(e, selectedCalendarDate));
 
   if (loading) {
     return <ThemedView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}><ActivityIndicator size="large" color={theme.tint} /></ThemedView>;
@@ -179,64 +327,35 @@ export default function DashboardScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ScrollView 
-        onScroll={handleScroll} 
-        scrollEventThrottle={16} 
-        showsVerticalScrollIndicator={false} 
-        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 20 }]}
-      >
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         
-        {/* ✨ RESTORED HEADER */}
+        {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={[styles.greeting, { color: theme.text }]}>Hello, Love</Text>
+            <Text style={[styles.greeting, { color: theme.text }]}>Hello, {currentUserName ? (currentUserName.toLowerCase() === 'pratishth' ? 'Pratishth' : 'Supriya') : 'Love'}</Text>
             <Text style={[styles.subtitle, { color: theme.tabIconDefault }]}>Thinking of you today</Text>
           </View>
           <TouchableOpacity onPress={() => DeviceEventEmitter.emit('show-navigator')}>
-            <LottieView
-              autoPlay
-              loop
-              source={{ uri: 'https://assets9.lottiefiles.com/packages/lf20_at6mscsc.json' }} // Floating Heart
-              style={styles.lottieHeart}
-            />
+            <LottieView autoPlay loop source={{ uri: 'https://assets9.lottiefiles.com/packages/lf20_at6mscsc.json' }} style={styles.lottieHeart} />
           </TouchableOpacity>
         </View>
 
-        {/* ⏳ RESTORED COUNTDOWN */}
-        <MotiView
-          from={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: 'spring', delay: 100 }}
-        >
-          <LinearGradient
-            colors={[theme.tint, theme.secondary]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.countdownCard}
-          >
+        {/* Countdown */}
+        <MotiView from={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: 'spring', delay: 100 }}>
+          <LinearGradient colors={[theme.tint, theme.secondary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.countdownCard}>
             <Sparkles color="rgba(255,255,255,0.3)" size={60} style={styles.sparkleIcon} />
-            <Text style={styles.countdownTitle}>Next Time We Meet</Text>
-            <Text style={styles.countdownValue}>{countdown}</Text>
-            {nextMeet?.occasion_name && <Text style={styles.occasionText}>{nextMeet.occasion_name.toUpperCase()}</Text>}
+            <Text style={styles.countdownTitle}>{meetingOccasion || 'Next Time We Meet'}</Text>
+            <Text style={[styles.countdownValue, countdownText.includes(':') && { fontFamily: 'SpaceMono-Regular' }]}>{countdownText}</Text>
             <View style={styles.meetingInfo}>
-              <CalendarIcon color="#FFF" size={16} />
-              <Text style={styles.meetingDate}>{nextMeet?.date || 'Coming Soon'}</Text>
+              <Calendar color="#FFF" size={16} />
+              <Text style={styles.meetingDate}>{nextMeetingDate ? format(nextMeetingDate, 'MMMM do, yyyy') : 'Meeting you soon'}</Text>
             </View>
           </LinearGradient>
         </MotiView>
 
-        {/* 💬 RESTORED MESSAGE OF THE MOMENT (Glassmorphism) */}
-        <MotiView 
-          from={{ opacity: 0, translateY: 20 }}
-          animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'timing', delay: 300 }}
-          style={styles.momentCardWrapper}
-        >
-          <BlurView 
-            intensity={colorScheme === 'dark' ? 40 : 80} 
-            tint={colorScheme}
-            style={[styles.momentCard, { borderColor: theme.tint + '40', borderWidth: 1 }]}
-          >
+        {/* MOTM */}
+        <MotiView from={{ opacity: 0, translateY: 20 }} animate={{ opacity: 1, translateY: 0 }} transition={{ type: 'timing', delay: 300 }} style={styles.momentCardWrapper}>
+          <BlurView intensity={colorScheme === 'dark' ? 40 : 80} tint={colorScheme} style={[styles.momentCard, { borderColor: theme.tint + '40', borderWidth: 1 }]}>
             <View style={styles.momentHeader}>
               <MessageSquareHeart color={theme.tint} size={22} />
               <Text style={[styles.momentTitle, { color: theme.tabIconDefault }]}>Message of the Moment</Text>
@@ -249,332 +368,286 @@ export default function DashboardScreen() {
           </BlurView>
         </MotiView>
 
-        {/* 📊 RESTORED STATS GRID */}
+        {/* Stats */}
         <View style={styles.statsRow}>
-          <SummaryCard 
-            title="Our Days" 
-            value={stats.days} 
-            icon={<Heart color={theme.tint} size={20} fill={theme.tint} />} 
-            theme={theme} 
-          />
-          <SummaryCard 
-            title="Memories" 
-            value={stats.memories} 
-            icon={<MessageSquare color={theme.secondary} size={20} />} 
-            theme={theme} 
-          />
+          <SummaryCard title="Our Days" value={ourDaysText} icon={<Heart color={theme.tint} size={20} fill={theme.tint} />} theme={theme} />
+          <SummaryCard title="Memories" value={stats.memories} icon={<MessageCircle color={theme.secondary} size={20} />} theme={theme} />
         </View>
 
-        {/* 📅 OUR ROUTINE (Restored Styling) */}
+        {/* --- RESTORED ROUTINE SECTION --- */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Clock size={18} color={theme.tint} />
             <Text style={[styles.sectionTitle, { color: theme.text }]}>Our Routine</Text>
-            <TouchableOpacity onPress={() => setIsTimeModalVisible(true)} style={styles.manageBtn}>
-              <Settings2 size={18} color={theme.tabIconDefault} />
+            <TouchableOpacity onPress={() => setShowTimetableModal(true)} style={[styles.setupButton, { backgroundColor: theme.tint + '15' }]}>
+              <Settings2 color={theme.tint} size={18} />
+              <Text style={[styles.setupText, { color: theme.tint }]}>Setup</Text>
             </TouchableOpacity>
           </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.timetableScroll}>
-            {DAYS_SHORT.map(day => (
-              <View key={day} style={[styles.dayCard, { backgroundColor: theme.card }]}>
-                <Text style={[styles.dayName, { color: theme.tint }]}>{day.toUpperCase()}</Text>
-                <View style={styles.activityList}>
-                  {timetable.filter(t => t.day === day).length > 0 ? (
-                    timetable.filter(t => t.day === day).map(item => (
-                      <View key={item.id} style={styles.activityItem}>
-                        <Text style={[styles.activityTime, { color: theme.tabIconDefault }]}>{item.time}</Text>
-                        <Text style={[styles.activityTitle, { color: theme.text }]} numberOfLines={1}>{item.activity}</Text>
-                      </View>
-                    ))
-                  ) : (
-                    <Text style={[styles.relaxText, { color: theme.tabIconDefault }]}>Relax ✨</Text>
-                  )}
-                </View>
-              </View>
-            ))}
-          </ScrollView>
+          <View style={styles.daySelector}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+              {DAYS_SHORT.map(day => (
+                <Pressable key={day} onPress={() => setSelectedDay(day)} style={[styles.dayPill, { backgroundColor: theme.card }, selectedDay === day && { backgroundColor: theme.tint }]}>
+                  <Text style={[styles.dayText, { color: theme.tabIconDefault }, selectedDay === day && { color: '#FFF' }]}>{day}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+          <View style={styles.eventContainer}>
+            {timetable.filter(e => e.day === selectedDay).length === 0 ? (
+              <View style={[styles.emptyEvents, { backgroundColor: theme.card }]}><Clock color={theme.tabIconDefault} size={32} opacity={0.5} /><Text style={[styles.emptyText, { color: theme.tabIconDefault }]}>Relax today ✨</Text></View>
+            ) : (
+              timetable.filter(e => e.day === selectedDay).map((event, index) => (
+                <MotiView key={event.id} from={{ opacity: 0, translateX: -20 }} animate={{ opacity: 1, translateX: 0 }} transition={{ delay: index * 50 }} style={[styles.eventCard, { backgroundColor: theme.card }]}>
+                  <View style={[styles.timeStrip, { backgroundColor: theme.tint }]} />
+                  <View style={styles.eventInfo}>
+                    <Text style={[styles.eventTime, { color: theme.tabIconDefault }]}>{event.time}{event.end_time ? ` — ${event.end_time}` : ''}</Text>
+                    <Text style={[styles.eventActivity, { color: theme.text }]}>{event.activity}</Text>
+                  </View>
+                  <View style={[styles.userBadge, { backgroundColor: theme.tint + '10' }]}><Text style={{ color: theme.tint, fontSize: 10, fontWeight: '800' }}>{currentUserName ? (event.user_id === currentUserName.toLowerCase() ? 'ME' : partnerName.charAt(0).toUpperCase()) : 'L'}</Text></View>
+                </MotiView>
+              ))
+            )}
+          </View>
         </View>
 
-        {/* 🗓️ SHARED CALENDAR (Restored Styling) */}
+        {/* --- RESTORED CALENDAR SECTION --- */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <CalendarIcon size={18} color={theme.tint} />
             <Text style={[styles.sectionTitle, { color: theme.text }]}>Shared Calendar</Text>
-            <TouchableOpacity onPress={() => setIsCalModalVisible(true)} style={styles.manageBtn}>
-              <Plus size={20} color={theme.tabIconDefault} />
+            <TouchableOpacity onPress={() => setShowCalendarModal(true)} style={[styles.setupButton, { backgroundColor: theme.tint + '15' }]}>
+              <Plus color={theme.tint} size={18} /><Text style={[styles.setupText, { color: theme.tint }]}>Event</Text>
             </TouchableOpacity>
           </View>
-          
           <View style={[styles.calendarContainer, { backgroundColor: theme.card }]}>
             <View style={styles.calendarHeader}>
-              <TouchableOpacity onPress={() => setCurrentMonth(subMonths(currentMonth, 1))}><ChevronLeft size={24} color={theme.text} /></TouchableOpacity>
-              <Text style={[styles.calendarMonth, { color: theme.text }]}>{format(currentMonth, 'MMMM yyyy')}</Text>
-              <TouchableOpacity onPress={() => setCurrentMonth(addMonths(currentMonth, 1))}><ChevronRight size={24} color={theme.text} /></TouchableOpacity>
+              <TouchableOpacity onPress={() => setCurrentMonth(subMonths(currentMonth, 1))}><ChevronLeft color={theme.text} size={24} /></TouchableOpacity>
+              <Text style={[styles.monthText, { color: theme.text }]}>{format(currentMonth, 'MMMM yyyy')}</Text>
+              <TouchableOpacity onPress={() => setCurrentMonth(addMonths(currentMonth, 1))}><ChevronRight color={theme.text} size={24} /></TouchableOpacity>
             </View>
-
-            <View style={styles.weekDays}>
+            <View style={styles.weekDaysRow}>
               {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => <Text key={i} style={[styles.weekDayText, { color: theme.tabIconDefault }]}>{d}</Text>)}
             </View>
-
-            <View style={styles.calendarGrid}>
+            <View style={styles.daysGrid}>
               {calendarDays.map((day, i) => {
-                const isSelected = isSameDay(day, selectedDate);
-                const isCurrentMonth = day.getMonth() === currentMonth.getMonth();
-                const hasEvent = calendarEvents.some(e => isSameDay(new Date(e.event_date), day));
+                const isSelected = isSameDay(day, selectedCalendarDate);
+                const isCurrentMonth = isSameMonth(day, currentMonth);
+                const hasEvents = calendarEvents.some(e => isEventOnDay(e, day));
                 return (
-                  <TouchableOpacity key={i} onPress={() => setSelectedDate(day)} style={[styles.dayCell, isSelected && { backgroundColor: theme.tint, borderRadius: 12 }]}>
-                    <Text style={[styles.dayText, { color: isSelected ? 'white' : isCurrentMonth ? theme.text : theme.tabIconDefault + '40' }]}>{format(day, 'd')}</Text>
-                    {hasEvent && <View style={[styles.eventDot, { backgroundColor: isSelected ? 'white' : theme.tint }]} />}
-                  </TouchableOpacity>
+                  <Pressable key={i} onPress={() => setSelectedCalendarDate(day)} style={[styles.dayCell, isSelected && { backgroundColor: theme.tint }, !isCurrentMonth && { opacity: 0.3 }]}>
+                    <Text style={[styles.dayCellText, { color: isSelected ? '#FFF' : theme.text }]}>{format(day, 'd')}</Text>
+                    {hasEvents && !isSelected && <View style={[styles.eventDot, { backgroundColor: theme.tint }]} />}
+                  </Pressable>
                 );
               })}
             </View>
-
-            <View style={styles.selectedDayInfo}>
-              <Text style={[styles.selectedDateText, { color: theme.text }]}>{format(selectedDate, 'EEEE, MMM do')}</Text>
-              {selectedDayEvents.length > 0 ? (
-                selectedDayEvents.map(event => (
-                  <View key={event.id} style={styles.dayEventItem}>
-                    <View style={[styles.dot, { backgroundColor: theme.tint }]} />
-                    <Text style={[styles.dayEventTitle, { color: theme.text }]}>{event.title}</Text>
+          </View>
+          <View style={styles.dayEventsContainer}>
+            <Text style={[styles.dayEventsTitle, { color: theme.tabIconDefault }]}>{format(selectedCalendarDate, 'MMMM do')}</Text>
+            {selectedDayEvents.length === 0 ? <Text style={[styles.noEventsText, { color: theme.tabIconDefault }]}>No events for this day</Text> : (
+              selectedDayEvents.map(event => (
+                <View key={event.id} style={[styles.calendarEventCard, { backgroundColor: theme.card }]}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.calendarEventTitle, { color: theme.text }]}>{event.title}</Text>
+                    <Text style={{ fontSize: 10, color: theme.tabIconDefault, marginTop: 2 }}>{event.frequency.toUpperCase()}</Text>
                   </View>
-                ))
-              ) : (
-                <Text style={[styles.relaxText, { color: theme.tabIconDefault, marginLeft: 0 }]}>No plans for this day ✨</Text>
-              )}
-            </View>
+                  <TouchableOpacity onPress={() => deleteCalendarEvent(event.id)}><Trash2 color="#FF3B30" size={16} /></TouchableOpacity>
+                </View>
+              ))
+            )}
           </View>
         </View>
-
-        {/* 🧪 TEMPORARY TEST LINK */}
-        <TouchableOpacity 
-          onPress={() => router.push('/test-dock')} 
-          style={styles.testLink}
-        >
-          <Text style={{ color: theme.tint, fontWeight: '900', fontSize: 16 }}>Preview New Menu Design →</Text>
-        </TouchableOpacity>
-
       </ScrollView>
 
-      {/* Routine Manager Modal */}
-      <ManageModal visible={isTimeModalVisible} title="Our Routine" data={timetable} table="timetable" onClose={() => setIsTimeModalVisible(false)} theme={theme} colorScheme={colorScheme} fields={[{key: 'day', placeholder: 'Day (Mon, Tue...)'}, {key: 'time', placeholder: 'Time (09:00 AM)'}, {key: 'activity', placeholder: 'Activity'}]} />
-      
-      {/* Calendar Manager Modal */}
-      <ManageModal visible={isCalModalVisible} title="Shared Calendar" data={calendarEvents} table="calendar_events" onClose={() => setIsCalModalVisible(false)} theme={theme} colorScheme={colorScheme} fields={[{key: 'title', placeholder: 'Event Title'}, {key: 'event_date', placeholder: 'Date (YYYY-MM-DD)'}]} />
+      {/* --- RESTORED OVERLAYS (Stable View Hierarchy) --- */}
+      <AnimatePresence>
+        {/* Routine Setup */}
+        {showTimetableModal && (
+          <MotiView key="routineOverlay" from={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={StyleSheet.absoluteFill}>
+            <View style={styles.modalOverlay}>
+              <BlurView intensity={60} tint={colorScheme} style={StyleSheet.absoluteFill} />
+              <TouchableOpacity style={StyleSheet.absoluteFill} onPress={() => setShowTimetableModal(false)} />
+              <MotiView from={{ translateY: 300, scale: 0.9 }} animate={{ translateY: 0, scale: 1 }} exit={{ translateY: 300, scale: 0.9 }} style={[styles.modalContent, { backgroundColor: theme.card, borderColor: theme.tabIconDefault + '30', borderWidth: 1 }]}>
+                <View style={styles.modalHeader}>
+                  <View style={{ backgroundColor: 'transparent' }}><Text style={[styles.modalTitle, { color: theme.text }]}>Manage Routine</Text><Text style={[styles.modalSubtitle, { color: theme.tabIconDefault }]}>Add or remove daily tasks</Text></View>
+                  <TouchableOpacity onPress={() => setShowTimetableModal(false)} style={styles.closeBtn}><X color={theme.text} size={24} /></TouchableOpacity>
+                </View>
+                <View style={[styles.addEventBox, { backgroundColor: theme.background, borderColor: theme.tabIconDefault + '20' }]}>
+                  <TouchableOpacity onPress={() => setShowPicker('start')} style={styles.pickerTrigger}><View style={styles.inputGroup}><Clock color={theme.tint} size={18} /><Text style={[styles.pickerValue, { color: newTime ? theme.text : theme.tabIconDefault }]}>{newTime || 'Start Time'}</Text></View><ChevronDown color={theme.tabIconDefault} size={18} /></TouchableOpacity>
+                  <TouchableOpacity onPress={() => setShowPicker('end')} style={styles.pickerTrigger}><View style={styles.inputGroup}><Clock color={theme.tint} size={18} /><Text style={[styles.pickerValue, { color: newEndTime ? theme.text : theme.tabIconDefault }]}>{newEndTime || 'End Time (Optional)'}</Text></View><ChevronDown color={theme.tabIconDefault} size={18} /></TouchableOpacity>
+                  <View style={[styles.inputGroup, styles.activityInput]}><MessageCircle color={theme.tint} size={18} /><TextInput style={[styles.input, { color: theme.text }]} placeholder="What's happening?" placeholderTextColor={theme.tabIconDefault} value={newActivity} onChangeText={setNewActivity} /></View>
+                  <TouchableOpacity onPress={addRoutineEvent} disabled={isSaving} style={[styles.addBtn, { backgroundColor: theme.tint }]}>{isSaving ? <ActivityIndicator size="small" color="#FFF" /> : <><Plus color="#FFF" size={20} /><Text style={styles.addBtnText}>Add to {selectedDay}</Text></>}</TouchableOpacity>
+                </View>
+                <ScrollView style={{ maxHeight: 200 }} showsVerticalScrollIndicator={false}>
+                  {timetable.filter(e => e.day === selectedDay).map(event => (
+                    <View key={event.id} style={[styles.manageCard, { backgroundColor: theme.background }]}><View style={{ backgroundColor: 'transparent' }}><Text style={[styles.manageTime, { color: theme.tint }]}>{event.time}{event.end_time ? ` — ${event.end_time}` : ''}</Text><Text style={[styles.manageActivity, { color: theme.text }]}>{event.activity}</Text></View><TouchableOpacity onPress={() => deleteRoutineEvent(event.id)} style={styles.deleteBtn}><Trash2 color="#FF3B30" size={18} /></TouchableOpacity></View>
+                  ))}
+                </ScrollView>
+              </MotiView>
+            </View>
+          </MotiView>
+        )}
 
+        {/* Calendar Setup */}
+        {showCalendarModal && (
+          <MotiView key="calendarOverlay" from={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={StyleSheet.absoluteFill}>
+            <View style={styles.modalOverlay}>
+              <BlurView intensity={60} tint={colorScheme} style={StyleSheet.absoluteFill} />
+              <TouchableOpacity style={StyleSheet.absoluteFill} onPress={() => setShowCalendarModal(false)} />
+              <MotiView from={{ translateY: 300, scale: 0.9 }} animate={{ translateY: 0, scale: 1 }} exit={{ translateY: 300, scale: 0.9 }} style={[styles.modalContent, { backgroundColor: theme.card, borderColor: theme.tabIconDefault + '30', borderWidth: 1 }]}>
+                <View style={styles.modalHeader}>
+                  <View style={{ backgroundColor: 'transparent' }}><Text style={[styles.modalTitle, { color: theme.text }]}>Add Event</Text><Text style={[styles.modalSubtitle, { color: theme.tabIconDefault }]}>{format(selectedCalendarDate, 'MMMM do, yyyy')}</Text></View>
+                  <TouchableOpacity onPress={() => setShowCalendarModal(false)} style={styles.closeBtn}><X color={theme.text} size={24} /></TouchableOpacity>
+                </View>
+                <View style={[styles.addEventBox, { backgroundColor: theme.background, borderColor: theme.tabIconDefault + '20' }]}>
+                  <View style={[styles.inputGroup, styles.activityInput, { marginBottom: 12 }]}><Calendar color={theme.tint} size={18} /><TextInput style={[styles.input, { color: theme.text }]} placeholder="Event Title" placeholderTextColor={theme.tabIconDefault} value={newCalendarTitle} onChangeText={setNewCalendarTitle} autoFocus /></View>
+                  <Text style={[styles.inputLabel, { color: theme.tabIconDefault, marginBottom: 8 }]}>FREQUENCY</Text>
+                  <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
+                    {FREQUENCIES.map(f => (<TouchableOpacity key={f.id} onPress={() => setNewCalendarFreq(f.id as any)} style={[styles.freqBtn, { backgroundColor: theme.card, flex: 1 }, newCalendarFreq === f.id && { backgroundColor: theme.tint }]}><Text style={{ fontSize: 16 }}>{f.icon}</Text><Text style={[styles.freqLabel, { color: newCalendarFreq === f.id ? '#FFF' : theme.text, fontSize: 10 }]}>{f.label}</Text></TouchableOpacity>))}
+                  </View>
+                  <TouchableOpacity onPress={addCalendarEvent} disabled={isSaving} style={[styles.addBtn, { backgroundColor: theme.tint }]}>{isSaving ? <ActivityIndicator size="small" color="#FFF" /> : <><Plus color="#FFF" size={20} /><Text style={styles.addBtnText}>Save Event</Text></>}</TouchableOpacity>
+                </View>
+              </MotiView>
+            </View>
+          </MotiView>
+        )}
+
+        {/* Shared Time Picker */}
+        {showPicker && (
+          <MotiView key="timePickerOverlay" from={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={[StyleSheet.absoluteFill, { zIndex: 1000 }]}>
+            <View style={styles.modalOverlay}>
+              <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
+              <MotiView from={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={[styles.timePickerBox, { backgroundColor: theme.card }]}>
+                <Text style={[styles.pickerTitle, { color: theme.text }]}>Select Time</Text>
+                <View style={styles.pickerWheelRow}>
+                  <Wheel data={HOURS} selected={selHour} onSelect={setSelHour} theme={theme} />
+                  <Text style={{ fontSize: 24, fontWeight: '800', color: theme.text }}>:</Text>
+                  <Wheel data={MINUTES} selected={selMin} onSelect={setSelMin} theme={theme} />
+                  <Wheel data={PERIODS} selected={selPeriod} onSelect={setSelPeriod} theme={theme} />
+                </View>
+                <View style={styles.pickerActions}>
+                  <TouchableOpacity onPress={() => setShowPicker(null)} style={styles.cancelBtn}><Text style={[styles.cancelText, { color: theme.tabIconDefault }]}>Cancel</Text></TouchableOpacity>
+                  <TouchableOpacity onPress={confirmTime} style={[styles.confirmBtn, { backgroundColor: theme.tint }]}><Text style={styles.confirmText}>Set Time</Text></TouchableOpacity>
+                </View>
+              </MotiView>
+            </View>
+          </MotiView>
+        )}
+      </AnimatePresence>
     </ThemedView>
+  );
+}
+
+function Wheel({ data, selected, onSelect, theme }: any) {
+  return (
+    <ScrollView style={styles.wheel} showsVerticalScrollIndicator={false}>
+      {data.map((item: string) => (
+        <TouchableOpacity key={item} onPress={() => onSelect(item)} style={[styles.wheelItem, selected === item && { backgroundColor: theme.tint + '20', borderRadius: 10 }]}><Text style={[styles.wheelText, { color: selected === item ? theme.tint : theme.text }]}>{item}</Text></TouchableOpacity>
+      ))}
+    </ScrollView>
   );
 }
 
 function SummaryCard({ title, value, icon, theme }: any) {
   return (
     <View style={[styles.summaryCard, { backgroundColor: theme.card }]}>
-      <View style={styles.summaryHeader}>
-        {icon}
-        <Text style={[styles.summaryTitle, { color: theme.tabIconDefault }]}>{title}</Text>
-      </View>
+      <View style={styles.summaryHeader}>{icon}<Text style={[styles.summaryTitle, { color: theme.tabIconDefault }]}>{title}</Text></View>
       <Text style={[styles.summaryValue, { color: theme.text }]}>{value}</Text>
     </View>
-  );
-}
-
-function ManageModal({ visible, title, data, table, onClose, theme, fields, colorScheme }: any) {
-  const [inputs, setFields] = useState<any>({});
-  const [loading, setLoading] = useState(false);
-
-  const handleAdd = async () => {
-    if (Object.keys(inputs).length < fields.length) return;
-    setLoading(true);
-    const { error } = await supabase.from(table).insert([{ ...inputs, user_id: 'shared' }]);
-    if (!error) { setFields({}); Alert.alert('Success', 'Added! ❤️'); }
-    setLoading(false);
-  };
-
-  const handleDelete = async (id: string) => {
-    Alert.alert('Delete?', 'Remove this?', [{ text: 'Cancel' }, { text: 'Delete', style: 'destructive', onPress: async () => await supabase.from(table).delete().eq('id', id) }]);
-  };
-
-  return (
-    <Modal visible={visible} animationType="slide" transparent>
-      <View style={styles.modalOverlay}>
-        <BlurView intensity={100} tint={colorScheme} style={styles.modalContent}>
-          <View style={styles.modalHeader}><Text style={[styles.modalTitle, { color: theme.text }]}>{title}</Text><TouchableOpacity onPress={onClose}><X size={24} color={theme.text} /></TouchableOpacity></View>
-          <View style={styles.modalForm}>
-            {fields.map((f: any) => (<TextInput key={f.key} style={[styles.modalInput, { color: theme.text, backgroundColor: theme.background, borderColor: theme.tint + '20' }]} placeholder={f.placeholder} placeholderTextColor={theme.tabIconDefault} value={inputs[f.key]} onChangeText={(v) => setFields({...inputs, [f.key]: v})} />))}
-            <TouchableOpacity onPress={handleAdd} disabled={loading} style={[styles.addBtn, { backgroundColor: theme.tint }]}>{loading ? <ActivityIndicator color="white" /> : <><Plus size={20} color="white" /><Text style={styles.addBtnText}>Add Entry</Text></>}</TouchableOpacity>
-          </View>
-          <FlatList data={data} keyExtractor={i => i.id} renderItem={({item}) => (
-            <View style={[styles.manageItem, { borderBottomColor: theme.tabIconDefault + '15' }]}><View style={{flex: 1}}><Text style={[styles.manageTitle, {color: theme.text}]}>{item.title || item.activity}</Text><Text style={[styles.manageSub, {color: theme.tabIconDefault}]}>{item.day || item.event_date} {item.time ? `• ${item.time}` : ''}</Text></View><TouchableOpacity onPress={() => handleDelete(item.id)}><Trash2 size={18} color="#FF3B30" /></TouchableOpacity></View>
-          )} />
-        </BlurView>
-      </View>
-    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { padding: 20, paddingBottom: 120 },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 30,
-  },
-  greeting: {
-    fontSize: 32,
-    fontWeight: '800',
-    letterSpacing: -1,
-  },
-  subtitle: {
-    fontSize: 18,
-    marginTop: 4,
-    fontWeight: '500',
-  },
-  lottieHeart: {
-    width: 80,
-    height: 80,
-  },
-  countdownCard: {
-    padding: 24,
-    borderRadius: 32,
-    marginBottom: 30,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  sparkleIcon: {
-    position: 'absolute',
-    right: -10,
-    top: -10,
-  },
-  countdownTitle: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 14,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  countdownValue: {
-    color: '#FFF',
-    fontSize: 36,
-    fontWeight: '900',
-    marginVertical: 8,
-  },
-  meetingInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  meetingDate: {
-    color: '#FFF',
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  momentCardWrapper: {
-    borderRadius: 28,
-    overflow: 'hidden',
-    marginBottom: 35,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 5,
-  },
-  momentCard: {
-    padding: 24,
-  },
-  momentHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    gap: 8,
-  },
-  momentTitle: {
-    fontSize: 12,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  momentBody: {
-    fontSize: 19,
-    fontWeight: '700',
-    fontStyle: 'italic',
-    lineHeight: 26,
-    letterSpacing: -0.2,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 35,
-  },
-  summaryCard: {
-    flex: 0.48,
-    padding: 20,
-    borderRadius: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
-  },
-  summaryHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  summaryTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    marginLeft: 6,
-    textTransform: 'uppercase',
-  },
-  summaryValue: {
-    fontSize: 26,
-    fontWeight: '800',
-  },
-  section: { marginBottom: 35 },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 18, paddingLeft: 5 },
-  sectionTitle: { fontSize: 20, fontWeight: '800', letterSpacing: -0.5 },
-  manageBtn: { marginLeft: 'auto', padding: 8, borderRadius: 12, backgroundColor: 'rgba(150,150,150,0.1)' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 30, backgroundColor: 'transparent' },
+  greeting: { fontSize: 32, fontWeight: '800', letterSpacing: -1, backgroundColor: 'transparent' },
+  subtitle: { fontSize: 18, marginTop: 4, fontWeight: '500', backgroundColor: 'transparent' },
+  lottieHeart: { width: 80, height: 80 },
+  countdownCard: { padding: 24, borderRadius: 32, marginBottom: 30, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 20, elevation: 10 },
+  sparkleIcon: { position: 'absolute', right: -10, top: -10 },
+  countdownTitle: { color: 'rgba(255,255,255,0.8)', fontSize: 14, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, backgroundColor: 'transparent' },
+  countdownValue: { color: '#FFF', fontSize: 36, fontWeight: '900', marginVertical: 8, backgroundColor: 'transparent' },
+  meetingInfo: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'transparent' },
+  meetingDate: { color: '#FFF', fontWeight: '600', fontSize: 14, backgroundColor: 'transparent' },
+  momentCardWrapper: { borderRadius: 28, overflow: 'hidden', marginBottom: 35, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 5 },
+  momentCard: { padding: 24 },
+  momentHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 8, backgroundColor: 'transparent' },
+  momentTitle: { fontSize: 12, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1, backgroundColor: 'transparent' },
+  momentBody: { fontSize: 19, fontWeight: '700', fontStyle: 'italic', lineHeight: 26, letterSpacing: -0.2, backgroundColor: 'transparent' },
   motmFooter: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 20, borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.05)', paddingTop: 20 },
   motmAuthor: { fontSize: 12, fontWeight: '900', letterSpacing: 1.5 },
-  timetableScroll: { gap: 15, paddingRight: 20 },
-  dayCard: { width: 170, borderRadius: 28, padding: 20, minHeight: 150 },
-  dayName: { fontSize: 14, fontWeight: '900', letterSpacing: 2, marginBottom: 18 },
-  activityList: { gap: 14 },
-  activityItem: { },
-  activityTime: { fontSize: 10, fontWeight: '900', marginBottom: 2 },
-  activityTitle: { fontSize: 16, fontWeight: '600' },
-  relaxText: { fontSize: 14, fontWeight: '600', fontStyle: 'italic', marginLeft: 5 },
+  statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 35, backgroundColor: 'transparent' },
+  summaryCard: { flex: 0.48, padding: 20, borderRadius: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
+  summaryHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, backgroundColor: 'transparent' },
+  summaryTitle: { fontSize: 12, fontWeight: '700', marginLeft: 6, textTransform: 'uppercase', backgroundColor: 'transparent' },
+  summaryValue: { fontSize: 26, fontWeight: '800', backgroundColor: 'transparent' },
+  section: { marginBottom: 35, backgroundColor: 'transparent' },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 18, paddingLeft: 5, backgroundColor: 'transparent' },
+  sectionTitle: { fontSize: 20, fontWeight: '800', letterSpacing: -0.5, backgroundColor: 'transparent' },
+  setupButton: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, gap: 6 },
+  setupText: { fontSize: 13, fontWeight: '700' },
+  daySelector: { marginBottom: 16, backgroundColor: 'transparent' },
+  dayPill: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 16, minWidth: 60, alignItems: 'center' },
+  dayText: { fontSize: 14, fontWeight: '700' },
+  eventContainer: { gap: 12, backgroundColor: 'transparent' },
+  eventCard: { flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
+  timeStrip: { width: 4, height: '100%', borderRadius: 2, marginRight: 16 },
+  eventInfo: { flex: 1, backgroundColor: 'transparent' },
+  eventTime: { fontSize: 12, fontWeight: '700', marginBottom: 2, backgroundColor: 'transparent' },
+  eventActivity: { fontSize: 16, fontWeight: '600', backgroundColor: 'transparent' },
+  userBadge: { width: 24, height: 24, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  emptyEvents: { padding: 32, borderRadius: 24, alignItems: 'center', gap: 12, borderStyle: 'dashed', borderWidth: 1, borderColor: 'rgba(150,150,150,0.2)' },
+  emptyText: { fontSize: 14, fontWeight: '600', backgroundColor: 'transparent' },
+  spaceButton: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderRadius: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 15, elevation: 3 },
+  spaceLeft: { flexDirection: 'row', alignItems: 'center', gap: 16, backgroundColor: 'transparent' },
+  spaceIcon: { width: 48, height: 48, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+  spaceTitle: { fontSize: 17, fontWeight: '700', backgroundColor: 'transparent' },
+  spaceSubtitle: { fontSize: 14, fontWeight: '500', backgroundColor: 'transparent' },
   calendarContainer: { borderRadius: 32, padding: 20, elevation: 3 },
-  calendarHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  calendarMonth: { fontSize: 18, fontWeight: '800' },
-  weekDays: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 10 },
-  weekDayText: { fontSize: 12, fontWeight: '900' },
-  calendarGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-around' },
-  dayCell: { width: (SCREEN_WIDTH - 80) / 7, height: 45, justifyContent: 'center', alignItems: 'center', marginBottom: 5 },
-  dayText: { fontSize: 15, fontWeight: '700' },
-  eventDot: { width: 4, height: 4, borderRadius: 2, position: 'absolute', bottom: 8 },
-  selectedDayInfo: { marginTop: 25, borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.05)', paddingTop: 20 },
-  selectedDateText: { fontSize: 16, fontWeight: '800', marginBottom: 15 },
-  dayEventItem: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
-  dot: { width: 8, height: 8, borderRadius: 4 },
-  dayEventTitle: { fontSize: 15, fontWeight: '600' },
-  modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' },
-  modalContent: { height: '85%', borderTopLeftRadius: 35, borderTopRightRadius: 35, padding: 25, overflow: 'hidden' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 30 },
-  modalTitle: { fontSize: 24, fontWeight: '900' },
-  modalForm: { gap: 12, marginBottom: 30 },
-  modalInput: { height: 56, borderRadius: 18, paddingHorizontal: 20, fontWeight: '600', borderWidth: 1 },
-  addBtn: { height: 56, borderRadius: 18, justifyContent: 'center', alignItems: 'center', flexDirection: 'row', gap: 10 },
-  addBtnText: { color: 'white', fontWeight: '900', fontSize: 17 },
-  manageItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 20, borderBottomWidth: 1 },
-  manageTitle: { fontSize: 17, fontWeight: '700' },
-  manageSub: { fontSize: 13, fontWeight: '600', marginTop: 4 },
-  testLink: { padding: 30, alignItems: 'center', marginTop: 20, borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.05)' },
-  occasionText: { color: 'white', fontSize: 15, fontWeight: '800', marginTop: 5, letterSpacing: 1, opacity: 0.8 }
+  calendarHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, backgroundColor: 'transparent' },
+  monthText: { fontSize: 18, fontWeight: '800' },
+  weekDaysRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10, backgroundColor: 'transparent' },
+  weekDayText: { width: (SCREEN_WIDTH - 72) / 7, textAlign: 'center', fontSize: 12, fontWeight: '800' },
+  daysGrid: { flexDirection: 'row', flexWrap: 'wrap', backgroundColor: 'transparent' },
+  dayCell: { width: (SCREEN_WIDTH - 72) / 7, height: 40, justifyContent: 'center', alignItems: 'center', borderRadius: 10, marginBottom: 4 },
+  dayCellText: { fontSize: 14, fontWeight: '600' },
+  eventDot: { width: 4, height: 4, borderRadius: 2, position: 'absolute', bottom: 6 },
+  dayEventsContainer: { paddingHorizontal: 4, backgroundColor: 'transparent', marginTop: 20 },
+  dayEventsTitle: { fontSize: 13, fontWeight: '800', textTransform: 'uppercase', marginBottom: 12 },
+  noEventsText: { fontSize: 14, fontStyle: 'italic' },
+  calendarEventCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderRadius: 16, marginBottom: 8 },
+  calendarEventTitle: { fontSize: 15, fontWeight: '600' },
+  modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
+  modalContent: { width: '90%', borderRadius: 32, padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 20, elevation: 20 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, backgroundColor: 'transparent' },
+  modalTitle: { fontSize: 24, fontWeight: '800', backgroundColor: 'transparent' },
+  modalSubtitle: { fontSize: 14, fontWeight: '600', backgroundColor: 'transparent' },
+  closeBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(150,150,150,0.1)', justifyContent: 'center', alignItems: 'center' },
+  addEventBox: { padding: 16, borderRadius: 24, gap: 12, marginBottom: 24, borderWidth: 1 },
+  pickerTrigger: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(150,150,150,0.1)', padding: 12, borderRadius: 12 },
+  pickerValue: { fontSize: 15, fontWeight: '600' },
+  inputGroup: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: 'transparent' },
+  activityInput: { backgroundColor: 'rgba(150,150,150,0.1)', padding: 12, borderRadius: 12 },
+  input: { flex: 1, height: 30, fontSize: 15, fontWeight: '600' },
+  inputLabel: { fontSize: 11, fontWeight: '900', letterSpacing: 1.5, textTransform: 'uppercase' },
+  addBtn: { height: 50, borderRadius: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 },
+  addBtnText: { color: '#FFF', fontWeight: '800', fontSize: 15 },
+  listLabel: { fontSize: 13, fontWeight: '800', textTransform: 'uppercase', marginBottom: 12, backgroundColor: 'transparent' },
+  manageCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderRadius: 16, marginBottom: 8 },
+  manageTime: { fontSize: 12, fontWeight: '800', backgroundColor: 'transparent' },
+  manageActivity: { fontSize: 15, fontWeight: '600', backgroundColor: 'transparent' },
+  deleteBtn: { padding: 8, backgroundColor: 'transparent' },
+  timePickerBox: { width: SCREEN_WIDTH * 0.85, padding: 24, borderRadius: 32, alignItems: 'center', gap: 20 },
+  pickerTitle: { fontSize: 20, fontWeight: '800' },
+  pickerWheelRow: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 150 },
+  wheel: { width: 60 },
+  wheelItem: { paddingVertical: 10, alignItems: 'center' },
+  wheelText: { fontSize: 20, fontWeight: '700' },
+  pickerActions: { flexDirection: 'row', gap: 12, marginTop: 10 },
+  cancelBtn: { flex: 1, height: 50, justifyContent: 'center', alignItems: 'center', borderRadius: 12, backgroundColor: 'rgba(150,150,150,0.1)' },
+  cancelText: { fontWeight: '700' },
+  confirmBtn: { flex: 1, height: 50, justifyContent: 'center', alignItems: 'center', borderRadius: 12 },
+  confirmText: { color: '#FFF', fontWeight: '800' },
+  freqBtn: { paddingVertical: 8, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  freqLabel: { fontWeight: '800' },
 });

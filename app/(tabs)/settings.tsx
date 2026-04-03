@@ -95,6 +95,59 @@ export default function SettingsScreen() {
     if (data) setWardrobeCats(data);
   };
 
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+    });
+
+    if (!result.canceled && userName) {
+      uploadAvatar(result.assets[0].uri);
+    }
+  };
+
+  const uploadAvatar = async (uri: string) => {
+    try {
+      setUploading(true);
+      const base64 = await FileSystem.readAsStringAsync(uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      const filePath = `avatars/${userName.toLowerCase()}-${Date.now()}.jpg`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('journal-assets')
+        .upload(filePath, base64js.toByteArray(base64), {
+          contentType: 'image/jpeg',
+          upsert: true
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('journal-assets')
+        .getPublicUrl(filePath);
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .upsert({ 
+          username: userName.toLowerCase(), 
+          avatar_url: publicUrl 
+        }, { onConflict: 'username' });
+
+      if (updateError) throw updateError;
+
+      setAvatarUrl(publicUrl);
+      Alert.alert('Success', 'Profile picture updated!');
+    } catch (error: any) {
+      Alert.alert('Upload Error', error.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   // --- Chill Logic ---
   const saveChillCategory = async () => {
     if (!catForm.name.trim()) return;
@@ -182,9 +235,17 @@ export default function SettingsScreen() {
     <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 120 }]} showsVerticalScrollIndicator={false}>
         <View style={styles.profileSection}>
-          <Pressable style={styles.avatarWrapper}>
+          <Pressable onPress={pickImage} style={styles.avatarWrapper}>
             <View style={[styles.avatar, { backgroundColor: theme.tint }]}>
               {avatarUrl ? <Image source={{ uri: avatarUrl }} style={styles.avatarImage} /> : <Text style={styles.avatarText}>{userName?.charAt(0).toUpperCase()}</Text>}
+              {uploading && (
+                <View style={styles.uploadOverlay}>
+                  <ActivityIndicator color="#FFF" />
+                </View>
+              )}
+            </View>
+            <View style={[styles.editIcon, { backgroundColor: theme.card }]}>
+              <Camera size={14} color={theme.text} />
             </View>
           </Pressable>
           <Text style={[styles.userName, { color: theme.text }]}>{userName}</Text>
@@ -194,6 +255,18 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.tint }]}>Account</Text>
           <SettingsItem icon={<User color={theme.text} size={22} />} label="Personal Information" theme={theme} />
+          <SettingsItem 
+            icon={<MessageSquareHeart color={theme.text} size={22} />} 
+            label="Message of the Moment" 
+            theme={theme} 
+            onPress={() => router.push('/motm')}
+          />
+          <SettingsItem 
+            icon={<HeartHandshake color={theme.text} size={22} />} 
+            label="Next Meet" 
+            theme={theme} 
+            onPress={() => router.push('/next-meet')}
+          />
           <SettingsItem icon={<Bell color={theme.tint} size={22} />} label="Test Proximity Alert" theme={theme} onPress={triggerTestNotification} />
           <SettingsItem icon={<Bell color={theme.text} size={22} />} label="Notifications" theme={theme} right={<Switch value={isNotificationsEnabled} onValueChange={toggleNotifications} trackColor={{ true: theme.tint }} />} showChevron={false} />
         </View>
@@ -326,6 +399,8 @@ const styles = StyleSheet.create({
   avatarWrapper: { position: 'relative', marginBottom: 16 },
   avatar: { width: 100, height: 100, borderRadius: 50, justifyContent: 'center', alignItems: 'center', elevation: 4, overflow: 'hidden' },
   avatarImage: { width: '100%', height: '100%' },
+  uploadOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
+  editIcon: { position: 'absolute', bottom: 0, right: 0, width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center', borderWidth: 3, borderColor: '#FFF', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
   avatarText: { color: '#FFF', fontSize: 28, fontWeight: 'bold' },
   userName: { fontSize: 24, fontWeight: '700' },
   userEmail: { fontSize: 14, marginTop: 4 },
