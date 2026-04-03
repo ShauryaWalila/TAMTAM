@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Dimensions, TextInput, Image, ActivityIndicator, Alert } from 'react-native';
 import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
-import { GripVertical, MapPin, Calendar, Clock, ChevronDown, ChevronUp, Save, Shirt, X, Trash2, Plus } from 'lucide-react-native';
+import { GripVertical, MapPin, Calendar, Clock, ChevronDown, ChevronUp, Save, Shirt, X, Trash2, Plus, Sparkles } from 'lucide-react-native';
 import { format } from 'date-fns';
 import { MotiView, AnimatePresence } from 'moti';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -18,9 +18,11 @@ interface DayReorderListProps {
   days: any[];
   onReorder: (newData: any[]) => void;
   dayCounts: Record<number, number>;
+  onSelectDay: (day: any) => void;
+  onAddFromBucket: (dayNumber: number) => void;
 }
 
-export default function DayReorderList({ tripId, days, onReorder, dayCounts }: DayReorderListProps) {
+export default function DayReorderList({ tripId, days, onReorder, dayCounts, onSelectDay, onAddFromBucket }: DayReorderListProps) {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
   const [expandedDay, setExpandedDay] = useState<number | null>(null);
@@ -105,7 +107,11 @@ export default function DayReorderList({ tripId, days, onReorder, dayCounts }: D
 
     return (
       <ScaleDecorator>
-        <View style={[styles.itineraryCard, { backgroundColor: isActive ? theme.tint + '10' : theme.background, borderColor: isActive ? theme.tint : theme.text + '10' }]}>
+        <TouchableOpacity 
+          onPress={() => onSelectDay(days.find(d => d.dayNumber === item.day_number))}
+          activeOpacity={0.9}
+          style={[styles.itineraryCard, { backgroundColor: isActive ? theme.tint + '10' : theme.background, borderColor: isActive ? theme.tint : theme.text + '10' }]}
+        >
           <TouchableOpacity onLongPress={drag} style={styles.itineraryDragHandle}>
             <GripVertical size={18} color="#aaa" />
           </TouchableOpacity>
@@ -194,7 +200,7 @@ export default function DayReorderList({ tripId, days, onReorder, dayCounts }: D
               </View>
             )}
           </View>
-        </View>
+        </TouchableOpacity>
       </ScaleDecorator>
     );
   };
@@ -262,10 +268,18 @@ export default function DayReorderList({ tripId, days, onReorder, dayCounts }: D
                       renderItem={renderItineraryItem}
                       scrollEnabled={false}
                     />
-                    <TouchableOpacity style={[styles.addCustomBtn, { borderColor: theme.tint + '40' }]} onPress={handleAddCustomItem}>
-                      <Plus size={16} color={theme.tint} />
-                      <Text style={[styles.addCustomText, { color: theme.tint }]}>Add Custom Activity</Text>
-                    </TouchableOpacity>
+                    
+                    <View style={styles.addActionsRow}>
+                      <TouchableOpacity style={[styles.addBtn, { borderColor: theme.tint + '40' }]} onPress={handleAddCustomItem}>
+                        <Plus size={14} color={theme.tint} />
+                        <Text style={[styles.addBtnText, { color: theme.tint }]}>Custom</Text>
+                      </TouchableOpacity>
+                      
+                      <TouchableOpacity style={[styles.addBtn, { backgroundColor: theme.tint, borderColor: theme.tint }]} onPress={() => onAddFromBucket(item.dayNumber)}>
+                        <Sparkles size={14} color="white" />
+                        <Text style={[styles.addBtnText, { color: 'white' }]}>From Bucket</Text>
+                      </TouchableOpacity>
+                    </View>
                   </>
                 )}
               </MotiView>
@@ -280,7 +294,7 @@ export default function DayReorderList({ tripId, days, onReorder, dayCounts }: D
     <DraggableFlatList
       data={days}
       onDragEnd={({ data }) => onReorder(data)}
-      keyExtractor={(item, index) => `day-${index}`}
+      keyExtractor={(item, index) => `day-${item.dayNumber}`}
       renderItem={renderDayItem}
       containerStyle={styles.container}
       contentContainerStyle={styles.listContent}
@@ -320,7 +334,7 @@ const styles = StyleSheet.create({
   customLabelInput: { flex: 1, fontSize: 14, fontWeight: '800', padding: 0 },
   itineraryActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   actionBtn: { padding: 4 },
-  addCustomBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 15, borderRadius: 20, borderStyle: 'dashed', borderWidth: 1, marginTop: 10 },
-  addCustomText: { fontSize: 14, fontWeight: '700', marginLeft: 8 }
+  addActionsRow: { flexDirection: 'row', gap: 10, marginTop: 10 },
+  addBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 12, borderRadius: 18, borderStyle: 'dashed', borderWidth: 1 },
+  addBtnText: { fontSize: 12, fontWeight: '700', marginLeft: 6 }
 });
-

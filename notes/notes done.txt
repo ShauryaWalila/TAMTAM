@@ -13,3 +13,6 @@ faceid for finance
 places to go(in trip)
 things to do(ine specific places, dreams)
 places to go(overall)
+goal
+games asking way
+suggestions

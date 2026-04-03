@@ -3,7 +3,7 @@ import { StyleSheet, ScrollView, Pressable, Switch, View, Image, ActivityIndicat
 import { Text, View as ThemedView } from '@/components/Themed';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
-import { User, Bell, Shield, CircleHelp, LogOut, ChevronRight, Camera, MessageSquareHeart, HeartHandshake, Tags, Plus, X, Trash2, Briefcase, Wrench, MessageCircle, Clock, TrendingUp, Landmark } from 'lucide-react-native';
+import { User, Bell, Shield, CircleHelp, LogOut, ChevronRight, Camera, MessageSquareHeart, HeartHandshake, Tags, Plus, X, Trash2, Briefcase, Wrench, MessageCircle, Clock, TrendingUp, Coffee, Palette, Image as ImageIcon, Edit3, Save, Check } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '@/lib/supabase';
 import * as SecureStore from 'expo-secure-store';
@@ -20,6 +20,20 @@ import Wardrobe from '@/components/PlanMode/Wardrobe';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
 
+const CHILL_COLORS = [
+  { label: 'Sky', main: '#5AC8FA', bg: 'rgba(90, 200, 250, 0.15)' },
+  { label: 'Rose', main: '#FF2D55', bg: 'rgba(255, 45, 85, 0.15)' },
+  { label: 'Lavender', main: '#AF52DE', bg: 'rgba(175, 82, 222, 0.15)' },
+  { label: 'Mint', main: '#34C759', bg: 'rgba(52, 199, 89, 0.15)' },
+  { label: 'Amber', main: '#FF9500', bg: 'rgba(255, 149, 0, 0.15)' },
+];
+
+const PRESET_PALETTE = [
+  '#FF2D55', '#FF375F', '#FF9500', '#FFCC00', '#34C759', 
+  '#007AFF', '#5AC8FA', '#5856D6', '#AF52DE', '#8E8E93',
+  '#E5E5EA', '#000000', '#FFFFFF', '#FFD700', '#FF69B4'
+];
+
 export default function SettingsScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
@@ -31,204 +45,149 @@ export default function SettingsScreen() {
   const [uploading, setUploading] = useState(false);
   const [isNotificationsEnabled, setIsNotificationsEnabled] = useState(false);
 
-  // Wardrobe Categories State
+  // Modals Visibility
+  const [isChillSettingsVisible, setIsChillSettingsVisible] = useState(false);
   const [isWardrobeSettingsVisible, setIsWardrobeSettingsVisible] = useState(false);
   const [isWardrobeVisible, setIsWardrobeVisible] = useState(false);
-  const [categories, setCategories] = useState<any[]>([]);
-  const [newCatName, setNewCatName] = useState('');
+  const [isToolsVisible, setIsToolsVisible] = useState(false);
+
+  // Chill Categories State
+  const [chillCats, setChillCats] = useState<any[]>([]);
+  const [editingCat, setEditingCat] = useState<any | null>(null);
+  const [catForm, setCatForm] = useState({ name: '', color: '#5AC8FA', image_url: null as string | null });
   const [loadingCats, setLoadingCats] = useState(false);
-  const [userId, setUserId] = useState<string>('');
+
+  // Wardrobe Categories State
+  const [wardrobeCats, setWardrobeCats] = useState<any[]>([]);
+  const [newWardrobeCat, setNewWardrobeCat] = useState('');
 
   // Tools State
-  const [isToolsVisible, setIsToolsVisible] = useState(false);
   const [waNumber, setWaNumber] = useState('');
   const [timeEntries, setTimeEntries] = useState([new Date(), new Date()]);
   const [totalCalculatedTime, setTotalCalculatedTime] = useState<string | null>(null);
   const [pickerIndex, setPickerIndex] = useState<number | null>(null);
 
-  // Scroll visibility logic
-  const lastScrollY = useRef(0);
-  const handleScroll = (event: any) => {
-    const currentY = event.nativeEvent.contentOffset.y;
-    if (currentY <= 0) {
-      DeviceEventEmitter.emit('show-navigator');
-    } else if (currentY > lastScrollY.current + 10) {
-      DeviceEventEmitter.emit('hide-navigator');
-    } else if (currentY < lastScrollY.current - 10) {
-      DeviceEventEmitter.emit('show-navigator');
-    }
-    lastScrollY.current = currentY;
-  };
-
   useEffect(() => {
     fetchProfile();
-    fetchCategories();
+    fetchChillCategories();
+    fetchWardrobeCategories();
   }, []);
 
   const fetchProfile = async () => {
     const name = await SecureStore.getItemAsync('user_name');
     setUserName(name);
     if (name) {
-      const { data } = await supabase
-        .from('profiles')
-        .select('avatar_url, push_token, id')
-        .eq('username', name.toLowerCase())
-        .single();
-      
+      const { data } = await supabase.from('profiles').select('avatar_url, push_token').eq('username', name.toLowerCase()).maybeSingle();
       if (data) {
         setAvatarUrl(data.avatar_url);
         setIsNotificationsEnabled(!!data.push_token);
-        setUserId(data.id);
       }
     }
   };
 
-  const fetchCategories = async () => {
-    const { data } = await supabase.from('wardrobe_categories').select('*').order('name', { ascending: true });
-    if (data) setCategories(data);
+  const fetchChillCategories = async () => {
+    const { data } = await supabase.from('chill_categories').select('*').order('created_at', { ascending: true });
+    if (data) setChillCats(data);
   };
 
-  const addCategory = async () => {
-    if (!newCatName.trim()) return;
+  const fetchWardrobeCategories = async () => {
+    const { data } = await supabase.from('wardrobe_categories').select('*').order('name', { ascending: true });
+    if (data) setWardrobeCats(data);
+  };
+
+  // --- Chill Logic ---
+  const saveChillCategory = async () => {
+    if (!catForm.name.trim()) return;
     setLoadingCats(true);
-    const { error } = await supabase.from('wardrobe_categories').insert([{ name: newCatName.trim() }]);
-    if (error) {
-      Alert.alert('Error', 'Category already exists.');
-    } else {
-      setNewCatName('');
-      fetchCategories();
+    
+    let uploadedUrl = catForm.image_url;
+    if (catForm.image_url && !catForm.image_url.startsWith('http')) {
+      try {
+        const base64 = await FileSystem.readAsStringAsync(catForm.image_url, { encoding: FileSystem.EncodingType.Base64 });
+        const filePath = `chill-covers/${Date.now()}.jpg`;
+        await supabase.storage.from('journal-assets').upload(filePath, base64js.toByteArray(base64), { contentType: 'image/jpeg' });
+        const { data: { publicUrl } } = supabase.storage.from('journal-assets').getPublicUrl(filePath);
+        uploadedUrl = publicUrl;
+      } catch (e) { console.error(e); }
+    }
+
+    const payload = { name: catForm.name.trim(), color: catForm.color, bg_color: catForm.color + '15', image_url: uploadedUrl };
+    const { error } = editingCat ? await supabase.from('chill_categories').update(payload).eq('id', editingCat.id) : await supabase.from('chill_categories').insert([payload]);
+
+    if (!error) {
+      setCatForm({ name: '', color: '#5AC8FA', image_url: null });
+      setEditingCat(null);
+      fetchChillCategories();
     }
     setLoadingCats(false);
   };
 
-  const deleteCategory = async (id: string) => {
-    Alert.alert('Delete Category', 'Remove this category option?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => {
-          await supabase.from('wardrobe_categories').delete().eq('id', id);
-          fetchCategories();
-        } 
-      }
+  const deleteChillCategory = async (id: string) => {
+    Alert.alert('Delete shared space?', 'This will delete all items inside too.', [
+      { text: 'Cancel' },
+      { text: 'Delete', style: 'destructive', onPress: async () => { await supabase.from('chill_categories').delete().eq('id', id); fetchChillCategories(); } }
     ]);
   };
 
+  // --- Wardrobe Logic ---
+  const addWardrobeCategory = async () => {
+    if (!newWardrobeCat.trim()) return;
+    const { error } = await supabase.from('wardrobe_categories').insert([{ name: newWardrobeCat.trim() }]);
+    if (!error) { setNewWardrobeCat(''); fetchWardrobeCategories(); }
+  };
+
+  const deleteWardrobeCategory = async (id: string) => {
+    await supabase.from('wardrobe_categories').delete().eq('id', id);
+    fetchWardrobeCategories();
+  };
+
+  // --- Tools Logic ---
   const openWhatsApp = () => {
-    if (!waNumber.trim()) return;
     const cleanNumber = waNumber.replace(/\D/g, '');
-    if (cleanNumber.length < 11) {
-      Alert.alert('Missing Country Code', 'Please include country code (e.g. 91) followed by the number.');
-      return;
-    }
+    if (cleanNumber.length < 10) return Alert.alert('Invalid Number', 'Include country code (e.g. 91)');
     Linking.openURL(`https://wa.me/${cleanNumber}`);
   };
 
   const calculateTotalTime = () => {
     let totalMinutes = 0;
     for (let i = 0; i < timeEntries.length; i += 2) {
-      const start = timeEntries[i];
-      const end = timeEntries[i+1];
+      const start = timeEntries[i], end = timeEntries[i+1];
       if (start && end) {
         let diff = (end.getHours() * 60 + end.getMinutes()) - (start.getHours() * 60 + start.getMinutes());
         if (diff < 0) diff += 24 * 60;
         totalMinutes += diff;
       }
     }
-    const h = Math.floor(totalMinutes / 60);
-    const m = totalMinutes % 60;
-    setTotalCalculatedTime(`${h}h ${m}m`);
+    setTotalCalculatedTime(`${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`);
   };
-
-  const addTimeEntry = () => setTimeEntries([...timeEntries, new Date(), new Date()]);
 
   const toggleNotifications = async (value: boolean) => {
     if (value) {
       const token = await registerForPushNotificationsAsync();
-      if (token && userName) {
-        await supabase.from('profiles').update({ push_token: token }).eq('username', userName.toLowerCase());
-        setIsNotificationsEnabled(true);
-      }
+      if (token && userName) await supabase.from('profiles').update({ push_token: token }).eq('username', userName.toLowerCase());
     } else {
-      if (userName) {
-        await supabase.from('profiles').update({ push_token: null }).eq('username', userName.toLowerCase());
-        setIsNotificationsEnabled(false);
-      }
+      if (userName) await supabase.from('profiles').update({ push_token: null }).eq('username', userName.toLowerCase());
     }
+    setIsNotificationsEnabled(value);
   };
 
   const triggerTestNotification = async () => {
     await Notifications.scheduleNotificationAsync({
-      content: {
-        title: "✨ Shared Memory Nearby!",
-        body: "Hey! You're near a spot where you shared a memory. ❤️",
-        sound: true,
-      },
+      content: { title: "✨ Shared Memory Nearby!", body: "Hey! You're near a spot where you shared a memory. ❤️", sound: true },
       trigger: null,
     });
   };
 
-  const handleLogout = async () => {
-    Alert.alert("Logout", "Leaving our world?", [
-      { text: "Stay", style: "cancel" },
-      { text: "Logout", style: "destructive", onPress: async () => {
-          await SecureStore.deleteItemAsync('user_name');
-          router.replace('/auth/login');
-        }
-      }
-    ]);
-  };
-
-  const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.5,
-    });
-    if (!result.canceled && userName) uploadAvatar(result.assets[0].uri);
-  };
-
-  const uploadAvatar = async (uri: string) => {
-    try {
-      setUploading(true);
-      const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
-      const filePath = `avatars/${userName?.toLowerCase()}-${Date.now()}.jpg`;
-      const { error: uploadError } = await supabase.storage.from('journal-assets').upload(filePath, base64js.toByteArray(base64), { contentType: 'image/jpeg' });
-      if (uploadError) throw uploadError;
-      const { data: { publicUrl } } = supabase.storage.from('journal-assets').getPublicUrl(filePath);
-      await supabase.from('profiles').upsert({ username: userName?.toLowerCase(), avatar_url: publicUrl }, { onConflict: 'username' });
-      setAvatarUrl(publicUrl);
-    } catch (error: any) { Alert.alert('Error', error.message); }
-    finally { setUploading(false); }
-  };
-
-  const getDisplayName = (name: string | null) => {
-    if (!name) return 'User';
-    const lower = name.toLowerCase();
-    if (lower === 'pratishth' || lower === 'user_1') return 'Pratishth';
-    if (lower === 'supriya' || lower === 'love') return 'Supriya';
-    return name;
-  };
-
   return (
     <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
-      <ScrollView 
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 80 }]}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
-      >
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 120 }]} showsVerticalScrollIndicator={false}>
         <View style={styles.profileSection}>
-          <Pressable onPress={pickImage} style={styles.avatarWrapper}>
+          <Pressable style={styles.avatarWrapper}>
             <View style={[styles.avatar, { backgroundColor: theme.tint }]}>
-              {avatarUrl ? (
-                <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
-              ) : (
-                <Text style={styles.avatarText}>{getDisplayName(userName).charAt(0)}</Text>
-              )}
-              {uploading && <View style={styles.uploadOverlay}><ActivityIndicator color="#FFF" /></View>}
+              {avatarUrl ? <Image source={{ uri: avatarUrl }} style={styles.avatarImage} /> : <Text style={styles.avatarText}>{userName?.charAt(0).toUpperCase()}</Text>}
             </View>
-            <View style={[styles.editIcon, { backgroundColor: theme.card }]}><Camera size={14} color={theme.text} /></View>
           </Pressable>
-          <Text style={[styles.userName, { color: theme.text }]}>{getDisplayName(userName)}</Text>
+          <Text style={[styles.userName, { color: theme.text }]}>{userName}</Text>
           <Text style={[styles.userEmail, { color: theme.tabIconDefault }]}>{userName?.toLowerCase()}@tamtam.app</Text>
         </View>
 
@@ -236,125 +195,116 @@ export default function SettingsScreen() {
           <Text style={[styles.sectionTitle, { color: theme.tint }]}>Account</Text>
           <SettingsItem icon={<User color={theme.text} size={22} />} label="Personal Information" theme={theme} />
           <SettingsItem icon={<Bell color={theme.tint} size={22} />} label="Test Proximity Alert" theme={theme} onPress={triggerTestNotification} />
-          <SettingsItem icon={<MessageSquareHeart color={theme.text} size={22} />} label="Message of the Moment" theme={theme} onPress={() => router.push('/motm')} />
-          <SettingsItem icon={<HeartHandshake color={theme.text} size={22} />} label="Next Meet" theme={theme} onPress={() => router.push('/next-meet')} />
           <SettingsItem icon={<Bell color={theme.text} size={22} />} label="Notifications" theme={theme} right={<Switch value={isNotificationsEnabled} onValueChange={toggleNotifications} trackColor={{ true: theme.tint }} />} showChevron={false} />
         </View>
 
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.tint }]}>App Settings</Text>
-          <SettingsItem icon={<Wrench color={theme.text} size={22} />} label="Tools" theme={theme} onPress={() => setIsToolsVisible(true)} />
+          <SettingsItem icon={<Coffee color={theme.text} size={22} />} label="Chill Zone Categories" theme={theme} onPress={() => setIsChillSettingsVisible(true)} />
           <SettingsItem icon={<Tags color={theme.text} size={22} />} label="Wardrobe Categories" theme={theme} onPress={() => setIsWardrobeSettingsVisible(true)} />
           <SettingsItem icon={<Briefcase color={theme.text} size={22} />} label="Master Wardrobe" theme={theme} onPress={() => setIsWardrobeVisible(true)} />
-          <SettingsItem icon={<LogOut color="#FF3B30" size={22} />} label="Logout" theme={theme} onPress={handleLogout} labelStyle={{ color: "#FF3B30" }} showChevron={false} />
-        </View>
-
-        <View style={styles.footer}>
-          <Text style={[styles.version, { color: theme.tabIconDefault }]}>TAMTAM v1.0.0 (Latest)</Text>
+          <SettingsItem icon={<Wrench color={theme.text} size={22} />} label="Tools" theme={theme} onPress={() => setIsToolsVisible(true)} />
+          <SettingsItem icon={<LogOut color="#FF3B30" size={22} />} label="Logout" theme={theme} onPress={() => router.replace('/auth/login')} labelStyle={{ color: "#FF3B30" }} showChevron={false} />
         </View>
       </ScrollView>
 
-      {/* Tools Modal */}
-      <Modal visible={isToolsVisible} animationType="slide" transparent={true}>
+      {/* ❄️ CHILL ZONE MODAL */}
+      <Modal visible={isChillSettingsVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
-          <BlurView intensity={100} tint={colorScheme} style={[styles.modalContent, { height: '85%' }]}>
+          <BlurView intensity={100} tint={colorScheme} style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>Chill Categories</Text>
+              <TouchableOpacity onPress={() => setIsChillSettingsVisible(false)}><X size={24} color={theme.text} /></TouchableOpacity>
+            </View>
+            <View style={styles.formCard}>
+              <View style={styles.row}>
+                <TouchableOpacity onPress={async () => {
+                  let res = await ImagePicker.launchImageLibraryAsync({ quality: 0.5 });
+                  if (!res.canceled) setCatForm({...catForm, image_url: res.assets[0].uri});
+                }} style={[styles.imageCircle, { borderColor: catForm.color }]}>
+                  {catForm.image_url ? <Image source={{ uri: catForm.image_url }} style={styles.fullImage} /> : <ImageIcon size={20} color="#888" />}
+                </TouchableOpacity>
+                <TextInput style={[styles.modalInput, { flex: 1, backgroundColor: theme.background, color: theme.text }]} placeholder="Name" value={catForm.name} onChangeText={(v) => setCatForm({...catForm, name: v})} />
+              </View>
+              <View style={styles.colorGrid}>
+                {PRESET_PALETTE.map(c => <TouchableOpacity key={c} onPress={() => setCatForm({...catForm, color: c})} style={[styles.colorChip, { backgroundColor: c }, catForm.color === c && { borderWidth: 2, borderColor: theme.text }]} />)}
+              </View>
+              <TouchableOpacity onPress={saveChillCategory} style={[styles.addBtnFull, { backgroundColor: catForm.color }]}><Save size={20} color="white" /><Text style={styles.addBtnText}>Save Space</Text></TouchableOpacity>
+            </View>
+            <FlatList data={chillCats} renderItem={({item}) => (
+              <View style={[styles.catItem, { backgroundColor: theme.card }]}>
+                <Text style={[styles.catName, { color: theme.text }]}>{item.name}</Text>
+                <View style={styles.row}>
+                  <TouchableOpacity onPress={() => { setEditingCat(item); setCatForm({ name: item.name, color: item.color, image_url: item.image_url }); }} style={styles.iconAction}><Edit3 size={16} color={theme.tint} /></TouchableOpacity>
+                  <TouchableOpacity onPress={() => deleteChillCategory(item.id)} style={styles.iconAction}><Trash2 size={16} color="#FF3B30" /></TouchableOpacity>
+                </View>
+              </View>
+            )} />
+          </BlurView>
+        </View>
+      </Modal>
+
+      {/* 🛠️ TOOLS MODAL */}
+      <Modal visible={isToolsVisible} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <BlurView intensity={100} tint={colorScheme} style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: theme.text }]}>Tools & Utils</Text>
               <TouchableOpacity onPress={() => setIsToolsVisible(false)}><X size={24} color={theme.text} /></TouchableOpacity>
             </View>
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <View style={[styles.toolSection, { borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.05)', paddingBottom: 20 }]}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                  <MessageCircle size={22} color="#25D366" />
-                  <Text style={[styles.toolLabel, { color: theme.text }]}>Direct WhatsApp</Text>
-                </View>
-                <Text style={{ color: theme.tabIconDefault, fontSize: 12, marginBottom: 15 }}>Open a chat without saving. MUST include country code (e.g. 91).</Text>
-                <View style={styles.waInputRow}>
-                  <TextInput style={[styles.waInput, { color: theme.text, backgroundColor: theme.background }]} placeholder="919876543210" placeholderTextColor={theme.tabIconDefault} keyboardType="phone-pad" value={waNumber} onChangeText={setWaNumber} />
-                  <TouchableOpacity style={[styles.waGoBtn, { backgroundColor: '#25D366' }]} onPress={openWhatsApp}><Text style={{ color: 'white', fontWeight: 'bold' }}>GO</Text></TouchableOpacity>
+            <ScrollView>
+              <View style={styles.toolSection}>
+                <Text style={[styles.sectionLabel, { color: theme.tint }]}>Direct WhatsApp</Text>
+                <View style={styles.row}>
+                  <TextInput style={[styles.modalInput, { flex: 1, backgroundColor: theme.background, color: theme.text }]} placeholder="919876543210" keyboardType="phone-pad" value={waNumber} onChangeText={setWaNumber} />
+                  <TouchableOpacity onPress={openWhatsApp} style={[styles.waGoBtn, { backgroundColor: '#25D366' }]}><Text style={{ color: 'white', fontWeight: 'bold' }}>GO</Text></TouchableOpacity>
                 </View>
               </View>
-
-              <View style={[styles.toolSection, { marginTop: 20 }]}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                  <Clock size={22} color={theme.tint} />
-                  <Text style={[styles.toolLabel, { color: theme.text }]}>Time Calculator</Text>
-                </View>
-                <Text style={{ color: theme.tabIconDefault, fontSize: 12, marginBottom: 15 }}>Calculate total duration across intervals.</Text>
-                {timeEntries.map((time, idx) => (
-                  <View key={idx} style={{ marginBottom: (idx % 2 === 1) ? 15 : 5 }}>
-                    <Text style={{ color: theme.tabIconDefault, fontSize: 10, fontWeight: 'bold', marginBottom: 4 }}>{idx % 2 === 0 ? 'START TIME' : 'END TIME'}</Text>
-                    <TouchableOpacity 
-                      style={[styles.waInput, { color: theme.text, backgroundColor: theme.background, height: 44, justifyContent: 'center' }]} 
-                      onPress={() => setPickerIndex(idx)}
-                    >
-                      <Text style={{ color: theme.text, fontWeight: '600' }}>{format(time, 'HH:mm')}</Text>
-                    </TouchableOpacity>
-                  </View>
+              <View style={styles.toolSection}>
+                <Text style={[styles.sectionLabel, { color: theme.tint }]}>Time Calculator</Text>
+                {timeEntries.map((t, i) => (
+                  <TouchableOpacity key={i} onPress={() => setPickerIndex(i)} style={[styles.modalInput, { backgroundColor: theme.background, justifyContent: 'center', marginBottom: 5 }]}>
+                    <Text style={{ color: theme.text }}>{i%2===0?'Start':'End'}: {format(t, 'HH:mm')}</Text>
+                  </TouchableOpacity>
                 ))}
-
-                {pickerIndex !== null && (
-                  <DateTimePicker
-                    value={timeEntries[pickerIndex]}
-                    mode="time"
-                    is24Hour={true}
-                    onChange={(e, date) => {
-                      setPickerIndex(null);
-                      if (date) {
-                        const newEntries = [...timeEntries];
-                        newEntries[pickerIndex] = date;
-                        setTimeEntries(newEntries);
-                      }
-                    }}
-                  />
-                )}
-
-                <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
-                  <TouchableOpacity style={[styles.toolActionBtn, { backgroundColor: theme.background }]} onPress={addTimeEntry}><Plus size={16} color={theme.text} /><Text style={{ color: theme.text, fontWeight: 'bold', fontSize: 12 }}>ADD INTERVAL</Text></TouchableOpacity>
-                  <TouchableOpacity style={[styles.toolActionBtn, { backgroundColor: theme.tint }]} onPress={calculateTotalTime}><TrendingUp size={16} color="white" /><Text style={{ color: 'white', fontWeight: 'bold', fontSize: 12 }}>CALCULATE</Text></TouchableOpacity>
+                {pickerIndex !== null && <DateTimePicker value={timeEntries[pickerIndex]} mode="time" is24Hour onChange={(e, d) => { setPickerIndex(null); if(d) { const n = [...timeEntries]; n[pickerIndex] = d; setTimeEntries(n); }}} />}
+                <View style={styles.row}>
+                  <TouchableOpacity onPress={() => setTimeEntries([...timeEntries, new Date(), new Date()])} style={[styles.toolActionBtn, { backgroundColor: theme.background }]}><Text style={{ color: theme.text }}>+ ADD</Text></TouchableOpacity>
+                  <TouchableOpacity onPress={calculateTotalTime} style={[styles.toolActionBtn, { backgroundColor: theme.tint }]}><Text style={{ color: 'white' }}>CALC</Text></TouchableOpacity>
                 </View>
-                {totalCalculatedTime && (
-                  <MotiView from={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} style={[styles.resultCard, { backgroundColor: theme.tint + '15' }]}>
-                    <Text style={{ color: theme.tabIconDefault, fontSize: 11, fontWeight: 'bold' }}>TOTAL DURATION</Text>
-                    <Text style={{ color: theme.tint, fontSize: 24, fontWeight: '900' }}>{totalCalculatedTime}</Text>
-                  </MotiView>
-                )}
+                {totalCalculatedTime && <View style={styles.resultCard}><Text style={{ color: theme.tint, fontSize: 24, fontWeight: '900' }}>{totalCalculatedTime}</Text></View>}
               </View>
             </ScrollView>
           </BlurView>
         </View>
       </Modal>
 
-      {/* Wardrobe Modal */}
-      <Modal visible={isWardrobeVisible} animationType="slide">
-        <View style={{ flex: 1, backgroundColor: theme.background }}>
-          <View style={[styles.modalHeader, { paddingHorizontal: 25, paddingTop: 60, marginBottom: 0 }]}>
-            <Text style={[styles.modalTitle, { color: theme.text }]}>Master Wardrobe</Text>
-            <TouchableOpacity onPress={() => setIsWardrobeVisible(false)}><X size={28} color={theme.text} /></TouchableOpacity>
-          </View>
-          <Wardrobe userId={userName || ''} isSettingsMode={true} />
-        </View>
-      </Modal>
-
-      {/* Wardrobe Categories Modal */}
-      <Modal visible={isWardrobeSettingsVisible} animationType="slide" transparent={true}>
+      {/* 🏷️ WARDROBE CATEGORIES MODAL */}
+      <Modal visible={isWardrobeSettingsVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <BlurView intensity={100} tint={colorScheme} style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: theme.text }]}>Wardrobe Sets</Text>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>Wardrobe Categories</Text>
               <TouchableOpacity onPress={() => setIsWardrobeSettingsVisible(false)}><X size={24} color={theme.text} /></TouchableOpacity>
             </View>
-            <View style={styles.addCatRow}>
-              <TextInput style={[styles.catInput, { color: theme.text, backgroundColor: theme.tint + '10' }]} placeholder="New Set Name" placeholderTextColor={theme.tabIconDefault} value={newCatName} onChangeText={setNewCatName} />
-              <TouchableOpacity style={[styles.catAddBtn, { backgroundColor: theme.tint }]} onPress={addCategory}>
-                {loadingCats ? <ActivityIndicator size="small" color="white" /> : <Plus size={24} color="white" />}
-              </TouchableOpacity>
+            <View style={styles.row}>
+              <TextInput style={[styles.modalInput, { flex: 1, backgroundColor: theme.background, color: theme.text }]} placeholder="New Category" value={newWardrobeCat} onChangeText={setNewWardrobeCat} />
+              <TouchableOpacity onPress={addWardrobeCategory} style={[styles.waGoBtn, { backgroundColor: theme.tint }]}><Plus size={20} color="white" /></TouchableOpacity>
             </View>
-            <FlatList data={categories} keyExtractor={item => item.id} renderItem={({ item }) => (
-              <View style={styles.catItem}><View style={styles.catItemLeft}><Tags size={18} color={theme.tabIconDefault} /><Text style={[styles.catName, { color: theme.text }]}>{item.name}</Text></View><TouchableOpacity onPress={() => deleteCategory(item.id)}><Trash2 size={18} color="#FF3B30" /></TouchableOpacity></View>
+            <FlatList data={wardrobeCats} renderItem={({item}) => (
+              <View style={styles.catItem}><Text style={{ color: theme.text }}>{item.name}</Text><TouchableOpacity onPress={() => deleteWardrobeCategory(item.id)}><Trash2 size={18} color="#FF3B30" /></TouchableOpacity></View>
             )} />
           </BlurView>
         </View>
+      </Modal>
+
+      {/* 👕 MASTER WARDROBE MODAL */}
+      <Modal visible={isWardrobeVisible} animationType="slide">
+        <Wardrobe 
+          userId={userName || ''} 
+          isSettingsMode={true} 
+          onClose={() => setIsWardrobeVisible(false)} 
+        />
       </Modal>
     </ThemedView>
   );
@@ -376,8 +326,6 @@ const styles = StyleSheet.create({
   avatarWrapper: { position: 'relative', marginBottom: 16 },
   avatar: { width: 100, height: 100, borderRadius: 50, justifyContent: 'center', alignItems: 'center', elevation: 4, overflow: 'hidden' },
   avatarImage: { width: '100%', height: '100%' },
-  uploadOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
-  editIcon: { position: 'absolute', bottom: 0, right: 0, width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center', borderWidth: 3, borderColor: '#FFF', elevation: 2 },
   avatarText: { color: '#FFF', fontSize: 28, fontWeight: 'bold' },
   userName: { fontSize: 24, fontWeight: '700' },
   userEmail: { fontSize: 14, marginTop: 4 },
@@ -386,23 +334,25 @@ const styles = StyleSheet.create({
   settingsItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderRadius: 16, marginBottom: 8 },
   settingsItemLeft: { flexDirection: 'row', alignItems: 'center' },
   settingsLabel: { fontSize: 16, fontWeight: '600', marginLeft: 12 },
-  footer: { alignItems: 'center', marginTop: 12, marginBottom: 40 },
-  version: { fontSize: 12, fontWeight: '500' },
   modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' },
-  modalContent: { height: '80%', borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 25, overflow: 'hidden' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 30 },
-  modalTitle: { fontSize: 22, fontWeight: 'bold' },
-  addCatRow: { flexDirection: 'row', gap: 12, marginBottom: 25 },
-  catInput: { flex: 1, height: 50, borderRadius: 15, paddingHorizontal: 15, fontSize: 16 },
-  catAddBtn: { width: 50, height: 50, borderRadius: 15, justifyContent: 'center', alignItems: 'center' },
-  catItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(0,0,0,0.1)' },
-  catItemLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  catName: { fontSize: 16, fontWeight: '500' },
-  toolSection: { padding: 10 },
-  toolLabel: { fontSize: 18, fontWeight: '700' },
-  waInputRow: { flexDirection: 'row', gap: 10 },
-  waInput: { flex: 1, height: 50, borderRadius: 12, paddingHorizontal: 15, fontSize: 16, fontWeight: '600' },
-  waGoBtn: { width: 60, height: 50, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  toolActionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 44, borderRadius: 12, gap: 8 },
-  resultCard: { marginTop: 20, padding: 20, borderRadius: 20, alignItems: 'center', gap: 5 },
+  modalContent: { height: '90%', borderTopLeftRadius: 35, borderTopRightRadius: 35, padding: 25, overflow: 'hidden' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 },
+  modalTitle: { fontSize: 22, fontWeight: '900' },
+  formCard: { backgroundColor: 'rgba(150,150,150,0.05)', padding: 20, borderRadius: 25, marginBottom: 25, gap: 15 },
+  row: { flexDirection: 'row', gap: 15, alignItems: 'center' },
+  imageCircle: { width: 64, height: 64, borderRadius: 20, borderWidth: 2, borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  fullImage: { width: '100%', height: '100%' },
+  modalInput: { height: 56, borderRadius: 18, paddingHorizontal: 20, fontWeight: '600' },
+  sectionLabel: { fontSize: 11, fontWeight: '900', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 10 },
+  colorGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' },
+  colorChip: { width: 32, height: 32, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+  addBtnFull: { height: 56, borderRadius: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
+  addBtnText: { color: 'white', fontWeight: '900', fontSize: 16 },
+  catItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 15, borderRadius: 20, marginBottom: 10 },
+  catName: { fontSize: 16, fontWeight: '800' },
+  iconAction: { padding: 10, borderRadius: 12 },
+  toolSection: { marginBottom: 30 },
+  waGoBtn: { width: 56, height: 56, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
+  toolActionBtn: { flex: 1, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  resultCard: { marginTop: 15, padding: 20, borderRadius: 20, backgroundColor: 'rgba(150,150,150,0.1)', alignItems: 'center' }
 });

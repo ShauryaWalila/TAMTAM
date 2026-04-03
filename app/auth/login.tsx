@@ -8,7 +8,6 @@ import { Heart, Sparkles, ArrowRight } from 'lucide-react-native';
 import * as SecureStore from 'expo-secure-store';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import LottieView from 'lottie-react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -25,10 +24,10 @@ export default function LoginScreen() {
     }
 
     const lowerName = name.trim().toLowerCase();
-    // Allow Pratishth, Love, or Supriya to enter
+    // Logic for our shared world
     if (lowerName === 'pratishth' || lowerName === 'love' || lowerName === 'supriya') { 
       try {
-        // Standardize Supriya's ID to 'love' if she enters 'supriya'
+        // Standardize Supriya to 'love' for database consistency
         const userId = lowerName === 'supriya' ? 'love' : lowerName;
         await SecureStore.setItemAsync('user_name', userId);
         router.replace('/(tabs)');
@@ -36,7 +35,6 @@ export default function LoginScreen() {
         Alert.alert('Error', 'Something went wrong while saving your session.');
       }
     } else {
-
       Alert.alert('Access Denied', 'This app is only for the two of us! Check your name spelling.');
     }
   };
@@ -53,12 +51,11 @@ export default function LoginScreen() {
           transition={{ type: 'spring', duration: 1500 }}
           style={styles.header}
         >
-          <LottieView
-            autoPlay
-            loop
-            source={{ uri: 'https://assets9.lottiefiles.com/packages/lf20_at6mscsc.json' }}
-            style={styles.lottie}
-          />
+          {/* ✨ STATIC HEART REPLACEMENT */}
+          <View style={styles.heartIconWrapper}>
+            <Heart size={80} color={theme.tint} fill={theme.tint} />
+          </View>
+          
           <Text style={[styles.title, { color: theme.text }]}>TAMTAM</Text>
           <Text style={[styles.subtitle, { color: theme.tabIconDefault }]}>Our Private Space</Text>
         </MotiView>
@@ -94,8 +91,11 @@ export default function LoginScreen() {
         </MotiView>
 
         <View style={styles.footer}>
-          <Heart color={theme.tint} size={16} fill={theme.tint} />
-          <Text style={[styles.footerText, { color: theme.tabIconDefault }]}>Just the two of us</Text>
+          <View style={[styles.footerLine, { backgroundColor: theme.tabIconDefault }]} />
+          <View style={styles.footerContent}>
+            <Heart color={theme.tint} size={16} fill={theme.tint} />
+            <Text style={[styles.footerText, { color: theme.tabIconDefault }]}>Just the two of us</Text>
+          </View>
         </View>
       </KeyboardAvoidingView>
     </ThemedView>
@@ -112,15 +112,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 48,
   },
-  lottie: {
-    width: 150,
-    height: 150,
+  heartIconWrapper: {
+    marginBottom: 20,
+    // Add a soft glow effect
+    shadowColor: '#FF2D55',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
   },
   title: {
-    fontSize: 40,
+    fontSize: 44,
     fontWeight: '900',
     letterSpacing: -2,
-    marginTop: -20,
   },
   subtitle: {
     fontSize: 16,
@@ -171,6 +174,15 @@ const styles = StyleSheet.create({
     bottom: 50,
     left: 0,
     right: 0,
+    alignItems: 'center',
+  },
+  footerLine: {
+    width: 100,
+    height: 1,
+    opacity: 0.2,
+    marginBottom: 15,
+  },
+  footerContent: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',

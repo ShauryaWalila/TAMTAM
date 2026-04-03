@@ -1,9 +1,8 @@
-goal
-games asking way
-suggestions
 tasks & reminders(location, time and ddate based reminders)
 small games
 yt section
 exam mode
 widget
 a status thing for us on dashboard showing what we aree doing(likee pooping, studying, nothing, etc)
+touch
+focus mode

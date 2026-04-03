@@ -11,6 +11,7 @@ import { BlurView } from 'expo-blur';
 import { Heart, MessageSquare, Calendar as CalendarIcon, Bell, Clock, Quote, Sparkles, Trophy, ChevronRight, Plus, X, Trash2, Settings2, CalendarDays, CalendarRange, PenLine, Stars, Timer, ChevronLeft } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -24,6 +25,7 @@ export default function DashboardScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   
   const [currentUserName, setCurrentUserName] = useState<string | null>(null);
   const [partnerName, setPartnerName] = useState<string>('');
@@ -303,6 +305,14 @@ export default function DashboardScreen() {
           </View>
         </View>
 
+        {/* 🧪 TEMPORARY TEST LINK */}
+        <TouchableOpacity 
+          onPress={() => router.push('/test-dock')} 
+          style={styles.testLink}
+        >
+          <Text style={{ color: theme.tint, fontWeight: '900', fontSize: 16 }}>Preview New Menu Design →</Text>
+        </TouchableOpacity>
+
       </ScrollView>
 
       {/* Routine Manager Modal */}
@@ -417,5 +427,6 @@ const styles = StyleSheet.create({
   addBtnText: { color: 'white', fontWeight: '900', fontSize: 17 },
   manageItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 20, borderBottomWidth: 1 },
   manageTitle: { fontSize: 17, fontWeight: '700' },
-  manageSub: { fontSize: 13, fontWeight: '600', marginTop: 4 }
+  manageSub: { fontSize: 13, fontWeight: '600', marginTop: 4 },
+  testLink: { padding: 30, alignItems: 'center', marginTop: 20, borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.05)' }
 });

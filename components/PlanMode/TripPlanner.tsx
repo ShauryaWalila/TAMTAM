@@ -29,6 +29,7 @@ interface TripPlannerProps {
 
 export default function TripPlanner({ onAddPress, onEditItem }: TripPlannerProps) {
   const colorScheme = useColorScheme() ?? 'light';
+  const theme = Colors[colorScheme];
   const [items, setItems] = useState<TripItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -38,7 +39,7 @@ export default function TripPlanner({ onAddPress, onEditItem }: TripPlannerProps
 
   const fetchTripItems = async () => {
     setIsLoading(true);
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('places')
       .select('*')
       .not('trip_id', 'is', null)
@@ -49,21 +50,17 @@ export default function TripPlanner({ onAddPress, onEditItem }: TripPlannerProps
   };
 
   const handleDragEnd = async ({ data }: { data: TripItem[] }) => {
-    // 1. Update local state for immediate UI feedback
     const reordered = data.map((item, index) => ({ ...item, sequence: index }));
     setItems(reordered);
-
-    // 2. Persist sequences to Supabase
     try {
       const updates = reordered.map(item => 
         supabase.from('places').update({ sequence: item.sequence }).eq('id', item.id)
       );
       await Promise.all(updates);
-    } catch (e) {
-      console.error("Failed to save reorder:", e);
-    }
+    } catch (e) { console.error("Failed to save reorder:", e); }
   };
 
+  const renderItem = ({ item, drag, isActive }: RenderItemParams<TripItem>) => {
     const Icon = item.category === 'eat' ? Utensils : item.category === 'activity' ? Camera : MapPin;
     
     return (
@@ -74,24 +71,25 @@ export default function TripPlanner({ onAddPress, onEditItem }: TripPlannerProps
           disabled={isActive}
           style={[
             styles.itemContainer,
-            { backgroundColor: isActive ? Colors[colorScheme].tint : 'rgba(255,255,255,0.05)' }
+            { backgroundColor: isActive ? theme.tint : 'rgba(255,255,255,0.05)' }
           ]}
         >
           <View style={styles.itemHeader}>
             <View style={styles.dragHandle}>
-              <GripVertical size={20} color={Colors[colorScheme].tabIconDefault} />
+              <GripVertical size={20} color={theme.tabIconDefault} />
             </View>
-            <View style={[styles.iconContainer, { backgroundColor: Colors[colorScheme].tint + '20' }]}>
-              <Icon size={18} color={Colors[colorScheme].tint} />
+            <View style={[styles.iconContainer, { backgroundColor: theme.tint + '20' }]}>
+              <Icon size={18} color={theme.tint} />
             </View>
             <View style={styles.itemInfo}>
               <ThemedText style={styles.itemName} numberOfLines={1}>{item.name}</ThemedText>
-              <MonoText style={styles.categoryText}>{item.category || 'Visit'}</MonoText>
+              <Text style={styles.categoryText}>{item.category || 'Visit'}</Text>
             </View>
           </View>
         </TouchableOpacity>
       </ScaleDecorator>
     );
+  };
 
   return (
     <MotiView 
@@ -102,12 +100,12 @@ export default function TripPlanner({ onAddPress, onEditItem }: TripPlannerProps
     >
       <BlurView intensity={90} tint={colorScheme} style={styles.blurContainer}>
         <View style={styles.header}>
-          <Calendar size={24} color={Colors[colorScheme].tint} />
+          <Calendar size={24} color={theme.tint} />
           <ThemedText style={styles.title}>Itinerary</ThemedText>
         </View>
 
         {isLoading ? (
-          <ActivityIndicator size="large" color={Colors[colorScheme].tint} style={{ marginTop: 50 }} />
+          <ActivityIndicator size="large" color={theme.tint} style={{ marginTop: 50 }} />
         ) : (
           <DraggableFlatList
             data={items}
@@ -124,7 +122,7 @@ export default function TripPlanner({ onAddPress, onEditItem }: TripPlannerProps
         )}
 
         <TouchableOpacity 
-          style={[styles.addButton, { backgroundColor: Colors[colorScheme].tint }]}
+          style={[styles.addButton, { backgroundColor: theme.tint }]}
           onPress={onAddPress}
         >
           <Plus size={24} color="white" />
@@ -136,95 +134,20 @@ export default function TripPlanner({ onAddPress, onEditItem }: TripPlannerProps
 }
 
 const styles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    right: 0,
-    top: 100,
-    bottom: 0,
-    width: width * 0.75,
-    zIndex: 1500,
-  },
-  blurContainer: {
-    flex: 1,
-    borderTopLeftRadius: 30,
-    padding: 20,
-    overflow: 'hidden',
-    borderLeftWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-    marginTop: 20,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginLeft: 10,
-  },
-  listContent: {
-    paddingBottom: 100,
-  },
-  itemContainer: {
-    borderRadius: 15,
-    padding: 12,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  itemHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  dragHandle: {
-    paddingRight: 10,
-  },
-  iconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  itemInfo: {
-    flex: 1,
-  },
-  itemName: {
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  categoryText: {
-    fontSize: 10,
-    color: '#888',
-    textTransform: 'uppercase',
-    marginTop: 2,
-  },
-  emptyState: {
-    marginTop: 50,
-    alignItems: 'center',
-  },
-  emptyText: {
-    color: '#888',
-    fontSize: 14,
-  },
-  addButton: {
-    position: 'absolute',
-    bottom: 30,
-    left: 20,
-    right: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 15,
-    borderRadius: 20,
-    elevation: 5,
-  },
-  addButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 16,
-    marginLeft: 10,
-  },
+  container: { position: 'absolute', right: 0, top: 100, bottom: 0, width: width * 0.75, zIndex: 1500 },
+  blurContainer: { flex: 1, borderTopLeftRadius: 30, padding: 20, overflow: 'hidden', borderLeftWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+  header: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, marginTop: 20 },
+  title: { fontSize: 20, fontWeight: 'bold', marginLeft: 10 },
+  listContent: { paddingBottom: 100 },
+  itemContainer: { borderRadius: 15, padding: 12, marginBottom: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+  itemHeader: { flexDirection: 'row', alignItems: 'center' },
+  dragHandle: { paddingRight: 10 },
+  iconContainer: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+  itemInfo: { flex: 1 },
+  itemName: { fontSize: 15, fontWeight: '600' },
+  categoryText: { fontSize: 10, color: '#888', textTransform: 'uppercase', marginTop: 2 },
+  emptyState: { marginTop: 50, alignItems: 'center' },
+  emptyText: { color: '#888', fontSize: 14 },
+  addButton: { position: 'absolute', bottom: 30, left: 20, right: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 15, borderRadius: 20, elevation: 5 },
+  addButtonText: { color: 'white', fontWeight: 'bold', fontSize: 16, marginLeft: 10 },
 });
