@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Pressable, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, View } from 'react-native';
+import { StyleSheet, Pressable, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, View, TouchableOpacity } from 'react-native';
 import { Text, View as ThemedView } from '@/components/Themed';
 import { MotiView } from 'moti';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
-import { MessageSquarePlus, Heart, Sparkles, Send } from 'lucide-react-native';
+import { MessageSquarePlus, Heart, Sparkles, Send, X } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'expo-router';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import * as SecureStore from 'expo-secure-store';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function MOTMScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
+  const insets = useSafeAreaInsets();
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -31,7 +33,7 @@ export default function MOTMScreen() {
   }, []);
 
   const fetchCurrentMoment = async (name: string) => {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('moments')
       .select('message')
       .eq('user_id', name.toLowerCase())
@@ -73,7 +75,13 @@ export default function MOTMScreen() {
   };
 
   return (
-    <ThemedView style={{ flex: 1 }}>
+    <ThemedView style={{ flex: 1, paddingTop: insets.top }}>
+      <TouchableOpacity 
+        onPress={() => router.back()} 
+        style={[styles.closeButton, { backgroundColor: theme.card }]}
+      >
+        <X color={theme.text} size={24} />
+      </TouchableOpacity>
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.container}
@@ -264,5 +272,21 @@ const styles = StyleSheet.create({
   gridText: {
     fontSize: 13,
     fontWeight: '600',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
 });

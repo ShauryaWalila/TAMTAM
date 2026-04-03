@@ -15,6 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import LottieView from 'lottie-react-native';
 import * as SecureStore from 'expo-secure-store';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -57,6 +58,7 @@ interface CalendarEvent {
 export default function DashboardScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
+  const insets = useSafeAreaInsets();
   const [currentUserName, setCurrentUserName] = useState<string | null>(null);
   const [partnerName, setPartnerName] = useState<string>('Love');
   
@@ -327,12 +329,12 @@ export default function DashboardScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 20 }]}>
         
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={[styles.greeting, { color: theme.text }]}>Hello, {currentUserName ? (currentUserName.toLowerCase() === 'pratishth' ? 'Pratishth' : 'Supriya') : 'Love'}</Text>
+            <Text style={[styles.greeting, { color: theme.text }]}>Hello, TAMTAM</Text>
             <Text style={[styles.subtitle, { color: theme.tabIconDefault }]}>Thinking of you today</Text>
           </View>
           <TouchableOpacity onPress={() => DeviceEventEmitter.emit('show-navigator')}>

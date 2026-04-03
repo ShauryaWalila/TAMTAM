@@ -11,6 +11,7 @@ import * as SecureStore from 'expo-secure-store';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { format, getDaysInMonth, set } from 'date-fns';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -33,6 +34,7 @@ export default function NextMeetScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   
   const [type, setType] = useState<'specific' | 'weekly' | 'monthly'>('specific');
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -138,7 +140,13 @@ export default function NextMeetScreen() {
   }
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView style={{ flex: 1, paddingTop: insets.top }}>
+      <TouchableOpacity 
+        onPress={() => router.back()} 
+        style={[styles.closeButton, { backgroundColor: theme.card }]}
+      >
+        <X color={theme.text} size={24} />
+      </TouchableOpacity>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <Text style={[styles.title, { color: theme.text }]}>Next Reunion</Text>
@@ -322,5 +330,21 @@ const styles = StyleSheet.create({
   cancelBtn: { flex: 1, height: 50, justifyContent: 'center', alignItems: 'center', borderRadius: 12, backgroundColor: 'rgba(150,150,150,0.1)' },
   cancelText: { fontWeight: '700' },
   confirmBtn: { flex: 1, height: 50, justifyContent: 'center', alignItems: 'center', borderRadius: 12 },
-  confirmText: { color: '#FFF', fontWeight: '800' }
+  confirmText: { color: '#FFF', fontWeight: '800' },
+  closeButton: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
 });
