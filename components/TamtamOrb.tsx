@@ -12,7 +12,7 @@ import Animated, {
   Extrapolate
 } from 'react-native-reanimated';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
-import { Home, BookHeart, Map, Wallet, Heart, Settings } from 'lucide-react-native';
+import { Home, BookHeart, Map, Wallet, Heart, Settings, PenTool } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { BlurView } from 'expo-blur';
 import Colors from '@/constants/Colors';
@@ -24,9 +24,10 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const NAV_ITEMS = [
   { id: 'index', path: '/', label: 'US', icon: Home, color: '#FF2D55' },
   { id: 'journal', path: '/journal', label: 'JOURNAL', icon: BookHeart, color: '#AF52DE' },
+  { id: 'draw', path: '/draw', label: 'DRAW', icon: PenTool, color: '#FF9500' },
   { id: 'our-life', path: '/our-life', label: 'LIFE', icon: Map, color: '#34C759' },
-  { id: 'finance', path: '/finance', label: 'FINANCE', icon: Wallet, color: '#FF9500' },
-  { id: 'wishlist', path: '/wishlist', label: 'WISH', icon: Heart, color: '#5856D6' },
+  { id: 'finance', path: '/finance', label: 'FINANCE', icon: Wallet, color: '#5856D6' },
+  { id: 'wishlist', path: '/wishlist', label: 'WISH', icon: Heart, color: '#FF2D55' },
   { id: 'settings', path: '/settings', label: 'SETTINGS', icon: Settings, color: '#8E8E93' },
 ];
 

@@ -1,0 +1,296 @@
+import React, { useState, useCallback, useEffect } from 'react';
+import { StyleSheet, Pressable, ScrollView, Dimensions, Alert, ActivityIndicator, Image, Modal, TouchableOpacity } from 'react-native';
+import { Text, View } from '@/components/Themed';
+import { Canvas, Path, Skia, useCanvasRef } from '@shopify/react-native-skia';
+import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
+import Animated, { useSharedValue, useAnimatedStyle, runOnJS, withSpring } from 'react-native-reanimated';
+import { useColorScheme } from '@/components/useColorScheme';
+import Colors from '@/constants/Colors';
+import { Eraser, Pencil, Send, Trash2, History, MoreHorizontal, CheckCheck, Info, X, Maximize2 } from 'lucide-react-native';
+import { supabase } from '@/lib/supabase';
+import * as SecureStore from 'expo-secure-store';
+import { format, formatDistanceToNow } from 'date-fns';
+import { BlurView } from 'expo-blur';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CANVAS_SIZE = 5000; 
+const VIEWPORT_SIZE = SCREEN_WIDTH - 40;
+
+interface DrawingPath { path: any; color: string; strokeWidth: number; isEraser: boolean; }
+interface Post { id: string; type: "text" | "image" | "draw"; content: string; created_at: string; user_id: string; reactions?: Record<string, string>; seen_by?: string[]; }
+interface Profile { id: string; username: string; avatar_url?: string; }
+const EMOJIS = ["❤️", "🔥", "✨", "😂", "🥺", "😮"];
+
+function ToolButton({ icon, active, onPress, theme }: any) {
+  return (
+    <TouchableOpacity onPress={onPress} style={[styles.toolBtn, active && { backgroundColor: theme.tint + '15', borderRadius: 12 }]}>
+      {icon}
+    </TouchableOpacity>
+  );
+}
+
+export default function DrawScreen() {
+  const colorScheme = useColorScheme() ?? 'light';
+  const theme = Colors[colorScheme];
+  const canvasRef = useCanvasRef();
+  
+  const [paths, setPaths] = useState<DrawingPath[]>([]);
+  const [color, setColor] = useState(theme.tint);
+  const [isEraser, setIsEraser] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [currentUserName, setCurrentUserName] = useState<string | null>(null);
+  const [profiles, setProfiles] = useState<Record<string, Profile>>({});
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [isMenuVisible, setIsMenuVisible] = useState(false);
+  const [isDetailsVisible, setIsDetailsVisible] = useState(false);
+
+  const scale = useSharedValue(1);
+  const savedScale = useSharedValue(1);
+  const translateX = useSharedValue(-(CANVAS_SIZE - VIEWPORT_SIZE) / 2);
+  const translateY = useSharedValue(-(CANVAS_SIZE - VIEWPORT_SIZE) / 2);
+  const savedTranslateX = useSharedValue(-(CANVAS_SIZE - VIEWPORT_SIZE) / 2);
+  const savedTranslateY = useSharedValue(-(CANVAS_SIZE - VIEWPORT_SIZE) / 2);
+
+  useEffect(() => {
+    init();
+    const sub = supabase.channel('draw_sync').on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => fetchHistory()).subscribe();
+    return () => { supabase.removeChannel(sub); };
+  }, []);
+
+  const init = async () => {
+    const name = await SecureStore.getItemAsync('user_name');
+    setCurrentUserName(name);
+    fetchProfiles();
+    fetchHistory(name);
+  };
+
+  const fetchProfiles = async () => {
+    const { data } = await supabase.from('profiles').select('*');
+    if (data) {
+      const profileMap: Record<string, Profile> = {};
+      data.forEach(p => profileMap[p.username.toLowerCase()] = p);
+      setProfiles(profileMap);
+    }
+  };
+
+  const fetchHistory = async (userName?: string | null) => {
+    const { data } = await supabase.from('posts').select('*').eq('type', 'draw').order('created_at', { ascending: false });
+    if (data) {
+      setPosts(data);
+      const user = userName || currentUserName;
+      if (user) markSeenBatch(data, user);
+    }
+  };
+
+  const markSeenBatch = async (allPosts: Post[], userName: string) => {
+    const unread = allPosts.filter(p => p.user_id !== userName && !p.seen_by?.includes(userName));
+    for (const post of unread) {
+      const newSeenBy = [...(post.seen_by || []), userName];
+      await supabase.from('posts').update({ seen_by: newSeenBy }).eq('id', post.id);
+    }
+  };
+
+  const onStart = useCallback((x: number, y: number) => {
+    const newPath = Skia.Path.Make();
+    const s = scale.value;
+    const tx = translateX.value;
+    const ty = translateY.value;
+    newPath.moveTo((x - tx) / s, (y - ty) / s);
+    setPaths(prev => [...prev, { path: newPath, color: isEraser ? '#FFFFFF' : color, strokeWidth: (isEraser ? 30 : 4) / s, isEraser }]);
+  }, [color, isEraser, scale, translateX, translateY]);
+
+  const onUpdate = useCallback((x: number, y: number) => {
+    setPaths(prev => {
+      const newPaths = [...prev];
+      const lastPath = newPaths[newPaths.length - 1];
+      if (lastPath) {
+        const s = scale.value;
+        const tx = translateX.value;
+        const ty = translateY.value;
+        lastPath.path.lineTo((x - tx) / s, (y - ty) / s);
+      }
+      return newPaths;
+    });
+  }, [scale, translateX, translateY]);
+
+  const drawGesture = Gesture.Pan().minPointers(1).maxPointers(1).onBegin(e => { runOnJS(onStart)(e.x, e.y); }).onUpdate(e => { runOnJS(onUpdate)(e.x, e.y); });
+  const zoomGesture = Gesture.Pinch().onUpdate(e => { scale.value = Math.max(0.5, Math.min(savedScale.value * e.scale, 8)); }).onEnd(() => { savedScale.value = scale.value; });
+  const panGesture = Gesture.Pan().minPointers(2)
+    .onUpdate(e => { translateX.value = savedTranslateX.value + e.translationX; translateY.value = savedTranslateY.value + e.translationY; })
+    .onEnd(() => { savedTranslateX.value = translateX.value; savedTranslateY.value = translateY.value; });
+
+  const composedGesture = Gesture.Simultaneous(drawGesture, Gesture.Simultaneous(zoomGesture, panGesture));
+  const animatedStyle = useAnimatedStyle(() => ({ transform: [{ translateX: translateX.value }, { translateY: translateY.value }, { scale: scale.value }] }));
+
+  const resetView = () => { scale.value = withSpring(1); translateX.value = withSpring(-(CANVAS_SIZE - VIEWPORT_SIZE) / 2); translateY.value = withSpring(-(CANVAS_SIZE - VIEWPORT_SIZE) / 2); savedScale.value = 1; savedTranslateX.value = -(CANVAS_SIZE - VIEWPORT_SIZE) / 2; savedTranslateY.value = -(CANVAS_SIZE - VIEWPORT_SIZE) / 2; };
+  const clearCanvas = () => { setPaths([]); resetView(); };
+
+  const handleSend = async () => {
+    if (paths.length === 0 || !currentUserName) return;
+    setLoading(true);
+    try {
+      const image = canvasRef.current?.makeImageSnapshot();
+      if (image) {
+        const base64 = image.encodeToBase64();
+        const { error } = await supabase.from('posts').insert([{ type: 'draw', content: `data:image/png;base64,${base64}`, user_id: currentUserName }]);
+        if (!error) { clearCanvas(); Alert.alert('Sent!', 'Shared with her ❤️'); }
+      }
+    } catch (e: any) { Alert.alert('Error', e.message); } finally { setLoading(false); }
+  };
+
+  const getDisplayName = (uid: string) => {
+    const lower = uid.toLowerCase();
+    return (lower === "pratishth" || lower === "user_1") ? "Pratishth" : (lower === "supriya" || lower === "love") ? "Supriya" : uid;
+  };
+
+  const getAvatar = (uid: string) => {
+    const profile = profiles[uid.toLowerCase()];
+    return profile?.avatar_url ? { uri: profile.avatar_url } : null;
+  };
+
+  const handleAddReaction = async (emoji: string) => {
+    if (!selectedPost || !currentUserName) return;
+    const newReactions = { ...(selectedPost.reactions || {}), [currentUserName]: emoji };
+    setIsMenuVisible(false);
+    await supabase.from('posts').update({ reactions: newReactions }).eq('id', selectedPost.id);
+  };
+
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
+        <View style={styles.header}>
+          <View><Text style={[styles.title, { color: theme.text }]}>Canvas</Text><Text style={[styles.subtitle, { color: theme.tabIconDefault }]}>Infinite Creativity</Text></View>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <TouchableOpacity onPress={resetView} style={styles.glassButton}><Maximize2 color={theme.tint} size={20} /></TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowHistory(true)} style={styles.glassButton}>
+              <History color={theme.tint} size={20} />
+              {posts.filter(p => p.user_id !== currentUserName && !p.seen_by?.includes(currentUserName || '')).length > 0 && <View style={[styles.badge, { backgroundColor: theme.tint }]} />}
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.viewport}>
+          <GestureDetector gesture={composedGesture}>
+            <Animated.View style={[{ width: CANVAS_SIZE, height: CANVAS_SIZE }, animatedStyle]}>
+              <Canvas ref={canvasRef} style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+                {paths.map((p, index) => (<Path key={index} path={p.path} color={p.color} style="stroke" strokeWidth={p.strokeWidth} strokeCap="round" strokeJoin="round" />))}
+              </Canvas>
+            </Animated.View>
+          </GestureDetector>
+        </View>
+
+        <View style={styles.actionRow}>
+          <View style={styles.toolDock}>
+            <ToolButton icon={<Pencil color={!isEraser ? theme.tint : '#8E8E93'} size={22} />} active={!isEraser} onPress={() => setIsEraser(false)} theme={theme} />
+            <ToolButton icon={<Eraser color={isEraser ? theme.tint : '#8E8E93'} size={22} />} active={isEraser} onPress={() => setIsEraser(true)} theme={theme} />
+            <TouchableOpacity onPress={clearCanvas} style={styles.toolBtn}><Trash2 color="#FF3B30" size={22} /></TouchableOpacity>
+          </View>
+          <Pressable onPress={handleSend} disabled={loading} style={[styles.sendBtn, { backgroundColor: theme.tint, opacity: loading ? 0.6 : 1 }]}>
+            {loading ? <ActivityIndicator size="small" color="#FFF" /> : <><Send color="#FFF" size={18} /><Text style={styles.sendText}>Send</Text></>}
+          </Pressable>
+        </View>
+
+        <View style={styles.palette}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingHorizontal: 4 }}>
+            {['#AF52DE', '#FF2D55', '#FF3B30', '#FF9500', '#FFCC00', '#34C759', '#007AFF', '#5856D6', '#000000'].map(c => (
+              <Pressable key={c} onPress={() => { setColor(c); setIsEraser(false); }} style={[styles.colorDot, { backgroundColor: c, borderWidth: color === c && !isEraser ? 3 : 1, borderColor: color === c && !isEraser ? theme.tint : 'rgba(0,0,0,0.1)' }]} />
+            ))}
+          </ScrollView>
+        </View>
+
+        <Modal visible={showHistory} animationType="slide" transparent>
+          <BlurView intensity={90} tint="light" style={StyleSheet.absoluteFill}>
+            <View style={styles.historyContainer}>
+              <View style={styles.historyHeader}><Text style={styles.historyTitle}>Gallery</Text><TouchableOpacity onPress={() => setShowHistory(false)} style={styles.closeBtn}><X size={24} color="#000" /></TouchableOpacity></View>
+              <ScrollView contentContainerStyle={styles.historyGrid}>
+                <View style={styles.gridWrapper}>
+                  {posts.map(post => (
+                    <TouchableOpacity key={post.id} style={styles.gridCard} onLongPress={() => { setSelectedPost(post); setIsMenuVisible(true); }}>
+                      <Image source={{ uri: post.content }} style={styles.gridImg} resizeMode="contain" />
+                      <View style={styles.gridInfo}>
+                        <View style={styles.miniAvatar}>{getAvatar(post.user_id) ? <Image source={getAvatar(post.user_id)!} style={styles.fullImg} /> : <Text style={{ color: '#AF52DE', fontSize: 10, fontWeight: '900' }}>{getDisplayName(post.user_id).charAt(0)}</Text>}</View>
+                        <Text style={styles.gridDate}>{formatDistanceToNow(new Date(post.created_at))}</Text>
+                        {post.seen_by?.length === 2 && <CheckCheck size={12} color="#AF52DE" style={{ marginLeft: 'auto' }} />}
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </ScrollView>
+            </View>
+          </BlurView>
+        </Modal>
+
+        <Modal visible={isMenuVisible} transparent animationType="fade">
+          <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setIsMenuVisible(false)}>
+            <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />
+            <View style={styles.glassMenu}>
+              <View style={styles.emojiBar}>{EMOJIS.map(emoji => (<TouchableOpacity key={emoji} onPress={() => handleAddReaction(emoji)} style={styles.emojiItem}><Text style={{ fontSize: 24 }}>{emoji}</Text></TouchableOpacity>))}</View>
+              <View style={styles.divider} />
+              <TouchableOpacity style={styles.menuBtn} onPress={() => { setIsMenuVisible(false); setIsDetailsVisible(true); }}><Info size={20} color="#000" /><Text style={styles.menuBtnText}>Details</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.menuBtn} onPress={() => { Alert.alert("Delete?", "Forever?", [{ text: "No" }, { text: "Delete", style: "destructive", onPress: async () => { setIsMenuVisible(false); await supabase.from('posts').delete().eq('id', selectedPost?.id); fetchHistory(); }}]); }}><Trash2 size={20} color="#FF3B30" /><Text style={[styles.menuBtnText, { color: '#FF3B30' }]}>Delete</Text></TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </Modal>
+
+        <Modal visible={isDetailsVisible} transparent animationType="slide">
+          <View style={styles.overlay}>
+            <TouchableOpacity style={StyleSheet.absoluteFill} onPress={() => setIsDetailsVisible(false)} />
+            <View style={styles.detailsContent}>
+              <View style={styles.detailsHeader}><Text style={styles.detailsTitle}>Drawing Details</Text><TouchableOpacity onPress={() => setIsDetailsVisible(false)}><X size={24} color="#000" /></TouchableOpacity></View>
+              <View style={styles.detailRow}><Text style={styles.detailLabel}>Posted on</Text><Text style={styles.detailValue}>{selectedPost && format(new Date(selectedPost.created_at), "PPP p")}</Text></View>
+              <View style={styles.detailRow}><Text style={styles.detailLabel}>Posted by</Text><Text style={styles.detailValue}>{selectedPost?.user_id ? getDisplayName(selectedPost.user_id) : ""}</Text></View>
+              <View style={styles.detailRow}><Text style={styles.detailLabel}>Status</Text><View style={{ gap: 8, marginTop: 4 }}>{selectedPost?.seen_by?.map(user => (<View key={user} style={styles.seenBadge}><CheckCheck size={14} color="#AF52DE" /><Text style={styles.seenText}>Seen by {getDisplayName(user)}</Text></View>))}</View></View>
+            </View>
+          </View>
+        </Modal>
+      </View>
+    </GestureHandlerRootView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, marginTop: 10 },
+  title: { fontSize: 28, fontWeight: '900', letterSpacing: -0.5 },
+  subtitle: { fontSize: 15, fontWeight: '500' },
+  glassButton: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.8)' },
+  badge: { position: 'absolute', top: 10, right: 10, width: 8, height: 8, borderRadius: 4, borderWidth: 1.5, borderColor: '#FFF' },
+  viewport: { width: VIEWPORT_SIZE, height: VIEWPORT_SIZE, borderRadius: 32, overflow: 'hidden', elevation: 10, shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 20, backgroundColor: '#FFF' },
+  actionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 24 },
+  toolDock: { flexDirection: 'row', gap: 4, backgroundColor: 'rgba(255,255,255,0.9)', padding: 6, borderRadius: 18, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
+  toolBtn: { width: 42, height: 42, justifyContent: 'center', alignItems: 'center' },
+  sendBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 18, gap: 8 },
+  sendText: { color: '#FFF', fontWeight: '800', fontSize: 15 },
+  palette: { marginTop: 20, height: 50 },
+  colorDot: { width: 34, height: 34, borderRadius: 17 },
+  historyContainer: { flex: 1, paddingTop: 60, paddingHorizontal: 20 },
+  historyHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
+  historyTitle: { fontSize: 32, fontWeight: '900', color: '#000' },
+  closeBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.05)', justifyContent: 'center', alignItems: 'center' },
+  historyGrid: { paddingBottom: 40 },
+  gridWrapper: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  gridCard: { width: (SCREEN_WIDTH - 60) / 2, borderRadius: 24, padding: 8, marginBottom: 16, backgroundColor: '#FFF', elevation: 3, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10 },
+  gridImg: { width: '100%', height: 140, borderRadius: 18, backgroundColor: '#F9F9F9' },
+  gridInfo: { flexDirection: 'row', alignItems: 'center', marginTop: 8, gap: 6, paddingHorizontal: 4 },
+  miniAvatar: { width: 20, height: 20, borderRadius: 10, backgroundColor: 'rgba(0,0,0,0.05)', overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
+  fullImg: { width: '100%', height: '100%' },
+  gridDate: { fontSize: 10, fontWeight: '700', color: '#8E8E93', flex: 1 },
+  overlay: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  glassMenu: { width: SCREEN_WIDTH * 0.8, backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 32, padding: 20, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 20 },
+  emojiBar: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10 },
+  emojiItem: { padding: 8 },
+  divider: { height: 1, backgroundColor: 'rgba(0,0,0,0.05)', marginVertical: 12 },
+  menuBtn: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 },
+  menuBtnText: { fontSize: 17, fontWeight: '700', color: '#000' },
+  detailsContent: { position: "absolute", bottom: 0, width: "100%", borderTopLeftRadius: 40, borderTopRightRadius: 40, padding: 32, paddingBottom: 60, backgroundColor: 'rgba(255,255,255,0.98)' },
+  detailsHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 32 },
+  detailsTitle: { fontSize: 24, fontWeight: "900", color: '#000' },
+  detailRow: { marginBottom: 24 },
+  detailLabel: { fontSize: 13, fontWeight: "800", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, color: '#8E8E93' },
+  detailValue: { fontSize: 18, fontWeight: "600", color: '#000' },
+  seenBadge: { flexDirection: "row", alignItems: "center", gap: 8 },
+  seenText: { fontSize: 16, fontWeight: "600", color: '#000' }
+});

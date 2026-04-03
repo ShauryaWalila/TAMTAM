@@ -1,75 +1,33 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { StyleSheet, Pressable, ScrollView, Dimensions, Alert, ActivityIndicator, Image, TouchableOpacity, View, Text, DeviceEventEmitter } from 'react-native';
-import { Canvas, Path, Rect, Skia, useCanvasRef, Group } from '@shopify/react-native-skia';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { StyleSheet, Pressable, ScrollView, Dimensions, Alert, ActivityIndicator, Image, TouchableOpacity, View, Text, DeviceEventEmitter, Modal, Platform, FlatList } from 'react-native';
+import { Canvas, Path, Skia, useCanvasRef, Group, Rect, LinearGradient, vec, Points } from '@shopify/react-native-skia';
 import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
-import Animated, { useSharedValue, useAnimatedStyle, runOnJS, useDerivedValue } from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, runOnJS, withSpring, withTiming, useDerivedValue } from 'react-native-reanimated';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
-import { Eraser, Pencil, Send, Trash2, History, MoreHorizontal, CheckCheck, Info, X, Smile, Settings2, PaintBucket, Palette } from 'lucide-react-native';
+import { Eraser, Pencil, Send, Trash2, History, X, Palette, Undo2, Check, Settings2, ZoomIn, Hand, Move, Layers } from 'lucide-react-native';
 import { MotiView, AnimatePresence } from 'moti';
 import { supabase } from '@/lib/supabase';
 import * as SecureStore from 'expo-secure-store';
-import { format, formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import { BlurView } from 'expo-blur';
-import { LinearGradient } from 'expo-linear-gradient';
-import LottieView from 'lottie-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import base64js from 'base64-js';
+import * as Haptics from 'expo-haptics';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const CANVAS_SIZE = SCREEN_WIDTH - 40;
+const INFINITE_SIZE = 10000;
+const PICKER_WIDTH = SCREEN_WIDTH * 0.75;
 
-const COLOR_PALETTE = [
-  '#FF3B30', '#FF9500', '#FFCC00', '#34C759',
-  '#007AFF', '#5856D6', '#AF52DE', '#FF2D55',
-  '#000000', '#FFFFFF', '#8E8E93', '#AEAEB2',
-];
+const HUE_COLORS = ['#FF0000', '#FFFF00', '#00FF00', '#00FFFF', '#0000FF', '#FF00FF', '#FF0000'];
+const QUICK_PALETTE = ['#000000', '#FFFFFF', '#8E8E93', '#FF2D55', '#34C759', '#007AFF', '#FF9500'];
 
 interface DrawingPath {
+  id: string;
   path: any;
   color: string;
   strokeWidth: number;
   isEraser: boolean;
-}
-
-interface Post {
-  id: string;
-  type: "text" | "image" | "draw";
-  content: string;
-  created_at: string;
-  user_id: string;
-  reactions?: Record<string, string>;
-  seen_by?: string[];
-}
-
-interface Profile {
-  id: string;
-  username: string;
-  avatar_url?: string;
-}
-
-const EMOJIS = ["❤️", "🔥", "✨", "😂", "🥺", "😮"];
-
-const REACTION_LOTTIES: Record<string, any> = {
-  "❤️": require("../../assets/lottie/heart.lottie"),
-  "🔥": require("../../assets/lottie/fire.lottie"),
-  "✨": require("../../assets/lottie/star.lottie"),
-  "😂": require("../../assets/lottie/joy.lottie"),
-  "🥺": require("../../assets/lottie/pleading.lottie"),
-  "😮": require("../../assets/lottie/shock.lottie"),
-};
-
-function AnimatedReaction({ source, size, infinite = false }: { source: any; size: number; infinite?: boolean }) {
-  const [loopCount, setLoopCount] = useState(0);
-
-  return (
-    <LottieView
-      source={source}
-      autoPlay
-      loop={infinite ? true : loopCount < 2}
-      onAnimationLoop={() => !infinite && setLoopCount(prev => prev + 1)}
-      style={{ width: size, height: size }}
-    />
-  );
 }
 
 export default function DrawScreen() {
@@ -78,121 +36,104 @@ export default function DrawScreen() {
   const canvasRef = useCanvasRef();
   const insets = useSafeAreaInsets();
   
+  // Drawing State
   const [paths, setPaths] = useState<DrawingPath[]>([]);
-  const [color, setColor] = useState(theme.tint);
+  const [color, setColor] = useState('#FF2D55');
+  const [boardBg, setBoardBg] = useState('#FFFFFF');
   const [strokeWidth, setStrokeWidth] = useState(4);
-  const [eraserWidth, setEraserWidth] = useState(20);
-  const [canvasBgColor, setCanvasBgColor] = useState('#FFFFFF');
-  const [isEraser, setIsEraser] = useState(false);
+  const [eraserWidth, setEraserWidth] = useState(40);
+  const [activeTool, setActiveTool] = useState<'pen' | 'eraser' | 'pan'>('pen');
   const [loading, setLoading] = useState(false);
-  
-  // Pagination states
-  const [page, setPage] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
-  const [isFetchingMore, setIsFetchingMore] = useState(false);
-  const PAGE_SIZE = 12;
-  
-  // Custom Overlays State
-  const [showSettings, setShowSettings] = useState(false);
-  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [currentLocalPath, setCurrentLocalPath] = useState<DrawingPath | null>(null);
+
+  // UI State
   const [showHistory, setShowHistory] = useState(false);
-  const [viewingPost, setViewingPost] = useState<Post | null>(null);
-  const [isMenuVisible, setIsMenuVisible] = useState(false);
-  const [isDetailsVisible, setIsDetailsVisible] = useState(false);
-
-  useEffect(() => {
-    // Hide navigator when entering draw mode
-    DeviceEventEmitter.emit('hide-navigator');
-    return () => {
-      DeviceEventEmitter.emit('show-navigator');
-    };
-  }, []);
-
-  const [posts, setPosts] = useState<Post[]>([]);
+  const [showPicker, setShowPicker] = useState<'none' | 'stroke' | 'board'>('none');
+  const [showStrokeSettings, setShowStrokeSettings] = useState(false);
+  const [posts, setPosts] = useState<any[]>([]);
   const [currentUserName, setCurrentUserName] = useState<string | null>(null);
-  const [profiles, setProfiles] = useState<Record<string, Profile>>({});
+  const [viewingPost, setViewingPost] = useState<any | null>(null);
+  const [zoomText, setZoomText] = useState('100%');
+
+  // Infinite Canvas Transforms
+  const scale = useSharedValue(1);
+  const savedScale = useSharedValue(1);
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
+  const savedTranslateX = useSharedValue(0);
+  const savedTranslateY = useSharedValue(0);
+  const focalX = useSharedValue(0);
+  const focalY = useSharedValue(0);
+
+  // Spectrum Picker Shared Values
+  const pointerX = useSharedValue(PICKER_WIDTH * 0.8);
 
   useEffect(() => {
     const init = async () => {
       const name = await SecureStore.getItemAsync("user_name");
       setCurrentUserName(name);
-      fetchProfiles();
-      fetchPosts(true);
+      fetchPosts();
     };
     init();
-
-    const subscription = supabase
-      .channel("draw_updates")
-      .on("postgres_changes", { event: "*", schema: "public", table: "posts", filter: "type=eq.draw" }, (p) => {
-        if (p.eventType === "INSERT") setPosts(prev => [p.new as Post, ...prev]);
-        else if (p.eventType === "UPDATE") setPosts(prev => prev.map(post => post.id === p.new.id ? (p.new as Post) : post));
-        else if (p.eventType === "DELETE") setPosts(prev => prev.filter(post => post.id !== p.old.id));
-      })
-      .subscribe();
-
-    return () => { supabase.removeChannel(subscription); };
+    DeviceEventEmitter.emit('hide-navigator');
+    return () => DeviceEventEmitter.emit('show-navigator');
   }, []);
 
-  const fetchProfiles = async () => {
-    const { data } = await supabase.from('profiles').select('id, username, avatar_url');
-    if (data) {
-      const mapped = data.reduce((acc: any, p) => { acc[p.username.toLowerCase()] = p; return acc; }, {});
-      setProfiles(mapped);
+  const fetchPosts = async () => {
+    const { data } = await supabase.from("posts").select("*").eq('type', 'draw').order("created_at", { ascending: false }).limit(50);
+    if (data) setPosts(data);
+  };
+
+  // ✍️ Drawing Handlers
+  const onStart = useCallback((x: number, y: number) => {
+    const id = Math.random().toString(36).substr(2, 9);
+    const newPath = Skia.Path.Make();
+    const adjX = (x - translateX.value) / scale.value;
+    const adjY = (y - translateY.value) / scale.value;
+    newPath.moveTo(adjX, adjY);
+    setCurrentLocalPath({ id, path: newPath, color: activeTool === 'eraser' ? boardBg : color, strokeWidth: (activeTool === 'eraser' ? eraserWidth : strokeWidth) / scale.value, isEraser: activeTool === 'eraser' });
+  }, [color, activeTool, strokeWidth, eraserWidth, boardBg, translateX, translateY, scale]);
+
+  const onUpdate = useCallback((x: number, y: number) => {
+    if (currentLocalPath) {
+      const adjX = (x - translateX.value) / scale.value;
+      const adjY = (y - translateY.value) / scale.value;
+      currentLocalPath.path.lineTo(adjX, adjY);
+      setCurrentLocalPath({ ...currentLocalPath });
     }
-  };
+  }, [currentLocalPath, translateX, translateY, scale]);
 
-  const fetchPosts = async (reset = false) => {
-    if (isFetchingMore && !reset) return;
-    const start = reset ? 0 : (page + 1) * PAGE_SIZE;
-    const end = start + PAGE_SIZE - 1;
-    if (reset) setLoading(true);
-    else setIsFetchingMore(true);
-
-    const { data, error } = await supabase.from("posts").select("*").eq('type', 'draw').order("created_at", { ascending: false }).range(start, end);
-    if (!error && data) {
-      if (reset) setPosts(data);
-      else setPosts(prev => [...prev, ...data]);
-      setPage(reset ? 0 : page + 1);
-      setHasMore(data.length === PAGE_SIZE);
+  const onEnd = useCallback(() => {
+    if (currentLocalPath) {
+      setPaths(prev => [...prev, currentLocalPath]);
+      setCurrentLocalPath(null);
     }
-    setLoading(false);
-    setIsFetchingMore(false);
+  }, [currentLocalPath]);
+
+  // 🖐️ Gestures
+  const pan = Gesture.Pan().minPointers(1).maxPointers(1).enabled(activeTool !== 'pan').onBegin((e) => runOnJS(onStart)(e.x, e.y)).onUpdate((e) => runOnJS(onUpdate)(e.x, e.y)).onEnd(() => runOnJS(onEnd)());
+  const oneFingerPanGesture = Gesture.Pan().minPointers(1).maxPointers(1).enabled(activeTool === 'pan').onUpdate((e) => { translateX.value = savedTranslateX.value + e.translationX; translateY.value = savedTranslateY.value + e.translationY; }).onEnd(() => { savedTranslateX.value = translateX.value; savedTranslateY.value = translateY.value; });
+  const pinchGesture = Gesture.Pinch().onStart((e) => { savedScale.value = scale.value; savedTranslateX.value = translateX.value; savedTranslateY.value = translateY.value; focalX.value = e.focalX; focalY.value = e.focalY; }).onUpdate((e) => { const newScale = Math.max(0.1, Math.min(savedScale.value * e.scale, 15)); const s = newScale / savedScale.value; translateX.value = focalX.value - (focalX.value - savedTranslateX.value) * s; translateY.value = focalY.value - (focalY.value - savedTranslateY.value) * s; scale.value = newScale; runOnJS(setZoomText)(`${Math.round(newScale * 100)}%`); }).onEnd(() => { savedScale.value = scale.value; savedTranslateX.value = translateX.value; savedTranslateY.value = translateY.value; });
+  
+  const composedGesture = Gesture.Simultaneous(Gesture.Exclusive(pan, oneFingerPanGesture), pinchGesture);
+  const animatedTransform = useDerivedValue(() => [{ translateX: translateX.value }, { translateY: translateY.value }, { scale: scale.value }]);
+
+  // 🌈 Spectrum Color Logic
+  const onHueSelect = (x: number) => {
+    const progress = Math.max(0, Math.min(x / PICKER_WIDTH, 1));
+    pointerX.value = x;
+    const colorIdx = progress * (HUE_COLORS.length - 1);
+    const lowIdx = Math.floor(colorIdx);
+    const highIdx = Math.ceil(colorIdx);
+    const ratio = colorIdx - lowIdx;
+    
+    // Simplification for JS state update
+    const selected = HUE_COLORS[lowIdx];
+    if (showPicker === 'stroke') runOnJS(setColor)(selected);
+    else if (showPicker === 'board') runOnJS(setBoardBg)(selected);
   };
 
-  const handleScroll = (event: any) => {
-    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
-    if (layoutMeasurement.height + contentOffset.y >= contentSize.height - 300 && hasMore && !isFetchingMore) {
-      fetchPosts();
-    }
-  };
-
-  const getAvatar = (uid: string) => {
-    const lowerUid = uid.toLowerCase();
-    const profile = profiles[lowerUid];
-    if (profile?.avatar_url) return { uri: profile.avatar_url };
-    return null;
-  };
-
-  const pan = Gesture.Pan()
-    .onStart((g) => {
-      const newPath = Skia.Path.Make();
-      newPath.moveTo(g.x, g.y);
-      setPaths((prev) => [...prev, { path: newPath, color: isEraser ? canvasBgColor : color, strokeWidth: isEraser ? eraserWidth : strokeWidth, isEraser }]);
-    })
-    .onUpdate((g) => {
-      const lastPathObj = paths[paths.length - 1];
-      if (lastPathObj) {
-        lastPathObj.path.lineTo(g.x, g.y);
-        setPaths([...paths]);
-      }
-    });
-
-  const clearCanvas = () => {
-    Alert.alert("Clear Canvas", "Delete everything and start fresh?", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Clear", style: "destructive", onPress: () => setPaths([]) }
-    ]);
-  };
+  const hueGesture = Gesture.Pan().onUpdate((e) => runOnJS(onHueSelect)(e.x)).onBegin((e) => runOnJS(onHueSelect)(e.x));
 
   const handleSend = async () => {
     if (paths.length === 0) return;
@@ -202,220 +143,166 @@ export default function DrawScreen() {
       if (image) {
         const base64 = image.encodeToBase64();
         const filePath = `drawings/${Date.now()}.png`;
-        const { error: uploadError } = await supabase.storage.from('journal-assets').upload(filePath, base64js.toByteArray(base64), { contentType: 'image/png' });
+        const byteArray = base64js.toByteArray(base64);
+        const { error: uploadError } = await supabase.storage.from('journal-assets').upload(filePath, byteArray, { contentType: 'image/png' });
         if (uploadError) throw uploadError;
         const { data: { publicUrl } } = supabase.storage.from('journal-assets').getPublicUrl(filePath);
-        const { error } = await supabase.from("posts").insert([{ type: 'draw', content: publicUrl, user_id: currentUserName || "user_1" }]);
-        if (error) throw error;
-        setPaths([]);
-        setShowHistory(true);
+        await supabase.from("posts").insert([{ type: 'draw', content: publicUrl, user_id: currentUserName || "user_1", reactions: { board_bg: boardBg } }]);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setPaths([]); fetchPosts(); setShowHistory(true);
       }
     } catch (error: any) { Alert.alert('Error', error.message); }
     finally { setLoading(false); }
   };
 
-  const handleAddReaction = async (post: Post, emoji: string) => {
-    if (!currentUserName) return;
-    const newReactions = { ...(post.reactions || {}), [currentUserName]: emoji };
-    await supabase.from('posts').update({ reactions: newReactions }).eq('id', post.id);
-  };
-
-  const handleDeletePost = async (post: Post) => {
-    Alert.alert("Delete Drawing?", "This will be gone forever.", [
-      { text: "Keep", style: "cancel" },
-      { text: "Delete", style: "destructive", onPress: async () => {
-          await supabase.from('posts').delete().eq('id', post.id);
-          setIsMenuVisible(false);
-          setViewingPost(null);
-        }
-      }
-    ]);
-  };
-
   return (
-    <GestureHandlerRootView style={styles.container}>
-      <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
+    <GestureHandlerRootView style={[styles.container, { backgroundColor: '#000' }]}>
+      <View style={[styles.container, { paddingTop: insets.top, backgroundColor: '#000' }]}>
+        
+        {/* Header */}
         <View style={styles.header}>
-          <View>
-            <Text style={[styles.title, { color: theme.text }]}>Canvas</Text>
-            <Text style={[styles.subtitle, { color: theme.tabIconDefault }]}>Draw something for us</Text>
-          </View>
+          <View><Text style={[styles.title, { color: '#FFF' }]}>Sketchbook</Text><View style={styles.statusRow}><ZoomIn size={12} color="#888" /><Text style={styles.zoomLabel}>{zoomText}</Text></View></View>
           <View style={styles.headerActions}>
-            <TouchableOpacity onPress={() => setShowHistory(true)} style={[styles.iconBtn, { backgroundColor: theme.card }]}><History size={22} color={theme.text} /></TouchableOpacity>
-            <TouchableOpacity onPress={handleSend} disabled={loading || paths.length === 0} style={[styles.sendBtn, { backgroundColor: theme.tint, opacity: (loading || paths.length === 0) ? 0.6 : 1 }]}><Send size={20} color="#FFF" /></TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowHistory(true)} style={[styles.circleBtn, { backgroundColor: 'rgba(255,255,255,0.1)' }]}><History size={22} color="#FFF" /></TouchableOpacity>
+            <TouchableOpacity onPress={handleSend} disabled={loading || paths.length === 0} style={[styles.sendBtn, { backgroundColor: theme.tint }]}>{loading ? <ActivityIndicator color="#FFF" /> : <Send size={20} color="#FFF" />}</TouchableOpacity>
           </View>
         </View>
 
-        <View style={styles.canvasWrapper}>
-          <View style={[styles.canvasContainer, { backgroundColor: canvasBgColor }]}>
-            <GestureDetector gesture={pan}>
-              <Canvas ref={canvasRef} style={styles.canvas}>
-                {paths.map((p, i) => (
-                  <Path key={i} path={p.path} color={p.color} style="stroke" strokeWidth={p.strokeWidth} strokeCap="round" strokeJoin="round" />
-                ))}
-              </Canvas>
-            </GestureDetector>
-          </View>
+        {/* Board */}
+        <View style={[styles.canvasContainer, { backgroundColor: '#000' }]}>
+          <GestureDetector gesture={composedGesture}>
+            <Canvas ref={canvasRef} style={StyleSheet.absoluteFill}>
+              <Group transform={animatedTransform}>
+                <Rect x={-5000} y={-5000} width={10000} height={10000} color={boardBg} />
+                <Group layer>
+                  {paths.map((p) => (<Path key={p.id} path={p.path} color={p.color} style="stroke" strokeWidth={p.strokeWidth} strokeCap="round" strokeJoin="round" blendMode={p.isEraser ? "clear" : "srcOver"} />))}
+                  {currentLocalPath && (<Path path={currentLocalPath.path} color={currentLocalPath.color} style="stroke" strokeWidth={currentLocalPath.strokeWidth} strokeCap="round" strokeJoin="round" blendMode={currentLocalPath.isEraser ? "clear" : "srcOver"} />)}
+                </Group>
+              </Group>
+            </Canvas>
+          </GestureDetector>
         </View>
 
-        <View style={[styles.toolbar, { backgroundColor: theme.card, paddingBottom: insets.bottom + 15 }]}>
-          <TouchableOpacity onPress={() => setIsEraser(false)} style={[styles.tool, !isEraser && { backgroundColor: theme.tint + '20' }]}><Pencil size={24} color={!isEraser ? theme.tint : theme.tabIconDefault} /></TouchableOpacity>
-          <TouchableOpacity onPress={() => setIsEraser(true)} style={[styles.tool, isEraser && { backgroundColor: theme.tint + '20' }]}><Eraser size={24} color={isEraser ? theme.tint : theme.tabIconDefault} /></TouchableOpacity>
-          <TouchableOpacity onPress={() => setShowColorPicker(true)} style={styles.tool}><View style={[styles.colorIndicator, { backgroundColor: color }]} /><Palette size={20} color={theme.tabIconDefault} style={{ position: 'absolute', right: 5, bottom: 5 }} /></TouchableOpacity>
-          <TouchableOpacity onPress={() => setShowSettings(true)} style={styles.tool}><Settings2 size={24} color={theme.tabIconDefault} /></TouchableOpacity>
-          <TouchableOpacity onPress={clearCanvas} style={styles.tool}><Trash2 size={24} color="#FF3B30" opacity={0.6} /></TouchableOpacity>
+        {/* Toolbar */}
+        <View style={[styles.mainDock, { bottom: insets.bottom + 20 }]}>
+          <BlurView intensity={90} tint="dark" style={styles.dockBlur}>
+            <TouchableOpacity onPress={() => setActiveTool('pen')} style={[styles.tool, activeTool === 'pen' && styles.activeTool]}><Pencil size={22} color={activeTool === 'pen' ? theme.tint : "#AAA"} /></TouchableOpacity>
+            <TouchableOpacity onPress={() => setActiveTool('eraser')} style={[styles.tool, activeTool === 'eraser' && styles.activeTool]}><Eraser size={22} color={activeTool === 'eraser' ? theme.tint : "#AAA"} /></TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowPicker('stroke')} style={styles.tool}><View style={[styles.colorPreview, { backgroundColor: color }]} /><Palette size={12} color="#FFF" style={{position:'absolute'}} /></TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowPicker('board')} style={styles.tool}><View style={[styles.colorPreview, { backgroundColor: boardBg, borderRadius: 4 }]} /><Layers size={14} color={boardBg === '#FFFFFF' ? '#000' : '#FFF'} style={{position:'absolute'}} /></TouchableOpacity>
+            <View style={styles.divider} />
+            <TouchableOpacity onPress={() => setShowStrokeSettings(true)} style={styles.tool}><Settings2 size={22} color="#FFF" /></TouchableOpacity>
+            <TouchableOpacity onPress={() => setPaths(prev => prev.slice(0, -1))} style={styles.tool}><Undo2 size={22} color="#FFF" /></TouchableOpacity>
+            <TouchableOpacity onPress={() => setPaths([])} style={styles.tool}><Trash2 size={22} color="#FF3B30" /></TouchableOpacity>
+          </BlurView>
         </View>
 
-        {/* Modal components... */}
-        <Modal visible={showHistory} animationType="slide" transparent={true}>
-          <View style={styles.modalOverlay}>
-            <BlurView intensity={100} tint={colorScheme} style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <Text style={[styles.modalTitle, { color: theme.text }]}>Gallery</Text>
-                <TouchableOpacity onPress={() => setShowHistory(false)}><X size={24} color={theme.text} /></TouchableOpacity>
+        {/* 🌈 THE UNIFIED SPECTRUM MODAL */}
+        <Modal visible={showPicker !== 'none'} transparent animationType="fade">
+          <Pressable style={styles.modalOverlay} onPress={() => setShowPicker('none')}>
+            <MotiView from={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={styles.spectrumCard}>
+              <Text style={styles.pickerTitle}>{showPicker === 'stroke' ? 'Stroke Color' : 'Board Background'}</Text>
+              
+              <View style={[styles.largePreview, { backgroundColor: showPicker === 'stroke' ? color : boardBg }]} />
+              
+              <View style={{ width: PICKER_WIDTH, height: 40, marginTop: 30 }}>
+                <GestureDetector gesture={hueGesture}>
+                  <Canvas style={{ flex: 1, borderRadius: 20 }}>
+                    <Rect x={0} y={0} width={PICKER_WIDTH} height={40}>
+                      <LinearGradient start={vec(0, 0)} end={vec(PICKER_WIDTH, 0)} colors={HUE_COLORS} />
+                    </Rect>
+                  </Canvas>
+                </GestureDetector>
+                <Animated.View style={[styles.huePointer, useAnimatedStyle(() => ({ left: pointerX.value }))] } pointerEvents="none" />
               </View>
-              <ScrollView showsVerticalScrollIndicator={false} onScroll={handleScroll} scrollEventThrottle={16}>
-                <View style={styles.historyGrid}>
-                  {posts.map((post) => (
-                    <TouchableOpacity key={post.id} style={styles.historyItem} onPress={() => setViewingPost(post)}>
-                      <Image source={{ uri: post.content }} style={styles.historyThumb} />
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </ScrollView>
-            </BlurView>
-          </View>
-        </Modal>
 
-        <Modal visible={showSettings} animationType="fade" transparent={true}>
-          <View style={styles.modalOverlay}>
-            <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowSettings(false)} />
-            <MotiView from={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={[styles.settingsBox, { backgroundColor: theme.card }]}>
-              <Text style={[styles.settingsTitle, { color: theme.text }]}>Stroke Width</Text>
-              <View style={styles.widthRow}>
-                {[2, 4, 8, 12, 16].map(w => (
-                  <TouchableOpacity key={w} onPress={() => { setStrokeWidth(w); setShowSettings(false); }} style={[styles.widthBtn, strokeWidth === w && { backgroundColor: theme.tint }]}>
-                    <View style={{ width: w, height: w, borderRadius: w/2, backgroundColor: strokeWidth === w ? '#FFF' : theme.text }} />
-                  </TouchableOpacity>
+              <View style={styles.paletteGrid}>
+                {QUICK_PALETTE.map(c => (
+                  <TouchableOpacity key={c} onPress={() => { if(showPicker === 'stroke') setColor(c); else setBoardBg(c); setShowPicker('none'); }} style={[styles.paletteDot, { backgroundColor: c, borderWidth: 1, borderColor: '#333' }]} />
                 ))}
               </View>
-              <Text style={[styles.settingsTitle, { color: theme.text, marginTop: 20 }]}>Canvas Color</Text>
-              <View style={styles.widthRow}>
-                {['#FFFFFF', '#F8F9FA', '#FFF5E6', '#E6F4FE', '#000000'].map(c => (
-                  <TouchableOpacity key={c} onPress={() => { setCanvasBgColor(c); setShowSettings(false); }} style={[styles.colorDot, { backgroundColor: c, borderWidth: 1, borderColor: '#eee' }]}>
-                    {canvasBgColor === c && <CheckCheck size={14} color={c === '#000000' ? '#FFF' : theme.tint} />}
-                  </TouchableOpacity>
-                ))}
-              </View>
+
+              <TouchableOpacity style={[styles.doneBtn, { backgroundColor: theme.tint }]} onPress={() => setShowPicker('none')}>
+                <Text style={styles.doneBtnText}>Confirm</Text>
+              </TouchableOpacity>
             </MotiView>
-          </View>
+          </Pressable>
         </Modal>
 
-        <Modal visible={showColorPicker} animationType="fade" transparent={true}>
-          <View style={styles.modalOverlay}>
-            <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowColorPicker(false)} />
-            <MotiView from={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={[styles.settingsBox, { backgroundColor: theme.card }]}>
-              <View style={styles.gridPalette}>
-                {COLOR_PALETTE.map(c => (
-                  <TouchableOpacity key={c} onPress={() => { setColor(c); setIsEraser(false); setShowColorPicker(false); }} style={[styles.paletteDot, { backgroundColor: c }]}>
-                    {color === c && <CheckCheck size={20} color={c === '#FFFFFF' ? '#000' : '#FFF'} />}
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </MotiView>
-          </View>
+        {/* BRUSH SETTINGS MODAL */}
+        <Modal visible={showStrokeSettings} transparent animationType="fade">
+          <Pressable style={styles.modalOverlay} onPress={() => setShowStrokeSettings(false)}>
+            <View style={[styles.settingsCard, { backgroundColor: '#1A1A1A' }]}><Text style={[styles.modalTitle, { color: '#FFF' }]}>Brush Settings</Text><Text style={styles.label}>PEN SIZE</Text><View style={styles.sizeRow}>{[2, 4, 8, 16, 24].map(s => (<TouchableOpacity key={s} onPress={() => setStrokeWidth(s)} style={[styles.sizeBtn, strokeWidth === s && { backgroundColor: theme.tint }]}><View style={{ width: s, height: s, borderRadius: s/2, backgroundColor: strokeWidth === s ? '#FFF' : '#AAA' }} /></TouchableOpacity>))}</View><Text style={[styles.label, { marginTop: 25 }]}>ERASER SIZE</Text><View style={styles.sizeRow}>{[20, 40, 60, 80, 100].map(s => (<TouchableOpacity key={s} onPress={() => setEraserWidth(s)} style={[styles.sizeBtn, eraserWidth === s && { backgroundColor: theme.tint }]}> <View style={{ width: s/4, height: s/4, borderRadius: s/8, backgroundColor: eraserWidth === s ? '#FFF' : '#AAA' }} /></TouchableOpacity>))}</View><TouchableOpacity style={[styles.doneBtn, { backgroundColor: theme.tint }]} onPress={() => setShowStrokeSettings(false)}><Text style={styles.doneBtnText}>Confirm</Text></TouchableOpacity></View>
+          </Pressable>
         </Modal>
 
-        <Modal visible={!!viewingPost} animationType="slide" transparent={true}>
-          <View style={styles.viewerOverlay}>
-            <BlurView intensity={100} tint="dark" style={StyleSheet.absoluteFill} />
-            <TouchableOpacity style={styles.viewerClose} onPress={() => setViewingPost(null)}><X size={28} color="#FFF" /></TouchableOpacity>
-            {viewingPost && (
-              <View style={styles.viewerContent}>
-                <View style={styles.viewerHeader}>
-                  <View style={styles.userInfo}>
-                    <View style={[styles.smallAvatar, { backgroundColor: theme.tint }]}>
-                      {getAvatar(viewingPost.user_id) ? <Image source={getAvatar(viewingPost.user_id)} style={styles.avatarImage} /> : <Text style={{color:'#FFF', fontWeight:'bold'}}>{viewingPost.user_id.charAt(0).toUpperCase()}</Text>}
-                    </View>
-                    <View>
-                      <Text style={styles.viewerUser}>{viewingPost.user_id === currentUserName ? 'Me' : viewingPost.user_id === 'love' ? 'Love' : viewingPost.user_id}</Text>
-                      <Text style={styles.viewerDate}>{formatDistanceToNow(new Date(viewingPost.created_at))} ago</Text>
-                    </View>
-                  </View>
-                  <TouchableOpacity onPress={() => setIsMenuVisible(true)}><MoreHorizontal size={24} color="#FFF" /></TouchableOpacity>
-                </View>
-                <Image source={{ uri: viewingPost.content }} style={styles.fullDrawing} resizeMode="contain" />
-                <View style={styles.reactionsRow}>
-                  {EMOJIS.map(emoji => {
-                    const count = Object.values(viewingPost.reactions || {}).filter(e => e === emoji).length;
-                    const hasReacted = viewingPost.reactions?.[currentUserName || ''] === emoji;
-                    return (
-                      <TouchableOpacity key={emoji} onPress={() => handleAddReaction(viewingPost, emoji)} style={[styles.reactionBadge, hasReacted && { backgroundColor: theme.tint + '40', borderColor: theme.tint }]}>
-                        <Text style={{ fontSize: 20 }}>{emoji}</Text>
-                        {count > 0 && <Text style={styles.reactionCount}>{count}</Text>}
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
+        {/* HISTORY MODAL */}
+        <Modal visible={showHistory} animationType="slide" transparent={false}>
+          <View style={[styles.historyFull, { paddingTop: insets.top, backgroundColor: '#000' }]}>
+            {!viewingPost ? (
+              <>
+                <View style={styles.modalHeader}><Text style={[styles.modalTitle, { color: '#FFF' }]}>Gallery</Text><TouchableOpacity onPress={() => setShowHistory(false)} style={styles.closeBtn}><X size={28} color="#FFF" /></TouchableOpacity></View>
+                <FlatList data={posts} keyExtractor={item => item.id} numColumns={2} contentContainerStyle={styles.galleryList} renderItem={({ item }) => (
+                  <TouchableOpacity onPress={() => setViewingPost(item)} style={[styles.galleryItem, { backgroundColor: item.reactions?.board_bg || '#F8F9FA' }]}><Image source={{ uri: item.content }} style={styles.galleryThumb} /><View style={styles.thumbLabel}><Text style={styles.thumbUser} numberOfLines={1}>{item.user_id === currentUserName ? 'Me' : item.user_id}</Text></View></TouchableOpacity>
+                )}/>
+              </>
+            ) : (
+              <View style={styles.viewerOverlay}><TouchableOpacity style={styles.viewerClose} onPress={() => setViewingPost(null)}><X size={30} color="#FFF" /></TouchableOpacity><MotiView from={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={styles.viewerContent}><View style={[styles.viewerCard, { backgroundColor: viewingPost.reactions?.board_bg || '#FFF' }]}><Image source={{ uri: viewingPost.content }} style={styles.fullImage} resizeMode="contain" /><View style={[styles.viewerInfo, { backgroundColor: 'rgba(0,0,0,0.05)', borderTopWidth: 0 }]}><View style={styles.creatorRow}><View style={[styles.avatarCircle, { backgroundColor: theme.tint }]}><Text style={styles.avatarInitial}>{viewingPost.user_id.charAt(0).toUpperCase()}</Text></View><View><Text style={[styles.viewerUserName, { color: '#000' }]}>{viewingPost.user_id === currentUserName ? 'Made by Me' : `By ${viewingPost.user_id}`}</Text><Text style={[styles.viewerDate, { color: '#666' }]}>{formatDistanceToNow(new Date(viewingPost.created_at))} ago</Text></View></View></View></View></MotiView></View>
             )}
-            <Modal visible={isMenuVisible} transparent animationType="fade">
-              <Pressable style={styles.menuOverlay} onPress={() => setIsMenuVisible(false)}>
-                <BlurView intensity={20} style={StyleSheet.absoluteFill} />
-                <MotiView from={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={[styles.menuContent, { backgroundColor: theme.card }]}>
-                  <TouchableOpacity style={styles.menuItem} onPress={() => viewingPost && handleDeletePost(viewingPost)}><Trash2 size={20} color="#FF3B30" /><Text style={[styles.menuText, { color: "#FF3B30" }]}>Delete Drawing</Text></TouchableOpacity>
-                </MotiView>
-              </Pressable>
-            </Modal>
           </View>
         </Modal>
-      </ThemedView>
+
+      </View>
     </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 25 },
-  title: { fontSize: 28, fontWeight: '900', letterSpacing: -0.5 },
-  subtitle: { fontSize: 15, fontWeight: '600' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 25, paddingVertical: 20 },
+  title: { fontSize: 32, fontWeight: '900', letterSpacing: -1 },
+  statusRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  zoomLabel: { fontSize: 12, fontWeight: 'bold', color: '#888' },
   headerActions: { flexDirection: 'row', gap: 12 },
-  iconBtn: { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center', elevation: 2 },
-  sendBtn: { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center', elevation: 4 },
-  canvasWrapper: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  canvasContainer: { width: CANVAS_SIZE, height: CANVAS_SIZE, borderRadius: 24, overflow: 'hidden', elevation: 10, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 20 },
-  canvas: { flex: 1 },
-  toolbar: { flexDirection: 'row', justifyContent: 'space-evenly', alignItems: 'center', paddingVertical: 15, borderTopLeftRadius: 32, borderTopRightRadius: 32 },
-  tool: { width: 50, height: 50, borderRadius: 15, justifyContent: 'center', alignItems: 'center' },
-  colorIndicator: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: 'rgba(0,0,0,0.1)' },
-  modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.4)' },
-  modalContent: { width: '100%', height: '80%', borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 25 },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 },
-  modalTitle: { fontSize: 22, fontWeight: '800' },
-  historyGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  historyItem: { width: (SCREEN_WIDTH - 62) / 3, height: (SCREEN_WIDTH - 62) / 3, borderRadius: 12, overflow: 'hidden', backgroundColor: '#eee' },
-  historyThumb: { width: '100%', height: '100%' },
-  settingsBox: { width: SCREEN_WIDTH * 0.8, padding: 25, borderRadius: 32 },
-  widthRow: { flexDirection: 'row', gap: 15, alignItems: 'center', marginTop: 15 },
-  widthBtn: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.05)' },
-  colorDot: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
-  gridPalette: { flexDirection: 'row', flexWrap: 'wrap', gap: 15, justifyContent: 'center' },
-  paletteDot: { width: 50, height: 50, borderRadius: 25, justifyContent: 'center', alignItems: 'center' },
-  viewerOverlay: { flex: 1, backgroundColor: '#000' },
-  viewerClose: { position: 'absolute', top: 60, right: 25, zIndex: 10, width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
-  viewerContent: { flex: 1, padding: 20, justifyContent: 'center' },
-  viewerHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  userInfo: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  smallAvatar: { width: 40, height: 40, borderRadius: 20, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
-  avatarImage: { width: '100%', height: '100%' },
-  viewerUser: { color: '#FFF', fontSize: 16, fontWeight: '800' },
-  viewerDate: { color: 'rgba(255,255,255,0.6)', fontSize: 12 },
-  fullDrawing: { width: SCREEN_WIDTH - 40, height: SCREEN_WIDTH - 40, borderRadius: 24, backgroundColor: '#FFF' },
-  reactionsRow: { flexDirection: 'row', justifyContent: 'center', gap: 15, marginTop: 30 },
-  reactionBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
-  reactionCount: { color: '#FFF', fontSize: 14, fontWeight: '800' },
-  menuOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  menuContent: { width: SCREEN_WIDTH * 0.7, borderRadius: 24, padding: 8 },
-  menuItem: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 },
-  menuText: { fontSize: 16, fontWeight: '700' }
+  circleBtn: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
+  sendBtn: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', elevation: 4 },
+  canvasContainer: { flex: 1 },
+  mainDock: { position: 'absolute', alignSelf: 'center', width: '92%', elevation: 15, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 20 },
+  dockBlur: { flexDirection: 'row', alignItems: 'center', padding: 10, borderRadius: 32, overflow: 'hidden', justifyContent: 'space-around', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+  tool: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
+  activeTool: { backgroundColor: 'rgba(255,255,255,0.1)' },
+  colorPreview: { width: 24, height: 24, borderRadius: 12, borderWidth: 3, borderColor: '#FFF', elevation: 3 },
+  divider: { width: 1, height: 24, backgroundColor: 'rgba(255,255,255,0.2)' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' },
+  spectrumCard: { width: SCREEN_WIDTH * 0.85, backgroundColor: '#1A1A1A', borderRadius: 40, padding: 30, alignItems: 'center' },
+  pickerTitle: { fontSize: 20, fontWeight: '900', color: '#FFF', marginBottom: 20 },
+  largePreview: { width: 80, height: 80, borderRadius: 40, elevation: 10, borderWidth: 4, borderColor: '#FFF' },
+  huePointer: { position: 'absolute', top: -5, width: 6, height: 50, backgroundColor: '#FFF', borderRadius: 3, borderWidth: 1, borderColor: '#000' },
+  settingsCard: { width: SCREEN_WIDTH * 0.85, borderRadius: 35, padding: 30 },
+  modalTitle: { fontSize: 22, fontWeight: '900', marginBottom: 25 },
+  label: { fontSize: 10, fontWeight: '900', color: '#888', letterSpacing: 1.5, marginBottom: 15 },
+  sizeRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  sizeBtn: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
+  paletteGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center', marginTop: 30 },
+  paletteDot: { width: 34, height: 34, borderRadius: 17, elevation: 2 },
+  doneBtn: { width: '100%', height: 60, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginTop: 30 },
+  doneBtnText: { color: 'white', fontSize: 18, fontWeight: '900' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 25 },
+  historyFull: { flex: 1 },
+  galleryList: { padding: 15 },
+  galleryItem: { width: (SCREEN_WIDTH - 40) / 2, height: (SCREEN_WIDTH - 40) / 2, borderRadius: 20, overflow: 'hidden', backgroundColor: '#111', margin: 5 },
+  galleryThumb: { width: '100%', height: '100%' },
+  thumbLabel: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingVertical: 6, paddingHorizontal: 10, backgroundColor: 'rgba(0,0,0,0.6)' },
+  thumbUser: { fontSize: 10, fontWeight: '900', color: '#FFF', textAlign: 'center' },
+  viewerOverlay: { flex: 1, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' },
+  viewerClose: { position: 'absolute', top: 60, right: 30, zIndex: 10 },
+  viewerContent: { alignItems: 'center' },
+  viewerCard: { width: SCREEN_WIDTH * 0.9, borderRadius: 32, overflow: 'hidden', elevation: 20 },
+  fullImage: { width: '100%', height: SCREEN_WIDTH * 0.9, backgroundColor: 'transparent' },
+  viewerInfo: { padding: 20, borderTopWidth: 1, borderTopColor: '#333' },
+  creatorRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  avatarCircle: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  avatarInitial: { color: '#FFF', fontSize: 18, fontWeight: '900' },
+  viewerUserName: { fontSize: 16, fontWeight: '900' },
+  viewerDate: { fontSize: 12, color: '#888', marginTop: 2, fontWeight: '600' }
 });
