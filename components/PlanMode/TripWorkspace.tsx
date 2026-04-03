@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Dimensions, Animated, PanResponder, FlatList, Modal, TextInput, Platform, Alert, ActivityIndicator, ScrollView, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, Dimensions, FlatList, Modal, TextInput, Platform, Alert, ActivityIndicator, ScrollView } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Palette, Briefcase, List, ChevronLeft, Plus, Menu, X, Globe, Settings, Save, Trash2, MapPin, Utensils, Camera, Landmark, Building2, MinusCircle, Wallet, CheckCircle2 } from 'lucide-react-native';
-import LottieView from 'lottie-react-native';
 import { MotiView, AnimatePresence } from 'moti';
-import AnimatedReanimated, { useSharedValue, useAnimatedStyle, useAnimatedScrollHandler, runOnJS } from 'react-native-reanimated';
+import LottieView from 'lottie-react-native';
+import BottomSheet, { BottomSheetView, BottomSheetBackgroundProps } from '@gorhom/bottom-sheet';
+import Animated, { useSharedValue, useAnimatedStyle, useAnimatedScrollHandler, runOnJS } from 'react-native-reanimated';
 
-const activityLottie = require('@/assets/lottie/activity.lottie');
 import { format, eachDayOfInterval, isAfter } from 'date-fns';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -25,13 +25,9 @@ import TripFinance from './TripFinance';
 import SmartLocationPicker from '@/components/Map/SmartLocationPicker';
 import * as Haptics from 'expo-haptics';
 
-const { width, height } = Dimensions.get('window');
-const MIN_HEIGHT = 220; 
-const MID_HEIGHT = height * 0.5;
+const { width, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const ITEM_WIDTH = width; 
 const TICKS_PER_ITEM = 25;
-
-const IconMap: any = { eat: Utensils, activity: Camera, visit: Landmark, hotel: Building2, MapPin: MapPin };
 
 interface TripWorkspaceProps {
   tripId: string;
@@ -43,11 +39,21 @@ interface TripWorkspaceProps {
   onDayChange?: (dayIndex: number) => void;
 }
 
+const GlassBackground = ({ style }: BottomSheetBackgroundProps) => {
+  const colorScheme = useColorScheme() ?? 'light';
+  return (
+    <View style={[style, styles.glassContainer]}>
+      <BlurView intensity={80} tint={colorScheme} style={StyleSheet.absoluteFill} />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: colorScheme === 'light' ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.3)' }]} />
+    </View>
+  );
+};
+
 // ---------------------------------------------------------------------------
 // 🚀 DYNAMIC WAVE COMPONENTS
 // ---------------------------------------------------------------------------
 
-const CategoryTick = ({ index, scrollX, itemIndex }: { index: number, scrollX: AnimatedReanimated.SharedValue<number>, itemIndex: number }) => {
+const CategoryTick = ({ index, scrollX, itemIndex }: { index: number, scrollX: Animated.SharedValue<number>, itemIndex: number }) => {
   const animatedStyle = useAnimatedStyle(() => {
     const tickRelativePos = (index / TICKS_PER_ITEM) - 0.5;
     const globalTickPos = (itemIndex * ITEM_WIDTH) + (tickRelativePos * ITEM_WIDTH * 0.8);
@@ -63,7 +69,7 @@ const CategoryTick = ({ index, scrollX, itemIndex }: { index: number, scrollX: A
     };
   });
 
-  return <AnimatedReanimated.View style={[styles.tickMark, animatedStyle]} />;
+  return <Animated.View style={[styles.tickMark, animatedStyle]} />;
 };
 
 const CategoryDialItem = ({ cat, index, isSelected, theme, scrollX, activeDayItems, onRemoveItem, isDark }: any) => {
@@ -123,7 +129,7 @@ const CategoryDialItem = ({ cat, index, isSelected, theme, scrollX, activeDayIte
   );
 };
 
-const CategoryHeader = ({ name, isDark, theme }: { name: string, isDark: boolean, theme: any }) => {
+const CategoryHeader = ({ name, isDark }: { name: string, isDark: boolean }) => {
   return (
     <View style={styles.headerTitleContainer}>
       <AnimatePresence mode="wait">
@@ -149,15 +155,12 @@ export default function TripWorkspace({ tripId, onBack, userId, mapRef, onMarker
   const theme = Colors[colorScheme];
   const isDark = colorScheme === 'dark';
   const insets = useSafeAreaInsets();
-  const dialRef = useRef<AnimatedReanimated.ScrollView>(null);
   
-  const MAX_HEIGHT = height - (Platform.OS === 'ios' ? 110 : 100);
+  const bottomSheetRef = useRef<BottomSheet>(null);
+  const snapPoints = useMemo(() => [220, '55%', SCREEN_HEIGHT - 85], [SCREEN_HEIGHT]);
+  const dialRef = useRef<Animated.ScrollView>(null);
   
-  const sheetHeight = useRef(new Animated.Value(MIN_HEIGHT)).current;
-  const lastSheetHeight = useRef(MIN_HEIGHT);
   const [currentSnap, setCurrentSnap] = useState<'min' | 'mid' | 'max'>('min');
-  
-  const [activeView, setActiveView] = useState<'map' | 'canvas' | 'bucket' | 'wardrobe' | 'finance'>('map');
   const [activeDayIndex, setActiveDayIndex] = useState(0);
   const [selectedDay, setSelectedDay] = useState<any | null>(null);
   
@@ -175,9 +178,9 @@ export default function TripWorkspace({ tripId, onBack, userId, mapRef, onMarker
 
   // 🕹️ FAB & MODAL STATE
   const [isWorkspaceMenuOpen, setIsWorkspaceMenuOpen] = useState(false);
-  const [activeModal, setActiveModal] = useState<'settings' | 'finance' | 'wardrobe' | 'bucket' | null>(null);
+  const [activeModal, setActiveModal] = useState<'settings' | 'finance' | 'wardrobe' | 'bucket' | 'canvas' | 'rack' | null>(null);
 
-  // Settings Form State
+  // Settings State
   const [editTitle, setEditTitle] = useState('');
   const [editLocation, setEditLocation] = useState('');
   const [editCoords, setEditCoords] = useState<{lat: number, lng: number} | null>(null);
@@ -311,7 +314,7 @@ export default function TripWorkspace({ tripId, onBack, userId, mapRef, onMarker
 
       const LAT_DELTA = isMin ? 0.02 : 0.05;
       const visualOffset = LAT_DELTA * (isMin ? 0.1 : 0.25);
-      const bottomPadding = isMin ? 250 : height * 0.55;
+      const bottomPadding = isMin ? 250 : SCREEN_HEIGHT * 0.55;
 
       if (validCoords.length > 1) {
         mapRef.current.fitToCoordinates(validCoords, {
@@ -372,7 +375,7 @@ export default function TripWorkspace({ tripId, onBack, userId, mapRef, onMarker
       if (data.start_date && data.end_date) {
         try {
           const interval = eachDayOfInterval({ start: new Date(data.start_date), end: new Date(data.end_date) });
-          setDays(interval.map((date, index) => ({ date, dayNumber: index + 1, weekday: format(date, 'EEE') })));
+          setDays(interval.map((date, index) => ({ dayNumber: index + 1, date: date, weekday: format(date, 'EEEE') })));
         } catch (e) { setDays([{ dayNumber: 1, weekday: 'TBD', date: new Date() }]); }
       }
     }
@@ -395,68 +398,50 @@ export default function TripWorkspace({ tripId, onBack, userId, mapRef, onMarker
     setIsUpdating(false);
   };
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dy) > 10,
-      onPanResponderMove: (_, gesture) => {
-        let newHeight = lastSheetHeight.current - gesture.dy;
-        if (newHeight < MIN_HEIGHT) newHeight = MIN_HEIGHT;
-        if (newHeight > MAX_HEIGHT) newHeight = MAX_HEIGHT;
-        sheetHeight.setValue(newHeight);
-        
-        if (onSnapChange) {
-          const snap = newHeight > (MID_HEIGHT + MAX_HEIGHT) / 2 ? 'max' : 
-                       newHeight > (MIN_HEIGHT + MID_HEIGHT) / 2 ? 'mid' : 'min';
-          if (snap !== currentSnap) onSnapChange(snap);
-        }
-      },
-      onPanResponderRelease: (_, gesture) => {
-        const finalHeight = lastSheetHeight.current - gesture.dy;
-        let snapTo = MIN_HEIGHT;
-        let snapKey: 'min' | 'mid' | 'max' = 'min';
-        
-        if (finalHeight > (MID_HEIGHT + MAX_HEIGHT) / 2) { 
-          snapTo = MAX_HEIGHT; 
-          snapKey = 'max'; 
-        } else if (finalHeight > (MIN_HEIGHT + MID_HEIGHT) / 2) { 
-          snapTo = MID_HEIGHT; 
-          snapKey = 'mid'; 
-          
-          // 🔄 RESET DIAL ON SNAP TO MID
-          if (dbCategories.length > 0) {
-            setActiveCategoryFilter(dbCategories[0].name);
-            lastTickIndex.current = 0;
-            dialRef.current?.scrollTo({ x: 0, animated: false });
+  const handleDeleteTrip = async () => {
+    Alert.alert(
+      "Delete Plan",
+      "Are you sure you want to permanently delete this entire plan? All locations, finances, and drawings will be lost. This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Delete Plan", 
+          style: "destructive", 
+          onPress: async () => {
+            try {
+              setIsUpdating(true);
+              // Deleting from 'trips' will cascade to all related tables
+              const { error } = await supabase.from('trips').delete().eq('id', tripId);
+              if (!error) {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                setActiveModal(null);
+                onBack(); // Return to plans list
+              } else {
+                Alert.alert("Error", "Failed to delete plan.");
+              }
+            } catch (e) {
+              console.error(e);
+            } finally {
+              setIsUpdating(false);
+            }
           }
         }
-        
-        Animated.spring(sheetHeight, { toValue: snapTo, useNativeDriver: false, friction: 8, tension: 40 }).start();
-        lastSheetHeight.current = snapTo;
-        setCurrentSnap(snapKey);
-        if (onSnapChange) onSnapChange(snapKey);
-      },
-    })
-  ).current;
-
-  const renderDayItem = ({ item }: any) => {
-    const count = dayCounts[item.dayNumber] || 0;
-    return (
-      <View style={{ width: width }}>
-        <TouchableOpacity style={[styles.dayCard, { width: width - 40, height: 130 }, { marginHorizontal: 20 }]} onPress={() => setSelectedDay(item)}>
-          <View style={styles.dayCardInnerHorizontal}>
-            <Text style={styles.dayWeekday}>{item.weekday}</Text>
-            <Text style={[styles.dayNumber, { color: theme.text }]}>Day {item.dayNumber}</Text>
-            {count > 0 && (
-              <View style={[styles.countBadge, { backgroundColor: theme.tint + '15' }]}>
-                <MapPin size={10} color={theme.tint} /><Text style={[styles.countText, { color: theme.tint }]}>{count} spots</Text>
-              </View>
-            )}
-            <Text style={styles.dayDate}>{item.date ? format(item.date, 'dd MMM yyyy') : 'Set Date'}</Text>
-          </View>
-        </TouchableOpacity>
-      </View>
+      ]
     );
   };
+
+  const handleSnapChange = useCallback((index: number) => {
+    const snapKey: 'min' | 'mid' | 'max' = index === 0 ? 'min' : index === 1 ? 'mid' : 'max';
+    setCurrentSnap(snapKey);
+    if (onSnapChange) onSnapChange(snapKey);
+    if (index > 0) setIsWorkspaceMenuOpen(false);
+    
+    // Reset Dial when snapping to MID
+    if (snapKey === 'mid' && dbCategories.length > 0) {
+      setActiveCategoryFilter(dbCategories[0].name);
+      dialRef.current?.scrollTo({ x: 0, animated: false });
+    }
+  }, [dbCategories, onSnapChange]);
 
   const onMomentumScrollEnd = (event: any) => {
     if (currentSnap === 'min') {
@@ -483,20 +468,34 @@ export default function TripWorkspace({ tripId, onBack, userId, mapRef, onMarker
           <AnimatePresence>
             {isWorkspaceMenuOpen && (
               <MotiView style={styles.subFabMenu}>
+                {/* 1. Plan Settings */}
                 <TouchableOpacity style={styles.subFab} onPress={() => { setIsWorkspaceMenuOpen(false); setActiveModal('settings'); }}>
                   <Settings size={20} color="#8E8E93" />
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.subFab} onPress={() => { setIsWorkspaceMenuOpen(false); setActiveModal('finance'); }}>
-                  <Wallet size={20} color="#FF9500" />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.subFab} onPress={() => { setIsWorkspaceMenuOpen(false); setActiveModal('wardrobe'); }}>
-                  <Briefcase size={20} color="#5856D6" />
-                </TouchableOpacity>
+
+                {/* 2. Draw Board */}
                 <TouchableOpacity style={styles.subFab} onPress={() => { setIsWorkspaceMenuOpen(false); setActiveModal('canvas'); }}>
                   <Palette size={20} color="#FF2D55" />
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.subFab} onPress={() => { setIsWorkspaceMenuOpen(false); setActiveModal('rack'); }}>
-                  <List size={20} color="#34C759" />
+
+                {/* 3. Finance */}
+                <TouchableOpacity style={styles.subFab} onPress={() => { setIsWorkspaceMenuOpen(false); setActiveModal('finance'); }}>
+                  <Wallet size={20} color="#FF9500" />
+                </TouchableOpacity>
+
+                {/* 4. Wardrobe */}
+                <TouchableOpacity style={styles.subFab} onPress={() => { setIsWorkspaceMenuOpen(false); setActiveModal('wardrobe'); }}>
+                  <Briefcase size={20} color="#5856D6" />
+                </TouchableOpacity>
+
+                {/* 5. Bucket (Lottie) */}
+                <TouchableOpacity style={styles.subFab} onPress={() => { setIsWorkspaceMenuOpen(false); setActiveModal('bucket'); }}>
+                  <LottieView
+                    source={require('@/assets/lottie/activity.lottie')}
+                    autoPlay
+                    loop
+                    style={{ width: 82, height: 82 }}
+                  />
                 </TouchableOpacity>
               </MotiView>
             )}
@@ -505,107 +504,105 @@ export default function TripWorkspace({ tripId, onBack, userId, mapRef, onMarker
         </View>
       )}
 
-      {activeView === 'map' && !selectedDay && (
-        <Animated.View style={[styles.bottomSheet, { height: sheetHeight }]}>
-          <BlurView intensity={100} tint={colorScheme} style={styles.sheetBlur}>
-            <View {...panResponder.panHandlers} style={styles.dragHandle}><View style={styles.handleBar} /></View>
-            <View style={styles.sheetContent}>
-              <View style={styles.sheetHeader}>
-                {currentSnap === 'mid' ? (
-                  <CategoryHeader name={activeCategoryFilter || 'EXPLORE'} isDark={isDark} theme={theme} />
-                ) : (
-                  <Text style={[styles.sheetTitle, { color: theme.text }]}>{trip?.title || 'Trip Plan'}</Text>
-                )}
-              </View>
-              <View style={styles.listWrapper}>
-                {currentSnap === 'min' ? (
-                  <FlatList data={days} horizontal pagingEnabled keyExtractor={(_, i) => i.toString()} renderItem={renderDayItem} showsHorizontalScrollIndicator={false} onMomentumScrollEnd={onMomentumScrollEnd} snapToInterval={width} snapToAlignment="center" decelerationRate="fast" />
-                ) : currentSnap === 'mid' ? (
-                  <View style={styles.dialWrapper}>
-                    <AnimatedReanimated.ScrollView
-                      ref={dialRef} horizontal pagingEnabled onScroll={scrollHandler} scrollEventThrottle={16} onMomentumScrollEnd={onDialScrollEnd} showsHorizontalScrollIndicator={false} snapToInterval={ITEM_WIDTH} decelerationRate="fast" contentContainerStyle={{ paddingHorizontal: 0 }}
-                    >
-                      {dbCategories.map((cat, i) => {
-                        const activeDayItems = itineraryItems.filter(item => 
-                          item.day_number === (activeDayIndex + 1) && 
-                          (item.category?.toLowerCase() === cat.name.toLowerCase() || item.bucket_items?.category?.toLowerCase() === cat.name.toLowerCase())
-                        );
-                        return (
-                          <CategoryDialItem 
-                            key={cat.id} 
-                            cat={cat} 
-                            index={i} 
-                            isSelected={activeCategoryFilter === cat.name} 
-                            theme={theme} 
-                            scrollX={scrollX} 
-                            activeDayItems={activeDayItems}
-                            onRemoveItem={handleRemoveFromDay}
-                            isDark={isDark}
-                          />
-                        );
-                      })}
-                    </AnimatedReanimated.ScrollView>
-                  </View>
-                ) : (
-                  <DayReorderList 
-                    tripId={tripId}
-                    days={days} 
-                    dayCounts={dayCounts} 
-                    onReorder={(newData) => setDays(newData)} 
-                    onSelectDay={(d) => setSelectedDay(d)}
-                    onAddFromBucket={(dayNum) => {
-                      setActiveDayIndex(dayNum - 1);
-                      // Snap to mid height manually
-                      Animated.spring(sheetHeight, { toValue: MID_HEIGHT, useNativeDriver: false }).start();
-                      lastSheetHeight.current = MID_HEIGHT;
-                      setCurrentSnap('mid');
-                      if (onSnapChange) onSnapChange('mid');
-                    }}
-                  />
-                )}
-              </View>
+      {!selectedDay && (
+        <BottomSheet
+          ref={bottomSheetRef}
+          index={0}
+          snapPoints={snapPoints}
+          onChange={handleSnapChange}
+          backgroundComponent={GlassBackground}
+          enableOverDrag={false}
+          enableDynamicSizing={false}
+          handleIndicatorStyle={{ backgroundColor: theme.tabIconDefault + '60', width: 40 }}
+        >
+          <BottomSheetView style={styles.sheetContent}>
+            <View style={styles.sheetInnerHeader}>
+              {currentSnap === 'mid' ? (
+                <CategoryHeader name={activeCategoryFilter || 'EXPLORE'} isDark={isDark} />
+              ) : (
+                <Text style={[styles.sheetTitle, { color: theme.text }]}>{trip?.title || 'Trip Plan'}</Text>
+              )}
             </View>
-          </BlurView>
-        </Animated.View>
+            
+            <View style={styles.listWrapper}>
+              {currentSnap === 'min' ? (
+                <FlatList data={days} horizontal pagingEnabled keyExtractor={(_, i) => i.toString()} renderItem={({ item }) => (
+                  <View style={{ width: width }}>
+                    <TouchableOpacity style={[styles.dayCard, { width: width - 40, height: 130, marginHorizontal: 20 }]} onPress={() => setSelectedDay(item)}>
+                      <View style={styles.dayCardInnerHorizontal}>
+                        <Text style={styles.dayWeekday}>{item.weekday}</Text>
+                        <Text style={[styles.dayNumber, { color: theme.text }]}>Day {item.dayNumber}</Text>
+                        {(dayCounts[item.dayNumber] || 0) > 0 && (
+                          <View style={[styles.countBadge, { backgroundColor: theme.tint + '15' }]}><MapPin size={10} color={theme.tint} /><Text style={[styles.countText, { color: theme.tint }]}>{dayCounts[item.dayNumber]} spots</Text></View>
+                        )}
+                        <Text style={styles.dayDate}>{item.date ? format(item.date, 'dd MMM yyyy') : 'Set Date'}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                )} showsHorizontalScrollIndicator={false} onMomentumScrollEnd={onMomentumScrollEnd} snapToInterval={width} snapToAlignment="center" decelerationRate="fast" />
+              ) : currentSnap === 'mid' ? (
+                <View style={styles.dialWrapper}>
+                  <Animated.ScrollView ref={dialRef} horizontal pagingEnabled onScroll={scrollHandler} scrollEventThrottle={16} onMomentumScrollEnd={(e) => {
+                    const idx = Math.round(e.nativeEvent.contentOffset.x / ITEM_WIDTH);
+                    if (idx >= 0 && idx < dbCategories.length) {
+                      runOnJS(setActiveCategoryFilter)(dbCategories[idx].name);
+                      runOnJS(triggerHaptic)('snap');
+                    }
+                  }} showsHorizontalScrollIndicator={false} snapToInterval={ITEM_WIDTH} decelerationRate="fast">
+                    {dbCategories.map((cat, i) => {
+                      const activeDayItems = itineraryItems.filter(item => item.day_number === (activeDayIndex + 1) && (item.category?.toLowerCase() === cat.name.toLowerCase() || item.bucket_items?.category?.toLowerCase() === cat.name.toLowerCase()));
+                      return <CategoryDialItem key={cat.id} cat={cat} index={i} isSelected={activeCategoryFilter === cat.name} theme={theme} scrollX={scrollX} activeDayItems={activeDayItems} onRemoveItem={handleRemoveFromDay} isDark={isDark} />;
+                    })}
+                  </Animated.ScrollView>
+                </View>
+              ) : (
+                <DayReorderList tripId={tripId} days={days} dayCounts={dayCounts} onReorder={(newData) => setDays(newData)} onSelectDay={(d) => setSelectedDay(d)} onAddFromBucket={(dayNum) => { setActiveDayIndex(dayNum - 1); bottomSheetRef.current?.snapToIndex(1); }} />
+              )}
+            </View>
+          </BottomSheetView>
+        </BottomSheet>
       )}
 
-      {/* MODALS RESTORED FROM NEW_TRIP_WORKSPACE */}
+      {/* MODALS */}
       <Modal visible={activeModal === 'settings'} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <BlurView intensity={100} tint={colorScheme} style={styles.modalContent}>
-            <View style={styles.modalHeader}><Text style={[styles.modalTitle, { color: theme.text }]}>Plan Settings</Text><TouchableOpacity onPress={() => setActiveModal(null)}><X size={24} color={theme.text} /></TouchableOpacity></View>
-            <ScrollView>
-              <Text style={styles.label}>TRIP NAME</Text>
-              <TextInput style={[styles.input, { color: theme.text, backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }]} value={editTitle} onChangeText={setEditTitle} />
-              <Text style={[styles.label, { marginTop: 20 }]}>DESTINATION</Text>
-              <TouchableOpacity onPress={() => setShowLocationPicker(true)} style={[styles.input, styles.locationBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }]}><Globe size={20} color={theme.tint} /><Text style={{ color: theme.text, fontWeight: '700', marginLeft: 10 }}>{editLocation || 'Change Location'}</Text></TouchableOpacity>
-              <View style={styles.dateRow}>
-                <TouchableOpacity onPress={() => setShowStartPicker(true)} style={[styles.dateBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }]}><Text style={styles.label}>START</Text><Text style={[styles.dateVal, { color: theme.text }]}>{format(startDate, 'dd MMM')}</Text></TouchableOpacity>
-                <TouchableOpacity onPress={() => setShowEndPicker(true)} style={[styles.dateBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }]}><Text style={styles.label}>END</Text><Text style={[styles.dateVal, { color: theme.text }]}>{format(endDate, 'dd MMM')}</Text></TouchableOpacity>
-              </View>
-              <TouchableOpacity onPress={handleUpdateSettings} style={[styles.saveBtnFull, { backgroundColor: theme.tint }]}>{isUpdating ? <ActivityIndicator color="white" /> : <><Save size={20} color="white" /><Text style={styles.saveBtnText}>Save Changes</Text></>}</TouchableOpacity>
-            </ScrollView>
-          </BlurView>
-        </View>
+        <View style={styles.modalOverlay}><BlurView intensity={100} tint={colorScheme} style={styles.modalContent}><View style={styles.modalHeader}><Text style={[styles.modalTitle, { color: theme.text }]}>Plan Settings</Text><TouchableOpacity onPress={() => setActiveModal(null)}><X size={24} color={theme.text} /></TouchableOpacity></View><ScrollView><Text style={styles.label}>TRIP NAME</Text><TextInput style={[styles.input, { color: theme.text, backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }]} value={editTitle} onChangeText={setEditTitle} /><Text style={[styles.label, { marginTop: 20 }]}>DESTINATION</Text><TouchableOpacity onPress={() => setShowLocationPicker(true)} style={[styles.input, styles.locationBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }]}><Globe size={20} color={theme.tint} /><Text style={{ color: theme.text, fontWeight: '700', marginLeft: 10 }}>{editLocation || 'Change Location'}</Text></TouchableOpacity><View style={styles.dateRow}><TouchableOpacity onPress={() => setShowStartPicker(true)} style={[styles.dateBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }]}><Text style={styles.label}>START</Text><Text style={[styles.dateVal, { color: theme.text }]}>{format(startDate, 'dd MMM')}</Text></TouchableOpacity><TouchableOpacity onPress={() => setShowEndPicker(true)} style={[styles.dateBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }]}><Text style={styles.label}>END</Text><Text style={[styles.dateVal, { color: theme.text }]}>{format(endDate, 'dd MMM')}</Text></TouchableOpacity></View><TouchableOpacity onPress={handleUpdateSettings} style={[styles.saveBtnFull, { backgroundColor: theme.tint }]}>{isUpdating ? <ActivityIndicator color="white" /> : <><Save size={20} color="white" /><Text style={styles.saveBtnText}>Save Changes</Text></>}</TouchableOpacity></ScrollView></BlurView></View>
         {showStartPicker && <DateTimePicker value={startDate} mode="date" onChange={(e, d) => { setShowStartPicker(false); if(d) setStartDate(d); }} />}
         {showEndPicker && <DateTimePicker value={endDate} mode="date" onChange={(e, d) => { setShowEndPicker(false); if(d) setEndDate(d); }} />}
         <Modal visible={showLocationPicker} animationType="slide"><SmartLocationPicker title="Destination" onLocationCaptured={(d) => { setEditLocation(d.name); setEditCoords({lat:d.lat, lng:d.lng}); }} onClose={() => setShowLocationPicker(false)} /></Modal>
       </Modal>
 
       <Modal visible={activeModal === 'finance'} animationType="slide"><TripFinance tripId={tripId} trip={trip} onClose={() => setActiveModal(null)} /></Modal>
-      <Modal visible={activeModal === 'wardrobe'} animationType="slide">
-        <Wardrobe userId={userId} tripId={tripId} onClose={() => setActiveModal(null)} />
-      </Modal>
-      <Modal visible={activeModal === 'canvas'} animationType="slide">
-        <SharedCanvas tripId={tripId} onClose={() => setActiveModal(null)} />
-      </Modal>
-      <Modal visible={activeModal === 'rack'} animationType="slide">
-        <TripRack tripId={tripId} onClose={() => setActiveModal(null)} />
+      <Modal visible={activeModal === 'wardrobe'} animationType="slide"><Wardrobe userId={userId} tripId={tripId} onClose={() => setActiveModal(null)} /></Modal>
+      <Modal visible={activeModal === 'canvas'} animationType="slide"><SharedCanvas tripId={tripId} onClose={() => setActiveModal(null)} /></Modal>
+      <Modal visible={activeModal === 'rack'} animationType="slide"><TripRack tripId={tripId} onClose={() => setActiveModal(null)} /></Modal>
+      <Modal visible={activeModal === 'bucket'} animationType="slide">
+        <Bucket 
+          tripId={tripId} 
+          userId={userId} 
+          onClose={() => setActiveModal(null)} 
+          onSelectItem={(item) => {
+            // Re-use logic to add from bucket
+            const addItinerary = async (bucketItem: any) => {
+              const { data: currentItems } = await supabase.from('itinerary_items').select('sequence').eq('trip_id', tripId).eq('day_number', activeDayIndex + 1).order('sequence', { ascending: false }).limit(1);
+              const nextSeq = (currentItems?.[0]?.sequence || 0) + 1;
+              await supabase.from('itinerary_items').upsert({
+                trip_id: tripId,
+                bucket_item_id: bucketItem.id,
+                day_number: activeDayIndex + 1,
+                sequence: nextSeq
+              }, { onConflict: 'trip_id, day_number, bucket_item_id' });
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            };
+            addItinerary(item);
+            setActiveModal(null);
+          }}
+          mapRef={mapRef}
+        />
       </Modal>
 
       <AnimatePresence>
         {selectedDay && (
-          <MotiView from={{ opacity: 0, translateY: height }} animate={{ opacity: 1, translateY: 0 }} exit={{ opacity: 0, translateY: height }} style={styles.fullOverlay}>
+          <MotiView from={{ opacity: 0, translateY: SCREEN_HEIGHT }} animate={{ opacity: 1, translateY: 0 }} exit={{ opacity: 0, translateY: SCREEN_HEIGHT }} style={styles.fullOverlay}>
             <DayDetails tripId={tripId} day={selectedDay} isReadOnly={isReadOnly} onClose={() => setSelectedDay(null)} />
           </MotiView>
         )}
@@ -619,12 +616,9 @@ const styles = StyleSheet.create({
   topBackWrapper: { position: 'absolute', left: 20, zIndex: 3000 },
   mainBackBtn: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', elevation: 8, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 10, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
   fullOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 4000 },
-  bottomSheet: { position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 1000 },
-  sheetBlur: { flex: 1, borderTopLeftRadius: 35, borderTopRightRadius: 35, overflow: 'hidden', borderTopWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
-  dragHandle: { height: 40, width: '100%', alignItems: 'center', justifyContent: 'center' },
-  handleBar: { width: 50, height: 6, borderRadius: 3, backgroundColor: 'rgba(0,0,0,0.15)' },
+  glassContainer: { borderTopLeftRadius: 35, borderTopRightRadius: 35, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
   sheetContent: { flex: 1 },
-  sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15, paddingHorizontal: 20 },
+  sheetInnerHeader: { paddingHorizontal: 20, marginBottom: 15 },
   sheetTitle: { fontSize: 20, fontWeight: 'bold', letterSpacing: 1 },
   listWrapper: { flex: 1 },
   dayCard: { padding: 20, borderRadius: 25, backgroundColor: 'rgba(0,0,0,0.04)', alignItems: 'center', justifyContent: 'center' },
@@ -640,26 +634,10 @@ const styles = StyleSheet.create({
   itineraryScroll: { padding: 15 },
   emptyItinerary: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
   emptyItineraryText: { fontSize: 13, fontWeight: '600', textAlign: 'center', lineHeight: 18 },
-  plannedItem: { 
-    padding: 16, 
-    borderRadius: 20, 
-    marginBottom: 12, 
-    borderLeftWidth: 6, 
-    flexDirection: 'row', 
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 3,
-  },
+  plannedItem: { padding: 16, borderRadius: 20, marginBottom: 12, borderLeftWidth: 6, flexDirection: 'row', alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10, elevation: 3 },
   plannedItemMain: { flex: 1 },
-  plannedItemText: { 
-    fontSize: 16, 
-    fontWeight: '900',
-    letterSpacing: -0.3,
-  },
+  plannedItemText: { fontSize: 16, fontWeight: '900', letterSpacing: -0.3 },
   removeItemBtn: { padding: 5, marginLeft: 10 },
-  dialLabelWrapper: { alignItems: 'center', flex: 1, justifyContent: 'center' },
   headerTitleContainer: { height: 30, justifyContent: 'center', alignItems: 'center' },
   bottomTickTrack: { position: 'absolute', bottom: 0, width: '100%', height: 60, flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-end', gap: 10, paddingBottom: 10 },
   tickMark: { width: 3, borderRadius: 1.5, backgroundColor: '#888' },
