@@ -164,10 +164,43 @@ export default function ChillZoneScreen() {
     Alert.alert("The Wheel Decided! 🎡", `Let's go with: ${winner.text}`);
   };
 
-  const sendHug = () => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Alert.alert("Virtual Hug Sent! 🤗", "Your partner will feel the love.");
+  const sendHapticSignal = async (type: string) => {
+    const toUser = currentUserId === 'pratishth' ? 'love' : 'pratishth';
+    const { error } = await supabase.from('haptic_signals').insert([{
+      from_user: currentUserId,
+      to_user: toUser,
+      type
+    }]);
+    
+    if (!error) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert(`${type === 'hug' ? 'Virtual Hug' : 'Mood Check'} Sent! ❤️`, "Your partner will feel the pulse.");
+    }
   };
+
+  const sendHug = () => sendHapticSignal('hug');
+  const sendMoodCheck = () => sendHapticSignal('mood_check');
+
+  useEffect(() => {
+    // Listen for incoming haptic signals
+    const signalSub = supabase.channel('haptics')
+      .on('postgres_changes', { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'haptic_signals', 
+        filter: `to_user=eq.${currentUserId}` 
+      }, (payload) => {
+        const signal = payload.new;
+        if (signal.type === 'hug') {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        } else if (signal.type === 'mood_check') {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(signalSub); };
+  }, [currentUserId]);
 
   if (loading) {
     return <ThemedView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}><ActivityIndicator size="large" color={theme.tint} /></ThemedView>;

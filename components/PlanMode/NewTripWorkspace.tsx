@@ -115,6 +115,44 @@ export default function NewTripWorkspace({ tripId, onBack, mapRef }: Props) {
     } catch (e) { setDays([]); }
   };
 
+  const handleReorderDays = async (newData: any[]) => {
+    // Optimistic UI update
+    setDays(newData);
+    
+    // In a real scenario, swapping days means updating the 'day_number' 
+    // of all itinerary items associated with those days.
+    // For now, we'll map the new order back to the database.
+    try {
+      for (let i = 0; i < newData.length; i++) {
+        const originalDayNumber = newData[i].dayNumber;
+        const newDayNumber = i + 1;
+        
+        if (originalDayNumber !== newDayNumber) {
+          // Update all items from the original day to a temporary number first 
+          // to avoid unique constraint violations if they exist
+          await supabase
+            .from('itinerary_items')
+            .update({ day_number: 999 + newDayNumber })
+            .eq('trip_id', tripId)
+            .eq('day_number', originalDayNumber);
+        }
+      }
+
+      for (let i = 0; i < newData.length; i++) {
+        const newDayNumber = i + 1;
+        await supabase
+          .from('itinerary_items')
+          .update({ day_number: newDayNumber })
+          .eq('trip_id', tripId)
+          .eq('day_number', 999 + newDayNumber);
+      }
+      
+      fetchDayCounts();
+    } catch (e) {
+      console.error('Day reorder failed:', e);
+    }
+  };
+
   const handleAddToItinerary = async (bucketItem: any) => {
     const { error } = await supabase
       .from('itinerary_items')
