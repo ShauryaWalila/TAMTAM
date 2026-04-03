@@ -272,12 +272,7 @@ export default function DayReorderList({ tripId, days, onReorder, dayCounts, onS
                     <View style={styles.addActionsRow}>
                       <TouchableOpacity style={[styles.addBtn, { borderColor: theme.tint + '40' }]} onPress={handleAddCustomItem}>
                         <Plus size={14} color={theme.tint} />
-                        <Text style={[styles.addBtnText, { color: theme.tint }]}>Custom</Text>
-                      </TouchableOpacity>
-                      
-                      <TouchableOpacity style={[styles.addBtn, { backgroundColor: theme.tint, borderColor: theme.tint }]} onPress={() => onAddFromBucket(item.dayNumber)}>
-                        <Sparkles size={14} color="white" />
-                        <Text style={[styles.addBtnText, { color: 'white' }]}>From Bucket</Text>
+                        <Text style={[styles.addBtnText, { color: theme.tint }]}>Add Custom Activity</Text>
                       </TouchableOpacity>
                     </View>
                   </>
