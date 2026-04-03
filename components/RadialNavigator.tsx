@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useRef } from 'react';
-import { StyleSheet, View, Text, Dimensions, DeviceEventEmitter } from 'react-native';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { StyleSheet, View, Text, Dimensions, DeviceEventEmitter, TouchableOpacity } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import Animated, { 
   useSharedValue, 
@@ -7,9 +7,7 @@ import Animated, {
   withSpring, 
   runOnJS, 
   interpolate,
-  useDerivedValue,
   withTiming,
-  Extrapolate
 } from 'react-native-reanimated';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { Home, BookHeart, Map, Wallet, Heart, Settings, Coffee } from 'lucide-react-native';
@@ -17,7 +15,6 @@ import * as Haptics from 'expo-haptics';
 import { BlurView } from 'expo-blur';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
-import { MotiView, AnimatePresence } from 'moti';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -31,9 +28,10 @@ const NAV_ITEMS = [
   { id: 'settings', path: '/settings', label: 'SETTINGS', icon: Settings, color: '#8E8E93' },
 ];
 
-const ITEM_HEIGHT = 60;
-const MENU_HEIGHT = NAV_ITEMS.length * ITEM_HEIGHT;
-const SPRING_CONFIG = { damping: 18, stiffness: 120, mass: 0.8 };
+const ITEM_HEIGHT = 65; 
+const MENU_PADDING = 20;
+const MENU_HEIGHT = NAV_ITEMS.length * ITEM_HEIGHT + (MENU_PADDING * 2);
+const SPRING_CONFIG = { damping: 20, stiffness: 150, mass: 0.5 };
 
 export default function RadialNavigator() {
   const router = useRouter();
@@ -52,14 +50,17 @@ export default function RadialNavigator() {
   const lastTap = useSharedValue(0);
   
   const [currentLabel, setCurrentLabel] = useState('');
+  const [activeJSIdx, setActiveJSIdx] = useState(-1);
 
-  // ⚡ JS UPDATE
-  const updateLabel = (idx: number) => {
-    if (idx === -1) {
-      setCurrentLabel('');
-    } else {
-      setCurrentLabel(NAV_ITEMS[idx].label);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+  const handleIndexChange = (idx: number) => {
+    if (idx !== activeJSIdx) {
+      setActiveJSIdx(idx);
+      if (idx === -1) {
+        setCurrentLabel('');
+      } else {
+        setCurrentLabel(NAV_ITEMS[idx].label);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
     }
   };
 
@@ -67,11 +68,10 @@ export default function RadialNavigator() {
     if (idx === -1) return;
     const item = NAV_ITEMS[idx];
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    if (pathname === item.path && item.id === 'our-life') DeviceEventEmitter.emit('our-life-tab-press');
-    else router.push(item.path);
+    router.push(item.path);
   };
 
-  // 🖱️ MOVE (Double Tap + Hold)
+  // 🖱️ MOVE
   const dragGesture = Gesture.Pan()
     .onBegin(() => {
       const now = Date.now();
@@ -98,34 +98,31 @@ export default function RadialNavigator() {
 
   // 🚀 NAVIGATE
   const navGesture = Gesture.Pan()
-    .activateAfterLongPress(250)
+    .activateAfterLongPress(200)
     .onStart(() => {
       if (isDragging.value < 0.5) {
         expansion.value = withSpring(1, SPRING_CONFIG);
-        runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Heavy);
+        runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Medium);
       }
     })
     .onUpdate((e) => {
       if (expansion.value > 0.5 && isDragging.value < 0.5) {
         const menuTop = -MENU_HEIGHT / 2 + 30;
-        const normalizedY = e.translationY - menuTop;
+        const normalizedY = e.translationY + (MENU_HEIGHT / 2) - 30 - MENU_PADDING;
         const rawIdx = Math.floor(normalizedY / ITEM_HEIGHT);
         
         const distToOrb = Math.sqrt(e.translationX**2 + e.translationY**2);
-        const isFarX = Math.abs(e.translationX) > 120;
-        const isOutOfBoundsY = normalizedY < -40 || normalizedY > MENU_HEIGHT + 40;
+        const isFarX = Math.abs(e.translationX) > 150;
+        const isOutOfBoundsY = normalizedY < -10 || normalizedY > (NAV_ITEMS.length * ITEM_HEIGHT) + 10;
 
-        if (isFarX || isOutOfBoundsY || distToOrb < 25) {
-          if (activeIdx.value !== -1) {
-            activeIdx.value = -1;
-            runOnJS(updateLabel)(-1);
-          }
-        } else {
-          const idx = Math.max(0, Math.min(NAV_ITEMS.length - 1, rawIdx));
-          if (idx !== activeIdx.value) {
-            activeIdx.value = idx;
-            runOnJS(updateLabel)(idx);
-          }
+        let nextIdx = -1;
+        if (!isFarX && !isOutOfBoundsY && distToOrb >= 25) {
+          nextIdx = Math.max(0, Math.min(NAV_ITEMS.length - 1, rawIdx));
+        }
+
+        if (nextIdx !== activeIdx.value) {
+          activeIdx.value = nextIdx;
+          runOnJS(handleIndexChange)(nextIdx);
         }
       }
     })
@@ -133,7 +130,7 @@ export default function RadialNavigator() {
       const finalIdx = activeIdx.value;
       activeIdx.value = -1;
       expansion.value = withSpring(0, SPRING_CONFIG);
-      runOnJS(updateLabel)(-1);
+      runOnJS(handleIndexChange)(-1);
       
       if (finalIdx !== -1 && isDragging.value < 0.5) {
         runOnJS(onFinalNavigate)(finalIdx);
@@ -141,32 +138,29 @@ export default function RadialNavigator() {
     });
 
   const animatedContainerStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: posX.value },
-      { translateY: posY.value },
-      { scale: withSpring(isDragging.value ? 1.15 : 1, SPRING_CONFIG) }
-    ],
+    transform: [{ translateX: posX.value }, { translateY: posY.value }],
     zIndex: 99999,
   }));
 
   const pillStyle = useAnimatedStyle(() => ({
-    height: withSpring(interpolate(expansion.value, [0, 1], [60, MENU_HEIGHT + 20]), SPRING_CONFIG),
+    height: withSpring(interpolate(expansion.value, [0, 1], [60, MENU_HEIGHT]), SPRING_CONFIG),
     width: 60,
     borderRadius: 30,
     marginTop: withSpring(interpolate(expansion.value, [0, 1], [0, -MENU_HEIGHT / 2 + 30]), SPRING_CONFIG),
-    backgroundColor: isDragging.value ? theme.tint + '30' : 'transparent',
   }));
 
   const labelContainerStyle = useAnimatedStyle(() => {
     const isLeft = posX.value < SCREEN_WIDTH / 2;
-    const labelOffset = 100; 
-    const targetY = interpolate(activeIdx.value, [-1, 0, NAV_ITEMS.length - 1], [0, -MENU_HEIGHT / 2 + ITEM_HEIGHT / 2 - 45, MENU_HEIGHT / 2 - ITEM_HEIGHT / 2 - 75]);
+    const labelX = isLeft ? 75 : -115;
+    
+    const menuTopY = -MENU_HEIGHT / 2 + 30;
+    const targetY = menuTopY + MENU_PADDING + (activeIdx.value * ITEM_HEIGHT) + (ITEM_HEIGHT / 2) - 25;
     
     return {
       opacity: withTiming(activeIdx.value === -1 ? 0 : 1, { duration: 100 }),
       transform: [
-        { translateX: isLeft ? labelOffset : -labelOffset }, 
-        { translateY: withSpring(targetY, SPRING_CONFIG) },
+        { translateX: labelX }, 
+        { translateY: withSpring(activeIdx.value === -1 ? 0 : targetY, SPRING_CONFIG) },
         { scale: withSpring(activeIdx.value === -1 ? 0.8 : 1) }
       ],
     };
@@ -174,7 +168,7 @@ export default function RadialNavigator() {
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-      <Animated.View style={[styles.mainContainer, animatedContainerStyle]}>
+      <Animated.View style={[styles.mainContainer, animatedContainerStyle]} pointerEvents="box-none">
         
         {/* 🏷️ THE FLOATING LABEL */}
         <Animated.View style={[styles.labelOverlay, labelContainerStyle, { backgroundColor: theme.card }]}>
@@ -185,38 +179,42 @@ export default function RadialNavigator() {
           <Animated.View style={pillStyle}>
             <BlurView intensity={100} tint={colorScheme} style={styles.glass}>
               
-              {/* 💓 RESTING HEART */}
-              <Animated.View style={[styles.centerIcon, useAnimatedStyle(() => ({
-                opacity: withTiming(expansion.value > 0.2 ? 0 : 1),
-                transform: [{ scale: withTiming(expansion.value > 0.2 ? 0 : 1) }]
-              }))]}>
-                <Heart size={28} color={theme.tint} fill={theme.tint} />
-              </Animated.View>
-
-              {/* 📋 MENU LIST */}
-              <Animated.View style={[styles.menuList, useAnimatedStyle(() => ({
-                opacity: withTiming(expansion.value > 0.2 ? 1 : 0),
-              }))]}>
+              {/* 📋 MENU LIST (Hidden when closed) */}
+              <Animated.View 
+                style={[styles.menuList, useAnimatedStyle(() => ({
+                  opacity: expansion.value < 0.2 ? 0 : withTiming(1, { duration: 150 }),
+                }))]}
+              >
                 {NAV_ITEMS.map((item, index) => {
-                  const iconStyle = useAnimatedStyle(() => {
+                  const itemIconStyle = useAnimatedStyle(() => {
                     const isSelected = activeIdx.value === index;
                     return {
-                      backgroundColor: isSelected ? item.color : 'transparent',
-                      transform: [{ scale: withSpring(isSelected ? 1.25 : 1, SPRING_CONFIG) }],
+                      backgroundColor: withTiming(isSelected ? '#FF2D55' : 'transparent', { duration: 100 }),
+                      transform: [{ scale: withSpring(isSelected ? 1.3 : 1, SPRING_CONFIG) }],
                     };
                   });
 
                   return (
                     <View key={item.id} style={styles.itemWrapper}>
-                      <Animated.View style={[styles.iconCircle, iconStyle]}>
+                      <Animated.View style={[styles.iconCircle, itemIconStyle]}>
                         <item.icon 
                           size={24} 
-                          color={useDerivedValue(() => activeIdx.value === index ? 'white' : theme.text).value} 
+                          color={activeJSIdx === index ? 'white' : theme.text} 
                         />
                       </Animated.View>
                     </View>
                   );
                 })}
+              </Animated.View>
+
+              {/* 💓 RESTING HEART (Top layer) */}
+              <Animated.View 
+                style={[styles.centerIcon, useAnimatedStyle(() => ({
+                  opacity: withTiming(expansion.value > 0.2 ? 0 : 1),
+                  transform: [{ scale: withTiming(expansion.value > 0.2 ? 0.5 : 1) }]
+                }))]}
+              >
+                <Heart size={28} color={theme.tint} fill={theme.tint} />
               </Animated.View>
 
             </BlurView>
@@ -228,12 +226,12 @@ export default function RadialNavigator() {
 }
 
 const styles = StyleSheet.create({
-  mainContainer: { position: 'absolute', justifyContent: 'center', alignItems: 'center' },
+  mainContainer: { position: 'absolute', width: 60, height: 60 },
   glass: { flex: 1, borderRadius: 30, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(150,150,150,0.2)', justifyContent: 'center', alignItems: 'center' },
-  centerIcon: { position: 'absolute', zIndex: 1 },
-  menuList: { flex: 1, justifyContent: 'center', width: '100%', gap: 5, zIndex: 2 },
+  centerIcon: { position: 'absolute', zIndex: 100 },
+  menuList: { flex: 1, justifyContent: 'center', width: '100%', zIndex: 50, paddingVertical: MENU_PADDING },
   itemWrapper: { height: ITEM_HEIGHT, width: 60, justifyContent: 'center', alignItems: 'center' },
   iconCircle: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center' },
-  labelOverlay: { position: 'absolute', width: 120, paddingVertical: 12, borderRadius: 18, elevation: 20, shadowColor: '#000', shadowOpacity: 0.4, shadowRadius: 15, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(150,150,150,0.1)', zIndex: 100000 },
-  labelText: { fontSize: 14, fontWeight: '900', letterSpacing: 1.5 },
+  labelOverlay: { position: 'absolute', width: 100, paddingVertical: 10, borderRadius: 12, elevation: 20, shadowColor: '#000', shadowOpacity: 0.4, shadowRadius: 15, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(150,150,150,0.1)', zIndex: 100000 },
+  labelText: { fontSize: 12, fontWeight: '900', letterSpacing: 1 },
 });

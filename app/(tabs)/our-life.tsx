@@ -96,7 +96,6 @@ export default function OurLifeScreen() {
   };
 
   const handleAddItinerary = async (marker: any) => {
-    console.log('[ADD ATTEMPT] Adding to plan:', marker.name);
     if (!activeTripId) return;
     try {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -118,14 +117,11 @@ export default function OurLifeScreen() {
       }, { onConflict: 'trip_id, day_number, bucket_item_id' });
 
       if (!error) {
-        console.log('[ADD SUCCESS] Added to DB:', marker.name);
         Alert.alert("Success", `${marker.name} added to your day!`);
       } else if (error.code === '23505') {
         Alert.alert("Note", `${marker.name} is already in your plan for this day.`);
-      } else {
-        console.error('[ADD DB ERROR]', error);
       }
-    } catch (e) { console.error('[ADD CRASH]', e); }
+    } catch (e) { console.error(e); }
   };
 
   const handlePinPress = (pin: any) => {
@@ -162,159 +158,162 @@ export default function OurLifeScreen() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <View style={styles.container}>
-        {activeTripId && (
-          <TripWorkspace 
-            tripId={activeTripId} 
-            userId={userId} 
-            mapRef={mapRef} 
-            onBack={handleBackFromTrip} 
-            onMarkersChange={(m) => setWorkspaceMarkers(m)} 
-            onSnapChange={(snap) => setCurrentSnap(snap)}
-            onDayChange={(dayIndex) => setActiveDayIndex(dayIndex)}
-          />
-        )}
+    <View style={styles.container}>
+      {activeTripId && (
+        <TripWorkspace 
+          tripId={activeTripId} 
+          userId={userId} 
+          mapRef={mapRef} 
+          onBack={handleBackFromTrip} 
+          onMarkersChange={(m) => setWorkspaceMarkers(m)} 
+          onSnapChange={(snap) => setCurrentSnap(snap)}
+          onDayChange={(dayIndex) => setActiveDayIndex(dayIndex)}
+        />
+      )}
 
-        <MapView
-          key={`map-${activeTripId}`}
-          ref={mapRef} 
-          provider={PROVIDER_GOOGLE} 
-          style={styles.map}
-          initialRegion={{ latitude: location?.coords.latitude ?? 20, longitude: location?.coords.longitude ?? 78, latitudeDelta: 0.0922, longitudeDelta: 0.0421 }}
-          onPress={closeActivePin}
-          onLongPress={handleMapLongPress}
-        >
-          {activeTripId ? (
-            workspaceMarkers.map(marker => (
-              <Marker
-                key={marker.id}
-                coordinate={{ latitude: marker.latitude, longitude: marker.longitude }}
-                anchor={{ x: 0.5, y: 1 }}
-                onPress={(e) => {
-                  console.log(`[MARKER PRESS] Tapped: ${marker.name}`);
-                  e.stopPropagation();
-                }}
-              >
-                <View style={styles.markerIconContainer}>
-                  <Image 
-                    source={marker.isAssigned ? BucketLocationMarkedAsset : BucketLocationAsset} 
-                    style={styles.bucketIcon} 
-                    resizeMode="contain" 
-                  />
-                </View>
-                
-                <Callout tooltip onPress={() => {
-                  console.log(`[CALLOUT PRESS] Tapped bubble for: ${marker.name}`);
-                  handleAddItinerary(marker);
-                }}>
-                  <View style={styles.customCallout}>
-                    <View style={styles.calloutHeader}>
-                      <Text style={styles.calloutName} numberOfLines={1}>{marker.name}</Text>
-                      <View style={[styles.miniBadge, { backgroundColor: (marker.category === 'eat' ? '#FF9500' : '#34C759') + '20' }]}>
-                        <Text style={[styles.miniBadgeText, { color: marker.category === 'eat' ? '#FF9500' : '#34C759' }]}>{marker.category?.toUpperCase() || 'PLACE'}</Text>
-                      </View>
-                    </View>
-                    {marker.notes ? <Text style={styles.calloutNotes} numberOfLines={2}>{marker.notes}</Text> : <Text style={styles.calloutNotes}>No notes added yet.</Text>}
-                    
-                    <View style={styles.calloutAction}>
-                      {marker.isAssigned ? (
-                        <View style={styles.addedRow}>
-                          <CheckCircle2 size={12} color="#34C759" />
-                          <Text style={styles.addedText}>ALREADY PLANNED</Text>
-                        </View>
-                      ) : (
-                        <View style={styles.planRow}>
-                          <Plus size={12} color="#FF2D55" />
-                          <Text style={styles.planText}>TAP TO ADD TO DAY</Text>
-                        </View>
-                      )}
+      <MapView
+        key={`map-${activeTripId}`}
+        ref={mapRef} 
+        provider={PROVIDER_GOOGLE} 
+        style={styles.map}
+        initialRegion={{ latitude: location?.coords.latitude ?? 20, longitude: location?.coords.longitude ?? 78, latitudeDelta: 0.0922, longitudeDelta: 0.0421 }}
+        onPress={closeActivePin}
+        onLongPress={handleMapLongPress}
+      >
+        {activeTripId ? (
+          workspaceMarkers.map(marker => (
+            <Marker
+              key={marker.id}
+              coordinate={{ latitude: marker.latitude, longitude: marker.longitude }}
+              anchor={{ x: 0.5, y: 1 }}
+              onPress={(e) => e.stopPropagation()}
+            >
+              <View style={styles.markerIconContainer}>
+                <Image 
+                  source={marker.isAssigned ? BucketLocationMarkedAsset : BucketLocationAsset} 
+                  style={styles.bucketIcon} 
+                  resizeMode="contain" 
+                />
+              </View>
+              
+              <Callout tooltip onPress={() => handleAddItinerary(marker)}>
+                <View style={styles.customCallout}>
+                  <View style={styles.calloutHeader}>
+                    <Text style={styles.calloutName} numberOfLines={1}>{marker.name}</Text>
+                    <View style={[styles.miniBadge, { backgroundColor: (marker.category === 'eat' ? '#FF9500' : '#34C759') + '20' }]}>
+                      <Text style={[styles.miniBadgeText, { color: marker.category === 'eat' ? '#FF9500' : '#34C759' }]}>{marker.category?.toUpperCase() || 'PLACE'}</Text>
                     </View>
                   </View>
-                </Callout>
-              </Marker>
-            ))
-          ) : (
-            pins.map(pin => (
-              <Marker
-                key={pin.id} coordinate={{ latitude: pin.latitude, longitude: pin.longitude }}
-                onPress={(e) => { e.stopPropagation(); handlePinPress(pin); }}
-                anchor={{ x: 0.5, y: 1 }}
-              >
-                <View style={styles.markerContainer}>
-                  <MotiView from={{ scale: 0.9 }} animate={{ translateY: activePin?.id === pin.id ? -12 : 0, scale: activePin?.id === pin.id ? 1.15 : 1 }}>
-                    <Image source={PinAsset} style={{ width: 45, height: 45, opacity: activePin?.id && activePin?.id !== pin.id ? 0.7 : 1 }} resizeMode="contain" />
-                  </MotiView>
+                  {marker.notes ? <Text style={styles.calloutNotes} numberOfLines={2}>{marker.notes}</Text> : <Text style={styles.calloutNotes}>No notes added yet.</Text>}
+                  
+                  <View style={styles.calloutAction}>
+                    {marker.isAssigned ? (
+                      <View style={styles.addedRow}>
+                        <CheckCircle2 size={12} color="#34C759" />
+                        <Text style={styles.addedText}>ALREADY PLANNED</Text>
+                      </View>
+                    ) : (
+                      <View style={styles.planRow}>
+                        <Plus size={12} color="#FF2D55" />
+                        <Text style={styles.planText}>TAP TO ADD TO DAY</Text>
+                      </View>
+                    )}
+                  </View>
                 </View>
-              </Marker>
-            ))
-          )}
-        </MapView>
-
-        <AnimatePresence>
-          {!activePin && !searchVisible && !activeTripId && (
-            <View style={styles.fabContainer}>
-              <AnimatePresence>
-                {isMenuOpen && (
-                  <MotiView style={styles.fabSubMenu}>
-                    <MotiView from={{ opacity: 0, translateY: 20 }} animate={{ opacity: 1, translateY: 0 }} exit={{ opacity: 0, translateY: 20 }}>
-                      <TouchableOpacity style={[styles.subActionButton, { backgroundColor: '#FFF' }]} onPress={() => { setSearchVisible(true); setIsMenuOpen(false); }}><Search size={22} color={theme.tint} /></TouchableOpacity>
-                    </MotiView>
-                    <MotiView from={{ opacity: 0, translateY: 20 }} animate={{ opacity: 1, translateY: 0 }} exit={{ opacity: 0, translateY: 20 }}>
-                      <TouchableOpacity style={[styles.subActionButton, { backgroundColor: '#FFF' }]} onPress={() => setIsPlanMode(true)}><Plane size={22} color={theme.tint} /></TouchableOpacity>
-                    </MotiView>
-                  </MotiView>
-                )}
-              </AnimatePresence>
-              <TouchableOpacity activeOpacity={0.8} onPress={() => setIsMenuOpen(!isMenuOpen)} style={[styles.mainFab, { backgroundColor: isMenuOpen ? '#444' : theme.tint }]}><MotiView animate={{ rotate: isMenuOpen ? '90deg' : '0deg' }}>{isMenuOpen ? <X size={28} color="white" /> : <Menu size={28} color="white" />}</MotiView></TouchableOpacity>
-            </View>
-          )}
-        </AnimatePresence>
-
-        <AnimatePresence>
-          {activePin && !activeTripId && (
-            <FloatingPopup pin={activePin} onClose={closeActivePin} onEdit={() => setIsAddModalVisible(true)} isPlanMode={!!activeTripId} />
-          )}
-        </AnimatePresence>
-
-        <AnimatePresence>
-          {searchVisible && (
-            <MotiView 
-              from={{ opacity: 0, translateY: -20 }}
-              animate={{ opacity: 1, translateY: 0 }}
-              exit={{ opacity: 0, translateY: -20 }}
-              style={[styles.searchOverlay, { top: insets.top + 10 }]}
+              </Callout>
+            </Marker>
+          ))
+        ) : (
+          pins.map(pin => (
+            <Marker
+              key={pin.id} coordinate={{ latitude: pin.latitude, longitude: pin.longitude }}
+              onPress={(e) => { e.stopPropagation(); handlePinPress(pin); }}
+              anchor={{ x: 0.5, y: 1 }}
             >
-              <SmartLocationPicker 
-                title="Search Places"
-                onClose={() => setSearchVisible(false)}
-                onLocationCaptured={(loc) => {
-                  mapRef.current?.animateToRegion({
-                    latitude: loc.lat,
-                    longitude: loc.lng,
-                    latitudeDelta: LATITUDE_DELTA,
-                    longitudeDelta: LONGITUDE_DELTA
-                  }, 1000);
-                  setSearchVisible(false);
-                }}
-              />
-            </MotiView>
-          )}
-        </AnimatePresence>
+              <View style={styles.markerContainer}>
+                <MotiView from={{ scale: 0.9 }} animate={{ translateY: activePin?.id === pin.id ? -12 : 0, scale: activePin?.id === pin.id ? 1.15 : 1 }}>
+                  <Image source={PinAsset} style={{ width: 45, height: 45, opacity: activePin?.id && activePin?.id !== pin.id ? 0.7 : 1 }} resizeMode="contain" />
+                </MotiView>
+              </View>
+            </Marker>
+          ))
+        )}
+      </MapView>
 
-        <AddPinModal 
-          isVisible={isAddModalVisible} 
-          onClose={() => { setIsAddModalVisible(false); setPendingCoordinate(null); setEditingPin(null); }} 
-          coordinate={pendingCoordinate} 
-          editingPin={editingPin || activePin} 
-          onSuccess={() => {
-            fetchPins();
-            setActivePin(null);
-          }} 
-          isPlanMode={isPlanMode} 
-        />
-      </View>
-    </GestureHandlerRootView>
+      <AnimatePresence>
+        {!activePin && !searchVisible && !activeTripId && (
+          <View style={styles.fabContainer}>
+            <AnimatePresence>
+              {isMenuOpen && (
+                <MotiView style={styles.fabSubMenu}>
+                  <MotiView from={{ opacity: 0, translateY: 20 }} animate={{ opacity: 1, translateY: 0 }} exit={{ opacity: 0, translateY: 20 }}>
+                    <TouchableOpacity style={[styles.subActionButton, { backgroundColor: '#FFF' }]} onPress={() => { setSearchVisible(true); setIsMenuOpen(false); }}><Search size={22} color={theme.tint} /></TouchableOpacity>
+                  </MotiView>
+                  <MotiView from={{ opacity: 0, translateY: 20 }} animate={{ opacity: 1, translateY: 0 }} exit={{ opacity: 0, translateY: 20 }}>
+                    <TouchableOpacity style={[styles.subActionButton, { backgroundColor: '#FFF' }]} onPress={() => setIsPlanMode(true)}><Plane size={22} color={theme.tint} /></TouchableOpacity>
+                  </MotiView>
+                </MotiView>
+              )}
+            </AnimatePresence>
+            <TouchableOpacity 
+              activeOpacity={0.8} 
+              onPress={() => setIsMenuOpen(!isMenuOpen)} 
+              style={[styles.mainFab, { backgroundColor: isMenuOpen ? '#444' : theme.tint, alignItems: 'center', justifyContent: 'center' }]}
+            >
+              <MotiView 
+                animate={{ rotate: isMenuOpen ? '90deg' : '0deg' }}
+                style={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}
+              >
+                {isMenuOpen ? <X size={28} color="white" /> : <Menu size={28} color="white" />}
+              </MotiView>
+            </TouchableOpacity>
+          </View>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {activePin && !activeTripId && (
+          <FloatingPopup pin={activePin} onClose={closeActivePin} onEdit={() => setIsAddModalVisible(true)} isPlanMode={!!activeTripId} />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {searchVisible && (
+          <MotiView 
+            from={{ opacity: 0, translateY: -20 }}
+            animate={{ opacity: 1, translateY: 0 }}
+            exit={{ opacity: 0, translateY: -20 }}
+            style={[styles.searchOverlay, { top: insets.top + 10 }]}
+          >
+            <SmartLocationPicker 
+              title="Search Places"
+              onClose={() => setSearchVisible(false)}
+              onLocationCaptured={(loc) => {
+                mapRef.current?.animateToRegion({
+                  latitude: loc.lat,
+                  longitude: loc.lng,
+                  latitudeDelta: LATITUDE_DELTA,
+                  longitudeDelta: LONGITUDE_DELTA
+                }, 1000);
+                setSearchVisible(false);
+              }}
+            />
+          </MotiView>
+        )}
+      </AnimatePresence>
+
+      <AddPinModal 
+        isVisible={isAddModalVisible} 
+        onClose={() => { setIsAddModalVisible(false); setPendingCoordinate(null); setEditingPin(null); }} 
+        coordinate={pendingCoordinate} 
+        editingPin={editingPin || activePin} 
+        onSuccess={() => {
+          fetchPins();
+          setActivePin(null);
+        }} 
+        isPlanMode={isPlanMode} 
+      />
+    </View>
   );
 }
 
@@ -339,4 +338,5 @@ const styles = StyleSheet.create({
   planText: { fontSize: 10, fontWeight: '900', color: '#FF2D55', letterSpacing: 0.5 },
   addedRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   addedText: { fontSize: 10, fontWeight: '900', color: '#34C759', letterSpacing: 0.5 },
+  searchOverlay: { position: "absolute", left: 20, right: 20, zIndex: 3000 },
 });
