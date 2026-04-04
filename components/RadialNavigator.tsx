@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Home, BookHeart, Map, Wallet, Heart, Settings, Coffee, PenTool } from 'lucide-react-native';
+import { Home, BookHeart, Map, Wallet, Heart, Settings, Coffee, PenTool,BrainCircuit } from 'lucide-react-native';
 import { StyleSheet, View, Text, Dimensions, DeviceEventEmitter, TouchableOpacity } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import Animated, { 
@@ -16,9 +16,11 @@ import { BlurView } from 'expo-blur';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 
+
 const NAV_ITEMS = [
   { id: 'index', path: '/', label: 'US', icon: Home, color: '#FF2D55' },
   { id: 'journal', path: '/journal', label: 'JOURNAL', icon: BookHeart, color: '#AF52DE' },
+  { id: 'study-hub', path: '/study-hub', label: 'STUDY', icon: BrainCircuit, color: '#5856D6' },
   { id: 'draw', path: '/draw', label: 'DRAW', icon: PenTool, color: '#FF9500' },
   { id: 'our-life', path: '/our-life', label: 'LIFE', icon: Map, color: '#34C759' },
   { id: 'finance', path: '/finance', label: 'FINANCE', icon: Wallet, color: '#FF9500' },

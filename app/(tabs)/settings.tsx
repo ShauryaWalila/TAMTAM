@@ -279,6 +279,12 @@ export default function SettingsScreen() {
 
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.tint }]}>App Settings</Text>
+          <SettingsItem 
+            icon={<BrainCircuit color={theme.text} size={22} />} 
+            label="Exam Mode (Study Hub)" 
+            theme={theme} 
+            onPress={() => router.push('/study-hub')} 
+          />
           <SettingsItem icon={<Coffee color={theme.text} size={22} />} label="Chill Zone Categories" theme={theme} onPress={() => setIsChillSettingsVisible(true)} />
           <SettingsItem icon={<Tags color={theme.text} size={22} />} label="Wardrobe Categories" theme={theme} onPress={() => setIsWardrobeSettingsVisible(true)} />
           <SettingsItem icon={<Briefcase color={theme.text} size={22} />} label="Master Wardrobe" theme={theme} onPress={() => setIsWardrobeVisible(true)} />

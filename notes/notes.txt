@@ -2,6 +2,7 @@
 yt section
 exam mode(
     all topics checklist with options of done, not done, touched, revised. sub categories of practcal and theory.
+    nap time
     
 )
 focus mode
