@@ -46,14 +46,12 @@ export default function ChillZoneScreen() {
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState('');
 
-  // Modals & State
   const [selectedCategory, setSelectedCategory] = useState<any | null>(null);
   const [isItemModalVisible, setIsItemModalVisible] = useState(false);
   const [chatItem, setChatItem] = useState<any | null>(null);
   const [chatMessage, setChatMessage] = useState('');
   const [matchCelebration, setMatchCelebration] = useState<string | null>(null);
   
-  // New Item State
   const [newItemType, setNewItemType] = useState('checklist');
   const [newItemTitle, setNewItemTitle] = useState('');
   const [newItemOptions, setNewItemOptions] = useState<string[]>(['', '']);
@@ -173,12 +171,17 @@ export default function ChillZoneScreen() {
                   <View style={styles.itemHeader}>
                     <Text style={[styles.itemTitle, { color: theme.text }]}>{item.title}</Text>
                     <View style={{flexDirection:'row', gap: 15}}>
-                      {['tictactoe', 'ludo', 'snakes', 'match', 'truthordare'].includes(item.type) && <TouchableOpacity onPress={() => setChatItem(item)}><MessageSquare size={18} color={theme.tint} /></TouchableOpacity>}
-                      <TouchableOpacity onPress={async () => await supabase.from('chill_items').delete().eq('id', item.id)}><Trash2 size={18} color="#FF3B30" opacity={0.4} /></TouchableOpacity>
+                      {['tictactoe', 'ludo', 'snakes', 'match', 'truthordare'].includes(item.type) && !item.content?.winner && (
+                        <TouchableOpacity onPress={() => setChatItem(item)}>
+                          <MessageSquare size={18} color={theme.tint} />
+                        </TouchableOpacity>
+                      )}
+                      <TouchableOpacity onPress={async () => await supabase.from('chill_items').delete().eq('id', item.id)}>
+                        <Trash2 size={18} color="#FF3B30" opacity={0.4} />
+                      </TouchableOpacity>
                     </View>
                   </View>
 
-                  {/* 🎮 TURN-BASED GAMES ENGINE */}
                   <View style={styles.gameContainer}>
                     {(item.type === 'tictactoe' || item.type === 'snakes' || item.type === 'ludo' || item.type === 'truthordare') && (
                       <Text style={[styles.turnLabel, { color: item.content.turn === currentUserId ? theme.tint : '#888' }]}>
@@ -186,33 +189,123 @@ export default function ChillZoneScreen() {
                       </Text>
                     )}
                     {item.type === 'tictactoe' && <TicTacToeComponent item={item} currentUserId={currentUserId} finalize={finalizeGame} theme={theme} />}
-                    {item.type === 'snakes' && <SnakesComponent item={item} currentUserId={currentUserId} finalize={finalizeGame} theme={theme} />}
+                    {item.type === 'snakes' && (
+                      <SnakesBoard 
+                        item={item} 
+                        currentUserId={currentUserId} 
+                        onMove={async (roll: number) => {
+                          const isP1 = currentUserId === 'pratishth';
+                          const pKey = isP1 ? 'p1' : 'p2';
+                          const partnerId = isP1 ? 'love' : 'pratishth';
+                          
+                          let currentPos = item.content[pKey] || 1;
+                          let nextPos = currentPos + roll;
+
+                          // 1. EXACT WIN RULE
+                          if (nextPos > 100) {
+                            await supabase.from('chill_items').update({ content: { ...item.content, turn: partnerId } }).eq('id', item.id);
+                            return;
+                          }
+
+                          // 2. SNAKES & LADDERS LOGIC
+                          const LADDERS: { [key: number]: number } = { 2: 38, 7: 14, 8: 31, 15: 26, 21: 42, 28: 84, 36: 44, 51: 67, 71: 91, 78: 98, 87: 94 };
+                          const SNAKES: { [key: number]: number } = { 16: 6, 46: 25, 49: 11, 62: 19, 64: 60, 74: 53, 89: 68, 92: 88, 95: 75, 99: 80 };
+
+                          if (LADDERS[nextPos]) nextPos = LADDERS[nextPos];
+                          else if (SNAKES[nextPos]) nextPos = SNAKES[nextPos];
+
+                          // 3. VICTORY CHECK
+                          const winner = nextPos === 100 ? currentUserId : null;
+                          
+                          if (winner) {
+                            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                            await supabase.from('chill_items').update({ content: { winner, chat: item.content.chat || [] } }).eq('id', item.id);
+                          } else {
+                            await supabase.from('chill_items').update({ content: { ...item.content, [pKey]: nextPos, turn: partnerId } }).eq('id', item.id);
+                          }
+                        }}
+                      />
+                    )}
                     {item.type === 'ludo' && (
                       <LudoBoard 
                         item={item} 
                         currentUserId={currentUserId} 
-                        onMove={async (pawnIdx: number, roll: number) => {
-                          const isP1 = currentUserId === 'pratishth';
+                        onMove={async (pawnIdx: number, roll: number, overridePKey?: string) => {
+                          const isP1 = overridePKey ? overridePKey === 'p1' : currentUserId === 'pratishth';
                           const pKey = isP1 ? 'p1' : 'p2';
+                          const oKey = isP1 ? 'p2' : 'p1';
+                          const partnerId = isP1 ? 'love' : 'pratishth';
                           const newPawns = [...(item.content.players?.[pKey] || [0,0,0,0])];
-                          if (newPawns[pawnIdx] === 0 && roll !== 6) return;
-                          if (newPawns[pawnIdx] === 0 && roll === 6) newPawns[pawnIdx] = 1;
-                          else newPawns[pawnIdx] = Math.min(56, newPawns[pawnIdx] + roll);
-                          const winner = newPawns.every(p => p === 56) ? currentUserId : null;
-                          const nextTurn = roll === 6 ? currentUserId : (isP1 ? 'love' : 'pratishth');
-                          await supabase.from('chill_items').update({ content: { ...item.content, players: { ...item.content.players, [pKey]: newPawns }, turn: nextTurn, winner } }).eq('id', item.id);
+                          const opponentPawns = [...(item.content.players?.[oKey] || [0,0,0,0])];
+                          
+                          // 1. AUTO-PASS (ZERO MOVES POSSIBLE)
+                          if (pawnIdx === -1) { 
+                            await supabase.from('chill_items').update({ content: { ...item.content, turn: partnerId } }).eq('id', item.id);
+                            return;
+                          }
+
+                          let extraTurn = roll === 6;
+                          const currentPos = newPawns[pawnIdx];
+
+                          // 2. VALIDATION: CAN THIS SPECIFIC PAWN MOVE?
+                          // If it can't, we simply ignore the tap and let the user try another one.
+                          const canThisPawnMove = currentPos === 0 ? roll === 6 : currentPos + roll <= 57;
+                          if (!canThisPawnMove) {
+                            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+                            return; // Do NOT update turn, do NOT proceed.
+                          }
+
+                          // 3. EXECUTE MOVE
+                          if (currentPos === 0) newPawns[pawnIdx] = 1;
+                          else newPawns[pawnIdx] += roll;
+
+                          // 4. VICTORY HAPTICS
+                          if (newPawns[pawnIdx] === 57) {
+                            extraTurn = true;
+                            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                          }
+
+                          // 5. KILL LOGIC
+                          const myGlobalIdx = (newPawns[pawnIdx] - 1 + (isP1 ? 0 : 26)) % 52;
+                          const isSafe = [1, 9, 14, 22, 27, 35, 40, 48].includes(myGlobalIdx);
+                          if (newPawns[pawnIdx] <= 51 && !isSafe) {
+                            opponentPawns.forEach((pos, idx) => {
+                              if (pos > 0 && pos <= 51) {
+                                const oppGlobalIdx = (pos - 1 + (isP1 ? 26 : 0)) % 52;
+                                if (myGlobalIdx === oppGlobalIdx) {
+                                  opponentPawns[idx] = 0; extraTurn = true;
+                                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+                                }
+                              }
+                            });
+                          }
+
+                          const winner = newPawns.every(p => p === 57) ? (overridePKey ? (overridePKey === 'p1' ? 'pratishth' : 'love') : currentUserId) : null;
+                          
+                          if (winner) {
+                            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                            // 🚀 PURGE DATA: Only keep the winner to save space
+                            await supabase.from('chill_items').update({ 
+                              content: { winner, chat: item.content.chat || [] } 
+                            }).eq('id', item.id);
+                          } else {
+                            await supabase.from('chill_items').update({ 
+                              content: { ...item.content, players: { [pKey]: newPawns, [oKey]: opponentPawns }, turn: extraTurn ? (overridePKey ? (overridePKey === 'p1' ? 'pratishth' : 'love') : currentUserId) : partnerId } 
+                            }).eq('id', item.id);
+                          }
                         }}
                       />
                     )}
                     {item.type === 'truthordare' && <TruthOrDareComponent item={item} currentUserId={currentUserId} theme={theme} color={selectedCategory?.color} />}
                   </View>
 
-                  {/* decisions & tools */}
                   {item.type === 'roulette' && <RouletteComponent item={item} color={selectedCategory?.color} theme={theme} />}
                   {item.type === 'match' && <MatchStack item={item} currentUserId={currentUserId} setMatch={setMatchCelebration} color={selectedCategory?.color} theme={theme} />}
                   {(item.type === 'checklist' || item.type === 'list' || item.type === 'poll') && <CollabListComponent item={item} currentUserId={currentUserId} color={selectedCategory?.color} theme={theme} />}
 
-                  {/* 🎭 MOOD & TRACKER */}
                   {item.type === 'mood' && (
                     <View style={styles.moodSection}>
                       <Text style={styles.currentMood}>{item.content.mood}</Text>
@@ -227,7 +320,6 @@ export default function ChillZoneScreen() {
                     </View>
                   )}
 
-                  {/* 🗒️ WALL NOTE */}
                   {item.type === 'note' && (
                     <View style={[styles.notePaper, { backgroundColor: item.content.color || '#FFF9C4' }]}>
                       <Text style={styles.noteText}>{item.content.body}</Text>
@@ -241,7 +333,6 @@ export default function ChillZoneScreen() {
             />
           </ThemedView>
 
-          {/* CHAT OVERLAY */}
           <Modal visible={!!chatItem} transparent animationType="slide">
             <View style={styles.chatOverlay}>
               <BlurView intensity={100} tint={colorScheme} style={styles.chatContent}>
