@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Dimensions, Image } from 'react-native';
 import { RefreshCw, Bug, Swords, User } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -61,29 +61,35 @@ export default function TicTacToeBoard({ item, currentUserId, onMove }: any) {
   if (winnerId || isDraw) {
     const iWon = winnerId === currentUserId;
     return (
-      <View style={styles.victoryContainer}>
-        <MotiView from={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} style={styles.victoryContent}>
-          <Image 
-            source={isDraw ? require('@/assets/images/losing.gif') : (iWon ? require('@/assets/images/Winning.gif') : require('@/assets/images/losing.gif'))} 
-            style={styles.victoryGif}
-            resizeMode="contain"
-          />
-          <View style={styles.victoryTextGroup}>
-            <Text style={styles.victoryTitle}>{isDraw ? "IT'S A DRAW!" : "MATCH COMPLETE"}</Text>
-            {!isDraw && (
-              <Text style={[styles.victoryWinner, { color: iWon ? COLORS.O : COLORS.X }]}>
-                {iWon ? 'YOU WON! 🏆' : 'TAMTAM WON! 👑'}
-              </Text>
-            )}
-          </View>
-          <TouchableOpacity 
-            onPress={async () => await supabase.from('chill_items').update({ content: { board: Array(9).fill(null), turn: 'pratishth', winner: null, chat: item.content.chat || [] } }).eq('id', item.id)}
-            style={styles.rematchBtn}
+      <View style={styles.container}>
+        <View style={styles.victoryBox}>
+          <MotiView 
+            from={{ opacity: 0, scale: 0.8 }} 
+            animate={{ opacity: 1, scale: 1 }} 
+            style={styles.victoryContent}
           >
-            <RefreshCw size={18} color="white" />
-            <Text style={styles.rematchText}>PLAY AGAIN</Text>
-          </TouchableOpacity>
-        </MotiView>
+            <Image 
+              source={isDraw ? require('@/assets/images/losing.gif') : (iWon ? require('@/assets/images/Winning.gif') : require('@/assets/images/losing.gif'))} 
+              style={styles.victoryGif}
+              resizeMode="cover"
+            />
+            <View style={{ alignItems: 'center', gap: 10 }}>
+              <Text style={styles.victoryTitle}>{isDraw ? "IT'S A DRAW!" : "MATCH COMPLETE"}</Text>
+              {!isDraw && (
+                <Text style={[styles.victoryWinner, { color: iWon ? COLORS.O : COLORS.X }]}>
+                  {iWon ? 'YOU WON! 🏆' : 'TAMTAM WON! 👑'}
+                </Text>
+              )}
+            </View>
+            <TouchableOpacity 
+              onPress={async () => await supabase.from('chill_items').update({ content: { board: Array(9).fill(null), turn: 'pratishth', winner: null, chat: item.content.chat || [] } }).eq('id', item.id)}
+              style={styles.rematchBtn}
+            >
+              <RefreshCw size={18} color="white" />
+              <Text style={styles.rematchText}>PLAY AGAIN</Text>
+            </TouchableOpacity>
+          </MotiView>
+        </View>
       </View>
     );
   }
@@ -142,19 +148,51 @@ const styles = StyleSheet.create({
   debugBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, backgroundColor: 'rgba(0,0,0,0.05)', alignSelf: 'flex-start', marginBottom: 15 },
   debugBtnText: { fontSize: 10, fontWeight: '900', color: '#666' },
   
-  // 🏆 VICTORY BOX (The parent container)
-  victoryContainer: { width: '100%', minHeight: BOARD_SIZE + 50, justifyContent: 'center', alignItems: 'center' },
-  
-  // 🏆 VICTORY CONTENT (The vertical stack)
-  victoryContent: { alignItems: 'center', gap: 15, width: '100%' },
-  
-  // 🏆 THE GIF STYLE (Strictly constrained)
-  victoryGif: { width: 200, height: 200, borderRadius: 20 },
-  
-  victoryTextGroup: { alignItems: 'center', gap: 5 },
-  victoryTitle: { fontSize: 22, fontWeight: '900', color: '#333' },
-  victoryWinner: { fontSize: 18, fontWeight: '800', textAlign: 'center' },
-  
-  rematchBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 25, paddingVertical: 12, backgroundColor: '#000', borderRadius: 15, marginTop: 10 },
-  rematchText: { color: 'white', fontWeight: '900' }
+  // 🏆 VICTORY BOX
+  victoryBox: { 
+    width: BOARD_SIZE, 
+    height: BOARD_SIZE + 100, 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    borderRadius: 20, 
+    backgroundColor: 'rgba(0,0,0,0.05)', 
+    overflow: 'hidden',
+    padding: 20
+  },
+  victoryContent: { 
+    alignItems: 'center', 
+    justifyContent: 'center',
+    gap: 20,
+    width: '100%'
+  },
+  victoryGif: { 
+    width: 200, 
+    height: 200, 
+    borderRadius: 20 
+  },
+  victoryTitle: { 
+    fontSize: 26, 
+    fontWeight: '900', 
+    color: '#333',
+    textAlign: 'center'
+  },
+  victoryWinner: { 
+    fontSize: 20, 
+    fontWeight: '800', 
+    textAlign: 'center' 
+  },
+  rematchBtn: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 8, 
+    paddingHorizontal: 25, 
+    paddingVertical: 12, 
+    backgroundColor: '#000', 
+    borderRadius: 15, 
+    marginTop: 10 
+  },
+  rematchText: { 
+    color: 'white', 
+    fontWeight: '900' 
+  }
 });

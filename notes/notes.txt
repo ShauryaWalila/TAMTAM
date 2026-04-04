@@ -1,5 +1,4 @@
-tasks & reminders(location, time and ddate based reminders)
-small games
+
 yt section
 exam mode
 widget

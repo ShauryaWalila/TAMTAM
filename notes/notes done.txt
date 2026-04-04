@@ -16,3 +16,4 @@ places to go(overall)
 goal
 games asking way
 suggestions
+tasks & reminders(location, time and ddate based reminders)

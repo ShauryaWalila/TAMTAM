@@ -3,9 +3,9 @@ import { StyleSheet, View, Text, ScrollView, TouchableOpacity, ActivityIndicator
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
-import { Coffee, Plus, X, CheckCircle2, Circle, Vote, ListTodo, Smile, BarChart3, Trash2, Sparkles, ChevronRight, MessageCircleHeart, Heart, Send, Ghost, RefreshCw, Gamepad2, Users, Trophy, Dice5, MessageSquare, List as ListIcon, StickyNote, Flame, Bug } from 'lucide-react-native';
+import { Coffee, Plus, X, CheckCircle2, Circle, Vote, ListTodo, Smile, BarChart3, Trash2, Sparkles, ChevronRight, MessageCircleHeart, Heart, Send, Ghost, RefreshCw, Gamepad2, Users, Trophy, Dice5, MessageSquare, List as ListIcon, StickyNote, Flame, Bug, ChevronLeft, Pencil, Settings2, Clock, MapPin, Bell, BellOff } from 'lucide-react-native';
 import { View as ThemedView } from '@/components/Themed';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring, withRepeat, withTiming, Easing, interpolate, runOnJS, useDerivedValue } from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring, withRepeat, withTiming, Easing, interpolate, runOnJS, useDerivedValue, withDelay } from 'react-native-reanimated';
 import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Svg, { G, Path, Text as SvgText, Circle as SvgCircle, Rect as SvgRect, Line } from 'react-native-svg';
 import { MotiView, AnimatePresence } from 'moti';
@@ -14,6 +14,7 @@ import * as SecureStore from 'expo-secure-store';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
+import * as Notifications from 'expo-notifications';
 import LudoBoard from '@/components/ChillZone/LudoBoard';
 import SnakesBoard from '@/components/ChillZone/SnakesBoard';
 import TicTacToeBoard from '@/components/ChillZone/TicTacToeBoard';
@@ -22,6 +23,7 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CARD_SIZE = (SCREEN_WIDTH - 60) / 2;
 
 const ITEM_TYPES = [
+  { id: 'reminder', label: 'Reminder', icon: Bell, color: '#5856D6' },
   { id: 'checklist', label: 'To-Do', icon: CheckCircle2, color: '#34C759' },
   { id: 'poll', label: 'Poll', icon: Vote, color: '#FF9500' },
   { id: 'roulette', label: 'Spin', icon: RefreshCw, color: '#5856D6' },
@@ -34,6 +36,10 @@ const ITEM_TYPES = [
   { id: 'tracker', label: 'Goal', icon: BarChart3, color: '#FF2D55' },
   { id: 'mood', label: 'Mood', icon: Smile, color: '#AF52DE' },
   { id: 'note', label: 'Wall', icon: StickyNote, color: '#FFCC00' },
+];
+
+const FIXED_CATEGORIES = [
+  { id: 'fixed-reminders', name: 'Tasks & Reminders', color: '#5856D6', image_url: 'https://images.unsplash.com/photo-1506784983877-45594efa4cbe?q=80&w=2068&auto=format&fit=crop' }
 ];
 
 const MOODS = ['😊', '🥰', '😴', '😤', '🥺', '🤯', '🍕', '🍷'];
@@ -57,6 +63,7 @@ export default function ChillZoneScreen() {
   const [newItemType, setNewItemType] = useState('checklist');
   const [newItemTitle, setNewItemTitle] = useState('');
   const [newItemOptions, setNewItemOptions] = useState<string[]>(['', '']);
+  const [reminderConfig, setReminderConfig] = useState<any>({ type: 'time', val: '' });
 
   useEffect(() => {
     init();
@@ -86,31 +93,29 @@ export default function ChillZoneScreen() {
     if (!newItemTitle.trim() || !selectedCategory) return;
     let content: any = { chat: [] };
     
-    if (newItemType === 'mood') content = { ...content, mood: '😊', last_updated: new Date().toISOString() };
-    else if (newItemType === 'tracker') {
-      const p = newItemTitle.split(':');
-      content = { ...content, current: 0, goal: parseInt(p[1]) || 10 };
+    if (newItemType === 'reminder') {
+      content = { ...content, remType: reminderConfig.type, val: reminderConfig.val, active: true };
     }
+    else if (newItemType === 'mood') content = { ...content, mood: '😊', last_updated: new Date().toISOString() };
+    else if (newItemType === 'tracker') { const p = newItemTitle.split(':'); content = { ...content, current: 0, goal: parseInt(p[1]) || 10 }; }
     else if (newItemType === 'note') content = { ...content, body: newItemTitle, color: '#FFF9C4' };
     else if (newItemType === 'tictactoe') content = { ...content, board: Array(9).fill(null), turn: currentUserId, winner: null };
     else if (newItemType === 'snakes') content = { ...content, p1: 1, p2: 1, turn: currentUserId, winner: null };
     else if (newItemType === 'ludo') content = { ...content, players: { p1: [0,0,0,0], p2: [0,0,0,0] }, turn: currentUserId, winner: null };
-    else if (newItemType === 'truthordare') content = { ...content, mode: 'truth', prompt: 'Tell me a secret...', turn: currentUserId };
+    else if (newItemType === 'truthordare') content = { ...content, mode: null, prompt: null, turn: currentUserId };
     else if (newItemType === 'match') content = { ...content, choices: newItemOptions.filter(o => o.trim() !== '').map(o => ({ text: o.trim(), swiped: {} })) };
     else content = { ...content, options: newItemOptions.filter(o => o.trim() !== '').map(o => ({ text: o.trim(), completed: false, votes: [] })) };
 
     const { error } = await supabase.from('chill_items').insert([{
       category_id: selectedCategory.id,
       type: newItemType,
-      title: newItemType === 'note' ? 'New Wall Note' : newItemTitle.trim(),
+      title: newItemTitle.trim(),
       content,
       created_by: currentUserId
     }]);
 
     if (!error) {
-      setIsItemModalVisible(false);
-      setNewItemTitle('');
-      setNewItemOptions(['', '']);
+      setIsItemModalVisible(false); setNewItemTitle(''); setNewItemOptions(['', '']);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
   };
@@ -124,32 +129,27 @@ export default function ChillZoneScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
-  const finalizeGame = async (item: any, winner: string) => {
-    const newContent = { ...item.content, winner, chat: [] };
-    await supabase.from('chill_items').update({ content: newContent }).eq('id', item.id);
-    Alert.alert("VICTORY! 🏆", `${winner.toUpperCase()} WON!`, [{ text: "End Match", onPress: () => {} }]);
-  };
+  const allCategories = useMemo(() => [...FIXED_CATEGORIES, ...categories], [categories]);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
         <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 120 }]} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
-            <View>
-              <Text style={[styles.title, { color: theme.text }]}>Chill Zone</Text>
-              <Text style={[styles.subtitle, { color: theme.tabIconDefault }]}>Play, decide & connect ✨</Text>
-            </View>
+            <View><Text style={[styles.title, { color: theme.text }]}>Chill Zone</Text><Text style={[styles.subtitle, { color: theme.tabIconDefault }]}>Sync, play & remember ✨</Text></View>
             <MessageCircleHeart color={theme.tint} size={32} />
           </View>
-
           <View style={styles.categoryGrid}>
-            {categories.map((cat) => (
+            {allCategories.map((cat) => (
               <TouchableOpacity key={cat.id} onPress={() => setSelectedCategory(cat)} style={[styles.catCard, { width: CARD_SIZE, height: CARD_SIZE }]}>
                 {cat.image_url ? <Image source={{ uri: cat.image_url }} style={StyleSheet.absoluteFill} /> : <View style={[StyleSheet.absoluteFill, { backgroundColor: cat.color + '20' }]} />}
                 <LinearGradient colors={['transparent', 'rgba(0,0,0,0.7)']} style={StyleSheet.absoluteFill} />
                 <View style={styles.catOverlay}>
-                  <View style={[styles.catIconBox, { backgroundColor: cat.color }]}><Coffee size={20} color="white" /></View>
-                  <View><Text style={styles.catName} numberOfLines={1}>{cat.name}</Text><Text style={styles.itemCount}>{items.filter(i => i.category_id === cat.id).length} items</Text></View>
+                  <View />
+                  <View>
+                    <Text style={styles.catName} numberOfLines={1}>{cat.name}</Text>
+                    <Text style={styles.itemCount}>{items.filter(i => i.category_id === cat.id).length} items</Text>
+                  </View>
                 </View>
               </TouchableOpacity>
             ))}
@@ -161,9 +161,11 @@ export default function ChillZoneScreen() {
             <View style={[styles.modalHeaderFixed, { paddingTop: insets.top + 10, backgroundColor: theme.background }]}>
               <TouchableOpacity onPress={() => setSelectedCategory(null)} style={styles.closeBtn}><X size={24} color={theme.text} /></TouchableOpacity>
               <Text style={[styles.modalTitle, { color: theme.text }]}>{selectedCategory?.name}</Text>
-              <TouchableOpacity onPress={() => setIsItemModalVisible(true)} style={[styles.addBtn, { backgroundColor: selectedCategory?.color || theme.tint }]}><Plus size={20} color="white" /></TouchableOpacity>
+              <TouchableOpacity onPress={() => {
+                if (selectedCategory?.id === 'fixed-reminders') setNewItemType('reminder');
+                setIsItemModalVisible(true);
+              }} style={[styles.addBtn, { backgroundColor: selectedCategory?.color || theme.tint }]}><Plus size={20} color="white" /></TouchableOpacity>
             </View>
-
             <FlatList 
               data={items.filter(i => i.category_id === selectedCategory?.id)}
               keyExtractor={i => i.id}
@@ -171,237 +173,52 @@ export default function ChillZoneScreen() {
               renderItem={({item}) => (
                 <MotiView from={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} style={[styles.itemCard, { backgroundColor: theme.card, borderLeftColor: selectedCategory?.color, borderLeftWidth: 5 }]}>
                   <View style={styles.itemHeader}>
-                    <Text style={[styles.itemTitle, { color: theme.text }]}>{item.title}</Text>
-                    <View style={{flexDirection:'row', gap: 15}}>
-                      {['tictactoe', 'ludo', 'snakes', 'match', 'truthordare'].includes(item.type) && !item.content?.winner && (
-                        <TouchableOpacity onPress={() => setChatItem(item)}>
-                          <MessageSquare size={18} color={theme.tint} />
-                        </TouchableOpacity>
-                      )}
-                      <TouchableOpacity onPress={() => {
-                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-                        Alert.alert(
-                          "Delete Shared Item?",
-                          "This will remove it for both of you. This action cannot be undone.",
-                          [
-                            { text: "Cancel", style: "cancel" },
-                            { 
-                              text: "Delete", 
-                              style: "destructive", 
-                              onPress: async () => {
-                                await supabase.from('chill_items').delete().eq('id', item.id);
-                                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                              } 
-                            }
-                          ]
-                        );
-                      }}>
-                        <Trash2 size={18} color="#FF3B30" opacity={0.4} />
-                      </TouchableOpacity>
+                    <TextInput style={[styles.itemTitle, { color: theme.text, flex: 1 }]} defaultValue={item.title} onEndEditing={async (e) => { const nt = e.nativeEvent.text; if (nt && nt !== item.title) await supabase.from('chill_items').update({ title: nt }).eq('id', item.id); }} />
+                    <View style={{flexDirection:'row', gap: 15, alignItems: 'center'}}>
+                      {['tictactoe', 'ludo', 'snakes', 'match', 'truthordare', 'reminder'].includes(item.type) && !item.content?.winner && (<TouchableOpacity onPress={() => setChatItem(item)}><MessageSquare size={18} color={theme.tint} /></TouchableOpacity>)}
+                      <TouchableOpacity onPress={() => { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning); Alert.alert("Delete?", "Remove for both?", [{ text: "Cancel", style: "cancel" }, { text: "Delete", style: "destructive", onPress: async () => await supabase.from('chill_items').delete().eq('id', item.id) }]); }}><Trash2 size={18} color="#FF3B30" opacity={0.4} /></TouchableOpacity>
                     </View>
                   </View>
-
                   <View style={styles.gameContainer}>
-                    {(item.type === 'tictactoe' || item.type === 'snakes' || item.type === 'ludo' || item.type === 'truthordare') && (
-                      <Text style={[styles.turnLabel, { color: item.content.turn === currentUserId ? theme.tint : '#888' }]}>
-                        {item.content.winner ? `${item.content.winner?.toUpperCase() || 'SYSTEM'} WON! 🏆` : `${item.content.turn?.toUpperCase() || 'PARTNER'}'S TURN`}
-                      </Text>
-                    )}
-                    {item.type === 'tictactoe' && <TicTacToeComponent item={item} currentUserId={currentUserId} finalize={finalizeGame} theme={theme} />}
-                    {item.type === 'snakes' && (
-                      <SnakesBoard 
-                        item={item} 
-                        currentUserId={currentUserId} 
-                        onMove={async (roll: number, overridePKey?: string) => {
-                          const isP1 = overridePKey ? overridePKey === 'p1' : currentUserId === 'pratishth';
-                          const pKey = isP1 ? 'p1' : 'p2';
-                          const oKey = isP1 ? 'p2' : 'p1';
-                          const partnerId = isP1 ? 'love' : 'pratishth';
-                          
-                          let currentPos = item.content[pKey] || 1;
-                          let nextPos = currentPos + roll;
-
-                          // 1. EXACT WIN RULE
-                          if (nextPos > 100) {
-                            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-                            if (!overridePKey) {
-                              await supabase.from('chill_items').update({ content: { ...item.content, turn: partnerId } }).eq('id', item.id);
-                            }
-                            return;
-                          }
-
-                          // 2. SNAKES & LADDERS LOGIC
-                          const LADDERS: { [key: number]: number } = { 2: 38, 7: 14, 8: 31, 15: 26, 21: 42, 28: 84, 36: 44, 51: 67, 71: 91, 78: 98, 87: 94 };
-                          const SNAKES: { [key: number]: number } = { 16: 6, 46: 25, 49: 11, 62: 19, 64: 60, 74: 53, 89: 68, 92: 88, 95: 75, 99: 80 };
-
-                          if (LADDERS[nextPos]) nextPos = LADDERS[nextPos];
-                          else if (SNAKES[nextPos]) nextPos = SNAKES[nextPos];
-
-                          // 3. CAPTURE (CLASH) LOGIC
-                          let opponentPos = item.content[oKey] || 1;
-                          if (nextPos > 1 && nextPos < 100 && nextPos === opponentPos) {
-                            opponentPos = 1; // Send back to start!
-                            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-                          }
-
-                          // 4. VICTORY CHECK
-                          const winner = nextPos === 100 ? (overridePKey ? (overridePKey === 'p1' ? 'pratishth' : 'love') : currentUserId) : null;
-                          
-                          if (winner) {
-                            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-                            await supabase.from('chill_items').update({ content: { winner, chat: item.content.chat || [] } }).eq('id', item.id);
-                          } else {
-                            await supabase.from('chill_items').update({ 
-                              content: { ...item.content, [pKey]: nextPos, [oKey]: opponentPos, turn: partnerId } 
-                            }).eq('id', item.id);
-                          }
-                        }}
-                      />
-                    )}
-                    {item.type === 'ludo' && (
-                      <LudoBoard 
-                        item={item} 
-                        currentUserId={currentUserId} 
-                        onMove={async (pawnIdx: number, roll: number, overridePKey?: string) => {
-                          const isP1 = overridePKey ? overridePKey === 'p1' : currentUserId === 'pratishth';
-                          const pKey = isP1 ? 'p1' : 'p2';
-                          const oKey = isP1 ? 'p2' : 'p1';
-                          const partnerId = isP1 ? 'love' : 'pratishth';
-                          const newPawns = [...(item.content.players?.[pKey] || [0,0,0,0])];
-                          const opponentPawns = [...(item.content.players?.[oKey] || [0,0,0,0])];
-                          
-                          // 1. AUTO-PASS (ZERO MOVES POSSIBLE)
-                          if (pawnIdx === -1) { 
-                            await supabase.from('chill_items').update({ content: { ...item.content, turn: partnerId } }).eq('id', item.id);
-                            return;
-                          }
-
-                          let extraTurn = roll === 6;
-                          const currentPos = newPawns[pawnIdx];
-
-                          // 2. VALIDATION: CAN THIS SPECIFIC PAWN MOVE?
-                          // If it can't, we simply ignore the tap and let the user try another one.
-                          const canThisPawnMove = currentPos === 0 ? roll === 6 : currentPos + roll <= 57;
-                          if (!canThisPawnMove) {
-                            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-                            return; // Do NOT update turn, do NOT proceed.
-                          }
-
-                          // 3. EXECUTE MOVE
-                          if (currentPos === 0) newPawns[pawnIdx] = 1;
-                          else newPawns[pawnIdx] += roll;
-
-                          // 4. VICTORY HAPTICS
-                          if (newPawns[pawnIdx] === 57) {
-                            extraTurn = true;
-                            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-                          }
-
-                          // 5. KILL LOGIC
-                          const myGlobalIdx = (newPawns[pawnIdx] - 1 + (isP1 ? 0 : 26)) % 52;
-                          const isSafe = [1, 9, 14, 22, 27, 35, 40, 48].includes(myGlobalIdx);
-                          if (newPawns[pawnIdx] <= 51 && !isSafe) {
-                            opponentPawns.forEach((pos, idx) => {
-                              if (pos > 0 && pos <= 51) {
-                                const oppGlobalIdx = (pos - 1 + (isP1 ? 26 : 0)) % 52;
-                                if (myGlobalIdx === oppGlobalIdx) {
-                                  opponentPawns[idx] = 0; extraTurn = true;
-                                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-                                }
-                              }
-                            });
-                          }
-
-                          const winner = newPawns.every(p => p === 57) ? (overridePKey ? (overridePKey === 'p1' ? 'pratishth' : 'love') : currentUserId) : null;
-                          
-                          if (winner) {
-                            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-                            // 🚀 PURGE DATA: Only keep the winner to save space
-                            await supabase.from('chill_items').update({ 
-                              content: { winner, chat: item.content.chat || [] } 
-                            }).eq('id', item.id);
-                          } else {
-                            await supabase.from('chill_items').update({ 
-                              content: { ...item.content, players: { [pKey]: newPawns, [oKey]: opponentPawns }, turn: extraTurn ? (overridePKey ? (overridePKey === 'p1' ? 'pratishth' : 'love') : currentUserId) : partnerId } 
-                            }).eq('id', item.id);
-                          }
-                        }}
-                      />
-                    )}
+                    {item.type === 'reminder' && <ReminderComponent item={item} theme={theme} color={selectedCategory?.color} />}
+                    {(item.type === 'tictactoe' || item.type === 'snakes' || item.type === 'ludo' || item.type === 'truthordare') && !item.content?.winner && (<Text style={[styles.turnLabel, { color: item.content.turn === currentUserId ? theme.tint : '#888' }]}>{item.content.turn === currentUserId ? "IT'S YOUR TURN" : "WAITING FOR PARTNER..."}</Text>)}
+                    {item.type === 'tictactoe' && <TicTacToeBoard item={item} currentUserId={currentUserId} onMove={async (idx:any, sym:any, p:any) => { const b = [...(item.content.board || Array(9).fill(null))]; b[idx] = sym; const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]]; let w = null; for (const [a,b_idx,c] of wins) if (b[a] && b[a] === b[b_idx] && b[a] === b[c]) w = p; if (w) await supabase.from('chill_items').update({ content: { winner: w, board: b, chat: item.content.chat || [] } }).eq('id', item.id); else await supabase.from('chill_items').update({ content: { ...item.content, board: b, turn: p === 'pratishth' ? 'love' : 'pratishth' } }).eq('id', item.id); }} />}
+                    {item.type === 'snakes' && <SnakesBoard item={item} currentUserId={currentUserId} onMove={async (roll:any, over:any) => { const isP1 = over ? over === 'p1' : currentUserId === 'pratishth'; const p = isP1 ? 'p1' : 'p2', o = isP1 ? 'p2' : 'p1', partner = isP1 ? 'love' : 'pratishth'; let next = (item.content[p] || 1) + roll; if (next > 100) { if (!over) await supabase.from('chill_items').update({ content: { ...item.content, turn: partner } }).eq('id', item.id); return; } const L = { 2: 38, 7: 14, 8: 31, 15: 26, 21: 42, 28: 84, 36: 44, 51: 67, 71: 91, 78: 98, 87: 94 }, S = { 16: 6, 46: 25, 49: 11, 62: 19, 64: 60, 74: 53, 89: 68, 92: 88, 95: 75, 99: 80 }; if (L[next]) next = L[next]; else if (S[next]) next = S[next]; let opp = item.content[o] || 1; if (next > 1 && next < 100 && next === opp) opp = 1; if (next === 100) await supabase.from('chill_items').update({ content: { winner: currentUserId, chat: item.content.chat || [] } }).eq('id', item.id); else await supabase.from('chill_items').update({ content: { ...item.content, [p]: next, [o]: opp, turn: partner } }).eq('id', item.id); }} />}
+                    {item.type === 'ludo' && <LudoBoard item={item} currentUserId={currentUserId} onMove={async (idx:any, roll:any, over:any) => { const isP1 = over ? over === 'p1' : currentUserId === 'pratishth'; const p = isP1 ? 'p1' : 'p2', o = isP1 ? 'p2' : 'p1', partner = isP1 ? 'love' : 'pratishth'; const nP = [...(item.content.players?.[p] || [0,0,0,0])], oP = [...(item.content.players?.[o] || [0,0,0,0])]; if (idx === -1) { await supabase.from('chill_items').update({ content: { ...item.content, turn: partner } }).eq('id', item.id); return; } let ex = roll === 6; if (nP[idx] === 0) nP[idx] = 1; else nP[idx] += roll; if (nP[idx] === 57) ex = true; const g = (nP[idx] - 1 + (isP1 ? 0 : 26)) % 52, safe = [0, 8, 13, 21, 26, 34, 39, 47].includes(g); if (nP[idx] <= 51 && !safe) oP.forEach((pos, i) => { if (pos > 0 && pos <= 51) { const og = (pos - 1 + (isP1 ? 26 : 0)) % 52; if (g === og) { oP[i] = 0; ex = true; } } }); const win = nP.every(p_val => p_val === 57) ? (over ? (over === 'p1' ? 'pratishth' : 'love') : currentUserId) : null; if (win) await supabase.from('chill_items').update({ content: { winner: win, chat: item.content.chat || [] } }).eq('id', item.id); else await supabase.from('chill_items').update({ content: { ...item.content, players: { [p]: nP, [o]: oP }, turn: ex ? (over ? (over === 'p1' ? 'pratishth' : 'love') : currentUserId) : partner } }).eq('id', item.id); }} />}
                     {item.type === 'truthordare' && <TruthOrDareComponent item={item} currentUserId={currentUserId} theme={theme} color={selectedCategory?.color} />}
                   </View>
-
                   {item.type === 'roulette' && <RouletteComponent item={item} color={selectedCategory?.color} theme={theme} />}
                   {item.type === 'match' && <MatchStack item={item} currentUserId={currentUserId} setMatch={setMatchCelebration} color={selectedCategory?.color} theme={theme} />}
                   {(item.type === 'checklist' || item.type === 'list' || item.type === 'poll') && <CollabListComponent item={item} currentUserId={currentUserId} color={selectedCategory?.color} theme={theme} />}
-
-                  {item.type === 'mood' && (
-                    <View style={styles.moodSection}>
-                      <Text style={styles.currentMood}>{item.content.mood}</Text>
-                      <View style={styles.moodGrid}>{MOODS.map(m => (<TouchableOpacity key={m} onPress={async () => await supabase.from('chill_items').update({ content: { ...item.content, mood: m } }).eq('id', item.id)} style={styles.moodBtn}><Text style={{fontSize: 20}}>{m}</Text></TouchableOpacity>))}</View>
-                    </View>
-                  )}
-
-                  {item.type === 'tracker' && (
-                    <View style={styles.trackerSection}>
-                      <View style={styles.progressBar}><MotiView animate={{ width: `${(item.content.current/item.content.goal)*100}%` }} style={[styles.progressFill, { backgroundColor: selectedCategory?.color }]} /></View>
-                      <TouchableOpacity onPress={async () => await supabase.from('chill_items').update({ content: { ...item.content, current: Math.min(item.content.goal, item.content.current + 1) } }).eq('id', item.id)} style={[styles.plusOne, { backgroundColor: selectedCategory?.color }]}><Plus size={16} color="white" /></TouchableOpacity>
-                    </View>
-                  )}
-
-                  {item.type === 'note' && (
-                    <View style={[styles.notePaper, { backgroundColor: item.content.color || '#FFF9C4' }]}>
-                      <Text style={styles.noteText}>{item.content.body}</Text>
-                      <Sparkles size={14} color="rgba(0,0,0,0.2)" style={{ position: 'absolute', bottom: 10, right: 10 }} />
-                    </View>
-                  )}
-
+                  {item.type === 'mood' && (<View style={styles.moodSection}><Text style={styles.currentMood}>{item.content.mood}</Text><View style={styles.moodGrid}>{MOODS.map(m => (<TouchableOpacity key={m} onPress={async () => await supabase.from('chill_items').update({ content: { ...item.content, mood: m } }).eq('id', item.id)} style={styles.moodBtn}><Text style={{fontSize: 20}}>{m}</Text></TouchableOpacity>))}</View></View>)}
+                  {item.type === 'tracker' && (<View style={styles.trackerSection}><View style={styles.progressBar}><MotiView animate={{ width: `${(item.content.current/item.content.goal)*100}%` }} style={[styles.progressFill, { backgroundColor: selectedCategory?.color }]} /></View><TouchableOpacity onPress={async () => await supabase.from('chill_items').update({ content: { ...item.content, current: Math.min(item.content.goal, item.content.current + 1) } }).eq('id', item.id)} style={[styles.plusOne, { backgroundColor: selectedCategory?.color }]}><Plus size={16} color="white" /></TouchableOpacity><TouchableOpacity onPress={() => Alert.prompt("Set Goal", "Enter target value", (v) => { if(parseInt(v)) supabase.from('chill_items').update({ content: { ...item.content, goal: parseInt(v) } }).eq('id', item.id).then(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)) })}><Settings2 size={16} color={theme.tabIconDefault} /></TouchableOpacity></View>)}
+                  {item.type === 'note' && (<View style={[styles.notePaper, { backgroundColor: item.content.color || '#FFF9C4' }]}><TextInput style={styles.noteText} multiline defaultValue={item.content.body} onEndEditing={async (e) => { const nb = e.nativeEvent.text; if (nb && nb !== item.content.body) await supabase.from('chill_items').update({ content: { ...item.content, body: nb } }).eq('id', item.id); }} /><Sparkles size={14} color="rgba(0,0,0,0.2)" style={{ position: 'absolute', bottom: 10, right: 10 }} /></View>)}
                   <Text style={[styles.itemAuthor, { color: theme.tabIconDefault }]}>CREATED BY {item.created_by?.toUpperCase() || 'SYSTEM'}</Text>
                 </MotiView>
               )}
             />
           </ThemedView>
-
-          <Modal visible={!!chatItem} transparent animationType="slide">
-            <View style={styles.chatOverlay}>
-              <BlurView intensity={100} tint={colorScheme} style={styles.chatContent}>
-                <View style={styles.chatHeader}><Text style={[styles.chatTitle, { color: theme.text }]}>Game Chat</Text><TouchableOpacity onPress={() => setChatItem(null)}><X size={24} color={theme.text} /></TouchableOpacity></View>
-                <FlatList data={chatItem?.content.chat || []} keyExtractor={(_, i) => i.toString()} renderItem={({item: msg}) => (<View style={[styles.msgBox, msg.user === currentUserId ? styles.myMsg : styles.theirMsg, { backgroundColor: msg.user === currentUserId ? theme.tint : theme.background }]}><Text style={[styles.msgText, { color: msg.user === currentUserId ? 'white' : theme.text }]}>{msg.text}</Text></View>)}/>
-                <View style={styles.chatInputRow}><TextInput style={[styles.chatInput, { color: theme.text, backgroundColor: theme.background }]} placeholder="Say something..." value={chatMessage} onChangeText={setChatMessage} /><TouchableOpacity onPress={handleSendMessage} style={[styles.chatSendBtn, { backgroundColor: theme.tint }]}><Send size={18} color="white" /></TouchableOpacity></View>
-              </BlurView>
-            </View>
-          </Modal>
-
-          <AnimatePresence>
-            {matchCelebration && (
-              <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={styles.celebOverlay}>
-                <BlurView intensity={100} tint="dark" style={StyleSheet.absoluteFill} />
-                <MotiView from={{ scale: 0.5 }} animate={{ scale: 1 }} style={styles.celebContent}>
-                  <Heart size={100} color="#FF2D55" fill="#FF2D55" />
-                  <Text style={styles.celebTitle}>ITS A MATCH!</Text>
-                  <Text style={styles.celebSub}>You both agreed on: {matchCelebration}</Text>
-                  <TouchableOpacity onPress={() => setMatchCelebration(null)} style={styles.celebClose}><Text style={styles.celebCloseText}>YAY! ❤️</Text></TouchableOpacity>
-                </MotiView>
-              </MotiView>
-            )}
-          </AnimatePresence>
-
           <Modal visible={isItemModalVisible} animationType="fade" transparent>
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
               <View style={styles.modalOverlay}>
                 <BlurView intensity={100} tint={colorScheme} style={styles.itemModalContent}>
-                  <View style={styles.modalHeader}><Text style={[styles.modalTitle, { color: theme.text }]}>New Shared Experience</Text><TouchableOpacity onPress={() => setIsItemModalVisible(false)}><X size={24} color={theme.text} /></TouchableOpacity></View>
+                  <TouchableOpacity onPress={() => setIsItemModalVisible(false)} style={styles.modalCloseAbs}><X size={20} color={theme.text} /></TouchableOpacity>
+                  <View style={styles.modalHeader}><Text style={[styles.modalTitle, { color: theme.text }]}>New Shared Experience</Text></View>
                   <View style={styles.typePicker}>{ITEM_TYPES.map(t => (<TouchableOpacity key={t.id} onPress={() => setNewItemType(t.id)} style={[styles.typeChip, newItemType === t.id && { backgroundColor: selectedCategory?.color + '20', borderColor: selectedCategory?.color, borderWidth: 1 }]}><t.icon size={18} color={newItemType === t.id ? selectedCategory?.color : theme.tabIconDefault} /><Text style={[styles.typeText, { color: newItemType === t.id ? selectedCategory?.color : theme.tabIconDefault }]}>{t.label}</Text></TouchableOpacity>))}</View>
-                  <TextInput style={[styles.modalInput, { color: theme.text, backgroundColor: theme.background }]} placeholder={newItemType === 'note' ? "Write your message..." : "Title or Goal?"} value={newItemTitle} onChangeText={setNewItemTitle} multiline={newItemType === 'note'} />
-                  {['match', 'checklist', 'poll', 'list', 'roulette'].includes(newItemType) && (
-                    <View style={{ gap: 8 }}>
-                      {newItemOptions.map((opt, idx) => (<TextInput key={idx} style={[styles.modalInput, { color: theme.text, backgroundColor: theme.background, height: 44 }]} placeholder={`Option ${idx+1}`} value={opt} onChangeText={(v) => { const n = [...newItemOptions]; n[idx] = v; setNewItemOptions(n); }} />))}
-                      <TouchableOpacity onPress={() => setNewItemOptions([...newItemOptions, ''])}><Text style={{ color: selectedCategory?.color, fontWeight: '900' }}>+ Add Option</Text></TouchableOpacity>
+                  <TextInput style={[styles.modalInput, { color: theme.text, backgroundColor: theme.background }]} placeholder={"Enter Title..."} value={newItemTitle} onChangeText={setNewItemTitle} />
+                  
+                  {/* 🔔 REMINDER CONFIG */}
+                  {newItemType === 'reminder' && (
+                    <View style={{ gap: 10 }}>
+                      <View style={styles.reminderToggleRow}>
+                        <TouchableOpacity onPress={() => setReminderConfig({...reminderConfig, type:'time'})} style={[styles.remTypeBtn, reminderConfig.type === 'time' && { backgroundColor: theme.tint }]}><Clock size={14} color={reminderConfig.type === 'time' ? 'white' : '#888'} /><Text style={[styles.remTypeText, reminderConfig.type === 'time' && { color: 'white' }]}>Time</Text></TouchableOpacity>
+                        <TouchableOpacity onPress={() => setReminderConfig({...reminderConfig, type:'location'})} style={[styles.remTypeBtn, reminderConfig.type === 'location' && { backgroundColor: theme.tint }]}><MapPin size={14} color={reminderConfig.type === 'location' ? 'white' : '#888'} /><Text style={[styles.remTypeText, reminderConfig.type === 'location' && { color: 'white' }]}>Location</Text></TouchableOpacity>
+                      </View>
+                      <TextInput style={[styles.modalInput, { backgroundColor: theme.background, color: theme.text }]} placeholder={reminderConfig.type === 'time' ? "Format: YYYY-MM-DD HH:MM" : "Enter address or place name"} value={reminderConfig.val} onChangeText={(v) => setReminderConfig({...reminderConfig, val: v})} />
                     </View>
                   )}
+
+                  {['match', 'checklist', 'poll', 'list', 'roulette'].includes(newItemType) && (<View style={{ gap: 8 }}>{newItemOptions.map((opt, idx) => (<TextInput key={idx} style={[styles.modalInput, { color: theme.text, backgroundColor: theme.background, height: 44 }]} placeholder={`Option ${idx+1}`} value={opt} onChangeText={(v) => { const n = [...newItemOptions]; n[idx] = v; setNewItemOptions(n); }} />))}<TouchableOpacity onPress={() => setNewItemOptions([...newItemOptions, ''])}><Text style={{ color: selectedCategory?.color, fontWeight: '900' }}>+ Add Option</Text></TouchableOpacity></View>)}
                   <TouchableOpacity onPress={addItem} style={[styles.saveBtn, { backgroundColor: selectedCategory?.color }]}><Text style={styles.saveBtnText}>Activate for Us</Text></TouchableOpacity>
                 </BlurView>
               </View>
@@ -413,217 +230,95 @@ export default function ChillZoneScreen() {
   );
 }
 
-// 🎡 CUSTOM STABLE SVG ROULETTE
+// 🔔 REMINDER COMPONENT
+function ReminderComponent({ item, theme, color }: any) {
+  const isTime = item.content.remType === 'time';
+  const isActive = item.content.active;
+
+  const toggleReminder = async () => {
+    const newActive = !isActive;
+    await supabase.from('chill_items').update({ content: { ...item.content, active: newActive } }).eq('id', item.id);
+    if (newActive) {
+      // Logic to schedule local notification based on item.content.val
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+  };
+
+  return (
+    <View style={styles.reminderBox}>
+      <View style={[styles.reminderIconBox, { backgroundColor: color + '15' }]}>
+        {isTime ? <Clock size={24} color={color} /> : <MapPin size={24} color={color} />}
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={[styles.reminderVal, { color: theme.text }]}>{item.content.val}</Text>
+        <Text style={styles.reminderSub}>{isTime ? "Time-based alert" : "Location-aware alert"}</Text>
+      </View>
+      <TouchableOpacity onPress={toggleReminder} style={[styles.bellBtn, { backgroundColor: isActive ? color : 'rgba(150,150,150,0.1)' }]}>
+        {isActive ? <Bell size={18} color="white" /> : <BellOff size={18} color="#888" />}
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 function RouletteComponent({ item, color, theme }: any) {
   const rotation = useSharedValue(0);
   const [spinning, setSpinning] = useState(false);
   const [winner, setWinner] = useState<string | null>(null);
   const options = item.content.options || [];
-
-  const spin = () => {
-    if (spinning || options.length === 0) return;
-    setSpinning(true);
-    setWinner(null);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    const extraSpins = 5 + Math.random() * 5;
-    const finalRotation = rotation.value + (extraSpins * 360);
-    rotation.value = withTiming(finalRotation, { duration: 3000, easing: Easing.out(Easing.cubic) }, (finished) => {
-      if (finished) runOnJS(handleFinish)(finalRotation);
-    });
-  };
-
-  const handleFinish = (finalRot: number) => {
-    setSpinning(false);
-    const normalizedRot = finalRot % 360;
-    const itemAngle = 360 / options.length;
-    const idx = Math.floor((360 - normalizedRot) / itemAngle) % options.length;
-    setWinner(options[idx].text);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-  };
-
+  const spin = () => { if (spinning || options.length === 0) return; setSpinning(true); setWinner(null); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); const extraSpins = 5 + Math.random() * 5; const finalRotation = rotation.value + (extraSpins * 360); rotation.value = withTiming(finalRotation, { duration: 3000, easing: Easing.out(Easing.cubic) }, (finished) => { if (finished) runOnJS(handleFinish)(finalRotation); }); };
+  const handleFinish = (finalRot: number) => { setSpinning(false); const normalizedRot = finalRot % 360; const idx = Math.floor((360 - normalizedRot) / (360 / options.length)) % options.length; setWinner(options[idx].text); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); };
   const wheelStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${rotation.value}deg` }] }));
-
   return (
     <View style={styles.rouletteWrapper}>
       <AnimatePresence>{winner && <MotiView from={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} style={[styles.winnerBadge, { backgroundColor: color }]}><Sparkles size={16} color="white" /><Text style={styles.winnerName}>{winner.toUpperCase()}</Text></MotiView>}</AnimatePresence>
-      <View style={styles.wheelOuter}>
-        <View style={styles.pointer} />
-        <Animated.View style={[styles.wheelContainer, wheelStyle]}>
-          <Svg width={220} height={220} viewBox="0 0 220 220">
-            <G transform="translate(110, 110)">
-              {options.map((opt: any, i: number) => {
-                const angle = (2 * Math.PI) / options.length;
-                const startAngle = i * angle - Math.PI / 2;
-                const endAngle = (i + 1) * angle - Math.PI / 2;
-                const x1 = 100 * Math.cos(startAngle);
-                const y1 = 100 * Math.sin(startAngle);
-                const x2 = 100 * Math.cos(endAngle);
-                const y2 = 100 * Math.sin(endAngle);
-                return (
-                  <G key={i}>
-                    <Path d={`M 0 0 L ${x1} ${y1} A 100 100 0 0 1 ${x2} ${y2} Z`} fill={i % 2 === 0 ? color : color + '40'} stroke="#fff" strokeWidth={2} />
-                    <SvgText x={60 * Math.cos(startAngle + angle/2)} y={60 * Math.sin(startAngle + angle/2)} fill={theme.text} fontSize="10" fontWeight="bold" textAnchor="middle" transform={`rotate(${(i * (360/options.length)) + (360/options.length)/2 + 90}, ${60 * Math.cos(startAngle + angle/2)}, ${60 * Math.sin(startAngle + angle/2)})`}>
-                      {opt.text.substring(0, 10)}
-                    </SvgText>
-                  </G>
-                );
-              })}
-              <SvgCircle r={15} fill="#fff" />
-            </G>
-          </Svg>
-        </Animated.View>
-      </View>
-      <TouchableOpacity onPress={spin} disabled={spinning} style={[styles.spinBtn, { backgroundColor: color, marginTop: 20 }]}>
-        <Text style={styles.spinText}>{spinning ? 'DECIDING...' : 'SPIN THE WHEEL'}</Text>
-      </TouchableOpacity>
-    </View>
-  );
-}
-
-// 🎮 SHARED GAME COMPONENTS
-function TicTacToeComponent({ item, currentUserId, finalize, theme }: any) {
-  const [debugControl, setDebugControl] = useState<'none' | 'me' | 'partner'>('none');
-
-  const handleMove = async (idx: number) => {
-    const isSimulating = debugControl !== 'none';
-    if (item.content.board[idx] || item.content.winner) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      return;
-    }
-
-    // Turn Check (Bypass if simulating)
-    if (!isSimulating && item.content.turn !== currentUserId) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      return;
-    }
-
-    const newBoard = [...item.content.board];
-    
-    // Determine Symbol
-    let symbol = currentUserId === 'pratishth' ? 'X' : 'O';
-    if (debugControl === 'partner') symbol = currentUserId === 'pratishth' ? 'O' : 'X';
-
-    newBoard[idx] = symbol;
-    
-    // Win Logic
-    const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-    let winner = null;
-    for (const [a,b,c] of wins) {
-      if (newBoard[a] && newBoard[a] === newBoard[b] && newBoard[a] === newBoard[c]) winner = symbol === (currentUserId === 'pratishth' ? 'X' : 'O') ? currentUserId : (currentUserId === 'pratishth' ? 'love' : 'pratishth');
-    }
-
-    if (winner) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-      await supabase.from('chill_items').update({ 
-        content: { winner, chat: item.content.chat || [] } 
-      }).eq('id', item.id);
-    } else {
-      // Logic for next turn
-      const nextTurn = symbol === (currentUserId === 'pratishth' ? 'X' : 'O') ? (currentUserId === 'pratishth' ? 'love' : 'pratishth') : currentUserId;
-      await supabase.from('chill_items').update({ 
-        content: { ...item.content, board: newBoard, turn: nextTurn } 
-      }).eq('id', item.id);
-    }
-  };
-
-  if (item.content.winner) {
-    return (
-      <View style={styles.victoryBox}>
-        <Image source={item.content.winner === currentUserId ? require('@/assets/images/Winning.gif') : require('@/assets/images/losing.gif')} style={styles.victoryGif} />
-        <Text style={styles.victoryText}>{item.content.winner === currentUserId ? 'YOU WON! 🏆' : 'TAMTAM WON! 👑'}</Text>
-        <TouchableOpacity style={styles.rematchBtn} onPress={async () => await supabase.from('chill_items').update({ content: { board: Array(9).fill(null), turn: 'pratishth', winner: null, chat: item.content.chat || [] } }).eq('id', item.id)}>
-          <RefreshCw size={18} color="white" /><Text style={styles.rematchText}>REMATCH</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.proGameBox}>
-      {/* 🛠️ DEBUG TOGGLE */}
-      <TouchableOpacity 
-        onPress={() => setDebugControl(p => p === 'none' ? 'me' : p === 'me' ? 'partner' : 'none')}
-        style={[styles.debugSmallBtn, debugControl !== 'none' && { backgroundColor: '#FF9500' }]}
-      >
-        <Bug size={12} color="white" />
-        <Text style={styles.debugBtnText}>
-          {debugControl === 'none' ? 'DEBUG OFF' : debugControl === 'me' ? 'PLACE MINE' : 'PLACE TAMTAM'}
-        </Text>
-      </TouchableOpacity>
-
-      <View style={styles.tictacGrid}>
-        {item.content.board.map((c:any, i:number) => (
-          <TouchableOpacity key={i} onPress={() => handleMove(i)} style={[styles.tictacCell, { backgroundColor: theme.background }]}>
-            <Text style={[styles.tictacText, { color: c === 'X' ? '#FF2D55' : '#34C759' }]}>{c}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-    </View>
-  );
-}
-
-function SnakesComponent({ item, currentUserId, finalize, theme }: any) {
-  const roll = async () => {
-    if (item.content.winner || item.content.turn !== currentUserId) return;
-    const r = Math.floor(Math.random() * 6) + 1;
-    const isP1 = currentUserId === 'pratishth';
-    const nextPos = Math.min(30, (isP1 ? item.content.p1 : item.content.p2) + r);
-    if (nextPos === 30) finalize(item, currentUserId);
-    else await supabase.from('chill_items').update({ content: { ...item.content, [isP1 ? 'p1' : 'p2']: nextPos, turn: isP1 ? 'love' : 'pratishth', last_roll: r } }).eq('id', item.id);
-  };
-  return (
-    <View style={styles.proGameBox}>
-      <View style={styles.snakeGrid}>
-        {[...Array(30)].map((_, i) => { 
-          const idx = 30-i; 
-          return (
-            <View key={idx} style={[styles.snakeCell, { backgroundColor: theme.background }]}>
-              <Text style={styles.snakeIdx}>{idx}</Text>
-              <>
-                {item.content.p1 === idx && <View style={[styles.pawnDot, { backgroundColor: '#FF2D55' }]} />}
-                {item.content.p2 === idx && <View style={[styles.pawnDot, { backgroundColor: '#34C759', bottom: 2 }]} />}
-              </>
-            </View>
-          ); 
-        })}
-      </View>
-      <TouchableOpacity onPress={roll} style={[styles.diceBtn, { backgroundColor: theme.text }]} disabled={item.content.turn !== currentUserId}>
-        <Dice5 size={20} color={theme.background} />
-      </TouchableOpacity>
+      <View style={styles.wheelOuter}><View style={styles.pointer} /><Animated.View style={[styles.wheelContainer, wheelStyle]}><Svg width={220} height={220} viewBox="0 0 220 220"><G transform="translate(110, 110)">{options.map((opt: any, i: number) => { const angle = (2 * Math.PI) / options.length; const startAngle = i * angle - Math.PI / 2, endAngle = (i + 1) * angle - Math.PI / 2, x1 = 100 * Math.cos(startAngle), y1 = 100 * Math.sin(startAngle), x2 = 100 * Math.cos(endAngle), y2 = 100 * Math.sin(endAngle); return (<G key={i}><Path d={`M 0 0 L ${x1} ${y1} A 100 100 0 0 1 ${x2} ${y2} Z`} fill={i % 2 === 0 ? color : color + '40'} stroke="#fff" strokeWidth={2} /><SvgText x={60 * Math.cos(startAngle + angle/2)} y={60 * Math.sin(startAngle + angle/2)} fill={theme.text} fontSize="10" fontWeight="bold" textAnchor="middle" transform={`rotate(${(i * (360/options.length)) + (360/options.length)/2 + 90}, ${60 * Math.cos(startAngle + angle/2)}, ${60 * Math.sin(startAngle + angle/2)})`}>{opt.text.substring(0, 10)}</SvgText></G>); })}<SvgCircle r={15} fill="#fff" /></G></Svg></Animated.View></View>
+      <TouchableOpacity onPress={spin} disabled={spinning} style={[styles.spinBtn, { backgroundColor: color, marginTop: 20 }]}><Text style={styles.spinText}>{spinning ? 'DECIDING...' : 'SPIN THE WHEEL'}</Text></TouchableOpacity>
     </View>
   );
 }
 
 function TruthOrDareComponent({ item, currentUserId, theme, color }: any) {
-  const next = async (m: 'truth' | 'dare') => {
-    if (item.content.turn !== currentUserId) return;
-    const truths = ["Most embarrassing memory?", "One thing you love about me?", "Last lie you told?"];
-    const dares = ["Send a goofy selfie right now", "Do 10 pushups", "Call me and say I love you"];
-    const prompt = m === 'truth' ? truths[Math.floor(Math.random()*truths.length)] : dares[Math.floor(Math.random()*dares.length)];
-    await supabase.from('chill_items').update({ content: { mode: m, prompt, turn: currentUserId === 'pratishth' ? 'love' : 'pratishth' } }).eq('id', item.id);
-  };
-  return (<View style={styles.truthBox}><View style={[styles.promptCard, { backgroundColor: color + '15' }]}><Text style={[styles.promptMode, { color }]}>{item.content.mode.toUpperCase()}</Text><Text style={[styles.promptText, { color: theme.text }]}>{item.content.prompt}</Text></View><View style={styles.truthActions}><TouchableOpacity onPress={() => next('truth')} style={[styles.truthBtn, { borderColor: color, borderWidth: 1 }]} disabled={item.content.turn !== currentUserId}><Text style={{color, fontWeight:'900'}}>TRUTH</Text></TouchableOpacity><TouchableOpacity onPress={() => next('dare')} style={[styles.truthBtn, { backgroundColor: color }]} disabled={item.content.turn !== currentUserId}><Text style={{color:'white', fontWeight:'900'}}>DARE</Text></TouchableOpacity></View></View>);
+  const [localPrompt, setLocalPrompt] = useState('');
+  const partnerId = item.content.turn === 'pratishth' ? 'love' : 'pratishth';
+  const isMyTurn = item.content.turn === currentUserId;
+  const isPartnerTurn = item.content.turn !== currentUserId;
+  const selectMode = async (mode: 'truth' | 'dare') => { if (!isMyTurn) return; await supabase.from('chill_items').update({ content: { ...item.content, mode, prompt: null } }).eq('id', item.id); };
+  const submitPrompt = async () => { if (!localPrompt.trim()) return; await supabase.from('chill_items').update({ content: { ...item.content, prompt: localPrompt.trim() } }).eq('id', item.id); setLocalPrompt(''); };
+  const complete = async () => { await supabase.from('chill_items').update({ content: { ...item.content, mode: null, prompt: null, turn: partnerId } }).eq('id', item.id); };
+  return (
+    <View style={styles.truthBox}>
+      {!item.content.mode && (<View style={styles.truthActions}><TouchableOpacity onPress={() => selectMode('truth')} style={[styles.truthBtn, { borderColor: color, borderWidth: 1 }]} disabled={!isMyTurn}><Text style={{color, fontWeight:'900'}}>TRUTH</Text></TouchableOpacity><TouchableOpacity onPress={() => selectMode('dare')} style={[styles.truthBtn, { backgroundColor: color }]} disabled={!isMyTurn}><Text style={{color:'white', fontWeight:'900'}}>DARE</Text></TouchableOpacity></View>)}
+      {item.content.mode && !item.content.prompt && (<View style={[styles.promptCard, { backgroundColor: color + '10' }]}><Text style={[styles.promptMode, { color }]}>{item.content.mode.toUpperCase()}</Text>{isPartnerTurn ? (<View style={{ width: '100%', gap: 10 }}><TextInput style={[styles.modalInput, { backgroundColor: theme.background, color: theme.text }]} placeholder="Write their challenge..." value={localPrompt} onChangeText={setLocalPrompt} /><TouchableOpacity onPress={submitPrompt} style={[styles.saveBtn, { backgroundColor: color }]}><Text style={styles.saveBtnText}>Send Challenge</Text></TouchableOpacity></View>) : (<Text style={styles.waitText}>Waiting for partner to set the prompt...</Text>)}</View>)}
+      {item.content.prompt && (<View style={[styles.promptCard, { backgroundColor: color + '15' }]}><Text style={[styles.promptMode, { color }]}>{item.content.mode.toUpperCase()}</Text><Text style={[styles.promptText, { color: theme.text }]}>{item.content.prompt}</Text>{isMyTurn && (<TouchableOpacity onPress={complete} style={[styles.saveBtn, { backgroundColor: color, width: '100%', marginTop: 20 }]}><Text style={styles.saveBtnText}>Challenge Done ✅</Text></TouchableOpacity>)}</View>)}
+    </View>
+  );
 }
 
 function MatchStack({ item, currentUserId, setMatch, color, theme }: any) {
-  const handleSwipe = async (idx: number, val: boolean) => {
-    const newChoices = [...item.content.choices];
-    newChoices[idx].swiped[currentUserId] = val;
-    const partnerId = currentUserId === 'pratishth' ? 'love' : 'pratishth';
-    if (val === true && newChoices[idx].swiped[partnerId] === true) setMatch(newChoices[idx].text);
-    await supabase.from('chill_items').update({ content: { ...item.content, choices: newChoices } }).eq('id', item.id);
-  };
-  return (<View style={styles.matchStack}>{item.content.choices.map((choice: any, idx: number) => { if (choice.swiped[currentUserId] !== undefined) return null; return (<View key={idx} style={[styles.matchCard, { backgroundColor: theme.background, borderColor: color+'40' }]}><Text style={[styles.matchText, { color: theme.text }]}>{choice.text}</Text><View style={styles.matchActions}><TouchableOpacity onPress={() => handleSwipe(idx, false)} style={styles.noBtn}><X size={24} color="#FF3B30" /></TouchableOpacity><TouchableOpacity onPress={() => handleSwipe(idx, true)} style={[styles.yesBtn, { backgroundColor: theme.tint }]}><Heart size={24} color="white" fill="white" /></TouchableOpacity></View></View>); })}</View>);
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
+  const partnerId = currentUserId === 'pratishth' ? 'love' : 'pratishth';
+  const remaining = item.content.choices.filter((c: any) => c.swiped[currentUserId] === undefined);
+  const currentItem = remaining[0];
+  const currentIndex = item.content.choices.indexOf(currentItem);
+  const bothFinished = item.content.choices.every((c:any) => c.swiped.pratishth !== undefined && c.swiped.love !== undefined);
+  const handleSwipeResult = async (val: boolean) => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); const nC = [...item.content.choices]; const idx = item.content.choices.indexOf(currentItem); nC[idx].swiped[currentUserId] = val; if (val === true && nC[idx].swiped[partnerId] === true) { setMatch(nC[idx].text); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } await supabase.from('chill_items').update({ content: { ...item.content, choices: nC } }).eq('id', item.id); translateX.value = 0; translateY.value = 0; };
+  const gesture = Gesture.Pan().onUpdate((e) => { translateX.value = e.translationX; translateY.value = e.translationY; }).onEnd((e) => { if (Math.abs(e.translationX) > 100) { const res = e.translationX > 0; translateX.value = withTiming(e.translationX > 0 ? 500 : -500, { duration: 200 }); runOnJS(handleSwipeResult)(res); } else { translateX.value = withSpring(0); translateY.value = withSpring(0); } });
+  const cardStyle = useAnimatedStyle(() => ({ transform: [{ translateX: translateX.value }, { translateY: translateY.value }, { rotate: `${interpolate(translateX.value, [-200, 200], [-15, 15])}deg` }] }));
+  const likeStyle = useAnimatedStyle(() => ({ opacity: interpolate(translateX.value, [0, 100], [0, 1]) }));
+  const nopeStyle = useAnimatedStyle(() => ({ opacity: interpolate(translateX.value, [-100, 0], [1, 0]) }));
+  if (bothFinished) {
+    const matches = item.content.choices.filter((c:any) => c.swiped.pratishth && c.swiped.love), mismatches = item.content.choices.filter((c:any) => c.swiped.pratishth !== c.swiped.love), bothNope = item.content.choices.filter((c:any) => !c.swiped.pratishth && !c.swiped.love);
+    return (<View style={styles.matchReport}><View style={styles.reportHeader}><Trophy size={20} color="#FFD700" /><Text style={[styles.reportTitle, { color: theme.text }]}>THE MATCH REPORT</Text></View><ScrollView style={{ maxHeight: 250 }} nestedScrollEnabled>{matches.length > 0 && (<View style={styles.reportSection}><View style={styles.sectionHeader}><Heart size={14} color="#FF2D55" fill="#FF2D55" /><Text style={styles.sectionTitle}>PERFECT MATCHES</Text></View>{matches.map((m:any, i:number) => (<Text key={i} style={styles.reportItem}>• {m.text}</Text>))}</View>)}{mismatches.length > 0 && (<View style={styles.reportSection}><View style={styles.sectionHeader}><X size={14} color="#FF9500" /><Text style={styles.sectionTitle}>MISMATCHES</Text></View>{mismatches.map((m:any, i:number) => (<Text key={i} style={[styles.reportItem, { opacity: 0.6 }]}>• {m.text}</Text>))}</View>)}{bothNope.length > 0 && (<View style={styles.reportSection}><View style={styles.sectionHeader}><Ghost size={14} color="#8E8E93" /><Text style={styles.sectionTitle}>BOTH NOPE</Text></View>{bothNope.map((m:any, i:number) => (<Text key={i} style={[styles.reportItem, { opacity: 0.4 }]}>• {m.text}</Text>))}</View>)}</ScrollView></View>);
+  }
+  if (!currentItem) return (<View style={styles.emptyMatch}><ActivityIndicator color={color} /><Text style={[styles.emptyMatchText, { color: theme.tabIconDefault }]}>Waiting for Tamtam to finish... ⏳</Text></View>);
+  return (<View style={styles.matchContainer}><GestureDetector gesture={gesture}><Animated.View style={[styles.matchCard, { backgroundColor: theme.background, borderColor: color + '30' }, cardStyle]}><Animated.View style={[styles.swipeLabel, { borderColor: '#34C759', right: 20, top: 20 }, likeStyle]}><Text style={[styles.swipeLabelText, { color: '#34C759' }]}>MATCH</Text></Animated.View><Animated.View style={[styles.swipeLabel, { borderColor: '#FF3B30', left: 20, top: 20 }, nopeStyle]}><Text style={[styles.swipeLabelText, { color: '#FF3B30' }]}>NOPE</Text></Animated.View><Text style={[styles.matchCount, { color }]}>{item.content.choices.length - remaining.length + 1} / {item.content.choices.length}</Text><Text style={[styles.matchText, { color: theme.text }]}>{currentItem.text}</Text></Animated.View></GestureDetector></View>);
 }
 
 function CollabListComponent({ item, currentUserId, color, theme }: any) {
-  const toggle = async (idx: number) => {
-    const newOptions = [...item.content.options];
-    newOptions[idx].completed = !newOptions[idx].completed;
-    await supabase.from('chill_items').update({ content: { ...item.content, options: newOptions } }).eq('id', item.id);
-  };
-  return (<View style={styles.collabList}>{item.content.options?.map((opt: any, i: number) => (<TouchableOpacity key={i} onPress={() => toggle(i)} style={[styles.optionRow, { backgroundColor: theme.background }]}>{item.type === 'checklist' && (opt.completed ? <CheckCircle2 size={20} color={color} /> : <Circle size={20} color="#888" />)}<Text style={[styles.optionText, { color: theme.text, textDecorationLine: opt.completed ? 'line-through' : 'none' }]}>{opt.text}</Text></TouchableOpacity>))}</View>);
+  const toggle = async (idx: number) => { const nO = [...item.content.options]; nO[idx].completed = !nO[idx].completed; await supabase.from('chill_items').update({ content: { ...item.content, options: nO } }).eq('id', item.id); };
+  const editOption = async (idx: number, text: string) => { if (!text.trim()) return; const nO = [...item.content.options]; nO[idx].text = text.trim(); await supabase.from('chill_items').update({ content: { ...item.content, options: nO } }).eq('id', item.id); };
+  return (<View style={styles.collabList}>{item.content.options?.map((opt: any, i: number) => (<View key={i} style={[styles.optionRow, { backgroundColor: theme.background }]}><TouchableOpacity onPress={() => toggle(i)} style={styles.optionCheck}>{item.type === 'checklist' && (opt.completed ? <CheckCircle2 size={20} color={color} /> : <Circle size={20} color="#888" />)}</TouchableOpacity><TextInput style={[styles.optionText, { color: theme.text, textDecorationLine: opt.completed ? 'line-through' : 'none', flex: 1 }]} defaultValue={opt.text} onEndEditing={(e) => editOption(i, e.nativeEvent.text)} /><Pencil size={12} color={theme.tabIconDefault} opacity={0.3} /></View>))}</View>);
 }
 
 const styles = StyleSheet.create({
@@ -643,31 +338,17 @@ const styles = StyleSheet.create({
   closeBtn: { padding: 8, borderRadius: 12, backgroundColor: 'rgba(150,150,150,0.1)' },
   addBtn: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
   itemCard: { padding: 25, borderRadius: 35, marginBottom: 20, elevation: 3 },
-  itemHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  itemHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, gap: 10 },
   itemTitle: { fontSize: 22, fontWeight: '800' },
-  gameContainer: { alignItems: 'center', gap: 15 },
+  gameContainer: { alignItems: 'center', gap: 15, width: '100%' },
   turnLabel: { fontSize: 12, fontWeight: '900', letterSpacing: 1.5 },
-  proGameBox: { width: '100%', alignItems: 'center', overflow: 'hidden', borderRadius: 20 },
-  tictacGrid: { width: 210, flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
-  tictacCell: { width: 66, height: 66, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  tictacText: { fontSize: 28, fontWeight: '900' },
-  ludoBoardGraphic: { width: 200, height: 200, borderRadius: 20, overflow: 'hidden', backgroundColor: '#fff', elevation: 2 },
-  ludoPawn: { position: 'absolute', width: 24, height: 24, borderRadius: 12, borderWidth: 3, borderColor: '#fff', justifyContent: 'center', alignItems: 'center' },
-  pawnText: { color: 'white', fontSize: 10, fontWeight: '900' },
-  snakeGrid: { width: 200, height: 120, flexDirection: 'row', flexWrap: 'wrap', gap: 2 },
-  snakeCell: { width: 38, height: 18, borderRadius: 4, justifyContent: 'center', alignItems: 'center' },
-  snakeIdx: { fontSize: 6, color: '#888' },
-  pawnDot: { width: 6, height: 6, borderRadius: 3, position: 'absolute' },
-  diceBtn: { padding: 12, borderRadius: 15, flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10 },
-  diceText: { fontWeight: '900', fontSize: 12 },
-  waitOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(255,255,255,0.6)', justifyContent: 'center', alignItems: 'center', zIndex: 10 },
-  waitText: { fontSize: 10, fontWeight: '900', color: '#000', marginTop: 5 },
   truthBox: { width: '100%', gap: 15 },
-  promptCard: { padding: 25, borderRadius: 20, alignItems: 'center' },
+  promptCard: { padding: 25, borderRadius: 20, alignItems: 'center', minHeight: 120, justifyContent: 'center', width: '100%' },
   promptMode: { fontSize: 10, fontWeight: '900', letterSpacing: 2, marginBottom: 10 },
   promptText: { fontSize: 18, fontWeight: '700', textAlign: 'center' },
-  truthActions: { flexDirection: 'row', gap: 10 },
+  truthActions: { flexDirection: 'row', gap: 10, width: '100%' },
   truthBtn: { flex: 1, height: 50, borderRadius: 15, justifyContent: 'center', alignItems: 'center' },
+  waitText: { fontSize: 12, fontWeight: '700', fontStyle: 'italic', opacity: 0.5, textAlign: 'center' },
   notePaper: { padding: 25, borderRadius: 10, elevation: 5, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10, transform: [{ rotate: '-1deg' }] },
   noteText: { fontSize: 18, fontWeight: '700', color: '#333', fontStyle: 'italic' },
   moodSection: { alignItems: 'center', gap: 15 },
@@ -686,14 +367,24 @@ const styles = StyleSheet.create({
   pointer: { position: 'absolute', top: -10, width: 0, height: 0, borderLeftWidth: 15, borderRightWidth: 15, borderTopWidth: 25, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: '#FF2D55', zIndex: 10 },
   spinBtn: { paddingHorizontal: 40, paddingVertical: 15, borderRadius: 20 },
   spinText: { color: 'white', fontWeight: '900' },
-  matchStack: { height: 200, justifyContent: 'center', alignItems: 'center' },
-  matchCard: { width: SCREEN_WIDTH - 100, padding: 20, borderRadius: 20, borderWidth: 2, alignItems: 'center', gap: 20 },
-  matchText: { fontSize: 20, fontWeight: '900', textAlign: 'center' },
-  matchActions: { flexDirection: 'row', gap: 30 },
-  yesBtn: { width: 50, height: 50, borderRadius: 25, justifyContent: 'center', alignItems: 'center' },
-  noBtn: { width: 50, height: 50, borderRadius: 25, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255,0,0,0.1)' },
+  matchContainer: { height: 220, width: '100%', justifyContent: 'center', alignItems: 'center' },
+  matchCard: { width: SCREEN_WIDTH - 80, height: 200, padding: 25, borderRadius: 30, borderWidth: 2, alignItems: 'center', justifyContent: 'center', elevation: 10, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10 },
+  matchCount: { fontSize: 10, fontWeight: '900', letterSpacing: 1, opacity: 0.6, position: 'absolute', top: 20 },
+  matchText: { fontSize: 24, fontWeight: '900', textAlign: 'center' },
+  swipeLabel: { position: 'absolute', borderWidth: 3, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, transform: [{ rotate: '-10deg' }], zIndex: 10 },
+  swipeLabelText: { fontWeight: '900', fontSize: 18 },
+  emptyMatch: { height: 200, justifyContent: 'center', alignItems: 'center', gap: 10 },
+  emptyMatchText: { fontWeight: '800', fontSize: 14, textAlign: 'center' },
+  matchReport: { width: '100%', backgroundColor: 'rgba(0,0,0,0.03)', borderRadius: 20, padding: 20 },
+  reportHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 15 },
+  reportTitle: { fontSize: 12, fontWeight: '900', letterSpacing: 1 },
+  reportSection: { marginBottom: 15 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 5 },
+  sectionTitle: { fontSize: 9, fontWeight: '900', color: '#888' },
+  reportItem: { fontSize: 14, fontWeight: '700', color: '#333', marginLeft: 20, marginBottom: 2 },
   collabList: { gap: 10, width: '100%' },
   optionRow: { padding: 15, borderRadius: 15, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  optionCheck: { padding: 5 },
   optionText: { fontSize: 15, fontWeight: '600' },
   chatOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   chatContent: { height: '70%', borderTopLeftRadius: 40, borderTopRightRadius: 40, padding: 30, overflow: 'hidden' },
@@ -709,10 +400,13 @@ const styles = StyleSheet.create({
   itemAuthor: { fontSize: 9, fontWeight: '900', marginTop: 25, opacity: 0.5, letterSpacing: 1 },
   modalOverlay: { flex: 1, justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.5)', padding: 20 },
   itemModalContent: { borderRadius: 40, padding: 30, gap: 20, overflow: 'hidden' },
+  modalHeader: { width: '100%', marginBottom: 10 },
+  modalCloseAbs: { position: 'absolute', top: 25, right: 25, zIndex: 100, padding: 10, borderRadius: 20, backgroundColor: 'rgba(150,150,150,0.1)' },
   typePicker: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   typeChip: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 15, backgroundColor: 'rgba(150,150,150,0.1)' },
   typeText: { fontSize: 11, fontWeight: '900' },
   modalInput: { height: 56, borderRadius: 18, paddingHorizontal: 20, fontWeight: '700' },
+  modalTitle: { fontSize: 20, fontWeight: '900' },
   saveBtn: { height: 60, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginTop: 10 },
   saveBtnText: { color: 'white', fontWeight: '900', fontSize: 17 },
   debugSmallBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, backgroundColor: 'rgba(150,150,150,0.1)', alignSelf: 'flex-start', marginBottom: 10 },
@@ -722,5 +416,13 @@ const styles = StyleSheet.create({
   celebTitle: { color: 'white', fontSize: 32, fontWeight: '900', marginTop: 20 },
   celebSub: { color: 'rgba(255,255,255,0.7)', fontSize: 16, marginTop: 5, textAlign: 'center' },
   celebClose: { marginTop: 40, padding: 15 },
-  celebCloseText: { color: 'white', fontWeight: '900', fontSize: 18 }
+  celebCloseText: { color: 'white', fontWeight: '900', fontSize: 18 },
+  reminderBox: { flexDirection: 'row', alignItems: 'center', gap: 15, width: '100%', padding: 5 },
+  reminderIconBox: { width: 48, height: 48, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  reminderVal: { fontSize: 16, fontWeight: '800' },
+  reminderSub: { fontSize: 10, fontWeight: '600', opacity: 0.5 },
+  bellBtn: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  reminderToggleRow: { flexDirection: 'row', gap: 10, marginBottom: 5 },
+  remTypeBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 15, paddingVertical: 8, borderRadius: 12, backgroundColor: 'rgba(150,150,150,0.1)' },
+  remTypeText: { fontSize: 12, fontWeight: '900', color: '#888' }
 });
