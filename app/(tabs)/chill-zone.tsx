@@ -3,7 +3,7 @@ import { StyleSheet, View, Text, ScrollView, TouchableOpacity, ActivityIndicator
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
-import { Coffee, Plus, X, CheckCircle2, Circle, Vote, ListTodo, Smile, BarChart3, Trash2, Sparkles, ChevronRight, MessageCircleHeart, Heart, Send, Ghost, RefreshCw, Gamepad2, Users, Trophy, Dice5, MessageSquare, List as ListIcon, StickyNote, Flame, Bug, ChevronLeft, Pencil, Settings2, Clock, MapPin, Bell, BellOff } from 'lucide-react-native';
+import { Coffee, Plus, X, CheckCircle2, Circle, Vote, ListTodo, Smile, BarChart3, Trash2, Sparkles, ChevronRight, MessageCircleHeart, Heart, Send, Ghost, RefreshCw, Gamepad2, Users, Trophy, Dice5, MessageSquare, List as ListIcon, StickyNote, Flame, Bug, ChevronLeft, Pencil, Settings2, Clock, MapPin, Bell, BellOff, Calendar } from 'lucide-react-native';
 import { View as ThemedView } from '@/components/Themed';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, withRepeat, withTiming, Easing, interpolate, runOnJS, useDerivedValue, withDelay } from 'react-native-reanimated';
 import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -15,15 +15,21 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import LudoBoard from '@/components/ChillZone/LudoBoard';
 import SnakesBoard from '@/components/ChillZone/SnakesBoard';
 import TicTacToeBoard from '@/components/ChillZone/TicTacToeBoard';
+import SmartLocationPicker from '@/components/Map/SmartLocationPicker';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CARD_SIZE = (SCREEN_WIDTH - 60) / 2;
 
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({ shouldShowAlert: true, shouldPlaySound: true, shouldSetBadge: true }),
+});
+
 const ITEM_TYPES = [
-  { id: 'reminder', label: 'Reminder', icon: Bell, color: '#5856D6' },
+  { id: 'reminder', label: 'Task/Remind', icon: Bell, color: '#5856D6' },
   { id: 'checklist', label: 'To-Do', icon: CheckCircle2, color: '#34C759' },
   { id: 'poll', label: 'Poll', icon: Vote, color: '#FF9500' },
   { id: 'roulette', label: 'Spin', icon: RefreshCw, color: '#5856D6' },
@@ -39,7 +45,7 @@ const ITEM_TYPES = [
 ];
 
 const FIXED_CATEGORIES = [
-  { id: 'fixed-reminders', name: 'Tasks & Reminders', color: '#5856D6', image_url: 'https://images.unsplash.com/photo-1506784983877-45594efa4cbe?q=80&w=2068&auto=format&fit=crop' }
+  { id: '479739cf-1f54-4020-a5ad-dad274a5c8a9', name: 'Tasks & Reminders', color: '#5856D6', image_url: 'https://images.unsplash.com/photo-1506784983877-45594efa4cbe?q=80&w=2068&auto=format&fit=crop' }
 ];
 
 const MOODS = ['😊', '🥰', '😴', '😤', '🥺', '🤯', '🍕', '🍷'];
@@ -59,17 +65,31 @@ export default function ChillZoneScreen() {
   const [chatItem, setChatItem] = useState<any | null>(null);
   const [chatMessage, setChatMessage] = useState('');
   const [matchCelebration, setMatchCelebration] = useState<string | null>(null);
+  const [activeAlert, setActiveAlert] = useState<any | null>(null);
   
   const [newItemType, setNewItemType] = useState('checklist');
   const [newItemTitle, setNewItemTitle] = useState('');
   const [newItemOptions, setNewItemOptions] = useState<string[]>(['', '']);
-  const [reminderConfig, setReminderConfig] = useState<any>({ type: 'time', val: '' });
+  const [remType, setRemType] = useState<'time' | 'location'>('time');
+  const [startDate, setStartDate] = useState(new Date());
+  const [endDate, setEndDate] = useState<Date | null>(null);
+  const [selectedLoc, setSelectedLoc] = useState<any | null>(null);
+  const [isMapVisible, setIsMapVisible] = useState(false);
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
+  const [editItem, setEditItem] = useState<any | null>(null);
 
   useEffect(() => {
     init();
     const catSub = supabase.channel('chill_cats').on('postgres_changes', { event: '*', schema: 'public', table: 'chill_categories' }, fetchCategories).subscribe();
     const itemSub = supabase.channel('chill_items').on('postgres_changes', { event: '*', schema: 'public', table: 'chill_items' }, fetchItems).subscribe();
-    return () => { supabase.removeChannel(catSub); supabase.removeChannel(itemSub); };
+    
+    const notifSub = Notifications.addNotificationReceivedListener(notification => {
+      setActiveAlert(notification.request.content);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    });
+
+    return () => { supabase.removeChannel(catSub); supabase.removeChannel(itemSub); notifSub.remove(); };
   }, []);
 
   const init = async () => {
@@ -92,10 +112,7 @@ export default function ChillZoneScreen() {
   const addItem = async () => {
     if (!newItemTitle.trim() || !selectedCategory) return;
     let content: any = { chat: [] };
-    
-    if (newItemType === 'reminder') {
-      content = { ...content, remType: reminderConfig.type, val: reminderConfig.val, active: true };
-    }
+    if (newItemType === 'reminder') content = { ...content, remType, start_at: startDate.toISOString(), end_at: endDate ? endDate.toISOString() : null, location: selectedLoc, active: true };
     else if (newItemType === 'mood') content = { ...content, mood: '😊', last_updated: new Date().toISOString() };
     else if (newItemType === 'tracker') { const p = newItemTitle.split(':'); content = { ...content, current: 0, goal: parseInt(p[1]) || 10 }; }
     else if (newItemType === 'note') content = { ...content, body: newItemTitle, color: '#FFF9C4' };
@@ -106,18 +123,15 @@ export default function ChillZoneScreen() {
     else if (newItemType === 'match') content = { ...content, choices: newItemOptions.filter(o => o.trim() !== '').map(o => ({ text: o.trim(), swiped: {} })) };
     else content = { ...content, options: newItemOptions.filter(o => o.trim() !== '').map(o => ({ text: o.trim(), completed: false, votes: [] })) };
 
-    const { error } = await supabase.from('chill_items').insert([{
-      category_id: selectedCategory.id,
-      type: newItemType,
-      title: newItemTitle.trim(),
-      content,
-      created_by: currentUserId
-    }]);
+    const { error } = await supabase.from('chill_items').insert([{ category_id: selectedCategory.id, type: newItemType, title: newItemTitle.trim(), content, created_by: currentUserId }]);
+    if (!error) { setIsItemModalVisible(false); setNewItemTitle(''); setNewItemOptions(['', '']); setEndDate(null); setSelectedLoc(null); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); }
+  };
 
-    if (!error) {
-      setIsItemModalVisible(false); setNewItemTitle(''); setNewItemOptions(['', '']);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    }
+  const updateItem = async () => {
+    if (!editItem) return;
+    const content = { ...editItem.content, remType, start_at: startDate.toISOString(), end_at: endDate ? endDate.toISOString() : null, location: selectedLoc };
+    await supabase.from('chill_items').update({ title: newItemTitle, content }).eq('id', editItem.id);
+    setEditItem(null); setIsItemModalVisible(false); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
   const handleSendMessage = async () => {
@@ -125,18 +139,20 @@ export default function ChillZoneScreen() {
     const newMessage = { user: currentUserId, text: chatMessage.trim(), time: new Date().toISOString() };
     const newContent = { ...chatItem.content, chat: [...(chatItem.content.chat || []), newMessage] };
     await supabase.from('chill_items').update({ content: newContent }).eq('id', chatItem.id);
-    setChatMessage('');
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setChatMessage(''); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
-  const allCategories = useMemo(() => [...FIXED_CATEGORIES, ...categories], [categories]);
+  const allCategories = useMemo(() => {
+    const fixedIds = FIXED_CATEGORIES.map(f => f.id);
+    return [...FIXED_CATEGORIES, ...categories.filter(c => !fixedIds.includes(c.id))];
+  }, [categories]);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
         <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 120 }]} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
-            <View><Text style={[styles.title, { color: theme.text }]}>Chill Zone</Text><Text style={[styles.subtitle, { color: theme.tabIconDefault }]}>Sync, play & remember ✨</Text></View>
+            <View><Text style={[styles.title, { color: theme.text }]}>Chill Zone</Text><Text style={[styles.subtitle, { color: theme.tabIconDefault }]}>Play, decide & connect ✨</Text></View>
             <MessageCircleHeart color={theme.tint} size={32} />
           </View>
           <View style={styles.categoryGrid}>
@@ -144,13 +160,7 @@ export default function ChillZoneScreen() {
               <TouchableOpacity key={cat.id} onPress={() => setSelectedCategory(cat)} style={[styles.catCard, { width: CARD_SIZE, height: CARD_SIZE }]}>
                 {cat.image_url ? <Image source={{ uri: cat.image_url }} style={StyleSheet.absoluteFill} /> : <View style={[StyleSheet.absoluteFill, { backgroundColor: cat.color + '20' }]} />}
                 <LinearGradient colors={['transparent', 'rgba(0,0,0,0.7)']} style={StyleSheet.absoluteFill} />
-                <View style={styles.catOverlay}>
-                  <View />
-                  <View>
-                    <Text style={styles.catName} numberOfLines={1}>{cat.name}</Text>
-                    <Text style={styles.itemCount}>{items.filter(i => i.category_id === cat.id).length} items</Text>
-                  </View>
-                </View>
+                <View style={styles.catOverlay}><View /><View><Text style={styles.catName} numberOfLines={1}>{cat.name}</Text><Text style={styles.itemCount}>{items.filter(i => i.category_id === cat.id).length} items</Text></View></View>
               </TouchableOpacity>
             ))}
           </View>
@@ -161,10 +171,7 @@ export default function ChillZoneScreen() {
             <View style={[styles.modalHeaderFixed, { paddingTop: insets.top + 10, backgroundColor: theme.background }]}>
               <TouchableOpacity onPress={() => setSelectedCategory(null)} style={styles.closeBtn}><X size={24} color={theme.text} /></TouchableOpacity>
               <Text style={[styles.modalTitle, { color: theme.text }]}>{selectedCategory?.name}</Text>
-              <TouchableOpacity onPress={() => {
-                if (selectedCategory?.id === 'fixed-reminders') setNewItemType('reminder');
-                setIsItemModalVisible(true);
-              }} style={[styles.addBtn, { backgroundColor: selectedCategory?.color || theme.tint }]}><Plus size={20} color="white" /></TouchableOpacity>
+              <TouchableOpacity onPress={() => { setNewItemType(selectedCategory?.id === FIXED_CATEGORIES[0].id ? 'reminder' : 'checklist'); setIsItemModalVisible(true); }} style={[styles.addBtn, { backgroundColor: selectedCategory?.color || theme.tint }]}><Plus size={20} color="white" /></TouchableOpacity>
             </View>
             <FlatList 
               data={items.filter(i => i.category_id === selectedCategory?.id)}
@@ -175,6 +182,7 @@ export default function ChillZoneScreen() {
                   <View style={styles.itemHeader}>
                     <TextInput style={[styles.itemTitle, { color: theme.text, flex: 1 }]} defaultValue={item.title} onEndEditing={async (e) => { const nt = e.nativeEvent.text; if (nt && nt !== item.title) await supabase.from('chill_items').update({ title: nt }).eq('id', item.id); }} />
                     <View style={{flexDirection:'row', gap: 15, alignItems: 'center'}}>
+                      {item.type === 'reminder' && (<TouchableOpacity onPress={() => { setEditItem(item); setNewItemTitle(item.title); setRemType(item.content.remType); setStartDate(new Date(item.content.start_at)); setEndDate(item.content.end_at ? new Date(item.content.end_at) : null); setSelectedLoc(item.content.location); setIsItemModalVisible(true); }}><Pencil size={18} color={theme.tint} /></TouchableOpacity>)}
                       {['tictactoe', 'ludo', 'snakes', 'match', 'truthordare', 'reminder'].includes(item.type) && !item.content?.winner && (<TouchableOpacity onPress={() => setChatItem(item)}><MessageSquare size={18} color={theme.tint} /></TouchableOpacity>)}
                       <TouchableOpacity onPress={() => { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning); Alert.alert("Delete?", "Remove for both?", [{ text: "Cancel", style: "cancel" }, { text: "Delete", style: "destructive", onPress: async () => await supabase.from('chill_items').delete().eq('id', item.id) }]); }}><Trash2 size={18} color="#FF3B30" opacity={0.4} /></TouchableOpacity>
                     </View>
@@ -198,120 +206,96 @@ export default function ChillZoneScreen() {
               )}
             />
           </ThemedView>
+
+          <Modal visible={!!activeAlert} transparent animationType="fade">
+            <View style={styles.alertOverlay}>
+              <BlurView intensity={100} tint="dark" style={StyleSheet.absoluteFill} />
+              <MotiView from={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={styles.alertCard}>
+                <View style={styles.alertIcon}><Bell size={40} color="white" /></View>
+                <Text style={styles.alertTitle}>{activeAlert?.title || "Reminder!"}</Text>
+                <Text style={styles.alertBody}>{activeAlert?.body || "It's time for your shared task."}</Text>
+                <TouchableOpacity onPress={() => { setSelectedCategory(allCategories[0]); setActiveAlert(null); }} style={styles.alertBtn}><Text style={styles.alertBtnText}>SHOW ME</Text></TouchableOpacity>
+                <TouchableOpacity onPress={() => setActiveAlert(null)} style={{ marginTop: 15 }}><Text style={{ color: 'rgba(255,255,255,0.5)', fontWeight: '900' }}>DISMISS</Text></TouchableOpacity>
+              </MotiView>
+            </View>
+          </Modal>
+
           <Modal visible={isItemModalVisible} animationType="fade" transparent>
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
               <View style={styles.modalOverlay}>
                 <BlurView intensity={100} tint={colorScheme} style={styles.itemModalContent}>
-                  <TouchableOpacity onPress={() => setIsItemModalVisible(false)} style={styles.modalCloseAbs}><X size={20} color={theme.text} /></TouchableOpacity>
-                  <View style={styles.modalHeader}><Text style={[styles.modalTitle, { color: theme.text }]}>New Shared Experience</Text></View>
-                  <View style={styles.typePicker}>{ITEM_TYPES.map(t => (<TouchableOpacity key={t.id} onPress={() => setNewItemType(t.id)} style={[styles.typeChip, newItemType === t.id && { backgroundColor: selectedCategory?.color + '20', borderColor: selectedCategory?.color, borderWidth: 1 }]}><t.icon size={18} color={newItemType === t.id ? selectedCategory?.color : theme.tabIconDefault} /><Text style={[styles.typeText, { color: newItemType === t.id ? selectedCategory?.color : theme.tabIconDefault }]}>{t.label}</Text></TouchableOpacity>))}</View>
-                  <TextInput style={[styles.modalInput, { color: theme.text, backgroundColor: theme.background }]} placeholder={"Enter Title..."} value={newItemTitle} onChangeText={setNewItemTitle} />
-                  
-                  {/* 🔔 REMINDER CONFIG */}
+                  <TouchableOpacity onPress={() => { setIsItemModalVisible(false); setEditItem(null); }} style={styles.modalCloseAbs}><X size={20} color={theme.text} /></TouchableOpacity>
+                  <View style={styles.modalHeader}><Text style={[styles.modalTitle, { color: theme.text }]}>{editItem ? 'Edit' : 'New'} Shared Experience</Text></View>
+                  {!editItem && (selectedCategory?.id !== FIXED_CATEGORIES[0].id ? (
+                    <View style={styles.typePicker}>{ITEM_TYPES.filter(t => t.id !== 'reminder').map(t => (<TouchableOpacity key={t.id} onPress={() => setNewItemType(t.id)} style={[styles.typeChip, newItemType === t.id && { backgroundColor: selectedCategory?.color + '20', borderColor: selectedCategory?.color, borderWidth: 1 }]}><t.icon size={18} color={newItemType === t.id ? selectedCategory?.color : theme.tabIconDefault} /><Text style={[styles.typeText, { color: newItemType === t.id ? selectedCategory?.color : theme.tabIconDefault }]}>{t.label}</Text></TouchableOpacity>))}</View>
+                  ) : (
+                    <View style={styles.remTypeToggle}><TouchableOpacity onPress={() => setRemType('time')} style={[styles.remToggleBtn, remType === 'time' && { backgroundColor: theme.tint }]}><Clock size={16} color={remType === 'time' ? 'white' : '#888'} /><Text style={[styles.remToggleText, remType === 'time' && { color: 'white' }]}>TIME BASED</Text></TouchableOpacity><TouchableOpacity onPress={() => setRemType('location')} style={[styles.remToggleBtn, remType === 'location' && { backgroundColor: theme.tint }]}><MapPin size={16} color={remType === 'location' ? 'white' : '#888'} /><Text style={[styles.remToggleText, remType === 'location' && { color: 'white' }]}>LOCATION BASED</Text></TouchableOpacity></View>
+                  ))}
+                  <TextInput style={[styles.modalInput, { color: theme.text, backgroundColor: theme.background }]} placeholder={"What's the task?"} value={newItemTitle} onChangeText={setNewItemTitle} />
                   {newItemType === 'reminder' && (
-                    <View style={{ gap: 10 }}>
-                      <View style={styles.reminderToggleRow}>
-                        <TouchableOpacity onPress={() => setReminderConfig({...reminderConfig, type:'time'})} style={[styles.remTypeBtn, reminderConfig.type === 'time' && { backgroundColor: theme.tint }]}><Clock size={14} color={reminderConfig.type === 'time' ? 'white' : '#888'} /><Text style={[styles.remTypeText, reminderConfig.type === 'time' && { color: 'white' }]}>Time</Text></TouchableOpacity>
-                        <TouchableOpacity onPress={() => setReminderConfig({...reminderConfig, type:'location'})} style={[styles.remTypeBtn, reminderConfig.type === 'location' && { backgroundColor: theme.tint }]}><MapPin size={14} color={reminderConfig.type === 'location' ? 'white' : '#888'} /><Text style={[styles.remTypeText, reminderConfig.type === 'location' && { color: 'white' }]}>Location</Text></TouchableOpacity>
-                      </View>
-                      <TextInput style={[styles.modalInput, { backgroundColor: theme.background, color: theme.text }]} placeholder={reminderConfig.type === 'time' ? "Format: YYYY-MM-DD HH:MM" : "Enter address or place name"} value={reminderConfig.val} onChangeText={(v) => setReminderConfig({...reminderConfig, val: v})} />
+                    <View style={{ gap: 15 }}>
+                      {remType === 'time' ? (
+                        <View style={{ gap: 10 }}>
+                          <TouchableOpacity onPress={() => setShowStartPicker(true)} style={[styles.dateSelector, { backgroundColor: theme.background }]}><Clock size={16} color={theme.tint} /><Text style={{ color: theme.text, fontWeight: '700' }}>START: {startDate.toLocaleString()}</Text></TouchableOpacity>
+                          {showStartPicker && (<DateTimePicker value={startDate} mode="datetime" display="default" onChange={(e, d) => { setShowStartPicker(false); if(d) setStartDate(d); }} />)}
+                          <TouchableOpacity onPress={() => setShowEndPicker(true)} style={[styles.dateSelector, { backgroundColor: theme.background }]}><Calendar size={16} color={theme.tint} /><Text style={{ color: theme.text, fontWeight: '700' }}>{endDate ? `END: ${endDate.toLocaleString()}` : "ADD END TIME (OPTIONAL)"}</Text></TouchableOpacity>
+                          {showEndPicker && (<DateTimePicker value={endDate || new Date()} mode="datetime" display="default" onChange={(e, d) => { setShowEndPicker(false); if(d) setEndDate(d); }} />)}
+                          {endDate && <TouchableOpacity onPress={() => setEndDate(null)}><Text style={{ color: '#FF3B30', fontSize: 10, textAlign: 'center' }}>REMOVE END TIME</Text></TouchableOpacity>}
+                        </View>
+                      ) : (<TouchableOpacity onPress={() => setIsMapVisible(true)} style={[styles.dateSelector, { backgroundColor: theme.background }]}><MapPin size={16} color={theme.tint} /><Text style={{ color: theme.text, fontWeight: '700' }}>{selectedLoc ? selectedLoc.name : "CHOOSE ON MAP"}</Text></TouchableOpacity>)}
                     </View>
                   )}
-
-                  {['match', 'checklist', 'poll', 'list', 'roulette'].includes(newItemType) && (<View style={{ gap: 8 }}>{newItemOptions.map((opt, idx) => (<TextInput key={idx} style={[styles.modalInput, { color: theme.text, backgroundColor: theme.background, height: 44 }]} placeholder={`Option ${idx+1}`} value={opt} onChangeText={(v) => { const n = [...newItemOptions]; n[idx] = v; setNewItemOptions(n); }} />))}<TouchableOpacity onPress={() => setNewItemOptions([...newItemOptions, ''])}><Text style={{ color: selectedCategory?.color, fontWeight: '900' }}>+ Add Option</Text></TouchableOpacity></View>)}
-                  <TouchableOpacity onPress={addItem} style={[styles.saveBtn, { backgroundColor: selectedCategory?.color }]}><Text style={styles.saveBtnText}>Activate for Us</Text></TouchableOpacity>
+                  <TouchableOpacity onPress={editItem ? updateItem : addItem} style={[styles.saveBtn, { backgroundColor: selectedCategory?.color }]}><Text style={styles.saveBtnText}>{editItem ? 'Save Changes' : 'Activate for Us'}</Text></TouchableOpacity>
                 </BlurView>
               </View>
             </KeyboardAvoidingView>
           </Modal>
+          <Modal visible={isMapVisible} animationType="slide"><SmartLocationPicker onLocationCaptured={(loc) => { setSelectedLoc(loc); setIsMapVisible(false); }} onClose={() => setIsMapVisible(false)} title="Set Task Location" /></Modal>
         </Modal>
       </ThemedView>
     </GestureHandlerRootView>
   );
 }
 
-// 🔔 REMINDER COMPONENT
 function ReminderComponent({ item, theme, color }: any) {
-  const isTime = item.content.remType === 'time';
-  const isActive = item.content.active;
-
+  const isTime = item.content.remType === 'time', isActive = item.content.active;
+  const start = new Date(item.content.start_at), end = item.content.end_at ? new Date(item.content.end_at) : null, isExpired = end && new Date() > end;
   const toggleReminder = async () => {
     const newActive = !isActive;
-    await supabase.from('chill_items').update({ content: { ...item.content, active: newActive } }).eq('id', item.id);
-    if (newActive) {
-      // Logic to schedule local notification based on item.content.val
+    if (newActive && isTime) {
+      const trigger = new Date(item.content.start_at);
+      if (trigger > new Date()) await Notifications.scheduleNotificationAsync({ content: { title: `⏰ Task: ${item.title}`, body: "Starting now!", data: { itemId: item.id, type: 'reminder' }, sound: true }, trigger });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    }
+    } else await Notifications.cancelAllScheduledNotificationsAsync();
+    await supabase.from('chill_items').update({ content: { ...item.content, active: newActive } }).eq('id', item.id);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
-
-  return (
-    <View style={styles.reminderBox}>
-      <View style={[styles.reminderIconBox, { backgroundColor: color + '15' }]}>
-        {isTime ? <Clock size={24} color={color} /> : <MapPin size={24} color={color} />}
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={[styles.reminderVal, { color: theme.text }]}>{item.content.val}</Text>
-        <Text style={styles.reminderSub}>{isTime ? "Time-based alert" : "Location-aware alert"}</Text>
-      </View>
-      <TouchableOpacity onPress={toggleReminder} style={[styles.bellBtn, { backgroundColor: isActive ? color : 'rgba(150,150,150,0.1)' }]}>
-        {isActive ? <Bell size={18} color="white" /> : <BellOff size={18} color="#888" />}
-      </TouchableOpacity>
-    </View>
-  );
+  return (<View style={[styles.reminderBox, isExpired && { opacity: 0.5 }]}><View style={[styles.reminderIconBox, { backgroundColor: color + '15' }]}>{isTime ? <Clock size={24} color={color} /> : <MapPin size={24} color={color} />}</View><View style={{ flex: 1 }}><Text style={[styles.reminderVal, { color: theme.text }]}>{item.title}</Text><View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 }}><Text style={styles.reminderSub}>{isTime ? `Starts: ${start.toLocaleTimeString()}` : `Near: ${item.content.location?.name || 'Saved Spot'}`}</Text>{end && <Text style={[styles.reminderSub, { color }]}>• Ends: {end.toLocaleTimeString()}</Text>}</View></View><TouchableOpacity onPress={toggleReminder} style={[styles.bellBtn, { backgroundColor: isActive ? color : 'rgba(150,150,150,0.1)' }]}>{isActive ? <Bell size={18} color="white" /> : <BellOff size={18} color="#888" />}</TouchableOpacity></View>);
 }
 
 function RouletteComponent({ item, color, theme }: any) {
-  const rotation = useSharedValue(0);
-  const [spinning, setSpinning] = useState(false);
-  const [winner, setWinner] = useState<string | null>(null);
-  const options = item.content.options || [];
-  const spin = () => { if (spinning || options.length === 0) return; setSpinning(true); setWinner(null); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); const extraSpins = 5 + Math.random() * 5; const finalRotation = rotation.value + (extraSpins * 360); rotation.value = withTiming(finalRotation, { duration: 3000, easing: Easing.out(Easing.cubic) }, (finished) => { if (finished) runOnJS(handleFinish)(finalRotation); }); };
-  const handleFinish = (finalRot: number) => { setSpinning(false); const normalizedRot = finalRot % 360; const idx = Math.floor((360 - normalizedRot) / (360 / options.length)) % options.length; setWinner(options[idx].text); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); };
+  const rotation = useSharedValue(0), [spinning, setSpinning] = useState(false), [winner, setWinner] = useState<string | null>(null), options = item.content.options || [];
+  const spin = () => { if (spinning || options.length === 0) return; setSpinning(true); setWinner(null); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); const ex = 5 + Math.random() * 5, final = rotation.value + (ex * 360); rotation.value = withTiming(final, { duration: 3000, easing: Easing.out(Easing.cubic) }, (f) => { if (f) runOnJS(handleFinish)(final); }); };
+  const handleFinish = (f: number) => { setSpinning(false); const norm = f % 360, idx = Math.floor((360 - norm) / (360 / options.length)) % options.length; setWinner(options[idx].text); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); };
   const wheelStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${rotation.value}deg` }] }));
-  return (
-    <View style={styles.rouletteWrapper}>
-      <AnimatePresence>{winner && <MotiView from={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} style={[styles.winnerBadge, { backgroundColor: color }]}><Sparkles size={16} color="white" /><Text style={styles.winnerName}>{winner.toUpperCase()}</Text></MotiView>}</AnimatePresence>
-      <View style={styles.wheelOuter}><View style={styles.pointer} /><Animated.View style={[styles.wheelContainer, wheelStyle]}><Svg width={220} height={220} viewBox="0 0 220 220"><G transform="translate(110, 110)">{options.map((opt: any, i: number) => { const angle = (2 * Math.PI) / options.length; const startAngle = i * angle - Math.PI / 2, endAngle = (i + 1) * angle - Math.PI / 2, x1 = 100 * Math.cos(startAngle), y1 = 100 * Math.sin(startAngle), x2 = 100 * Math.cos(endAngle), y2 = 100 * Math.sin(endAngle); return (<G key={i}><Path d={`M 0 0 L ${x1} ${y1} A 100 100 0 0 1 ${x2} ${y2} Z`} fill={i % 2 === 0 ? color : color + '40'} stroke="#fff" strokeWidth={2} /><SvgText x={60 * Math.cos(startAngle + angle/2)} y={60 * Math.sin(startAngle + angle/2)} fill={theme.text} fontSize="10" fontWeight="bold" textAnchor="middle" transform={`rotate(${(i * (360/options.length)) + (360/options.length)/2 + 90}, ${60 * Math.cos(startAngle + angle/2)}, ${60 * Math.sin(startAngle + angle/2)})`}>{opt.text.substring(0, 10)}</SvgText></G>); })}<SvgCircle r={15} fill="#fff" /></G></Svg></Animated.View></View>
-      <TouchableOpacity onPress={spin} disabled={spinning} style={[styles.spinBtn, { backgroundColor: color, marginTop: 20 }]}><Text style={styles.spinText}>{spinning ? 'DECIDING...' : 'SPIN THE WHEEL'}</Text></TouchableOpacity>
-    </View>
-  );
+  return (<View style={styles.rouletteWrapper}><AnimatePresence>{winner && <MotiView from={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} style={[styles.winnerBadge, { backgroundColor: color }]}><Sparkles size={16} color="white" /><Text style={styles.winnerName}>{winner.toUpperCase()}</Text></MotiView>}</AnimatePresence><View style={styles.wheelOuter}><View style={styles.pointer} /><Animated.View style={[styles.wheelContainer, wheelStyle]}><Svg width={220} height={220} viewBox="0 0 220 220"><G transform="translate(110, 110)">{options.map((opt: any, i: number) => { const angle = (2 * Math.PI) / options.length, sA = i * angle - Math.PI / 2, eA = (i + 1) * angle - Math.PI / 2, x1 = 100 * Math.cos(sA), y1 = 100 * Math.sin(sA), x2 = 100 * Math.cos(eA), y2 = 100 * Math.sin(eA); return (<G key={i}><Path d={`M 0 0 L ${x1} ${y1} A 100 100 0 0 1 ${x2} ${y2} Z`} fill={i % 2 === 0 ? color : color + '40'} stroke="#fff" strokeWidth={2} /><SvgText x={60 * Math.cos(startAngle + angle/2)} y={60 * Math.sin(startAngle + angle/2)} fill={theme.text} fontSize="10" fontWeight="bold" textAnchor="middle" transform={`rotate(${(i * (360/options.length)) + (360/options.length)/2 + 90}, ${60 * Math.cos(startAngle + angle/2)}, ${60 * Math.sin(startAngle + angle/2)})`}>{opt.text.substring(0, 10)}</SvgText></G>); })}<SvgCircle r={15} fill="#fff" /></G></Svg></Animated.View></View><TouchableOpacity onPress={spin} disabled={spinning} style={[styles.spinBtn, { backgroundColor: color, marginTop: 20 }]}><Text style={styles.spinText}>{spinning ? 'DECIDING...' : 'SPIN THE WHEEL'}</Text></TouchableOpacity></View>);
 }
 
 function TruthOrDareComponent({ item, currentUserId, theme, color }: any) {
-  const [localPrompt, setLocalPrompt] = useState('');
-  const partnerId = item.content.turn === 'pratishth' ? 'love' : 'pratishth';
-  const isMyTurn = item.content.turn === currentUserId;
-  const isPartnerTurn = item.content.turn !== currentUserId;
+  const [localPrompt, setLocalPrompt] = useState(''), partnerId = item.content.turn === 'pratishth' ? 'love' : 'pratishth', isMyTurn = item.content.turn === currentUserId, isPartnerTurn = item.content.turn !== currentUserId;
   const selectMode = async (mode: 'truth' | 'dare') => { if (!isMyTurn) return; await supabase.from('chill_items').update({ content: { ...item.content, mode, prompt: null } }).eq('id', item.id); };
   const submitPrompt = async () => { if (!localPrompt.trim()) return; await supabase.from('chill_items').update({ content: { ...item.content, prompt: localPrompt.trim() } }).eq('id', item.id); setLocalPrompt(''); };
   const complete = async () => { await supabase.from('chill_items').update({ content: { ...item.content, mode: null, prompt: null, turn: partnerId } }).eq('id', item.id); };
-  return (
-    <View style={styles.truthBox}>
-      {!item.content.mode && (<View style={styles.truthActions}><TouchableOpacity onPress={() => selectMode('truth')} style={[styles.truthBtn, { borderColor: color, borderWidth: 1 }]} disabled={!isMyTurn}><Text style={{color, fontWeight:'900'}}>TRUTH</Text></TouchableOpacity><TouchableOpacity onPress={() => selectMode('dare')} style={[styles.truthBtn, { backgroundColor: color }]} disabled={!isMyTurn}><Text style={{color:'white', fontWeight:'900'}}>DARE</Text></TouchableOpacity></View>)}
-      {item.content.mode && !item.content.prompt && (<View style={[styles.promptCard, { backgroundColor: color + '10' }]}><Text style={[styles.promptMode, { color }]}>{item.content.mode.toUpperCase()}</Text>{isPartnerTurn ? (<View style={{ width: '100%', gap: 10 }}><TextInput style={[styles.modalInput, { backgroundColor: theme.background, color: theme.text }]} placeholder="Write their challenge..." value={localPrompt} onChangeText={setLocalPrompt} /><TouchableOpacity onPress={submitPrompt} style={[styles.saveBtn, { backgroundColor: color }]}><Text style={styles.saveBtnText}>Send Challenge</Text></TouchableOpacity></View>) : (<Text style={styles.waitText}>Waiting for partner to set the prompt...</Text>)}</View>)}
-      {item.content.prompt && (<View style={[styles.promptCard, { backgroundColor: color + '15' }]}><Text style={[styles.promptMode, { color }]}>{item.content.mode.toUpperCase()}</Text><Text style={[styles.promptText, { color: theme.text }]}>{item.content.prompt}</Text>{isMyTurn && (<TouchableOpacity onPress={complete} style={[styles.saveBtn, { backgroundColor: color, width: '100%', marginTop: 20 }]}><Text style={styles.saveBtnText}>Challenge Done ✅</Text></TouchableOpacity>)}</View>)}
-    </View>
-  );
+  return (<View style={styles.truthBox}>{!item.content.mode && (<View style={styles.truthActions}><TouchableOpacity onPress={() => selectMode('truth')} style={[styles.truthBtn, { borderColor: color, borderWidth: 1 }]} disabled={!isMyTurn}><Text style={{color, fontWeight:'900'}}>TRUTH</Text></TouchableOpacity><TouchableOpacity onPress={() => selectMode('dare')} style={[styles.truthBtn, { backgroundColor: color }]} disabled={!isMyTurn}><Text style={{color:'white', fontWeight:'900'}}>DARE</Text></TouchableOpacity></View>)}{item.content.mode && !item.content.prompt && (<View style={[styles.promptCard, { backgroundColor: color + '10' }]}><Text style={[styles.promptMode, { color }]}>{item.content.mode.toUpperCase()}</Text>{isPartnerTurn ? (<View style={{ width: '100%', gap: 10 }}><TextInput style={[styles.modalInput, { backgroundColor: theme.background, color: theme.text }]} placeholder="Write their challenge..." value={localPrompt} onChangeText={setLocalPrompt} /><TouchableOpacity onPress={submitPrompt} style={[styles.saveBtn, { backgroundColor: color }]}><Text style={styles.saveBtnText}>Send Challenge</Text></TouchableOpacity></View>) : (<Text style={styles.waitText}>Waiting for partner to set the prompt...</Text>)}</View>)}{item.content.prompt && (<View style={[styles.promptCard, { backgroundColor: color + '15' }]}><Text style={[styles.promptMode, { color }]}>{item.content.mode.toUpperCase()}</Text><Text style={[styles.promptText, { color: theme.text }]}>{item.content.prompt}</Text>{isMyTurn && (<TouchableOpacity onPress={complete} style={[styles.saveBtn, { backgroundColor: color, width: '100%', marginTop: 20 }]}><Text style={styles.saveBtnText}>Challenge Done ✅</Text></TouchableOpacity>)}</View>)}</View>);
 }
 
 function MatchStack({ item, currentUserId, setMatch, color, theme }: any) {
-  const translateX = useSharedValue(0);
-  const translateY = useSharedValue(0);
-  const partnerId = currentUserId === 'pratishth' ? 'love' : 'pratishth';
-  const remaining = item.content.choices.filter((c: any) => c.swiped[currentUserId] === undefined);
-  const currentItem = remaining[0];
-  const currentIndex = item.content.choices.indexOf(currentItem);
-  const bothFinished = item.content.choices.every((c:any) => c.swiped.pratishth !== undefined && c.swiped.love !== undefined);
+  const translateX = useSharedValue(0), translateY = useSharedValue(0), partnerId = currentUserId === 'pratishth' ? 'love' : 'pratishth', remaining = item.content.choices.filter((c: any) => c.swiped[currentUserId] === undefined), currentItem = remaining[0], bothFinished = item.content.choices.every((c:any) => c.swiped.pratishth !== undefined && c.swiped.love !== undefined);
   const handleSwipeResult = async (val: boolean) => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); const nC = [...item.content.choices]; const idx = item.content.choices.indexOf(currentItem); nC[idx].swiped[currentUserId] = val; if (val === true && nC[idx].swiped[partnerId] === true) { setMatch(nC[idx].text); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } await supabase.from('chill_items').update({ content: { ...item.content, choices: nC } }).eq('id', item.id); translateX.value = 0; translateY.value = 0; };
   const gesture = Gesture.Pan().onUpdate((e) => { translateX.value = e.translationX; translateY.value = e.translationY; }).onEnd((e) => { if (Math.abs(e.translationX) > 100) { const res = e.translationX > 0; translateX.value = withTiming(e.translationX > 0 ? 500 : -500, { duration: 200 }); runOnJS(handleSwipeResult)(res); } else { translateX.value = withSpring(0); translateY.value = withSpring(0); } });
-  const cardStyle = useAnimatedStyle(() => ({ transform: [{ translateX: translateX.value }, { translateY: translateY.value }, { rotate: `${interpolate(translateX.value, [-200, 200], [-15, 15])}deg` }] }));
-  const likeStyle = useAnimatedStyle(() => ({ opacity: interpolate(translateX.value, [0, 100], [0, 1]) }));
-  const nopeStyle = useAnimatedStyle(() => ({ opacity: interpolate(translateX.value, [-100, 0], [1, 0]) }));
-  if (bothFinished) {
-    const matches = item.content.choices.filter((c:any) => c.swiped.pratishth && c.swiped.love), mismatches = item.content.choices.filter((c:any) => c.swiped.pratishth !== c.swiped.love), bothNope = item.content.choices.filter((c:any) => !c.swiped.pratishth && !c.swiped.love);
-    return (<View style={styles.matchReport}><View style={styles.reportHeader}><Trophy size={20} color="#FFD700" /><Text style={[styles.reportTitle, { color: theme.text }]}>THE MATCH REPORT</Text></View><ScrollView style={{ maxHeight: 250 }} nestedScrollEnabled>{matches.length > 0 && (<View style={styles.reportSection}><View style={styles.sectionHeader}><Heart size={14} color="#FF2D55" fill="#FF2D55" /><Text style={styles.sectionTitle}>PERFECT MATCHES</Text></View>{matches.map((m:any, i:number) => (<Text key={i} style={styles.reportItem}>• {m.text}</Text>))}</View>)}{mismatches.length > 0 && (<View style={styles.reportSection}><View style={styles.sectionHeader}><X size={14} color="#FF9500" /><Text style={styles.sectionTitle}>MISMATCHES</Text></View>{mismatches.map((m:any, i:number) => (<Text key={i} style={[styles.reportItem, { opacity: 0.6 }]}>• {m.text}</Text>))}</View>)}{bothNope.length > 0 && (<View style={styles.reportSection}><View style={styles.sectionHeader}><Ghost size={14} color="#8E8E93" /><Text style={styles.sectionTitle}>BOTH NOPE</Text></View>{bothNope.map((m:any, i:number) => (<Text key={i} style={[styles.reportItem, { opacity: 0.4 }]}>• {m.text}</Text>))}</View>)}</ScrollView></View>);
-  }
-  if (!currentItem) return (<View style={styles.emptyMatch}><ActivityIndicator color={color} /><Text style={[styles.emptyMatchText, { color: theme.tabIconDefault }]}>Waiting for Tamtam to finish... ⏳</Text></View>);
+  const cardStyle = useAnimatedStyle(() => ({ transform: [{ translateX: translateX.value }, { translateY: translateY.value }, { rotate: `${interpolate(translateX.value, [-200, 200], [-15, 15])}deg` }] })), likeStyle = useAnimatedStyle(() => ({ opacity: interpolate(translateX.value, [0, 100], [0, 1]) })), nopeStyle = useAnimatedStyle(() => ({ opacity: interpolate(translateX.value, [-100, 0], [1, 0]) }));
+  if (bothFinished) { const matches = item.content.choices.filter((c:any) => c.swiped.pratishth && c.swiped.love), mismatches = item.content.choices.filter((c:any) => c.swiped.pratishth !== c.swiped.love), bothNope = item.content.choices.filter((c:any) => !c.swiped.pratishth && !c.swiped.love); return (<View style={styles.matchReport}><View style={styles.reportHeader}><Trophy size={20} color="#FFD700" /><Text style={[styles.reportTitle, { color: theme.text }]}>THE MATCH REPORT</Text></View><ScrollView style={{ maxHeight: 250 }} nestedScrollEnabled>{matches.length > 0 && (<View style={styles.reportSection}><View style={styles.sectionHeader}><Heart size={14} color="#FF2D55" fill="#FF2D55" /><Text style={styles.sectionTitle}>PERFECT MATCHES</Text></View>{matches.map((m:any, i:number) => (<Text key={i} style={styles.reportItem}>• {m.text}</Text>))}</View>)}{mismatches.length > 0 && (<View style={styles.reportSection}><View style={styles.sectionHeader}><X size={14} color="#FF9500" /><Text style={styles.sectionTitle}>MISMATCHES</Text></View>{mismatches.map((m:any, i:number) => (<Text key={i} style={[styles.reportItem, { opacity: 0.6 }]}>• {m.text}</Text>))}</View>)}{bothNope.length > 0 && (<View style={styles.reportSection}><View style={styles.sectionHeader}><Ghost size={14} color="#8E8E93" /><Text style={styles.sectionTitle}>BOTH NOPE</Text></View>{bothNope.map((m:any, i:number) => (<Text key={i} style={[styles.reportItem, { opacity: 0.4 }]}>• {m.text}</Text>))}</View>)}</ScrollView></View>); }
+  if (!currentItem) return (<View style={styles.emptyMatch}><ActivityIndicator color={color} /><Text style={[styles.emptyMatchText, { color: theme.tabIconDefault }]}>Waiting for Tamtam... ⏳</Text></View>);
   return (<View style={styles.matchContainer}><GestureDetector gesture={gesture}><Animated.View style={[styles.matchCard, { backgroundColor: theme.background, borderColor: color + '30' }, cardStyle]}><Animated.View style={[styles.swipeLabel, { borderColor: '#34C759', right: 20, top: 20 }, likeStyle]}><Text style={[styles.swipeLabelText, { color: '#34C759' }]}>MATCH</Text></Animated.View><Animated.View style={[styles.swipeLabel, { borderColor: '#FF3B30', left: 20, top: 20 }, nopeStyle]}><Text style={[styles.swipeLabelText, { color: '#FF3B30' }]}>NOPE</Text></Animated.View><Text style={[styles.matchCount, { color }]}>{item.content.choices.length - remaining.length + 1} / {item.content.choices.length}</Text><Text style={[styles.matchText, { color: theme.text }]}>{currentItem.text}</Text></Animated.View></GestureDetector></View>);
 }
 
@@ -422,7 +406,15 @@ const styles = StyleSheet.create({
   reminderVal: { fontSize: 16, fontWeight: '800' },
   reminderSub: { fontSize: 10, fontWeight: '600', opacity: 0.5 },
   bellBtn: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
-  reminderToggleRow: { flexDirection: 'row', gap: 10, marginBottom: 5 },
-  remTypeBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 15, paddingVertical: 8, borderRadius: 12, backgroundColor: 'rgba(150,150,150,0.1)' },
-  remTypeText: { fontSize: 12, fontWeight: '900', color: '#888' }
+  remTypeToggle: { flexDirection: 'row', gap: 10, width: '100%' },
+  remToggleBtn: { flex: 1, height: 50, borderRadius: 15, backgroundColor: 'rgba(150,150,150,0.1)', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  remToggleText: { fontSize: 11, fontWeight: '900', color: '#888' },
+  dateSelector: { width: '100%', height: 56, borderRadius: 18, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, gap: 12 },
+  alertOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 5000, justifyContent: 'center', alignItems: 'center', padding: 20 },
+  alertCard: { width: '100%', padding: 40, borderRadius: 40, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', gap: 15 },
+  alertIcon: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#5856D6', justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
+  alertTitle: { color: 'white', fontSize: 28, fontWeight: '900', textAlign: 'center' },
+  alertBody: { color: 'rgba(255,255,255,0.7)', fontSize: 16, textAlign: 'center', marginBottom: 20 },
+  alertBtn: { width: '100%', height: 60, borderRadius: 20, backgroundColor: 'white', justifyContent: 'center', alignItems: 'center' },
+  alertBtnText: { color: '#000', fontWeight: '900', fontSize: 16 }
 });
