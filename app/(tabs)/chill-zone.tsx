@@ -21,6 +21,8 @@ import SnakesBoard from '@/components/ChillZone/SnakesBoard';
 import TicTacToeBoard from '@/components/ChillZone/TicTacToeBoard';
 import SmartLocationPicker from '@/components/Map/SmartLocationPicker';
 
+import { syncAllNotifications } from '@/lib/notifications';
+
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CARD_SIZE = (SCREEN_WIDTH - 60) / 2;
 
@@ -124,14 +126,21 @@ export default function ChillZoneScreen() {
     else content = { ...content, options: newItemOptions.filter(o => o.trim() !== '').map(o => ({ text: o.trim(), completed: false, votes: [] })) };
 
     const { error } = await supabase.from('chill_items').insert([{ category_id: selectedCategory.id, type: newItemType, title: newItemTitle.trim(), content, created_by: currentUserId }]);
-    if (!error) { setIsItemModalVisible(false); setNewItemTitle(''); setNewItemOptions(['', '']); setEndDate(null); setSelectedLoc(null); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); }
+    if (!error) { 
+      setIsItemModalVisible(false); setNewItemTitle(''); setNewItemOptions(['', '']); setEndDate(null); setSelectedLoc(null); 
+      syncAllNotifications();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); 
+    }
   };
 
   const updateItem = async () => {
     if (!editItem) return;
     const content = { ...editItem.content, remType, start_at: startDate.toISOString(), end_at: endDate ? endDate.toISOString() : null, location: selectedLoc };
     await supabase.from('chill_items').update({ title: newItemTitle, content }).eq('id', editItem.id);
-    setEditItem(null); setIsItemModalVisible(false); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setEditItem(null); 
+    setIsItemModalVisible(false); 
+    syncAllNotifications();
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
   const handleSendMessage = async () => {
@@ -184,7 +193,7 @@ export default function ChillZoneScreen() {
                     <View style={{flexDirection:'row', gap: 15, alignItems: 'center'}}>
                       {item.type === 'reminder' && (<TouchableOpacity onPress={() => { setEditItem(item); setNewItemTitle(item.title); setRemType(item.content.remType); setStartDate(new Date(item.content.start_at)); setEndDate(item.content.end_at ? new Date(item.content.end_at) : null); setSelectedLoc(item.content.location); setIsItemModalVisible(true); }}><Pencil size={18} color={theme.tint} /></TouchableOpacity>)}
                       {['tictactoe', 'ludo', 'snakes', 'match', 'truthordare', 'reminder'].includes(item.type) && !item.content?.winner && (<TouchableOpacity onPress={() => setChatItem(item)}><MessageSquare size={18} color={theme.tint} /></TouchableOpacity>)}
-                      <TouchableOpacity onPress={() => { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning); Alert.alert("Delete?", "Remove for both?", [{ text: "Cancel", style: "cancel" }, { text: "Delete", style: "destructive", onPress: async () => await supabase.from('chill_items').delete().eq('id', item.id) }]); }}><Trash2 size={18} color="#FF3B30" opacity={0.4} /></TouchableOpacity>
+                      <TouchableOpacity onPress={() => { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning); Alert.alert("Delete?", "Remove for both?", [{ text: "Cancel", style: "cancel" }, { text: "Delete", style: "destructive", onPress: async () => { await supabase.from('chill_items').delete().eq('id', item.id); syncAllNotifications(); } }]); }}><Trash2 size={18} color="#FF3B30" opacity={0.4} /></TouchableOpacity>
                     </View>
                   </View>
                   <View style={styles.gameContainer}>
@@ -264,10 +273,24 @@ function ReminderComponent({ item, theme, color }: any) {
     const newActive = !isActive;
     if (newActive && isTime) {
       const trigger = new Date(item.content.start_at);
-      if (trigger > new Date()) await Notifications.scheduleNotificationAsync({ content: { title: `⏰ Task: ${item.title}`, body: "Starting now!", data: { itemId: item.id, type: 'reminder' }, sound: true }, trigger });
+      if (trigger > new Date()) {
+        await Notifications.scheduleNotificationAsync({
+          identifier: item.id,
+          content: {
+            title: `⏰ Task: ${item.title}`,
+            body: "Starting now!",
+            data: { itemId: item.id, type: 'reminder' },
+            sound: true
+          },
+          trigger
+        });
+      }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } else await Notifications.cancelAllScheduledNotificationsAsync();
+    } else {
+      await Notifications.cancelScheduledNotificationAsync(item.id);
+    }
     await supabase.from('chill_items').update({ content: { ...item.content, active: newActive } }).eq('id', item.id);
+    await syncAllNotifications();
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
   return (<View style={[styles.reminderBox, isExpired && { opacity: 0.5 }]}><View style={[styles.reminderIconBox, { backgroundColor: color + '15' }]}>{isTime ? <Clock size={24} color={color} /> : <MapPin size={24} color={color} />}</View><View style={{ flex: 1 }}><Text style={[styles.reminderVal, { color: theme.text }]}>{item.title}</Text><View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 }}><Text style={styles.reminderSub}>{isTime ? `Starts: ${start.toLocaleTimeString()}` : `Near: ${item.content.location?.name || 'Saved Spot'}`}</Text>{end && <Text style={[styles.reminderSub, { color }]}>• Ends: {end.toLocaleTimeString()}</Text>}</View></View><TouchableOpacity onPress={toggleReminder} style={[styles.bellBtn, { backgroundColor: isActive ? color : 'rgba(150,150,150,0.1)' }]}>{isActive ? <Bell size={18} color="white" /> : <BellOff size={18} color="#888" />}</TouchableOpacity></View>);

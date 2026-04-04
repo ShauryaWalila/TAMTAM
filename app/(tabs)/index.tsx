@@ -16,6 +16,7 @@ import { BlurView } from 'expo-blur';
 import LottieView from 'lottie-react-native';
 import * as SecureStore from 'expo-secure-store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { syncAllNotifications } from '@/lib/notifications';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -262,6 +263,7 @@ export default function DashboardScreen() {
     if (!error) {
       setNewTime(''); setNewEndTime(''); setNewActivity('');
       fetchTimetable();
+      syncAllNotifications();
     }
     setIsSaving(false);
   };
@@ -270,6 +272,7 @@ export default function DashboardScreen() {
     Alert.alert('Delete?', 'Remove activity?', [{ text: 'Cancel' }, { text: 'Delete', style: 'destructive', onPress: async () => {
       await supabase.from('timetable').delete().eq('id', id);
       fetchTimetable();
+      syncAllNotifications();
     }}]);
   };
 
@@ -297,6 +300,7 @@ export default function DashboardScreen() {
       setNewCalendarTitle(''); setNewCalendarFreq('once');
       setShowCalendarModal(false);
       fetchCalendarEvents();
+      syncAllNotifications();
     }
     setIsSaving(false);
   };
@@ -305,6 +309,7 @@ export default function DashboardScreen() {
     Alert.alert('Delete?', 'Remove event?', [{ text: 'Cancel' }, { text: 'Delete', style: 'destructive', onPress: async () => {
       await supabase.from('calendar_events').delete().eq('id', id);
       fetchCalendarEvents();
+      syncAllNotifications();
     }}]);
   };
 

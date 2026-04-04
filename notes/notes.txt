@@ -1,8 +1,11 @@
 
 yt section
-exam mode
+exam mode(
+    all topics checklist with options of done, not done, touched, revised. sub categories of practcal and theory.
+    
+)
+focus mode
 widget
 a status thing for us on dashboard showing what we aree doing(likee pooping, studying, nothing, etc)
 touch
-focus mode
 exportable itinerary, drawing

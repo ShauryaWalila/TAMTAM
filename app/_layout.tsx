@@ -16,6 +16,8 @@ import { useColorScheme } from '@/components/useColorScheme';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
+import { syncAllNotifications } from '@/lib/notifications';
+import { initLocationSystem } from '@/lib/location';
 
 const { width } = Dimensions.get('window');
 
@@ -43,11 +45,11 @@ export default function RootLayout() {
   useEffect(() => {
     if (loaded) {
       SplashScreen.hideAsync();
-      initNotifications();
+      initApp();
     }
   }, [loaded]);
 
-  const initNotifications = async () => {
+  const initApp = async () => {
     // 1. REQUEST PERMISSIONS
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
@@ -57,11 +59,13 @@ export default function RootLayout() {
     }
     
     if (finalStatus !== 'granted') {
-      console.log('Failed to get push token for push notification!');
-      return;
+      console.log('Failed to get permissions for notifications!');
     }
 
-    // 2. CONFIGURE ANDROID CHANNEL
+    // 2. INITIALIZE LOCATION (FOR PROXIMITY)
+    await initLocationSystem();
+
+    // 3. CONFIGURE ANDROID CHANNEL
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync('default', {
         name: 'default',
@@ -71,42 +75,22 @@ export default function RootLayout() {
       });
     }
 
-    // 3. SYNC REMINDERS
-    syncGlobalReminders();
-  };
-
-  const syncGlobalReminders = async () => {
-    const { data } = await supabase.from('chill_items').select('*').eq('type', 'reminder');
-    if (!data) return;
-
-    await Notifications.cancelAllScheduledNotificationsAsync();
-
-    for (const item of data) {
-      const content = item.content;
-      if (content.active && content.remType === 'time' && content.start_at) {
-        const trigger = new Date(content.start_at);
-        if (trigger > new Date()) {
-          try {
-            await Notifications.scheduleNotificationAsync({
-              content: {
-                title: `⏰ TAMTAM: ${item.title}`,
-                body: "It's time for your shared task! ❤️",
-                data: { itemId: item.id, type: 'reminder', title: item.title, remType: content.remType },
-                sound: true,
-              },
-              trigger,
-            });
-          } catch (e) {
-            console.error('Failed to schedule:', e);
-          }
-        }
-      }
-    }
+    // 4. SYNC ALL NOTIFICATIONS (Reminders, Routines, Calendar)
+    await syncAllNotifications();
   };
 
   useEffect(() => {
     const receivedSub = Notifications.addNotificationReceivedListener(notification => {
-      setActiveAlert(notification.request.content.data);
+      const data = notification.request.content.data;
+      const content = notification.request.content;
+      
+      // Merge notification text into data for the overlay
+      setActiveAlert({
+        ...data,
+        title: content.title,
+        body: content.body
+      });
+
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       const interval = setInterval(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium), 1000);
       setTimeout(() => clearInterval(interval), 5000);
@@ -116,6 +100,8 @@ export default function RootLayout() {
       const data = response.notification.request.content.data;
       if (data.itemId || data.type === 'reminder') {
         router.push('/(tabs)/chill-zone');
+      } else if (data.type === 'routine' || data.type === 'calendar') {
+        router.push('/(tabs)');
       }
     });
 
@@ -127,6 +113,28 @@ export default function RootLayout() {
 
   if (!loaded) return null;
 
+  const getAlarmIcon = () => {
+    if (!activeAlarm) return <Bell size={40} color="white" fill="white" />;
+    switch (activeAlarm.type) {
+      case 'routine': return <Clock size={40} color="white" />;
+      case 'calendar': return <MapPin size={40} color="white" />; // Calendar usually has places
+      case 'memory':
+      case 'wishlist': return <MapPin size={40} color="white" fill="white" />;
+      default: return <Bell size={40} color="white" fill="white" />;
+    }
+  };
+
+  const getAlarmColor = () => {
+    if (!activeAlarm) return '#5856D6';
+    switch (activeAlarm.type) {
+      case 'routine': return '#5AC8FA';
+      case 'calendar': return '#AF52DE';
+      case 'memory': return '#FF2D55';
+      case 'wishlist': return '#FF9500';
+      default: return '#5856D6';
+    }
+  };
+
   return (
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
@@ -136,11 +144,20 @@ export default function RootLayout() {
             <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={styles.alarmOverlay}>
               <BlurView intensity={100} tint="dark" style={StyleSheet.absoluteFill} />
               <MotiView from={{ scale: 0.5, translateY: 100 }} animate={{ scale: 1, translateY: 0 }} transition={{ type: 'spring' }} style={styles.alarmCard}>
-                <MotiView from={{ scale: 1 }} animate={{ scale: 1.2 }} transition={{ loop: true, type: 'timing', duration: 500 }} style={styles.alarmIconBox}><Bell size={40} color="white" fill="white" /></MotiView>
+                <MotiView from={{ scale: 1 }} animate={{ scale: 1.2 }} transition={{ loop: true, type: 'timing', duration: 500 }} style={[styles.alarmIconBox, { backgroundColor: getAlarmColor() }]}>
+                  {getAlarmIcon()}
+                </MotiView>
                 <Text style={styles.alarmTitle}>{activeAlarm.title || "Shared Reminder"}</Text>
-                <Text style={styles.alarmSubtitle}>Happening right now in your shared world!</Text>
+                <Text style={styles.alarmSubtitle}>{activeAlarm.body || "Happening right now in your shared world!"}</Text>
                 <View style={styles.alarmActions}>
-                  <TouchableOpacity onPress={() => { setActiveAlert(null); router.push('/(tabs)/chill-zone'); }} style={styles.acceptBtn}><CheckCircle2 size={24} color="white" /><Text style={styles.acceptText}>OPEN TASK</Text></TouchableOpacity>
+                  <TouchableOpacity onPress={() => { 
+                    const target = (activeAlarm.type === 'routine' || activeAlarm.type === 'calendar') ? '/(tabs)' : '/(tabs)/chill-zone';
+                    setActiveAlert(null); 
+                    router.push(target as any); 
+                  }} style={styles.acceptBtn}>
+                    <CheckCircle2 size={24} color={getAlarmColor()} />
+                    <Text style={[styles.acceptText, { color: getAlarmColor() }]}>VIEW DETAILS</Text>
+                  </TouchableOpacity>
                   <TouchableOpacity onPress={() => setActiveAlert(null)} style={styles.dismissBtn}><Text style={styles.dismissText}>DISMISS</Text></TouchableOpacity>
                 </View>
               </MotiView>

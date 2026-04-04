@@ -10,7 +10,7 @@ import * as SecureStore from 'expo-secure-store';
 import * as base64js from 'base64-js';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useRouter } from 'expo-router';
-import { registerForPushNotificationsAsync } from '@/lib/notifications';
+import { registerForPushNotificationsAsync, syncAllNotifications } from '@/lib/notifications';
 import { MotiView, AnimatePresence } from 'moti';
 import { BlurView } from 'expo-blur';
 import * as Linking from 'expo-linking';
@@ -178,7 +178,11 @@ export default function SettingsScreen() {
   const deleteChillCategory = async (id: string) => {
     Alert.alert('Delete shared space?', 'This will delete all items inside too.', [
       { text: 'Cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => { await supabase.from('chill_categories').delete().eq('id', id); fetchChillCategories(); } }
+      { text: 'Delete', style: 'destructive', onPress: async () => { 
+        await supabase.from('chill_categories').delete().eq('id', id); 
+        fetchChillCategories(); 
+        syncAllNotifications();
+      } }
     ]);
   };
 
@@ -218,8 +222,10 @@ export default function SettingsScreen() {
     if (value) {
       const token = await registerForPushNotificationsAsync();
       if (token && userName) await supabase.from('profiles').update({ push_token: token }).eq('username', userName.toLowerCase());
+      await syncAllNotifications();
     } else {
       if (userName) await supabase.from('profiles').update({ push_token: null }).eq('username', userName.toLowerCase());
+      await Notifications.cancelAllScheduledNotificationsAsync();
     }
     setIsNotificationsEnabled(value);
   };

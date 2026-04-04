@@ -1,8 +1,9 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
-
 import Constants from 'expo-constants';
+import { supabase } from './supabase';
+import { addWeeks, addMonths, addYears, set, isAfter, startOfDay, isBefore, setDay } from 'date-fns';
 
 export async function registerForPushNotificationsAsync() {
   let token;
@@ -25,13 +26,13 @@ export async function registerForPushNotificationsAsync() {
       try {
         token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
       } catch (e) {
-        console.log('Could not fetch push token:', e);
+        console.log('Could not fetch push token (Push Notifications disabled):', e);
       }
     } else {
-      console.log('Skipping push token: No valid EAS Project ID found.');
+      console.log('Push Notifications Disabled: No valid EAS Project ID found in app.json. Local reminders and proximity alerts will still work.');
     }
   } else {
-    alert('Must use physical device for Push Notifications');
+    // alert('Must use physical device for Push Notifications');
   }
 
   if (Platform.OS === 'android') {
@@ -44,4 +45,99 @@ export async function registerForPushNotificationsAsync() {
   }
 
   return token;
+}
+
+export async function syncAllNotifications() {
+  console.log('Syncing all notifications...');
+  await Notifications.cancelAllScheduledNotificationsAsync();
+
+  const now = new Date();
+  const scheduleMap: Record<string, { starts: any[], ends: any[] }> = {};
+
+  const addToMap = (time: Date, item: any, isStart: boolean) => {
+    const key = time.toISOString().substring(0, 16); // Minute precision
+    if (!scheduleMap[key]) scheduleMap[key] = { starts: [], ends: [] };
+    if (isStart) scheduleMap[key].starts.push(item);
+    else scheduleMap[key].ends.push(item);
+  };
+
+  // 1. GATHER ALL EVENTS
+  const { data: reminders } = await supabase.from('chill_items').select('*').eq('type', 'reminder');
+  if (reminders) {
+    for (const item of reminders) {
+      if (item.content.active && item.content.remType === 'time' && item.content.start_at) {
+        addToMap(new Date(item.content.start_at), { ...item, type: 'reminder' }, true);
+        if (item.content.end_at) addToMap(new Date(item.content.end_at), { ...item, type: 'reminder' }, false);
+      }
+    }
+  }
+
+  const { data: routines } = await supabase.from('timetable').select('*');
+  if (routines) {
+    const DAY_MAP: Record<string, number> = { 'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6 };
+    for (const item of routines) {
+      const dayIdx = DAY_MAP[item.day];
+      if (dayIdx === undefined) continue;
+      const [time, period] = item.time.split(' ');
+      let [hours, minutes] = time.split(':').map(Number);
+      if (period === 'PM' && hours !== 12) hours += 12;
+      if (period === 'AM' && hours === 12) hours = 0;
+      
+      let d = set(new Date(), { hours, minutes, seconds: 0, milliseconds: 0 });
+      d = setDay(d, dayIdx, { weekStartsOn: 0 });
+      if (!isAfter(d, now)) d = addWeeks(d, 1);
+      
+      addToMap(d, { ...item, title: item.activity, type: 'routine' }, true);
+      // Routines in this app don't have hard end times in DB, but we could infer if needed
+    }
+  }
+
+  const { data: calEvents } = await supabase.from('calendar_events').select('*');
+  if (calEvents) {
+    for (const item of calEvents) {
+      const d = set(new Date(item.event_date), { hours: 9, minutes: 0 });
+      if (isAfter(d, now)) addToMap(d, { ...item, type: 'calendar' }, true);
+    }
+  }
+
+  // 2. SCHEDULE SMART NOTIFICATIONS
+  let scheduledCount = 0;
+  for (const [timeStr, events] of Object.entries(scheduleMap)) {
+    const triggerDate = new Date(timeStr);
+    if (triggerDate <= now) continue;
+
+    const secondsFromNow = Math.floor((triggerDate.getTime() - now.getTime()) / 1000);
+    let title = "TAMTAM Update";
+    let body = "";
+
+    if (events.starts.length > 0 && events.ends.length > 0) {
+      // SMART HANDOVER
+      const finished = events.ends.map(e => e.title).join(', ');
+      const starting = events.starts.map(s => s.title).join(', ');
+      title = "🔄 Smart Handover";
+      body = `${finished} finished! Time for ${starting}! ✨`;
+    } else if (events.starts.length > 0) {
+      title = events.starts.length > 1 ? "🚀 Multiple Starts" : `⏰ Starting: ${events.starts[0].title}`;
+      body = events.starts.length > 1 ? `Time for: ${events.starts.map(s => s.title).join(', ')}` : "Starting right now! ❤️";
+    } else if (events.ends.length > 0) {
+      title = `✅ Finished: ${events.ends[0].title}`;
+      body = "Well done! This task is now complete. ✨";
+    }
+
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title,
+        body,
+        data: { type: 'smart_update', events },
+        sound: true,
+        ...(Platform.OS === 'android' ? { channelId: 'default' } : {}),
+      },
+      trigger: Platform.OS === 'ios' 
+        ? { type: 'timeInterval', seconds: secondsFromNow, repeats: false } as any
+        : { type: 'calendar', year: triggerDate.getFullYear(), month: triggerDate.getMonth(), day: triggerDate.getDate(), hour: triggerDate.getHours(), minute: triggerDate.getMinutes(), repeats: false } as any,
+    });
+    scheduledCount++;
+  }
+
+  console.log(`Sync complete. Scheduled ${scheduledCount} smart notification windows.`);
 }

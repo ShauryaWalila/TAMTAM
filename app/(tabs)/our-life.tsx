@@ -21,6 +21,7 @@ import AddPinModal from '@/components/Map/AddPinModal';
 import PlansListScreen from '@/app/our-life/plans-list';
 import TripWorkspace from '@/components/PlanMode/TripWorkspace';
 import SmartLocationPicker from '@/components/Map/SmartLocationPicker';
+import { registerProximityAlerts } from '@/lib/location';
 
 // @ts-ignore
 import PinAsset from "../../assets/images/pin.png";
@@ -75,7 +76,11 @@ export default function OurLifeScreen() {
     if (activeTripId) query = query.eq('trip_id', activeTripId);
     else query = query.is('trip_id', null);
     const { data } = await query;
-    if (data) setPins(data);
+    if (data) {
+      setPins(data);
+      // Register proximity alerts for our life memories/pins
+      registerProximityAlerts(data.map(pin => ({ ...pin, type: 'memory' })));
+    }
   };
 
   const handleBackFromTrip = () => {
