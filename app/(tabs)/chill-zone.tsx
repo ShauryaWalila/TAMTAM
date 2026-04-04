@@ -3,7 +3,7 @@ import { StyleSheet, View, Text, ScrollView, TouchableOpacity, ActivityIndicator
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
-import { Coffee, Plus, X, CheckCircle2, Circle, Vote, ListTodo, Smile, BarChart3, Trash2, Sparkles, ChevronRight, MessageCircleHeart, Heart, Send, Ghost, RefreshCw, Gamepad2, Users, Trophy, Dice5, MessageSquare, List as ListIcon, StickyNote, Flame } from 'lucide-react-native';
+import { Coffee, Plus, X, CheckCircle2, Circle, Vote, ListTodo, Smile, BarChart3, Trash2, Sparkles, ChevronRight, MessageCircleHeart, Heart, Send, Ghost, RefreshCw, Gamepad2, Users, Trophy, Dice5, MessageSquare, List as ListIcon, StickyNote, Flame, Bug } from 'lucide-react-native';
 import { View as ThemedView } from '@/components/Themed';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, withRepeat, withTiming, Easing, interpolate, runOnJS, useDerivedValue } from 'react-native-reanimated';
 import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -15,6 +15,8 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import LudoBoard from '@/components/ChillZone/LudoBoard';
+import SnakesBoard from '@/components/ChillZone/SnakesBoard';
+import TicTacToeBoard from '@/components/ChillZone/TicTacToeBoard';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CARD_SIZE = (SCREEN_WIDTH - 60) / 2;
@@ -176,7 +178,24 @@ export default function ChillZoneScreen() {
                           <MessageSquare size={18} color={theme.tint} />
                         </TouchableOpacity>
                       )}
-                      <TouchableOpacity onPress={async () => await supabase.from('chill_items').delete().eq('id', item.id)}>
+                      <TouchableOpacity onPress={() => {
+                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+                        Alert.alert(
+                          "Delete Shared Item?",
+                          "This will remove it for both of you. This action cannot be undone.",
+                          [
+                            { text: "Cancel", style: "cancel" },
+                            { 
+                              text: "Delete", 
+                              style: "destructive", 
+                              onPress: async () => {
+                                await supabase.from('chill_items').delete().eq('id', item.id);
+                                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                              } 
+                            }
+                          ]
+                        );
+                      }}>
                         <Trash2 size={18} color="#FF3B30" opacity={0.4} />
                       </TouchableOpacity>
                     </View>
@@ -193,9 +212,10 @@ export default function ChillZoneScreen() {
                       <SnakesBoard 
                         item={item} 
                         currentUserId={currentUserId} 
-                        onMove={async (roll: number) => {
-                          const isP1 = currentUserId === 'pratishth';
+                        onMove={async (roll: number, overridePKey?: string) => {
+                          const isP1 = overridePKey ? overridePKey === 'p1' : currentUserId === 'pratishth';
                           const pKey = isP1 ? 'p1' : 'p2';
+                          const oKey = isP1 ? 'p2' : 'p1';
                           const partnerId = isP1 ? 'love' : 'pratishth';
                           
                           let currentPos = item.content[pKey] || 1;
@@ -203,7 +223,10 @@ export default function ChillZoneScreen() {
 
                           // 1. EXACT WIN RULE
                           if (nextPos > 100) {
-                            await supabase.from('chill_items').update({ content: { ...item.content, turn: partnerId } }).eq('id', item.id);
+                            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+                            if (!overridePKey) {
+                              await supabase.from('chill_items').update({ content: { ...item.content, turn: partnerId } }).eq('id', item.id);
+                            }
                             return;
                           }
 
@@ -214,15 +237,24 @@ export default function ChillZoneScreen() {
                           if (LADDERS[nextPos]) nextPos = LADDERS[nextPos];
                           else if (SNAKES[nextPos]) nextPos = SNAKES[nextPos];
 
-                          // 3. VICTORY CHECK
-                          const winner = nextPos === 100 ? currentUserId : null;
+                          // 3. CAPTURE (CLASH) LOGIC
+                          let opponentPos = item.content[oKey] || 1;
+                          if (nextPos > 1 && nextPos < 100 && nextPos === opponentPos) {
+                            opponentPos = 1; // Send back to start!
+                            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+                          }
+
+                          // 4. VICTORY CHECK
+                          const winner = nextPos === 100 ? (overridePKey ? (overridePKey === 'p1' ? 'pratishth' : 'love') : currentUserId) : null;
                           
                           if (winner) {
                             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                             await supabase.from('chill_items').update({ content: { winner, chat: item.content.chat || [] } }).eq('id', item.id);
                           } else {
-                            await supabase.from('chill_items').update({ content: { ...item.content, [pKey]: nextPos, turn: partnerId } }).eq('id', item.id);
+                            await supabase.from('chill_items').update({ 
+                              content: { ...item.content, [pKey]: nextPos, [oKey]: opponentPos, turn: partnerId } 
+                            }).eq('id', item.id);
                           }
                         }}
                       />
@@ -450,20 +482,83 @@ function RouletteComponent({ item, color, theme }: any) {
 
 // 🎮 SHARED GAME COMPONENTS
 function TicTacToeComponent({ item, currentUserId, finalize, theme }: any) {
+  const [debugControl, setDebugControl] = useState<'none' | 'me' | 'partner'>('none');
+
   const handleMove = async (idx: number) => {
-    if (item.content.board[idx] || item.content.winner || item.content.turn !== currentUserId) return;
+    const isSimulating = debugControl !== 'none';
+    if (item.content.board[idx] || item.content.winner) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
+
+    // Turn Check (Bypass if simulating)
+    if (!isSimulating && item.content.turn !== currentUserId) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
+
     const newBoard = [...item.content.board];
-    newBoard[idx] = currentUserId === 'pratishth' ? 'X' : 'O';
+    
+    // Determine Symbol
+    let symbol = currentUserId === 'pratishth' ? 'X' : 'O';
+    if (debugControl === 'partner') symbol = currentUserId === 'pratishth' ? 'O' : 'X';
+
+    newBoard[idx] = symbol;
+    
+    // Win Logic
     const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
     let winner = null;
-    for (const [a,b,c] of wins) if (newBoard[a] && newBoard[a] === newBoard[b] && newBoard[a] === newBoard[c]) winner = currentUserId;
-    if (winner) finalize(item, winner);
-    else await supabase.from('chill_items').update({ content: { ...item.content, board: newBoard, turn: currentUserId === 'pratishth' ? 'love' : 'pratishth' } }).eq('id', item.id);
+    for (const [a,b,c] of wins) {
+      if (newBoard[a] && newBoard[a] === newBoard[b] && newBoard[a] === newBoard[c]) winner = symbol === (currentUserId === 'pratishth' ? 'X' : 'O') ? currentUserId : (currentUserId === 'pratishth' ? 'love' : 'pratishth');
+    }
+
+    if (winner) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      await supabase.from('chill_items').update({ 
+        content: { winner, chat: item.content.chat || [] } 
+      }).eq('id', item.id);
+    } else {
+      // Logic for next turn
+      const nextTurn = symbol === (currentUserId === 'pratishth' ? 'X' : 'O') ? (currentUserId === 'pratishth' ? 'love' : 'pratishth') : currentUserId;
+      await supabase.from('chill_items').update({ 
+        content: { ...item.content, board: newBoard, turn: nextTurn } 
+      }).eq('id', item.id);
+    }
   };
+
+  if (item.content.winner) {
+    return (
+      <View style={styles.victoryBox}>
+        <Image source={item.content.winner === currentUserId ? require('@/assets/images/Winning.gif') : require('@/assets/images/losing.gif')} style={styles.victoryGif} />
+        <Text style={styles.victoryText}>{item.content.winner === currentUserId ? 'YOU WON! 🏆' : 'TAMTAM WON! 👑'}</Text>
+        <TouchableOpacity style={styles.rematchBtn} onPress={async () => await supabase.from('chill_items').update({ content: { board: Array(9).fill(null), turn: 'pratishth', winner: null, chat: item.content.chat || [] } }).eq('id', item.id)}>
+          <RefreshCw size={18} color="white" /><Text style={styles.rematchText}>REMATCH</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.proGameBox}>
-      <View style={styles.tictacGrid}>{item.content.board.map((c:any, i:number) => (<TouchableOpacity key={i} onPress={() => handleMove(i)} style={[styles.tictacCell, { backgroundColor: theme.background }]}><Text style={[styles.tictacText, { color: c === 'X' ? '#FF2D55' : '#34C759' }]}>{c}</Text></TouchableOpacity>))}</View>
-      {item.content.turn !== currentUserId && !item.content.winner && <BlurView intensity={20} tint="light" style={styles.waitOverlay}><ActivityIndicator color={theme.tint} /><Text style={styles.waitText}>Partner is thinking...</Text></BlurView>}
+      {/* 🛠️ DEBUG TOGGLE */}
+      <TouchableOpacity 
+        onPress={() => setDebugControl(p => p === 'none' ? 'me' : p === 'me' ? 'partner' : 'none')}
+        style={[styles.debugSmallBtn, debugControl !== 'none' && { backgroundColor: '#FF9500' }]}
+      >
+        <Bug size={12} color="white" />
+        <Text style={styles.debugBtnText}>
+          {debugControl === 'none' ? 'DEBUG OFF' : debugControl === 'me' ? 'PLACE MINE' : 'PLACE TAMTAM'}
+        </Text>
+      </TouchableOpacity>
+
+      <View style={styles.tictacGrid}>
+        {item.content.board.map((c:any, i:number) => (
+          <TouchableOpacity key={i} onPress={() => handleMove(i)} style={[styles.tictacCell, { backgroundColor: theme.background }]}>
+            <Text style={[styles.tictacText, { color: c === 'X' ? '#FF2D55' : '#34C759' }]}>{c}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
     </View>
   );
 }
@@ -620,6 +715,8 @@ const styles = StyleSheet.create({
   modalInput: { height: 56, borderRadius: 18, paddingHorizontal: 20, fontWeight: '700' },
   saveBtn: { height: 60, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginTop: 10 },
   saveBtnText: { color: 'white', fontWeight: '900', fontSize: 17 },
+  debugSmallBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, backgroundColor: 'rgba(150,150,150,0.1)', alignSelf: 'flex-start', marginBottom: 10 },
+  debugBtnText: { fontSize: 10, fontWeight: '900', color: 'white' },
   celebOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 1000, justifyContent: 'center', alignItems: 'center' },
   celebContent: { alignItems: 'center', padding: 40, borderRadius: 40, backgroundColor: 'rgba(255,255,255,0.1)' },
   celebTitle: { color: 'white', fontSize: 32, fontWeight: '900', marginTop: 20 },
