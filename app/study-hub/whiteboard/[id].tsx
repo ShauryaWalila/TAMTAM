@@ -97,9 +97,12 @@ export default function WhiteboardScreen() {
     const { data } = await supabase.from('study_whiteboards').select('*').eq('id', id).single();
     if (data) {
       setBoard(data);
-      if (data.canvas_data) setPaths(data.canvas_data.map((p: any) => ({ ...p, path: Skia.Path.MakeFromSVGString(p.pathString) || Skia.Path.Make() })));
-      setImages(data.images || []);
-      setLinks(data.links || []);
+      const cd = data.canvas_data || {};
+      // Support both old format (array of paths) and new format ({ paths, images, links })
+      const rawPaths = Array.isArray(cd) ? cd : (cd.paths || []);
+      if (rawPaths.length) setPaths(rawPaths.map((p: any) => ({ ...p, path: Skia.Path.MakeFromSVGString(p.pathString) || Skia.Path.Make() })));
+      setImages(Array.isArray(cd) ? [] : (cd.images || []));
+      setLinks(Array.isArray(cd) ? [] : (cd.links || []));
     }
   };
 
@@ -126,8 +129,9 @@ export default function WhiteboardScreen() {
         isEraser: p.isEraser, opacity: p.opacity || 1,
         pathString: p.path?.toSVGString?.() || '',
       }));
+      // Store everything in canvas_data JSONB since images/links columns don't exist
       const { error } = await supabase.from('study_whiteboards').update({
-        canvas_data: sP, images: saveImages, links: saveLinks,
+        canvas_data: { paths: sP, images: saveImages, links: saveLinks },
         updated_at: new Date().toISOString(),
       }).eq('id', id);
       if (error) console.warn('Save error:', error.message);
@@ -163,13 +167,13 @@ export default function WhiteboardScreen() {
 
   const deleteSelected = () => {
     if (!selectedId) return;
-    const newImages = images.filter(i => i.id !== selectedId);
-    const newLinks = links.filter(l => l.id !== selectedId);
+    const newImages = imagesRef.current.filter(i => i.id !== selectedId);
+    const newLinks = linksRef.current.filter(l => l.id !== selectedId);
     setImages(newImages);
     setLinks(newLinks);
     setSelectedId(null);
     setSelectedType(null);
-    handleSave(paths, newImages, newLinks);
+    handleSave(undefined, newImages, newLinks);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
@@ -180,7 +184,7 @@ export default function WhiteboardScreen() {
       const wX = (SCREEN_WIDTH / 2 - translateX.value) / scale.value - 150;
       const wY = (SCREEN_HEIGHT / 2 - translateY.value) / scale.value - 150;
       const nI = [...images, { id: Math.random().toString(36).substr(2, 9), uri: asset.uri, x: wX, y: wY, width: 300, height: (asset.height / asset.width) * 300 }];
-      setImages(nI); setActiveMenu('none'); handleSave(paths, nI, links);
+      setImages(nI); setActiveMenu('none'); handleSave(undefined, nI);
     }
   };
 
@@ -213,8 +217,13 @@ export default function WhiteboardScreen() {
 
   const onDrawEnd = useCallback(() => {
     if (currentPath) {
-      if (isReviseMode) setGlassPaths(p => [...p, currentPath]);
-      else setPaths(p => [...p, currentPath]);
+      if (isReviseMode) {
+        setGlassPaths(p => [...p, currentPath]);
+      } else {
+        const newPaths = [...pathsRef.current, currentPath];
+        setPaths(newPaths);
+        handleSave(newPaths);
+      }
       setCurrentPath(null);
     }
   }, [currentPath, isReviseMode]);
@@ -314,11 +323,11 @@ export default function WhiteboardScreen() {
   }, [selectedId, images, links, scale, translateX, translateY, insets]);
 
   const onPanEnd = useCallback(() => {
-    if (dragId.current || resizeCorner.current !== 0) handleSave(paths, images, links);
+    if (dragId.current || resizeCorner.current !== 0) handleSave();
     savedTranslateX.value = translateX.value;
     savedTranslateY.value = translateY.value;
     dragId.current = null; resizeCorner.current = 0;
-  }, [paths, images, links]);
+  }, []);
 
   // ---- Gestures (same pattern as working draw.tsx) ----
   const lastTX = useSharedValue(0);
