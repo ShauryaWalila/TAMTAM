@@ -84,12 +84,14 @@ export default function WhiteboardScreen() {
   const savedFabY = useSharedValue(SCREEN_HEIGHT / 2);
 
   const [linkModal, setLinkModal] = useState(false);
+  const [textModal, setTextModal] = useState(false);
   const [editingLinkId, setEditingLinkId] = useState<string | null>(null);
   const [lUrl, setLUrl] = useState('');
   const [lTitle, setLTitle] = useState('');
+  const [newText, setNewText] = useState('');
 
   const fontLink = matchFont({ fontFamily: "Arial", fontSize: 16, fontWeight: "bold" });
-  const fontSticker = matchFont({ fontFamily: "Arial", fontSize: 50 });
+  const makeStickerFont = (size: number) => matchFont({ fontFamily: "Arial", fontSize: size });
 
   const fetchBoard = async () => {
     const { data } = await supabase.from('study_whiteboards').select('*').eq('id', id).single();
@@ -103,15 +105,37 @@ export default function WhiteboardScreen() {
 
   useEffect(() => { fetchBoard(); }, [id]);
 
+  const pathsRef = useRef(paths);
+  const imagesRef = useRef(images);
+  const linksRef = useRef(links);
+  const reviseRef = useRef(isReviseMode);
+  useEffect(() => { pathsRef.current = paths; }, [paths]);
+  useEffect(() => { imagesRef.current = images; }, [images]);
+  useEffect(() => { linksRef.current = links; }, [links]);
+  useEffect(() => { reviseRef.current = isReviseMode; }, [isReviseMode]);
+
   const handleSave = async (fP?: any[], fI?: any[], fL?: any[]) => {
-    if (isReviseMode) return;
-    setIsSaving(true);
-    const sP = (fP || paths).map(p => ({ id: p.id, color: p.color, strokeWidth: p.strokeWidth, isEraser: p.isEraser, opacity: p.opacity || 1, pathString: p.path.toSVGString() }));
-    await supabase.from('study_whiteboards').update({ canvas_data: sP, images: fI || images, links: fL || links, updated_at: new Date().toISOString() }).eq('id', id);
-    setIsSaving(false);
+    if (reviseRef.current) return;
+    try {
+      setIsSaving(true);
+      const savePaths = fP ?? pathsRef.current;
+      const saveImages = fI ?? imagesRef.current;
+      const saveLinks = fL ?? linksRef.current;
+      const sP = savePaths.map((p: any) => ({
+        id: p.id, color: p.color, strokeWidth: p.strokeWidth,
+        isEraser: p.isEraser, opacity: p.opacity || 1,
+        pathString: p.path?.toSVGString?.() || '',
+      }));
+      const { error } = await supabase.from('study_whiteboards').update({
+        canvas_data: sP, images: saveImages, links: saveLinks,
+        updated_at: new Date().toISOString(),
+      }).eq('id', id);
+      if (error) console.warn('Save error:', error.message);
+    } catch (e) { console.warn('Save failed:', e); }
+    finally { setIsSaving(false); }
   };
 
-  useEffect(() => { const t = setTimeout(() => { if (!isReviseMode && board) handleSave(); }, 5000); return () => clearTimeout(t); }, [paths, images, links]);
+  useEffect(() => { const t = setTimeout(() => { if (!reviseRef.current && board) handleSave(); }, 5000); return () => clearTimeout(t); }, [paths, images, links]);
 
   const updateMenu = (objId: string, type: any, curI: any[], curL: any[]) => {
     const obj = type === 'image' ? curI.find(i => i.id === objId) : curL.find(l => l.id === objId);
@@ -208,7 +232,7 @@ export default function WhiteboardScreen() {
     dragType.current = null;
     resizeCorner.current = 0;
 
-    // Resize handles
+    // Resize handles for images
     if (selectedId && selectedType === 'image') {
       const img = images.find(i => i.id === selectedId);
       if (img) {
@@ -217,6 +241,17 @@ export default function WhiteboardScreen() {
         if (Math.abs(wX - (img.x + img.width)) < p && Math.abs(wY - img.y) < p) { resizeCorner.current = 2; return; }
         if (Math.abs(wX - img.x) < p && Math.abs(wY - (img.y + img.height)) < p) { resizeCorner.current = 3; return; }
         if (Math.abs(wX - (img.x + img.width)) < p && Math.abs(wY - (img.y + img.height)) < p) { resizeCorner.current = 4; return; }
+      }
+    }
+    // Resize handle for text/stickers (purple dot at bottom-right)
+    if (selectedId && selectedType === 'sticker') {
+      const lnk = links.find(l => l.id === selectedId);
+      if (lnk) {
+        const fs = lnk.fontSize || 40;
+        const handleX = lnk.x + fs * 0.6 * (lnk.title?.length || 1);
+        const handleY = lnk.y + fs;
+        const p = 40 / s;
+        if (Math.abs(wX - handleX) < p && Math.abs(wY - handleY) < p) { resizeCorner.current = 4; return; }
       }
     }
     // Hit test links/stickers
@@ -241,19 +276,32 @@ export default function WhiteboardScreen() {
       return;
     }
     if (resizeCorner.current !== 0 && selectedId) {
-      setImages(prev => {
-        const next = prev.map(img => {
-          if (img.id !== selectedId) return img;
-          let n = { ...img };
-          if (resizeCorner.current === 4) { n.width = Math.max(50, img.width + adX); n.height = Math.max(50, img.height + adY); }
-          else if (resizeCorner.current === 1) { n.x += adX; n.y += adY; n.width = Math.max(50, n.width - adX); n.height = Math.max(50, n.height - adY); }
-          else if (resizeCorner.current === 2) { n.y += adY; n.width = Math.max(50, n.width + adX); n.height = Math.max(50, n.height - adY); }
-          else if (resizeCorner.current === 3) { n.x += adX; n.width = Math.max(50, n.width - adX); n.height = Math.max(50, n.height + adY); }
-          return n;
+      if (selectedType === 'image') {
+        setImages(prev => {
+          const next = prev.map(img => {
+            if (img.id !== selectedId) return img;
+            let n = { ...img };
+            if (resizeCorner.current === 4) { n.width = Math.max(50, img.width + adX); n.height = Math.max(50, img.height + adY); }
+            else if (resizeCorner.current === 1) { n.x += adX; n.y += adY; n.width = Math.max(50, n.width - adX); n.height = Math.max(50, n.height - adY); }
+            else if (resizeCorner.current === 2) { n.y += adY; n.width = Math.max(50, n.width + adX); n.height = Math.max(50, n.height - adY); }
+            else if (resizeCorner.current === 3) { n.x += adX; n.width = Math.max(50, n.width - adX); n.height = Math.max(50, n.height + adY); }
+            return n;
+          });
+          updateMenu(selectedId, 'image', next, links);
+          return next;
         });
-        updateMenu(selectedId, 'image', next, links);
-        return next;
-      });
+      } else {
+        // Resize text/sticker = change fontSize
+        setLinks(prev => {
+          const next = prev.map(l => {
+            if (l.id !== selectedId) return l;
+            const newSize = Math.max(10, Math.min(200, (l.fontSize || 40) + adX * 0.5));
+            return { ...l, fontSize: newSize };
+          });
+          updateMenu(selectedId, 'link', images, next);
+          return next;
+        });
+      }
       return;
     }
     if (dragId.current && selectedId) {
@@ -363,7 +411,21 @@ export default function WhiteboardScreen() {
               {images.map((img: any) => <RemoteImage key={img.id} img={img} isSelected={selectedId === img.id} />)}
               {links.map((l: any) => (
                 <Group key={l.id} transform={[{ translateX: l.x }, { translateY: l.y }]}>
-                  {l.url ? (<Group><RoundedRect x={-10} y={-10} width={140} height={40} r={8} color={selectedId === l.id ? "#AF52DE" : "#000"} /><SkiaText x={10} y={18} text={l.title || 'Link'} font={fontLink} color="#fff" /></Group>) : (<SkiaText x={0} y={30} text={l.title} font={fontSticker} opacity={selectedId === l.id ? 0.5 : 1} />)}
+                  {l.url ? (
+                    <Group>
+                      <RoundedRect x={-10} y={-10} width={140} height={40} r={8} color={selectedId === l.id ? "#AF52DE" : "#000"} />
+                      <SkiaText x={10} y={18} text={l.title || 'Link'} font={fontLink} color="#fff" />
+                    </Group>
+                  ) : (
+                    <Group>
+                      <SkiaText x={0} y={Math.round((l.fontSize || 40) * 0.8)} text={l.title} font={makeStickerFont(Math.round(l.fontSize || 40))} color="#000" opacity={selectedId === l.id ? 0.6 : 1} />
+                      {selectedId === l.id && (
+                        <Group>
+                          <Circle cx={Math.round((l.fontSize || 40) * 0.6 * (l.title?.length || 1))} cy={Math.round((l.fontSize || 40))} r={12} color="#AF52DE" />
+                        </Group>
+                      )}
+                    </Group>
+                  )}
                 </Group>
               ))}
               <Group layer>
@@ -388,7 +450,7 @@ export default function WhiteboardScreen() {
       <View style={styles.fabWrap} pointerEvents="box-none">
         <AnimatePresence>{isToolsExpanded && (<MotiView from={{ opacity: 0, scale: 0.5, translateY: 50 }} animate={{ opacity: 1, scale: 1, translateY: 0 }} exit={{ opacity: 0, scale: 0.5, translateY: 50 }} style={menuStyle}><BlurView intensity={80} tint="light" style={styles.tBlur}><View style={styles.tRow}><TouchableOpacity onPress={() => setActiveTool('pen')} style={[styles.tCir, activeTool === 'pen' && { backgroundColor: theme.tint }]}><Pencil size={20} color={activeTool === 'pen' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveTool('high')} style={[styles.tCir, activeTool === 'high' && { backgroundColor: theme.tint }]}><Highlighter size={20} color={activeTool === 'high' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveTool('eraser')} style={[styles.tCir, activeTool === 'eraser' && { backgroundColor: theme.tint }]}><Eraser size={20} color={activeTool === 'eraser' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveTool('pan')} style={[styles.tCir, activeTool === 'pan' && { backgroundColor: theme.tint }]}><Hand size={20} color={activeTool === 'pan' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveMenu(activeMenu === 'settings' ? 'none' : 'settings')} style={[styles.tCir, activeMenu === 'settings' && { backgroundColor: theme.tint }]}><Settings2 size={20} color={activeMenu === 'settings' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveMenu(activeMenu === 'media' ? 'none' : 'media')} style={[styles.tCir, activeMenu === 'media' && { backgroundColor: theme.tint }]}><Plus size={20} color={activeMenu === 'media' ? '#fff' : '#000'} /></TouchableOpacity></View>
               {activeMenu === 'settings' && (<View style={styles.tray}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}><View style={[styles.dot, { backgroundColor: color, opacity: activeTool === 'high' ? highOpacity : penOpacity }]} /><Text style={{ fontSize: 12 }}>Adjust Tool</Text></View><CustomSlider value={activeTool==='pen'?penSize:(activeTool==='high'?highSize:eraserSize)} onValueChange={(v:any)=>activeTool==='pen'?setPenSize(v):(activeTool==='high'?setHighSize(v):setEraserSize(v))} min={1} max={100} title="Size" />{activeTool !== 'eraser' && activeTool !== 'pan' && (<CustomSlider value={(activeTool==='pen'?penOpacity:highOpacity)*100} onValueChange={(v:any)=>activeTool==='pen'?setPenOpacity(v/100):setHighOpacity(v/100)} min={5} max={100} title="Opacity" />)}<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>{RAINBOW.map(c => <TouchableOpacity key={c} onPress={() => { setColor(c); setActiveTool('pen'); }} style={[styles.cOpt, { backgroundColor: c }, color === c && { borderColor: '#000', borderWidth: 2 }]} />)}</ScrollView></View>)}
-              {activeMenu === 'media' && (<View style={styles.tray}><TouchableOpacity onPress={addImage} style={styles.mItem}><ImageIcon size={18} color={theme.tint}/><Text>Image</Text></TouchableOpacity><TouchableOpacity onPress={() => { setEditingLinkId(null); setLUrl(''); setLTitle(''); setLinkModal(true); setIsToolsExpanded(false); }} style={styles.mItem}><LinkIcon size={18} color={theme.tint}/><Text>Link Pin</Text></TouchableOpacity><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 15 }}>{['🧠','🫀','🦴','🧬','💉','🧪'].map(s => <TouchableOpacity key={s} onPress={() => { const wX = (SCREEN_WIDTH/2 - translateX.value)/scale.value - 30; const wY = (SCREEN_HEIGHT/2 - translateY.value)/scale.value - 30; const newLinks = [...links, { id: Math.random().toString(36).substr(2, 9), url: '', title: s, x: wX, y: wY }]; setLinks(newLinks); setActiveMenu('none'); handleSave(paths, images, newLinks); }}><Text style={{ fontSize: 28 }}>{s}</Text></TouchableOpacity>)}</ScrollView></View>)}
+              {activeMenu === 'media' && (<View style={styles.tray}><TouchableOpacity onPress={addImage} style={styles.mItem}><ImageIcon size={18} color={theme.tint}/><Text style={{ color: '#000' }}>Image</Text></TouchableOpacity><TouchableOpacity onPress={() => { setEditingLinkId(null); setLUrl(''); setLTitle(''); setLinkModal(true); setIsToolsExpanded(false); }} style={styles.mItem}><LinkIcon size={18} color={theme.tint}/><Text style={{ color: '#000' }}>Link Pin</Text></TouchableOpacity><TouchableOpacity onPress={() => { setNewText(''); setTextModal(true); setIsToolsExpanded(false); }} style={styles.mItem}><Text style={{ fontSize: 18, color: theme.tint }}>Aa</Text><Text style={{ color: '#000' }}>Text / Sticker</Text></TouchableOpacity></View>)}
               <TouchableOpacity onPress={() => { setIsReviseMode(!isReviseMode); setIsToolsExpanded(false); }} style={[styles.revBtn, { backgroundColor: isReviseMode ? '#FF2D55' : 'rgba(0,0,0,0.05)' }]}><Text style={{ color: isReviseMode ? '#fff' : '#000', fontWeight: 'bold' }}>{isReviseMode ? 'EXIT REVISION' : 'ENTER REVISION'}</Text></TouchableOpacity></BlurView></MotiView>)}</AnimatePresence>
         <GestureDetector gesture={fabG}><Animated.View style={[styles.fab, { backgroundColor: theme.tint }, useAnimatedStyle(() => ({ transform: [{ translateX: fabX.value }, { translateY: fabY.value }], borderWidth: isDraggable ? 2 : 0, borderColor: '#fff' }))]}><Palette size={28} color="#fff" /></Animated.View></GestureDetector>
       </View>
@@ -396,23 +458,45 @@ export default function WhiteboardScreen() {
       <Modal visible={linkModal} transparent animationType="slide">
         <View style={styles.mOver}>
           <View style={[styles.mCont, { backgroundColor: theme.card }]}>
-            <Text style={{ fontWeight: 'bold', fontSize: 18 }}>{editingLinkId ? 'Edit Link Pin' : 'Add Link Pin'}</Text>
-            <TextInput style={styles.inp} placeholder="Title" value={lTitle} onChangeText={setLTitle} />
-            <TextInput style={styles.inp} placeholder="URL (https://...)" value={lUrl} onChangeText={setLUrl} autoCapitalize="none" keyboardType="url" />
+            <Text style={{ fontWeight: 'bold', fontSize: 18, color: '#000' }}>{editingLinkId ? 'Edit Link Pin' : 'Add Link Pin'}</Text>
+            <TextInput style={[styles.inp, { color: '#000' }]} placeholder="Title" placeholderTextColor="#999" value={lTitle} onChangeText={setLTitle} />
+            <TextInput style={[styles.inp, { color: '#000' }]} placeholder="URL (https://...)" placeholderTextColor="#999" value={lUrl} onChangeText={setLUrl} autoCapitalize="none" keyboardType="url" />
             <View style={{ flexDirection: 'row', gap: 10 }}>
-              <TouchableOpacity onPress={() => { setLinkModal(false); setEditingLinkId(null); setLUrl(''); setLTitle(''); }} style={styles.mBtn}><Text>Cancel</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => { setLinkModal(false); setEditingLinkId(null); setLUrl(''); setLTitle(''); }} style={styles.mBtn}><Text style={{ color: '#000' }}>Cancel</Text></TouchableOpacity>
               <TouchableOpacity onPress={() => {
                 if (editingLinkId) {
-                  const updated = links.map(l => l.id === editingLinkId ? { ...l, url: lUrl, title: lTitle || 'Link' } : l);
-                  setLinks(updated); handleSave(paths, images, updated); setSelectedId(null); setSelectedType(null);
+                  const updated = linksRef.current.map(l => l.id === editingLinkId ? { ...l, url: lUrl, title: lTitle || 'Link' } : l);
+                  setLinks(updated); handleSave(undefined, undefined, updated); setSelectedId(null); setSelectedType(null);
                 } else {
                   const wX = (SCREEN_WIDTH / 2 - translateX.value) / scale.value - 20;
                   const wY = (SCREEN_HEIGHT / 2 - translateY.value) / scale.value - 20;
-                  const newLinks = [...links, { id: Math.random().toString(36).substr(2, 9), url: lUrl, title: lTitle || 'Link', x: wX, y: wY }];
-                  setLinks(newLinks); handleSave(paths, images, newLinks);
+                  const newLinks = [...linksRef.current, { id: Math.random().toString(36).substr(2, 9), url: lUrl, title: lTitle || 'Link', x: wX, y: wY }];
+                  setLinks(newLinks); handleSave(undefined, undefined, newLinks);
                 }
                 setLinkModal(false); setEditingLinkId(null); setLUrl(''); setLTitle('');
               }} style={[styles.mBtn, { backgroundColor: theme.tint }]}><Text style={{ color: '#fff', fontWeight: 'bold' }}>{editingLinkId ? 'Save' : 'Add'}</Text></TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={textModal} transparent animationType="slide">
+        <View style={styles.mOver}>
+          <View style={[styles.mCont, { backgroundColor: theme.card }]}>
+            <Text style={{ fontWeight: 'bold', fontSize: 18, color: '#000' }}>Add Text / Sticker</Text>
+            <TextInput style={[styles.inp, { color: '#000', fontSize: 18 }]} placeholder="Type text or paste emoji..." placeholderTextColor="#999" value={newText} onChangeText={setNewText} autoFocus />
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TouchableOpacity onPress={() => setTextModal(false)} style={styles.mBtn}><Text style={{ color: '#000' }}>Cancel</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => {
+                if (!newText.trim()) return;
+                const wX = (SCREEN_WIDTH / 2 - translateX.value) / scale.value - 30;
+                const wY = (SCREEN_HEIGHT / 2 - translateY.value) / scale.value - 30;
+                const newLinks = [...linksRef.current, { id: Math.random().toString(36).substr(2, 9), url: '', title: newText.trim(), x: wX, y: wY, fontSize: 40 }];
+                setLinks(newLinks);
+                setTextModal(false);
+                setNewText('');
+                handleSave(undefined, undefined, newLinks);
+              }} style={[styles.mBtn, { backgroundColor: theme.tint }]}><Text style={{ color: '#fff', fontWeight: 'bold' }}>Add</Text></TouchableOpacity>
             </View>
           </View>
         </View>
