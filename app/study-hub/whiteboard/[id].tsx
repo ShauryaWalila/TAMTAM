@@ -49,11 +49,15 @@ export default function WhiteboardScreen() {
   const [highSize, setHighSize] = useState(20);
   const [eraserSize, setEraserSize] = useState(40);
   
+  const [penOpacity, setPenOpacity] = useState(1);
+  const [highOpacity, setHighOpacity] = useState(0.35);
+  
   const [activeTool, setActiveTool] = useState<'pen' | 'high' | 'eraser' | 'pan'>('pen');
   const [activeMenu, setActiveMenu] = useState<'none' | 'color' | 'size'>('none');
   const [isSaving, setIsSaving] = useState(false);
   const [isReviseMode, setIsReviseMode] = useState(false);
   const [zoomText, setZoomText] = useState('100%');
+  const [showGrid, setShowGrid] = useState(true);
 
   // Zoom & Pan states
   const scale = useSharedValue(1);
@@ -121,7 +125,11 @@ export default function WhiteboardScreen() {
     newPath.moveTo(adjX, adjY);
     
     let currentSize = penSize;
-    if (activeTool === 'high') currentSize = highSize;
+    let currentOpacity = penOpacity;
+    if (activeTool === 'high') {
+      currentSize = highSize;
+      currentOpacity = highOpacity;
+    }
     if (activeTool === 'eraser') currentSize = eraserSize;
 
     const stroke = { 
@@ -130,12 +138,12 @@ export default function WhiteboardScreen() {
       color: activeTool === 'eraser' ? '#ffffff' : color, 
       strokeWidth: currentSize / scale.value,
       isEraser: activeTool === 'eraser',
-      opacity: activeTool === 'high' ? 0.35 : 1
+      opacity: activeTool === 'eraser' ? 1 : currentOpacity
     };
     
     setCurrentLocalPath(stroke);
     setActiveMenu('none');
-  }, [color, activeTool, penSize, highSize, eraserSize, translateX, translateY, scale]);
+  }, [color, activeTool, penSize, highSize, eraserSize, penOpacity, highOpacity, translateX, translateY, scale]);
 
   const onUpdate = useCallback((x: number, y: number) => {
     if (!currentLocalPath) return;
@@ -249,18 +257,11 @@ export default function WhiteboardScreen() {
     setActiveMenu('none');
   };
 
-  const getActiveSizes = () => {
-    if (activeTool === 'pen') return [2, 4, 8, 16, 24];
-    if (activeTool === 'high') return [10, 20, 40, 60, 80];
-    if (activeTool === 'eraser') return [20, 40, 60, 80, 100];
-    return [];
-  };
-
-  const updateSize = (s: number) => {
-    if (activeTool === 'pen') setPenSize(s);
-    if (activeTool === 'high') setHighSize(s);
-    if (activeTool === 'eraser') setEraserSize(s);
-    setActiveMenu('none');
+  const getActiveRange = () => {
+    if (activeTool === 'pen') return { min: 1, max: 40, current: penSize, setter: setPenSize, title: 'Pen Size' };
+    if (activeTool === 'high') return { min: 5, max: 150, current: highSize, setter: setHighSize, title: 'Highlighter Size' };
+    if (activeTool === 'eraser') return { min: 10, max: 200, current: eraserSize, setter: setEraserSize, title: 'Eraser Size' };
+    return null;
   };
 
   const gridPoints = useMemo(() => {
@@ -272,6 +273,46 @@ export default function WhiteboardScreen() {
     }
     return pts;
   }, []);
+
+  const CustomSlider = ({ value, onValueChange, min, max, title }: any) => {
+    const sliderWidth = SCREEN_WIDTH * 0.6;
+    const knobX = useSharedValue(((value - min) / (max - min)) * sliderWidth);
+
+    useEffect(() => {
+      knobX.value = ((value - min) / (max - min)) * sliderWidth;
+    }, [value, min, max]);
+
+    const gesture = Gesture.Pan()
+      .onUpdate((e) => {
+        const x = Math.max(0, Math.min(sliderWidth, e.x));
+        knobX.value = x;
+        const newValue = min + (x / sliderWidth) * (max - min);
+        runOnJS(onValueChange)(newValue);
+      });
+
+    const animatedKnobStyle = useAnimatedStyle(() => ({
+      transform: [{ translateX: knobX.value - 12 }],
+    }));
+
+    const animatedProgressStyle = useAnimatedStyle(() => ({
+      width: knobX.value,
+    }));
+
+    return (
+      <View style={styles.sliderContainer}>
+        <View style={styles.sliderHeader}>
+          <Text style={styles.sliderTitle}>{title}</Text>
+          <Text style={styles.sliderValue}>{Math.round(value)}</Text>
+        </View>
+        <GestureDetector gesture={gesture}>
+          <View style={[styles.sliderTrack, { width: sliderWidth }]}>
+            <Animated.View style={[styles.sliderProgress, animatedProgressStyle, { backgroundColor: theme.tint }]} />
+            <Animated.View style={[styles.sliderKnob, animatedKnobStyle, { borderColor: theme.tint }]} />
+          </View>
+        </GestureDetector>
+      </View>
+    );
+  };
 
   return (
     <GestureHandlerRootView style={styles.container}>
@@ -316,13 +357,28 @@ export default function WhiteboardScreen() {
         </View>
       </View>
 
+      <AnimatePresence>
+        {isReviseMode && (
+          <MotiView
+            from={{ height: 0, opacity: 0 }}
+            animate={{ height: 26, opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            style={{ backgroundColor: '#FF2D55', justifyContent: 'center', alignItems: 'center', zIndex: 9 }}
+          >
+            <Text style={{ color: 'white', fontSize: 10, fontWeight: '900', letterSpacing: 1.5 }}>
+              👓 REVISION BOARD ACTIVE • DRAWINGS TEMPORARY
+            </Text>
+          </MotiView>
+        )}
+      </AnimatePresence>
+
       {/* CANVAS */}
       <GestureDetector gesture={composedGesture}>
         <View style={styles.canvasContainer}>
           <Canvas ref={canvasRef} style={StyleSheet.absoluteFill}>
             <Group transform={animatedTransform}>
               <Rect x={-INFINITE_SIZE/2} y={-INFINITE_SIZE/2} width={INFINITE_SIZE} height={INFINITE_SIZE} color="#fff" />
-              <Points points={gridPoints} mode="points" color="#f0f0f0" strokeWidth={2} />
+              {showGrid && <Points points={gridPoints} mode="points" color="#f0f0f0" strokeWidth={2} />}
               
               <Group layer>
                 {paths.map((p) => (
@@ -356,12 +412,46 @@ export default function WhiteboardScreen() {
                   </ScrollView>
                 )}
                 {activeMenu === 'size' && (
-                  <View style={styles.sizeRow}>
-                    {getActiveSizes().map(s => (
-                      <TouchableOpacity key={s} onPress={() => updateSize(s)} style={styles.sizeBtn}>
-                        <View style={{ width: Math.min(s, 24), height: Math.min(s, 24), borderRadius: Math.min(s, 24)/2, backgroundColor: theme.text }} />
+                  <View style={styles.settingsMenu}>
+                    <View style={styles.settingsHeader}>
+                      <View style={[styles.previewDot, { 
+                        width: Math.min(getActiveRange()?.current || 4, 30), 
+                        height: Math.min(getActiveRange()?.current || 4, 30), 
+                        borderRadius: 15, 
+                        backgroundColor: activeTool === 'eraser' ? '#ddd' : color,
+                        opacity: activeTool === 'pen' ? penOpacity : (activeTool === 'high' ? highOpacity : 1)
+                      }]} />
+                      <Text style={styles.settingsTitle}>{getActiveRange()?.title}</Text>
+                      
+                      <View style={{ flex: 1 }} />
+                      
+                      <TouchableOpacity 
+                        onPress={() => setShowGrid(!showGrid)}
+                        style={[styles.gridToggle, { backgroundColor: showGrid ? theme.tint : 'rgba(0,0,0,0.05)' }]}
+                      >
+                        <Text style={[styles.gridToggleText, { color: showGrid ? '#fff' : '#888' }]}>GRID</Text>
                       </TouchableOpacity>
-                    ))}
+                    </View>
+
+                    {getActiveRange() && (
+                      <CustomSlider 
+                        value={getActiveRange()?.current} 
+                        onValueChange={getActiveRange()?.setter}
+                        min={getActiveRange()?.min}
+                        max={getActiveRange()?.max}
+                        title="Size"
+                      />
+                    )}
+
+                    {activeTool !== 'eraser' && activeTool !== 'pan' && (
+                      <CustomSlider 
+                        value={activeTool === 'pen' ? penOpacity * 100 : highOpacity * 100}
+                        onValueChange={(v: number) => activeTool === 'pen' ? setPenOpacity(v / 100) : setHighOpacity(v / 100)}
+                        min={5}
+                        max={100}
+                        title="Opacity (%)"
+                      />
+                    )}
                   </View>
                 )}
               </BlurView>
@@ -424,9 +514,20 @@ const styles = StyleSheet.create({
   activeTool: { backgroundColor: 'rgba(0,0,0,0.05)' },
   dockDivider: { width: 1, height: 24, backgroundColor: 'rgba(0,0,0,0.1)', marginHorizontal: 2 },
   subToolbar: { width: '100%', borderRadius: 24, overflow: 'hidden', elevation: 5 },
-  subToolbarBlur: { padding: 15 },
+  subToolbarBlur: { padding: 20 },
   scrollContent: { gap: 15, paddingRight: 10 },
   colorOption: { width: 34, height: 34, borderRadius: 17, borderWidth: 1, borderColor: 'rgba(0,0,0,0.1)' },
-  sizeRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 10 },
-  sizeBtn: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center' },
+  settingsMenu: { gap: 20 },
+  settingsHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  previewDot: { borderWidth: 1, borderColor: 'rgba(0,0,0,0.1)', justifyContent: 'center', alignItems: 'center' },
+  settingsTitle: { fontSize: 14, fontWeight: '700', color: '#333' },
+  sliderContainer: { gap: 10 },
+  sliderHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  sliderTitle: { fontSize: 11, fontWeight: '600', color: '#888', textTransform: 'uppercase' },
+  sliderValue: { fontSize: 12, fontWeight: '800', color: '#333' },
+  sliderTrack: { height: 6, backgroundColor: 'rgba(0,0,0,0.05)', borderRadius: 3, justifyContent: 'center' },
+  sliderProgress: { height: 6, borderRadius: 3 },
+  sliderKnob: { position: 'absolute', width: 24, height: 24, borderRadius: 12, backgroundColor: '#fff', borderWidth: 2, elevation: 3, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 2 },
+  gridToggle: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+  gridToggleText: { fontSize: 10, fontWeight: '900', letterSpacing: 0.5 },
 });
