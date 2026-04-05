@@ -8,6 +8,7 @@ import { Heart, Sparkles, ArrowRight } from 'lucide-react-native';
 import * as SecureStore from 'expo-secure-store';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { initialFullSync } from '@/lib/syncEngine';
 
 const { width } = Dimensions.get('window');
 
@@ -30,6 +31,10 @@ export default function LoginScreen() {
         // Standardize Supriya to 'love' for database consistency
         const userId = lowerName === 'supriya' ? 'love' : lowerName;
         await SecureStore.setItemAsync('user_name', userId);
+        
+        // Trigger initial sync and clear old data
+        initialFullSync(true);
+        
         router.replace('/(tabs)');
       } catch (e) {
         Alert.alert('Error', 'Something went wrong while saving your session.');

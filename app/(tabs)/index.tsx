@@ -11,6 +11,7 @@ import {
   isSameMonth, isSameDay, addYears, differenceInYears, differenceInDays 
 } from 'date-fns';
 import { supabase } from '@/lib/supabase';
+import { db, queueSyncOperation } from '@/lib/db';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import LottieView from 'lottie-react-native';
@@ -104,10 +105,48 @@ export default function DashboardScreen() {
 
   useEffect(() => {
     init();
-    const motmSub = supabase.channel('db_motm').on('postgres_changes', { event: '*', schema: 'public', table: 'moments' }, () => fetchMOTM()).subscribe();
-    const meetSub = supabase.channel('db_meet').on('postgres_changes', { event: '*', schema: 'public', table: 'meetings' }, () => fetchNextMeet()).subscribe();
-    const timeSub = supabase.channel('db_time').on('postgres_changes', { event: '*', schema: 'public', table: 'timetable' }, () => fetchTimetable()).subscribe();
-    const calSub = supabase.channel('db_cal').on('postgres_changes', { event: '*', schema: 'public', table: 'calendar_events' }, () => fetchCalendarEvents()).subscribe();
+    
+    // Setup Realtime Channels that also update local SQLite
+    const motmSub = supabase.channel('db_motm').on('postgres_changes', { event: '*', schema: 'public', table: 'moments' }, (p) => {
+      if (p.eventType === 'UPDATE' || p.eventType === 'INSERT') {
+        db.runSync(`INSERT OR REPLACE INTO moments (id, message, user_id, created_at) VALUES (?, ?, ?, ?)`, [p.new.id, p.new.message, p.new.user_id, p.new.created_at]);
+      }
+      fetchMOTM();
+    }).subscribe();
+
+    const meetSub = supabase.channel('db_meet').on('postgres_changes', { event: '*', schema: 'public', table: 'meetings' }, (p) => {
+      if (p.eventType !== 'DELETE') {
+        const n = p.new;
+        db.runSync(`INSERT OR REPLACE INTO meetings (id, created_at, type, date, recurring_type, occasion_name, user_id, weekday, day_of_month, time, is_recurring, frequency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+          [n.id, n.created_at, n.type, n.date, n.recurring_type, n.occasion_name, n.user_id, n.weekday, n.day_of_month, n.time, n.is_recurring ? 1 : 0, n.frequency]);
+      } else {
+        db.runSync(`DELETE FROM meetings WHERE id = ?`, [p.old.id]);
+      }
+      fetchNextMeet();
+    }).subscribe();
+
+    const timeSub = supabase.channel('db_time').on('postgres_changes', { event: '*', schema: 'public', table: 'timetable' }, (p) => {
+      if (p.eventType !== 'DELETE') {
+        const n = p.new;
+        db.runSync(`INSERT OR REPLACE INTO timetable (id, created_at, day, time, end_time, activity, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
+          [n.id, n.created_at, n.day, n.time, n.end_time, n.activity, n.user_id]);
+      } else {
+        db.runSync(`DELETE FROM timetable WHERE id = ?`, [p.old.id]);
+      }
+      fetchTimetable();
+    }).subscribe();
+
+    const calSub = supabase.channel('db_cal').on('postgres_changes', { event: '*', schema: 'public', table: 'calendar_events' }, (p) => {
+      if (p.eventType !== 'DELETE') {
+        const n = p.new;
+        db.runSync(`INSERT OR REPLACE INTO calendar_events (id, created_at, event_date, title, user_id, frequency) VALUES (?, ?, ?, ?, ?, ?)`, 
+          [n.id, n.created_at, n.event_date, n.title, n.user_id, n.frequency]);
+      } else {
+        db.runSync(`DELETE FROM calendar_events WHERE id = ?`, [p.old.id]);
+      }
+      fetchCalendarEvents();
+    }).subscribe();
+
     const postsSub = supabase.channel('db_posts').on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => fetchStats()).subscribe();
 
     return () => {
@@ -126,24 +165,66 @@ export default function DashboardScreen() {
     const partner = name?.toLowerCase() === 'pratishth' ? 'love' : 'pratishth';
     setPartnerName(partner);
 
-    await Promise.all([fetchMOTM(partner), fetchNextMeet(), fetchStats(), fetchTimetable(), fetchCalendarEvents()]);
+    // Initial load from SQLite
+    fetchMOTM(partner);
+    fetchNextMeet();
+    fetchStats();
+    fetchTimetable();
+    fetchCalendarEvents();
+
+    // Background fetch to sync SQLite with Supabase
+    syncRemoteToLocal(partner);
     setLoading(false);
+  };
+
+  const syncRemoteToLocal = async (pName: string) => {
+    try {
+      // Sync Moments
+      const { data: mData } = await supabase.from('moments').select('*');
+      if (mData) mData.forEach(m => db.runSync(`INSERT OR REPLACE INTO moments (id, message, user_id, created_at) VALUES (?, ?, ?, ?)`, [m.id, m.message, m.user_id, m.created_at]));
+      
+      // Sync Meetings
+      const { data: mtData } = await supabase.from('meetings').select('*');
+      if (mtData) mtData.forEach(n => db.runSync(`INSERT OR REPLACE INTO meetings (id, created_at, type, date, recurring_type, occasion_name, user_id, weekday, day_of_month, time, is_recurring, frequency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+        [n.id, n.created_at, n.type, n.date, n.recurring_type, n.occasion_name, n.user_id, n.weekday, n.day_of_month, n.time, n.is_recurring ? 1 : 0, n.frequency]));
+
+      // Sync Timetable
+      const { data: ttData } = await supabase.from('timetable').select('*');
+      if (ttData) ttData.forEach(n => db.runSync(`INSERT OR REPLACE INTO timetable (id, created_at, day, time, end_time, activity, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
+        [n.id, n.created_at, n.day, n.time, n.end_time, n.activity, n.user_id]));
+
+      // Sync Calendar
+      const { data: cData } = await supabase.from('calendar_events').select('*');
+      if (cData) cData.forEach(n => db.runSync(`INSERT OR REPLACE INTO calendar_events (id, created_at, event_date, title, user_id, frequency) VALUES (?, ?, ?, ?, ?, ?)`, 
+        [n.id, n.created_at, n.event_date, n.title, n.user_id, n.frequency]));
+
+      // Refresh state after sync
+      fetchMOTM(pName);
+      fetchNextMeet();
+      fetchTimetable();
+      fetchCalendarEvents();
+      fetchStats();
+    } catch (e) {}
   };
 
   const fetchMOTM = async (pName?: string) => {
     const target = pName || partnerName;
-    const { data } = await supabase.from('moments').select('message').eq('user_id', target?.toLowerCase()).maybeSingle();
-    if (data) setMotm(data.message);
+    try {
+      const data = db.getFirstSync(`SELECT message FROM moments WHERE user_id = ?`, [target?.toLowerCase()]) as any;
+      if (data) setMotm(data.message);
+    } catch (e) {}
   };
 
   const fetchNextMeet = async () => {
-    const { data } = await supabase.from('meetings').select('*').order('created_at', { ascending: false }).limit(1).maybeSingle();
-    if (data) {
-      calculateNextDate(data);
-      setMeetingOccasion(data.occasion_name || null);
-    } else {
-      setCountdownText('Meeting you soon');
-    }
+    try {
+      const data = db.getFirstSync(`SELECT * FROM meetings ORDER BY created_at DESC LIMIT 1`) as any;
+      if (data) {
+        calculateNextDate({ ...data, is_recurring: data.is_recurring === 1 });
+        setMeetingOccasion(data.occasion_name || null);
+      } else {
+        setCountdownText('Meeting you soon');
+      }
+    } catch (e) {}
   };
 
   const calculateNextDate = (data: any) => {
@@ -216,18 +297,32 @@ export default function DashboardScreen() {
   };
 
   const fetchStats = async () => {
-    const { count } = await supabase.from('posts').select('*', { count: 'exact', head: true });
-    setStats({ memories: count || 0 });
+    try {
+      const data = db.getFirstSync(`SELECT COUNT(*) as count FROM posts`) as any;
+      setStats({ memories: data?.count || 0 });
+      
+      const { count } = await supabase.from('posts').select('*', { count: 'exact', head: true });
+      if (count !== undefined) {
+        setStats({ memories: count });
+        const { data: pData } = await supabase.from('posts').select('*');
+        if (pData) pData.forEach(p => db.runSync(`INSERT OR REPLACE INTO posts (id, created_at, type, content, user_id, reactions, seen_by) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
+          [p.id, p.created_at, p.type, p.content, p.user_id, JSON.stringify(p.reactions), p.seen_by ? p.seen_by.join(',') : '']));
+      }
+    } catch (e) {}
   };
 
   const fetchTimetable = async () => {
-    const { data } = await supabase.from('timetable').select('*').order('time', { ascending: true });
-    if (data) setTimetable(data);
+    try {
+      const data = db.getAllSync(`SELECT * FROM timetable ORDER BY time ASC`) as any[];
+      if (data) setTimetable(data);
+    } catch (e) {}
   };
 
   const fetchCalendarEvents = async () => {
-    const { data } = await supabase.from('calendar_events').select('*').order('event_date', { ascending: true });
-    if (data) setCalendarEvents(data);
+    try {
+      const data = db.getAllSync(`SELECT * FROM calendar_events ORDER BY event_date ASC`) as any[];
+      if (data) setCalendarEvents(data);
+    } catch (e) {}
   };
 
   // --- Routine Logic ---
@@ -253,26 +348,41 @@ export default function DashboardScreen() {
       }
     }
     setIsSaving(true);
-    const { error } = await supabase.from('timetable').insert([{
+    const id = Math.random().toString(36).substr(2, 9);
+    const payload = {
+      id,
       day: selectedDay,
       time: newTime,
       end_time: newEndTime || null,
       activity: newActivity,
-      user_id: currentUserName.toLowerCase()
-    }]);
-    if (!error) {
+      user_id: currentUserName.toLowerCase(),
+      created_at: new Date().toISOString()
+    };
+
+    try {
+      db.runSync(`INSERT INTO timetable (id, day, time, end_time, activity, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
+        [payload.id, payload.day, payload.time, payload.end_time, payload.activity, payload.user_id, payload.created_at]);
+      
+      queueSyncOperation('timetable', payload.id, 'INSERT', payload);
+
       setNewTime(''); setNewEndTime(''); setNewActivity('');
       fetchTimetable();
       syncAllNotifications();
+    } catch (e) {
+      console.warn('Routine add error', e);
+    } finally {
+      setIsSaving(false);
     }
-    setIsSaving(false);
   };
 
   const deleteRoutineEvent = async (id: string) => {
     Alert.alert('Delete?', 'Remove activity?', [{ text: 'Cancel' }, { text: 'Delete', style: 'destructive', onPress: async () => {
-      await supabase.from('timetable').delete().eq('id', id);
-      fetchTimetable();
-      syncAllNotifications();
+      try {
+        db.runSync(`DELETE FROM timetable WHERE id = ?`, [id]);
+        queueSyncOperation('timetable', id, 'DELETE', {});
+        fetchTimetable();
+        syncAllNotifications();
+      } catch (e) {}
     }}]);
   };
 
@@ -290,26 +400,38 @@ export default function DashboardScreen() {
   const addCalendarEvent = async () => {
     if (!newCalendarTitle || !currentUserName) return;
     setIsSaving(true);
-    const { error } = await supabase.from('calendar_events').insert([{
+    const id = Math.random().toString(36).substr(2, 9);
+    const payload = {
+      id,
       event_date: format(selectedCalendarDate, 'yyyy-MM-dd'),
       title: newCalendarTitle,
       frequency: newCalendarFreq,
-      user_id: currentUserName.toLowerCase()
-    }]);
-    if (!error) {
+      user_id: currentUserName.toLowerCase(),
+      created_at: new Date().toISOString()
+    };
+
+    try {
+      db.runSync(`INSERT INTO calendar_events (id, event_date, title, frequency, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?)`, 
+        [payload.id, payload.event_date, payload.title, payload.frequency, payload.user_id, payload.created_at]);
+      
+      queueSyncOperation('calendar_events', payload.id, 'INSERT', payload);
+
       setNewCalendarTitle(''); setNewCalendarFreq('once');
       setShowCalendarModal(false);
       fetchCalendarEvents();
       syncAllNotifications();
-    }
+    } catch (e) {}
     setIsSaving(false);
   };
 
   const deleteCalendarEvent = async (id: string) => {
     Alert.alert('Delete?', 'Remove event?', [{ text: 'Cancel' }, { text: 'Delete', style: 'destructive', onPress: async () => {
-      await supabase.from('calendar_events').delete().eq('id', id);
-      fetchCalendarEvents();
-      syncAllNotifications();
+      try {
+        db.runSync(`DELETE FROM calendar_events WHERE id = ?`, [id]);
+        queueSyncOperation('calendar_events', id, 'DELETE', {});
+        fetchCalendarEvents();
+        syncAllNotifications();
+      } catch (e) {}
     }}]);
   };
 
@@ -339,8 +461,8 @@ export default function DashboardScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={[styles.greeting, { color: theme.text }]}>Hello, TAMTAM</Text>
-            <Text style={[styles.subtitle, { color: theme.tabIconDefault }]}>Thinking of you today</Text>
+            <Text style={[styles.greeting, { color: '#000' }]}>Hello, TAMTAM</Text>
+            <Text style={[styles.subtitle, { color: '#333' }]}>Thinking of you today</Text>
           </View>
           <TouchableOpacity onPress={() => DeviceEventEmitter.emit('show-navigator')}>
             <LottieView autoPlay loop source={{ uri: 'https://assets9.lottiefiles.com/packages/lf20_at6mscsc.json' }} style={styles.lottieHeart} />

@@ -10,6 +10,7 @@ import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-g
 import Svg, { G, Path, Text as SvgText, Circle as SvgCircle, Rect as SvgRect, Line } from 'react-native-svg';
 import { MotiView, AnimatePresence } from 'moti';
 import { supabase } from '@/lib/supabase';
+import { db, queueSyncOperation } from '@/lib/db';
 import * as SecureStore from 'expo-secure-store';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -83,8 +84,27 @@ export default function ChillZoneScreen() {
 
   useEffect(() => {
     init();
-    const catSub = supabase.channel('chill_cats').on('postgres_changes', { event: '*', schema: 'public', table: 'chill_categories' }, fetchCategories).subscribe();
-    const itemSub = supabase.channel('chill_items').on('postgres_changes', { event: '*', schema: 'public', table: 'chill_items' }, fetchItems).subscribe();
+    const catSub = supabase.channel('chill_cats').on('postgres_changes', { event: '*', schema: 'public', table: 'chill_categories' }, (p) => {
+      if (p.eventType !== 'DELETE') {
+        const n = p.new;
+        db.runSync(`INSERT OR REPLACE INTO chill_categories (id, name, icon, color, bg_color, image_url, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
+          [n.id, n.name, n.icon, n.color, n.bg_color, n.image_url, n.created_at]);
+      } else {
+        db.runSync(`DELETE FROM chill_categories WHERE id = ?`, [p.old.id]);
+      }
+      refreshFromSQLite();
+    }).subscribe();
+
+    const itemSub = supabase.channel('chill_items').on('postgres_changes', { event: '*', schema: 'public', table: 'chill_items' }, (p) => {
+      if (p.eventType !== 'DELETE') {
+        const n = p.new;
+        db.runSync(`INSERT OR REPLACE INTO chill_items (id, category_id, type, title, content, bg_color, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, 
+          [n.id, n.category_id, n.type, n.title, JSON.stringify(n.content), n.bg_color, n.created_by, n.created_at]);
+      } else {
+        db.runSync(`DELETE FROM chill_items WHERE id = ?`, [p.old.id]);
+      }
+      refreshFromSQLite();
+    }).subscribe();
     
     const notifSub = Notifications.addNotificationReceivedListener(notification => {
       setActiveAlert(notification.request.content);
@@ -97,18 +117,46 @@ export default function ChillZoneScreen() {
   const init = async () => {
     const name = await SecureStore.getItemAsync('user_name');
     if (name) setCurrentUserId(name);
-    await Promise.all([fetchCategories(), fetchItems()]);
+    
+    // Load from SQLite first
+    refreshFromSQLite();
+    
+    // Background fetch
+    fetchCategories();
+    fetchItems();
     setLoading(false);
+  };
+
+  const refreshFromSQLite = () => {
+    try {
+      const cats = db.getAllSync(`SELECT * FROM chill_categories ORDER BY created_at ASC`) as any[];
+      setCategories(cats || []);
+      
+      const itms = db.getAllSync(`SELECT * FROM chill_items ORDER BY created_at DESC`) as any[];
+      setItems(itms?.map(i => ({ ...i, content: i.content ? JSON.parse(i.content) : {} })) || []);
+    } catch (e) {}
   };
 
   const fetchCategories = async () => {
     const { data } = await supabase.from('chill_categories').select('*').order('created_at', { ascending: true });
-    if (data) setCategories(data);
+    if (data) {
+      data.forEach(n => {
+        db.runSync(`INSERT OR REPLACE INTO chill_categories (id, name, icon, color, bg_color, image_url, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
+          [n.id, n.name, n.icon, n.color, n.bg_color, n.image_url, n.created_at]);
+      });
+      refreshFromSQLite();
+    }
   };
 
   const fetchItems = async () => {
     const { data } = await supabase.from('chill_items').select('*').order('created_at', { ascending: false });
-    if (data) setItems(data);
+    if (data) {
+      data.forEach(n => {
+        db.runSync(`INSERT OR REPLACE INTO chill_items (id, category_id, type, title, content, bg_color, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, 
+          [n.id, n.category_id, n.type, n.title, JSON.stringify(n.content), n.bg_color, n.created_by, n.created_at]);
+      });
+      refreshFromSQLite();
+    }
   };
 
   const addItem = async () => {
@@ -125,30 +173,84 @@ export default function ChillZoneScreen() {
     else if (newItemType === 'match') content = { ...content, choices: newItemOptions.filter(o => o.trim() !== '').map(o => ({ text: o.trim(), swiped: {} })) };
     else content = { ...content, options: newItemOptions.filter(o => o.trim() !== '').map(o => ({ text: o.trim(), completed: false, votes: [] })) };
 
-    const { error } = await supabase.from('chill_items').insert([{ category_id: selectedCategory.id, type: newItemType, title: newItemTitle.trim(), content, created_by: currentUserId }]);
-    if (!error) { 
+    const id = Math.random().toString(36).substr(2, 9);
+    const payload = {
+      id,
+      category_id: selectedCategory.id,
+      type: newItemType,
+      title: newItemTitle.trim(),
+      content,
+      created_by: currentUserId,
+      created_at: new Date().toISOString()
+    };
+
+    try {
+      db.runSync(`INSERT INTO chill_items (id, category_id, type, title, content, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
+        [payload.id, payload.category_id, payload.type, payload.title, JSON.stringify(payload.content), payload.created_by, payload.created_at]);
+      
+      queueSyncOperation('chill_items', payload.id, 'INSERT', payload);
+
       setIsItemModalVisible(false); setNewItemTitle(''); setNewItemOptions(['', '']); setEndDate(null); setSelectedLoc(null); 
       syncAllNotifications();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); 
-    }
+      refreshFromSQLite();
+    } catch (e) {}
   };
 
   const updateItem = async () => {
     if (!editItem) return;
     const content = { ...editItem.content, remType, start_at: startDate.toISOString(), end_at: endDate ? endDate.toISOString() : null, location: selectedLoc };
-    await supabase.from('chill_items').update({ title: newItemTitle, content }).eq('id', editItem.id);
-    setEditItem(null); 
-    setIsItemModalVisible(false); 
-    syncAllNotifications();
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const id = editItem.id;
+    const title = newItemTitle;
+
+    try {
+      db.runSync(`UPDATE chill_items SET title = ?, content = ? WHERE id = ?`, [title, JSON.stringify(content), id]);
+      queueSyncOperation('chill_items', id, 'UPDATE', { title, content });
+
+      setEditItem(null); 
+      setIsItemModalVisible(false); 
+      syncAllNotifications();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      refreshFromSQLite();
+    } catch (e) {}
   };
 
   const handleSendMessage = async () => {
     if (!chatMessage.trim() || !chatItem) return;
     const newMessage = { user: currentUserId, text: chatMessage.trim(), time: new Date().toISOString() };
     const newContent = { ...chatItem.content, chat: [...(chatItem.content.chat || []), newMessage] };
-    await supabase.from('chill_items').update({ content: newContent }).eq('id', chatItem.id);
-    setChatMessage(''); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const id = chatItem.id;
+
+    try {
+      db.runSync(`UPDATE chill_items SET content = ? WHERE id = ?`, [JSON.stringify(newContent), id]);
+      queueSyncOperation('chill_items', id, 'UPDATE', { content: newContent });
+      
+      setChatMessage(''); 
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      refreshFromSQLite();
+    } catch (e) {}
+  };
+
+  const updateItemContent = async (itemId: string, newContent: any, newTitle?: string) => {
+    try {
+      if (newTitle) {
+        db.runSync(`UPDATE chill_items SET title = ?, content = ? WHERE id = ?`, [newTitle, JSON.stringify(newContent), itemId]);
+        queueSyncOperation('chill_items', itemId, 'UPDATE', { title: newTitle, content: newContent });
+      } else {
+        db.runSync(`UPDATE chill_items SET content = ? WHERE id = ?`, [JSON.stringify(newContent), itemId]);
+        queueSyncOperation('chill_items', itemId, 'UPDATE', { content: newContent });
+      }
+      refreshFromSQLite();
+    } catch (e) {}
+  };
+
+  const deleteItem = async (itemId: string) => {
+    try {
+      db.runSync(`DELETE FROM chill_items WHERE id = ?`, [itemId]);
+      queueSyncOperation('chill_items', itemId, 'DELETE', {});
+      refreshFromSQLite();
+      syncAllNotifications();
+    } catch (e) {}
   };
 
   const allCategories = useMemo(() => {
@@ -189,27 +291,27 @@ export default function ChillZoneScreen() {
               renderItem={({item}) => (
                 <MotiView from={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} style={[styles.itemCard, { backgroundColor: theme.card, borderLeftColor: selectedCategory?.color, borderLeftWidth: 5 }]}>
                   <View style={styles.itemHeader}>
-                    <TextInput style={[styles.itemTitle, { color: theme.text, flex: 1 }]} defaultValue={item.title} onEndEditing={async (e) => { const nt = e.nativeEvent.text; if (nt && nt !== item.title) await supabase.from('chill_items').update({ title: nt }).eq('id', item.id); }} />
+                    <TextInput style={[styles.itemTitle, { color: theme.text, flex: 1 }]} defaultValue={item.title} onEndEditing={(e) => { const nt = e.nativeEvent.text; if (nt && nt !== item.title) updateItemContent(item.id, item.content, nt); }} />
                     <View style={{flexDirection:'row', gap: 15, alignItems: 'center'}}>
                       {item.type === 'reminder' && (<TouchableOpacity onPress={() => { setEditItem(item); setNewItemTitle(item.title); setRemType(item.content.remType); setStartDate(new Date(item.content.start_at)); setEndDate(item.content.end_at ? new Date(item.content.end_at) : null); setSelectedLoc(item.content.location); setIsItemModalVisible(true); }}><Pencil size={18} color={theme.tint} /></TouchableOpacity>)}
                       {['tictactoe', 'ludo', 'snakes', 'match', 'truthordare', 'reminder'].includes(item.type) && !item.content?.winner && (<TouchableOpacity onPress={() => setChatItem(item)}><MessageSquare size={18} color={theme.tint} /></TouchableOpacity>)}
-                      <TouchableOpacity onPress={() => { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning); Alert.alert("Delete?", "Remove for both?", [{ text: "Cancel", style: "cancel" }, { text: "Delete", style: "destructive", onPress: async () => { await supabase.from('chill_items').delete().eq('id', item.id); syncAllNotifications(); } }]); }}><Trash2 size={18} color="#FF3B30" opacity={0.4} /></TouchableOpacity>
+                      <TouchableOpacity onPress={() => { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning); Alert.alert("Delete?", "Remove for both?", [{ text: "Cancel", style: "cancel" }, { text: "Delete", style: "destructive", onPress: () => deleteItem(item.id) }]); }}><Trash2 size={18} color="#FF3B30" opacity={0.4} /></TouchableOpacity>
                     </View>
                   </View>
                   <View style={styles.gameContainer}>
-                    {item.type === 'reminder' && <ReminderComponent item={item} theme={theme} color={selectedCategory?.color} />}
+                    {item.type === 'reminder' && <ReminderComponent item={item} theme={theme} color={selectedCategory?.color} onUpdate={(c:any) => updateItemContent(item.id, c)} />}
                     {(item.type === 'tictactoe' || item.type === 'snakes' || item.type === 'ludo' || item.type === 'truthordare') && !item.content?.winner && (<Text style={[styles.turnLabel, { color: item.content.turn === currentUserId ? theme.tint : '#888' }]}>{item.content.turn === currentUserId ? "IT'S YOUR TURN" : "WAITING FOR PARTNER..."}</Text>)}
-                    {item.type === 'tictactoe' && <TicTacToeBoard item={item} currentUserId={currentUserId} onMove={async (idx:any, sym:any, p:any) => { const b = [...(item.content.board || Array(9).fill(null))]; b[idx] = sym; const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]]; let w = null; for (const [a,b_idx,c] of wins) if (b[a] && b[a] === b[b_idx] && b[a] === b[c]) w = p; if (w) await supabase.from('chill_items').update({ content: { winner: w, board: b, chat: item.content.chat || [] } }).eq('id', item.id); else await supabase.from('chill_items').update({ content: { ...item.content, board: b, turn: p === 'pratishth' ? 'love' : 'pratishth' } }).eq('id', item.id); }} />}
-                    {item.type === 'snakes' && <SnakesBoard item={item} currentUserId={currentUserId} onMove={async (roll:any, over:any) => { const isP1 = over ? over === 'p1' : currentUserId === 'pratishth'; const p = isP1 ? 'p1' : 'p2', o = isP1 ? 'p2' : 'p1', partner = isP1 ? 'love' : 'pratishth'; let next = (item.content[p] || 1) + roll; if (next > 100) { if (!over) await supabase.from('chill_items').update({ content: { ...item.content, turn: partner } }).eq('id', item.id); return; } const L = { 2: 38, 7: 14, 8: 31, 15: 26, 21: 42, 28: 84, 36: 44, 51: 67, 71: 91, 78: 98, 87: 94 }, S = { 16: 6, 46: 25, 49: 11, 62: 19, 64: 60, 74: 53, 89: 68, 92: 88, 95: 75, 99: 80 }; if (L[next]) next = L[next]; else if (S[next]) next = S[next]; let opp = item.content[o] || 1; if (next > 1 && next < 100 && next === opp) opp = 1; if (next === 100) await supabase.from('chill_items').update({ content: { winner: currentUserId, chat: item.content.chat || [] } }).eq('id', item.id); else await supabase.from('chill_items').update({ content: { ...item.content, [p]: next, [o]: opp, turn: partner } }).eq('id', item.id); }} />}
-                    {item.type === 'ludo' && <LudoBoard item={item} currentUserId={currentUserId} onMove={async (idx:any, roll:any, over:any) => { const isP1 = over ? over === 'p1' : currentUserId === 'pratishth'; const p = isP1 ? 'p1' : 'p2', o = isP1 ? 'p2' : 'p1', partner = isP1 ? 'love' : 'pratishth'; const nP = [...(item.content.players?.[p] || [0,0,0,0])], oP = [...(item.content.players?.[o] || [0,0,0,0])]; if (idx === -1) { await supabase.from('chill_items').update({ content: { ...item.content, turn: partner } }).eq('id', item.id); return; } let ex = roll === 6; if (nP[idx] === 0) nP[idx] = 1; else nP[idx] += roll; if (nP[idx] === 57) ex = true; const g = (nP[idx] - 1 + (isP1 ? 0 : 26)) % 52, safe = [0, 8, 13, 21, 26, 34, 39, 47].includes(g); if (nP[idx] <= 51 && !safe) oP.forEach((pos, i) => { if (pos > 0 && pos <= 51) { const og = (pos - 1 + (isP1 ? 26 : 0)) % 52; if (g === og) { oP[i] = 0; ex = true; } } }); const win = nP.every(p_val => p_val === 57) ? (over ? (over === 'p1' ? 'pratishth' : 'love') : currentUserId) : null; if (win) await supabase.from('chill_items').update({ content: { winner: win, chat: item.content.chat || [] } }).eq('id', item.id); else await supabase.from('chill_items').update({ content: { ...item.content, players: { [p]: nP, [o]: oP }, turn: ex ? (over ? (over === 'p1' ? 'pratishth' : 'love') : currentUserId) : partner } }).eq('id', item.id); }} />}
-                    {item.type === 'truthordare' && <TruthOrDareComponent item={item} currentUserId={currentUserId} theme={theme} color={selectedCategory?.color} />}
+                    {item.type === 'tictactoe' && <TicTacToeBoard item={item} currentUserId={currentUserId} onMove={async (idx:any, sym:any, p:any) => { const b = [...(item.content.board || Array(9).fill(null))]; b[idx] = sym; const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]]; let w = null; for (const [a,b_idx,c] of wins) if (b[a] && b[a] === b[b_idx] && b[a] === b[c]) w = p; if (w) updateItemContent(item.id, { winner: w, board: b, chat: item.content.chat || [] }); else updateItemContent(item.id, { ...item.content, board: b, turn: p === 'pratishth' ? 'love' : 'pratishth' }); }} />}
+                    {item.type === 'snakes' && <SnakesBoard item={item} currentUserId={currentUserId} onMove={async (roll:any, over:any) => { const isP1 = over ? over === 'p1' : currentUserId === 'pratishth'; const p = isP1 ? 'p1' : 'p2', o = isP1 ? 'p2' : 'p1', partner = isP1 ? 'love' : 'pratishth'; let next = (item.content[p] || 1) + roll; if (next > 100) { if (!over) updateItemContent(item.id, { ...item.content, turn: partner }); return; } const L = { 2: 38, 7: 14, 8: 31, 15: 26, 21: 42, 28: 84, 36: 44, 51: 67, 71: 91, 78: 98, 87: 94 }, S = { 16: 6, 46: 25, 49: 11, 62: 19, 64: 60, 74: 53, 89: 68, 92: 88, 95: 75, 99: 80 }; if (L[next]) next = L[next]; else if (S[next]) next = S[next]; let opp = item.content[o] || 1; if (next > 1 && next < 100 && next === opp) opp = 1; if (next === 100) updateItemContent(item.id, { winner: currentUserId, chat: item.content.chat || [] }); else updateItemContent(item.id, { ...item.content, [p]: next, [o]: opp, turn: partner }); }} />}
+                    {item.type === 'ludo' && <LudoBoard item={item} currentUserId={currentUserId} onMove={async (idx:any, roll:any, over:any) => { const isP1 = over ? over === 'p1' : currentUserId === 'pratishth'; const p = isP1 ? 'p1' : 'p2', o = isP1 ? 'p2' : 'p1', partner = isP1 ? 'love' : 'pratishth'; const nP = [...(item.content.players?.[p] || [0,0,0,0])], oP = [...(item.content.players?.[o] || [0,0,0,0])]; if (idx === -1) { updateItemContent(item.id, { ...item.content, turn: partner }); return; } let ex = roll === 6; if (nP[idx] === 0) nP[idx] = 1; else nP[idx] += roll; if (nP[idx] === 57) ex = true; const g = (nP[idx] - 1 + (isP1 ? 0 : 26)) % 52, safe = [0, 8, 13, 21, 26, 34, 39, 47].includes(g); if (nP[idx] <= 51 && !safe) oP.forEach((pos, i) => { if (pos > 0 && pos <= 51) { const og = (pos - 1 + (isP1 ? 26 : 0)) % 52; if (g === og) { oP[i] = 0; ex = true; } } }); const win = nP.every(p_val => p_val === 57) ? (over ? (over === 'p1' ? 'pratishth' : 'love') : currentUserId) : null; if (win) updateItemContent(item.id, { winner: win, chat: item.content.chat || [] }); else updateItemContent(item.id, { ...item.content, players: { [p]: nP, [o]: oP }, turn: ex ? (over ? (over === 'p1' ? 'pratishth' : 'love') : currentUserId) : partner }); }} />}
+                    {item.type === 'truthordare' && <TruthOrDareComponent item={item} currentUserId={currentUserId} theme={theme} color={selectedCategory?.color} onUpdate={(c:any) => updateItemContent(item.id, c)} />}
                   </View>
-                  {item.type === 'roulette' && <RouletteComponent item={item} color={selectedCategory?.color} theme={theme} />}
-                  {item.type === 'match' && <MatchStack item={item} currentUserId={currentUserId} setMatch={setMatchCelebration} color={selectedCategory?.color} theme={theme} />}
-                  {(item.type === 'checklist' || item.type === 'list' || item.type === 'poll') && <CollabListComponent item={item} currentUserId={currentUserId} color={selectedCategory?.color} theme={theme} />}
-                  {item.type === 'mood' && (<View style={styles.moodSection}><Text style={styles.currentMood}>{item.content.mood}</Text><View style={styles.moodGrid}>{MOODS.map(m => (<TouchableOpacity key={m} onPress={async () => await supabase.from('chill_items').update({ content: { ...item.content, mood: m } }).eq('id', item.id)} style={styles.moodBtn}><Text style={{fontSize: 20}}>{m}</Text></TouchableOpacity>))}</View></View>)}
-                  {item.type === 'tracker' && (<View style={styles.trackerSection}><View style={styles.progressBar}><MotiView animate={{ width: `${(item.content.current/item.content.goal)*100}%` }} style={[styles.progressFill, { backgroundColor: selectedCategory?.color }]} /></View><TouchableOpacity onPress={async () => await supabase.from('chill_items').update({ content: { ...item.content, current: Math.min(item.content.goal, item.content.current + 1) } }).eq('id', item.id)} style={[styles.plusOne, { backgroundColor: selectedCategory?.color }]}><Plus size={16} color="white" /></TouchableOpacity><TouchableOpacity onPress={() => Alert.prompt("Set Goal", "Enter target value", (v) => { if(parseInt(v)) supabase.from('chill_items').update({ content: { ...item.content, goal: parseInt(v) } }).eq('id', item.id).then(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)) })}><Settings2 size={16} color={theme.tabIconDefault} /></TouchableOpacity></View>)}
-                  {item.type === 'note' && (<View style={[styles.notePaper, { backgroundColor: item.content.color || '#FFF9C4' }]}><TextInput style={styles.noteText} multiline defaultValue={item.content.body} onEndEditing={async (e) => { const nb = e.nativeEvent.text; if (nb && nb !== item.content.body) await supabase.from('chill_items').update({ content: { ...item.content, body: nb } }).eq('id', item.id); }} /><Sparkles size={14} color="rgba(0,0,0,0.2)" style={{ position: 'absolute', bottom: 10, right: 10 }} /></View>)}
+                  {item.type === 'roulette' && <RouletteComponent item={item} color={selectedCategory?.color} theme={theme} onUpdate={(c:any) => updateItemContent(item.id, c)} />}
+                  {item.type === 'match' && <MatchStack item={item} currentUserId={currentUserId} setMatch={setMatchCelebration} color={selectedCategory?.color} theme={theme} onUpdate={(c:any) => updateItemContent(item.id, c)} />}
+                  {(item.type === 'checklist' || item.type === 'list' || item.type === 'poll') && <CollabListComponent item={item} currentUserId={currentUserId} color={selectedCategory?.color} theme={theme} onUpdate={(c:any) => updateItemContent(item.id, c)} />}
+                  {item.type === 'mood' && (<View style={styles.moodSection}><Text style={styles.currentMood}>{item.content.mood}</Text><View style={styles.moodGrid}>{MOODS.map(m => (<TouchableOpacity key={m} onPress={() => updateItemContent(item.id, { ...item.content, mood: m })} style={styles.moodBtn}><Text style={{fontSize: 20}}>{m}</Text></TouchableOpacity>))}</View></View>)}
+                  {item.type === 'tracker' && (<View style={styles.trackerSection}><View style={styles.progressBar}><MotiView animate={{ width: `${(item.content.current/item.content.goal)*100}%` }} style={[styles.progressFill, { backgroundColor: selectedCategory?.color }]} /></View><TouchableOpacity onPress={() => updateItemContent(item.id, { ...item.content, current: Math.min(item.content.goal, item.content.current + 1) })} style={[styles.plusOne, { backgroundColor: selectedCategory?.color }]}><Plus size={16} color="white" /></TouchableOpacity><TouchableOpacity onPress={() => Alert.prompt("Set Goal", "Enter target value", (v) => { if(parseInt(v)) updateItemContent(item.id, { ...item.content, goal: parseInt(v) }).then(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)) })}><Settings2 size={16} color={theme.tabIconDefault} /></TouchableOpacity></View>)}
+                  {item.type === 'note' && (<View style={[styles.notePaper, { backgroundColor: item.content.color || '#FFF9C4' }]}><TextInput style={styles.noteText} multiline defaultValue={item.content.body} onEndEditing={(e) => { const nb = e.nativeEvent.text; if (nb && nb !== item.content.body) updateItemContent(item.id, { ...item.content, body: nb }); }} /><Sparkles size={14} color="rgba(0,0,0,0.2)" style={{ position: 'absolute', bottom: 10, right: 10 }} /></View>)}
                   <Text style={[styles.itemAuthor, { color: theme.tabIconDefault }]}>CREATED BY {item.created_by?.toUpperCase() || 'SYSTEM'}</Text>
                 </MotiView>
               )}
@@ -266,7 +368,7 @@ export default function ChillZoneScreen() {
   );
 }
 
-function ReminderComponent({ item, theme, color }: any) {
+function ReminderComponent({ item, theme, color, onUpdate }: any) {
   const isTime = item.content.remType === 'time', isActive = item.content.active;
   const start = new Date(item.content.start_at), end = item.content.end_at ? new Date(item.content.end_at) : null, isExpired = end && new Date() > end;
   const toggleReminder = async () => {
@@ -289,8 +391,7 @@ function ReminderComponent({ item, theme, color }: any) {
     } else {
       await Notifications.cancelScheduledNotificationAsync(item.id);
     }
-    await supabase.from('chill_items').update({ content: { ...item.content, active: newActive } }).eq('id', item.id);
-    await syncAllNotifications();
+    onUpdate({ ...item.content, active: newActive });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
   return (<View style={[styles.reminderBox, isExpired && { opacity: 0.5 }]}><View style={[styles.reminderIconBox, { backgroundColor: color + '15' }]}>{isTime ? <Clock size={24} color={color} /> : <MapPin size={24} color={color} />}</View><View style={{ flex: 1 }}><Text style={[styles.reminderVal, { color: theme.text }]}>{item.title}</Text><View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 }}><Text style={styles.reminderSub}>{isTime ? `Starts: ${start.toLocaleTimeString()}` : `Near: ${item.content.location?.name || 'Saved Spot'}`}</Text>{end && <Text style={[styles.reminderSub, { color }]}>• Ends: {end.toLocaleTimeString()}</Text>}</View></View><TouchableOpacity onPress={toggleReminder} style={[styles.bellBtn, { backgroundColor: isActive ? color : 'rgba(150,150,150,0.1)' }]}>{isActive ? <Bell size={18} color="white" /> : <BellOff size={18} color="#888" />}</TouchableOpacity></View>);
@@ -304,17 +405,17 @@ function RouletteComponent({ item, color, theme }: any) {
   return (<View style={styles.rouletteWrapper}><AnimatePresence>{winner && <MotiView from={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} style={[styles.winnerBadge, { backgroundColor: color }]}><Sparkles size={16} color="white" /><Text style={styles.winnerName}>{winner.toUpperCase()}</Text></MotiView>}</AnimatePresence><View style={styles.wheelOuter}><View style={styles.pointer} /><Animated.View style={[styles.wheelContainer, wheelStyle]}><Svg width={220} height={220} viewBox="0 0 220 220"><G transform="translate(110, 110)">{options.map((opt: any, i: number) => { const angle = (2 * Math.PI) / options.length, sA = i * angle - Math.PI / 2, eA = (i + 1) * angle - Math.PI / 2, x1 = 100 * Math.cos(sA), y1 = 100 * Math.sin(sA), x2 = 100 * Math.cos(eA), y2 = 100 * Math.sin(eA); return (<G key={i}><Path d={`M 0 0 L ${x1} ${y1} A 100 100 0 0 1 ${x2} ${y2} Z`} fill={i % 2 === 0 ? color : color + '40'} stroke="#fff" strokeWidth={2} /><SvgText x={60 * Math.cos(startAngle + angle/2)} y={60 * Math.sin(startAngle + angle/2)} fill={theme.text} fontSize="10" fontWeight="bold" textAnchor="middle" transform={`rotate(${(i * (360/options.length)) + (360/options.length)/2 + 90}, ${60 * Math.cos(startAngle + angle/2)}, ${60 * Math.sin(startAngle + angle/2)})`}>{opt.text.substring(0, 10)}</SvgText></G>); })}<SvgCircle r={15} fill="#fff" /></G></Svg></Animated.View></View><TouchableOpacity onPress={spin} disabled={spinning} style={[styles.spinBtn, { backgroundColor: color, marginTop: 20 }]}><Text style={styles.spinText}>{spinning ? 'DECIDING...' : 'SPIN THE WHEEL'}</Text></TouchableOpacity></View>);
 }
 
-function TruthOrDareComponent({ item, currentUserId, theme, color }: any) {
+function TruthOrDareComponent({ item, currentUserId, theme, color, onUpdate }: any) {
   const [localPrompt, setLocalPrompt] = useState(''), partnerId = item.content.turn === 'pratishth' ? 'love' : 'pratishth', isMyTurn = item.content.turn === currentUserId, isPartnerTurn = item.content.turn !== currentUserId;
-  const selectMode = async (mode: 'truth' | 'dare') => { if (!isMyTurn) return; await supabase.from('chill_items').update({ content: { ...item.content, mode, prompt: null } }).eq('id', item.id); };
-  const submitPrompt = async () => { if (!localPrompt.trim()) return; await supabase.from('chill_items').update({ content: { ...item.content, prompt: localPrompt.trim() } }).eq('id', item.id); setLocalPrompt(''); };
-  const complete = async () => { await supabase.from('chill_items').update({ content: { ...item.content, mode: null, prompt: null, turn: partnerId } }).eq('id', item.id); };
+  const selectMode = async (mode: 'truth' | 'dare') => { if (!isMyTurn) return; onUpdate({ ...item.content, mode, prompt: null }); };
+  const submitPrompt = async () => { if (!localPrompt.trim()) return; onUpdate({ ...item.content, prompt: localPrompt.trim() }); setLocalPrompt(''); };
+  const complete = async () => { onUpdate({ ...item.content, mode: null, prompt: null, turn: partnerId }); };
   return (<View style={styles.truthBox}>{!item.content.mode && (<View style={styles.truthActions}><TouchableOpacity onPress={() => selectMode('truth')} style={[styles.truthBtn, { borderColor: color, borderWidth: 1 }]} disabled={!isMyTurn}><Text style={{color, fontWeight:'900'}}>TRUTH</Text></TouchableOpacity><TouchableOpacity onPress={() => selectMode('dare')} style={[styles.truthBtn, { backgroundColor: color }]} disabled={!isMyTurn}><Text style={{color:'white', fontWeight:'900'}}>DARE</Text></TouchableOpacity></View>)}{item.content.mode && !item.content.prompt && (<View style={[styles.promptCard, { backgroundColor: color + '10' }]}><Text style={[styles.promptMode, { color }]}>{item.content.mode.toUpperCase()}</Text>{isPartnerTurn ? (<View style={{ width: '100%', gap: 10 }}><TextInput style={[styles.modalInput, { backgroundColor: theme.background, color: theme.text }]} placeholder="Write their challenge..." value={localPrompt} onChangeText={setLocalPrompt} /><TouchableOpacity onPress={submitPrompt} style={[styles.saveBtn, { backgroundColor: color }]}><Text style={styles.saveBtnText}>Send Challenge</Text></TouchableOpacity></View>) : (<Text style={styles.waitText}>Waiting for partner to set the prompt...</Text>)}</View>)}{item.content.prompt && (<View style={[styles.promptCard, { backgroundColor: color + '15' }]}><Text style={[styles.promptMode, { color }]}>{item.content.mode.toUpperCase()}</Text><Text style={[styles.promptText, { color: theme.text }]}>{item.content.prompt}</Text>{isMyTurn && (<TouchableOpacity onPress={complete} style={[styles.saveBtn, { backgroundColor: color, width: '100%', marginTop: 20 }]}><Text style={styles.saveBtnText}>Challenge Done ✅</Text></TouchableOpacity>)}</View>)}</View>);
 }
 
-function MatchStack({ item, currentUserId, setMatch, color, theme }: any) {
+function MatchStack({ item, currentUserId, setMatch, color, theme, onUpdate }: any) {
   const translateX = useSharedValue(0), translateY = useSharedValue(0), partnerId = currentUserId === 'pratishth' ? 'love' : 'pratishth', remaining = item.content.choices.filter((c: any) => c.swiped[currentUserId] === undefined), currentItem = remaining[0], bothFinished = item.content.choices.every((c:any) => c.swiped.pratishth !== undefined && c.swiped.love !== undefined);
-  const handleSwipeResult = async (val: boolean) => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); const nC = [...item.content.choices]; const idx = item.content.choices.indexOf(currentItem); nC[idx].swiped[currentUserId] = val; if (val === true && nC[idx].swiped[partnerId] === true) { setMatch(nC[idx].text); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } await supabase.from('chill_items').update({ content: { ...item.content, choices: nC } }).eq('id', item.id); translateX.value = 0; translateY.value = 0; };
+  const handleSwipeResult = async (val: boolean) => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); const nC = [...item.content.choices]; const idx = item.content.choices.indexOf(currentItem); nC[idx].swiped[currentUserId] = val; if (val === true && nC[idx].swiped[partnerId] === true) { setMatch(nC[idx].text); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } onUpdate({ ...item.content, choices: nC }); translateX.value = 0; translateY.value = 0; };
   const gesture = Gesture.Pan().onUpdate((e) => { translateX.value = e.translationX; translateY.value = e.translationY; }).onEnd((e) => { if (Math.abs(e.translationX) > 100) { const res = e.translationX > 0; translateX.value = withTiming(e.translationX > 0 ? 500 : -500, { duration: 200 }); runOnJS(handleSwipeResult)(res); } else { translateX.value = withSpring(0); translateY.value = withSpring(0); } });
   const cardStyle = useAnimatedStyle(() => ({ transform: [{ translateX: translateX.value }, { translateY: translateY.value }, { rotate: `${interpolate(translateX.value, [-200, 200], [-15, 15])}deg` }] })), likeStyle = useAnimatedStyle(() => ({ opacity: interpolate(translateX.value, [0, 100], [0, 1]) })), nopeStyle = useAnimatedStyle(() => ({ opacity: interpolate(translateX.value, [-100, 0], [1, 0]) }));
   if (bothFinished) { const matches = item.content.choices.filter((c:any) => c.swiped.pratishth && c.swiped.love), mismatches = item.content.choices.filter((c:any) => c.swiped.pratishth !== c.swiped.love), bothNope = item.content.choices.filter((c:any) => !c.swiped.pratishth && !c.swiped.love); return (<View style={styles.matchReport}><View style={styles.reportHeader}><Trophy size={20} color="#FFD700" /><Text style={[styles.reportTitle, { color: theme.text }]}>THE MATCH REPORT</Text></View><ScrollView style={{ maxHeight: 250 }} nestedScrollEnabled>{matches.length > 0 && (<View style={styles.reportSection}><View style={styles.sectionHeader}><Heart size={14} color="#FF2D55" fill="#FF2D55" /><Text style={styles.sectionTitle}>PERFECT MATCHES</Text></View>{matches.map((m:any, i:number) => (<Text key={i} style={styles.reportItem}>• {m.text}</Text>))}</View>)}{mismatches.length > 0 && (<View style={styles.reportSection}><View style={styles.sectionHeader}><X size={14} color="#FF9500" /><Text style={styles.sectionTitle}>MISMATCHES</Text></View>{mismatches.map((m:any, i:number) => (<Text key={i} style={[styles.reportItem, { opacity: 0.6 }]}>• {m.text}</Text>))}</View>)}{bothNope.length > 0 && (<View style={styles.reportSection}><View style={styles.sectionHeader}><Ghost size={14} color="#8E8E93" /><Text style={styles.sectionTitle}>BOTH NOPE</Text></View>{bothNope.map((m:any, i:number) => (<Text key={i} style={[styles.reportItem, { opacity: 0.4 }]}>• {m.text}</Text>))}</View>)}</ScrollView></View>); }
@@ -322,9 +423,9 @@ function MatchStack({ item, currentUserId, setMatch, color, theme }: any) {
   return (<View style={styles.matchContainer}><GestureDetector gesture={gesture}><Animated.View style={[styles.matchCard, { backgroundColor: theme.background, borderColor: color + '30' }, cardStyle]}><Animated.View style={[styles.swipeLabel, { borderColor: '#34C759', right: 20, top: 20 }, likeStyle]}><Text style={[styles.swipeLabelText, { color: '#34C759' }]}>MATCH</Text></Animated.View><Animated.View style={[styles.swipeLabel, { borderColor: '#FF3B30', left: 20, top: 20 }, nopeStyle]}><Text style={[styles.swipeLabelText, { color: '#FF3B30' }]}>NOPE</Text></Animated.View><Text style={[styles.matchCount, { color }]}>{item.content.choices.length - remaining.length + 1} / {item.content.choices.length}</Text><Text style={[styles.matchText, { color: theme.text }]}>{currentItem.text}</Text></Animated.View></GestureDetector></View>);
 }
 
-function CollabListComponent({ item, currentUserId, color, theme }: any) {
-  const toggle = async (idx: number) => { const nO = [...item.content.options]; nO[idx].completed = !nO[idx].completed; await supabase.from('chill_items').update({ content: { ...item.content, options: nO } }).eq('id', item.id); };
-  const editOption = async (idx: number, text: string) => { if (!text.trim()) return; const nO = [...item.content.options]; nO[idx].text = text.trim(); await supabase.from('chill_items').update({ content: { ...item.content, options: nO } }).eq('id', item.id); };
+function CollabListComponent({ item, currentUserId, color, theme, onUpdate }: any) {
+  const toggle = async (idx: number) => { const nO = [...item.content.options]; nO[idx].completed = !nO[idx].completed; onUpdate({ ...item.content, options: nO }); };
+  const editOption = async (idx: number, text: string) => { if (!text.trim()) return; const nO = [...item.content.options]; nO[idx].text = text.trim(); onUpdate({ ...item.content, options: nO }); };
   return (<View style={styles.collabList}>{item.content.options?.map((opt: any, i: number) => (<View key={i} style={[styles.optionRow, { backgroundColor: theme.background }]}><TouchableOpacity onPress={() => toggle(i)} style={styles.optionCheck}>{item.type === 'checklist' && (opt.completed ? <CheckCircle2 size={20} color={color} /> : <Circle size={20} color="#888" />)}</TouchableOpacity><TextInput style={[styles.optionText, { color: theme.text, textDecorationLine: opt.completed ? 'line-through' : 'none', flex: 1 }]} defaultValue={opt.text} onEndEditing={(e) => editOption(i, e.nativeEvent.text)} /><Pencil size={12} color={theme.tabIconDefault} opacity={0.3} /></View>))}</View>);
 }
 

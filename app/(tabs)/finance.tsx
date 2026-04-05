@@ -7,6 +7,7 @@ import Colors from '@/constants/Colors';
 import { Wallet, Plus, X, Trash2, ArrowDownCircle, ArrowUpCircle, Filter, PieChart as PieChartIcon, Landmark, ReceiptText, Users, User, Target, ChevronRight, TrendingUp, Heart, Calendar, Clock, RotateCcw, Download } from 'lucide-react-native';
 import { format, addDays, addWeeks, addMonths, isAfter, isBefore, startOfDay, endOfDay, differenceInDays } from 'date-fns';
 import { supabase } from '@/lib/supabase';
+import { db, queueSyncOperation } from '@/lib/db';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import * as SecureStore from 'expo-secure-store';
@@ -161,6 +162,9 @@ export default function FinanceScreen() {
       const other = name?.toLowerCase() === 'pratishth' ? 'love' : 'pratishth';
       setOtherUserName(other);
       
+      // Load from SQLite first
+      refreshFromSQLite();
+      
       if (name && other) {
         fetchBalances(name, other);
       }
@@ -170,8 +174,28 @@ export default function FinanceScreen() {
     };
     init();
 
-    const subFinance = supabase.channel('finance_updates').on('postgres_changes', { event: '*', schema: 'public', table: 'finances' }, () => fetchTransactions(true)).subscribe();
-    const subTargets = supabase.channel('target_updates').on('postgres_changes', { event: '*', schema: 'public', table: 'targets' }, () => fetchTargets()).subscribe();
+    const subFinance = supabase.channel('finance_updates').on('postgres_changes', { event: '*', schema: 'public', table: 'finances' }, (p) => {
+      if (p.eventType !== 'DELETE') {
+        const n = p.new;
+        db.runSync(`INSERT OR REPLACE INTO finances (id, created_at, amount, category, description, user_id, type) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
+          [n.id, n.created_at, n.amount, n.category, n.description, n.user_id, n.type]);
+      } else {
+        db.runSync(`DELETE FROM finances WHERE id = ?`, [p.old.id]);
+      }
+      refreshFromSQLite();
+    }).subscribe();
+
+    const subTargets = supabase.channel('target_updates').on('postgres_changes', { event: '*', schema: 'public', table: 'targets' }, (p) => {
+      if (p.eventType !== 'DELETE') {
+        const n = p.new;
+        db.runSync(`INSERT OR REPLACE INTO targets (id, created_at, title, target_amount, current_amount, category, user_id, type, period, start_date, end_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+          [n.id, n.created_at, n.title, n.target_amount, n.current_amount, n.category, n.user_id, n.type, n.period, n.start_date, n.end_date]);
+      } else {
+        db.runSync(`DELETE FROM targets WHERE id = ?`, [p.old.id]);
+      }
+      refreshFromSQLite();
+    }).subscribe();
+
     const subBalances = supabase.channel('balance_updates').on('postgres_changes', { event: '*', schema: 'public', table: 'user_balances' }, () => {
       if (currentUserName && otherUserName) fetchBalances(currentUserName, otherUserName);
     }).subscribe();
@@ -183,6 +207,16 @@ export default function FinanceScreen() {
     };
   }, [currentUserName, otherUserName, isAuthenticated]);
 
+  const refreshFromSQLite = () => {
+    try {
+      const tx = db.getAllSync(`SELECT * FROM finances ORDER BY created_at DESC LIMIT 100`) as any[];
+      setTransactions(tx || []);
+      
+      const tg = db.getAllSync(`SELECT * FROM targets ORDER BY created_at DESC`) as any[];
+      setTargets(tg || []);
+    } catch (e) {}
+  };
+
   const fetchBalances = async (me: string, partner: string) => {
     const { data: myData } = await supabase.from('user_balances').select('balance').eq('user_id', me.toLowerCase()).single();
     if (myData) setMyBalance(myData.balance);
@@ -193,17 +227,27 @@ export default function FinanceScreen() {
 
   const fetchTransactions = async (reset = false) => {
     if (isFetchingMore && !reset) return;
+    if (reset) {
+      setLoading(true);
+      refreshFromSQLite();
+    } else {
+      setIsFetchingMore(true);
+    }
+
     const start = reset ? 0 : (page + 1) * PAGE_SIZE;
     const end = start + PAGE_SIZE - 1;
-    if (reset) setLoading(true);
-    else setIsFetchingMore(true);
 
     const { data, error } = await supabase.from('finances').select('*').order('created_at', { ascending: false }).range(start, end);
     if (!error && data) {
-      if (reset) setTransactions(data);
-      else setTransactions(prev => [...prev, ...data]);
-      setPage(reset ? 0 : page + 1);
+      data.forEach(n => {
+        db.runSync(`INSERT OR REPLACE INTO finances (id, created_at, amount, category, description, user_id, type) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
+          [n.id, n.created_at, n.amount, n.category, n.description, n.user_id, n.type]);
+      });
+
+      if (reset) setPage(0);
+      else setPage(page + 1);
       setHasMore(data.length === PAGE_SIZE);
+      refreshFromSQLite();
     }
     setLoading(false);
     setIsFetchingMore(false);
@@ -211,20 +255,39 @@ export default function FinanceScreen() {
 
   const fetchTargets = async () => {
     const { data } = await supabase.from('targets').select('*').order('created_at', { ascending: false });
-    if (data) setTargets(data);
+    if (data) {
+      data.forEach(n => {
+        db.runSync(`INSERT OR REPLACE INTO targets (id, created_at, title, target_amount, current_amount, category, user_id, type, period, start_date, end_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+          [n.id, n.created_at, n.title, n.target_amount, n.current_amount, n.category, n.user_id, n.type, n.period, n.start_date, n.end_date]);
+      });
+      refreshFromSQLite();
+    }
   };
 
   const handleSaveTransaction = async () => {
     if (!amount || isNaN(parseFloat(amount)) || !currentUserName) return;
     setIsSaving(true);
+    const id = Math.random().toString(36).substr(2, 9);
+    const payload = {
+      id,
+      amount: parseFloat(amount),
+      type,
+      category,
+      description: description.trim(),
+      user_id: currentUserName.toLowerCase(),
+      created_at: new Date().toISOString()
+    };
+
     try {
-      const { error } = await supabase.from('finances').insert([{
-        amount: parseFloat(amount), type, category, description: description.trim(), user_id: currentUserName.toLowerCase()
-      }]);
-      if (error) throw error;
+      db.runSync(`INSERT INTO finances (id, amount, type, category, description, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
+        [payload.id, payload.amount, payload.type, payload.category, payload.description, payload.user_id, payload.created_at]);
+      
+      queueSyncOperation('finances', payload.id, 'INSERT', payload);
+
       setShowAddModal(false);
       setAmount(''); setDescription('');
-    } catch (e: any) { Alert.alert('Error', e.message); }
+      refreshFromSQLite();
+    } catch (e) {}
     finally { setIsSaving(false); }
   };
 
@@ -233,65 +296,85 @@ export default function FinanceScreen() {
     if (!targetId) return;
     
     setIsSaving(true);
-    const { error } = await supabase.from('user_balances').upsert({
-      user_id: targetId.toLowerCase(),
-      balance: parseFloat(editBalance) || 0
-    });
-    
-    if (!error) {
-      if (balanceEditUser === 'me') setMyBalance(parseFloat(editBalance) || 0);
-      else setPartnerBalance(parseFloat(editBalance) || 0);
-      setShowBalanceModal(false);
-      setBalanceEditUser(null);
-    } else {
-      Alert.alert('Error', 'Could not update balance.');
-    }
+    const newBal = parseFloat(editBalance) || 0;
+    try {
+      // For balance, we just queue an upsert to Supabase but update local state immediately
+      const { error } = await supabase.from('user_balances').upsert({
+        user_id: targetId.toLowerCase(),
+        balance: newBal
+      });
+      
+      if (!error) {
+        if (balanceEditUser === 'me') setMyBalance(newBal);
+        else setPartnerBalance(newBal);
+        setShowBalanceModal(false);
+        setBalanceEditUser(null);
+      }
+    } catch (e) {}
     setIsSaving(false);
   };
 
   const handleSaveTarget = async () => {
     if (!targetTitle || !targetAmount || !currentUserName) return;
     setIsSaving(true);
+    const id = Math.random().toString(36).substr(2, 9);
+    
+    let finalStart = startDate;
+    let finalEnd = endDate;
+    if (targetPeriod === 'weekly') {
+      finalStart = format(startOfDay(new Date()), 'yyyy-MM-dd');
+      finalEnd = format(addWeeks(new Date(), 1), 'yyyy-MM-dd');
+    } else if (targetPeriod === 'monthly') {
+      finalStart = format(startOfDay(new Date()), 'yyyy-MM-dd');
+      finalEnd = format(addMonths(new Date(), 1), 'yyyy-MM-dd');
+    }
+
+    const payload = {
+      id,
+      title: targetTitle,
+      target_amount: parseFloat(targetAmount),
+      current_amount: 0,
+      type: targetType,
+      period: targetPeriod,
+      start_date: finalStart,
+      end_date: finalEnd,
+      category: 'General',
+      user_id: currentUserName.toLowerCase(),
+      created_at: new Date().toISOString()
+    };
+
     try {
-      let finalStart = startDate;
-      let finalEnd = endDate;
+      db.runSync(`INSERT INTO targets (id, title, target_amount, current_amount, type, period, start_date, end_date, category, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+        [payload.id, payload.title, payload.target_amount, payload.current_amount, payload.type, payload.period, payload.start_date, payload.end_date, payload.category, payload.user_id, payload.created_at]);
+      
+      queueSyncOperation('targets', payload.id, 'INSERT', payload);
 
-      if (targetPeriod === 'weekly') {
-        finalStart = format(startOfDay(new Date()), 'yyyy-MM-dd');
-        finalEnd = format(addWeeks(new Date(), 1), 'yyyy-MM-dd');
-      } else if (targetPeriod === 'monthly') {
-        finalStart = format(startOfDay(new Date()), 'yyyy-MM-dd');
-        finalEnd = format(addMonths(new Date(), 1), 'yyyy-MM-dd');
-      }
-
-      const { error } = await supabase.from('targets').insert([{
-        title: targetTitle,
-        target_amount: parseFloat(targetAmount),
-        type: targetType,
-        period: targetPeriod,
-        start_date: finalStart,
-        end_date: finalEnd,
-        category: 'General',
-        user_id: currentUserName.toLowerCase()
-      }]);
-      if (error) throw error;
       setShowTargetModal(false);
       setTargetTitle(''); setTargetAmount('');
-    } catch (e: any) { Alert.alert('Error', e.message); }
+      refreshFromSQLite();
+    } catch (e) {}
     finally { setIsSaving(false); }
   };
 
   const deleteTarget = async (id: string) => {
     Alert.alert('Delete Goal?', 'Are you sure?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => await supabase.from('targets').delete().eq('id', id) }
+      { text: 'Delete', style: 'destructive', onPress: async () => {
+        db.runSync(`DELETE FROM targets WHERE id = ?`, [id]);
+        queueSyncOperation('targets', id, 'DELETE', {});
+        refreshFromSQLite();
+      }}
     ]);
   };
 
   const deleteTransaction = async (id: string) => {
     Alert.alert('Delete?', 'Remove this record?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => await supabase.from('finances').delete().eq('id', id) }
+      { text: 'Delete', style: 'destructive', onPress: async () => {
+        db.runSync(`DELETE FROM finances WHERE id = ?`, [id]);
+        queueSyncOperation('finances', id, 'DELETE', {});
+        refreshFromSQLite();
+      }}
     ]);
   };
 

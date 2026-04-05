@@ -1,9 +1,9 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { StyleSheet, View, TouchableOpacity, Dimensions, ScrollView, Modal, TextInput, Linking } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Dimensions, ScrollView, Modal, TextInput, Linking, Alert } from 'react-native';
 import { Canvas, Path, Skia, useCanvasRef, Group, Rect, Points, vec, Image, Text as SkiaText, useImage, matchFont, Circle, RoundedRect } from '@shopify/react-native-skia';
 import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, { useSharedValue, runOnJS, useDerivedValue, useAnimatedStyle } from 'react-native-reanimated';
-import { Eraser, Pencil, Trash2, ChevronLeft, Target, Hand, ZoomIn, RotateCcw, Highlighter, Palette, Settings2, Image as ImageIcon, Link as LinkIcon, Plus, Check, ExternalLink } from 'lucide-react-native';
+import { Eraser, Pencil, Trash2, ChevronLeft, Target, Hand, ZoomIn, RotateCcw, Highlighter, Palette, Settings2, Image as ImageIcon, Link as LinkIcon, Plus, Check, ExternalLink, Undo2 } from 'lucide-react-native';
 import { MotiView, AnimatePresence } from 'moti';
 import { BlurView } from 'expo-blur';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '@/lib/supabase';
+import { db, queueSyncOperation } from '@/lib/db';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { Text } from '@/components/Themed';
@@ -93,20 +94,80 @@ export default function WhiteboardScreen() {
   const fontLink = matchFont({ fontFamily: "Arial", fontSize: 16, fontWeight: "bold" });
   const makeStickerFont = (size: number) => matchFont({ fontFamily: "Arial", fontSize: size });
 
+  const channelRef = useRef<any>(null);
+
+  const loadDataIntoState = (data: any) => {
+    setBoard(data);
+    let cd = data.canvas_data || {};
+    if (typeof cd === 'string') {
+      try { cd = JSON.parse(cd); } catch (e) { cd = {}; }
+    }
+    const rawPaths = Array.isArray(cd) ? cd : (cd.paths || []);
+    if (rawPaths.length) setPaths(rawPaths.map((p: any) => ({ ...p, path: Skia.Path.MakeFromSVGString(p.pathString) || Skia.Path.Make() })));
+    setImages(Array.isArray(cd) ? [] : (cd.images || []));
+    setLinks(Array.isArray(cd) ? [] : (cd.links || []));
+  };
+
   const fetchBoard = async () => {
+    // 1. Try loading from local SQLite first for immediate UI render
+    try {
+      const localData = db.getFirstSync(`SELECT * FROM study_whiteboards WHERE id = ?`, [id as string]) as any;
+      if (localData) {
+        loadDataIntoState(localData);
+      }
+    } catch (err) {
+      console.warn('Local DB read error', err);
+    }
+
+    // 2. Fetch from Supabase to ensure we have the absolute latest data
     const { data } = await supabase.from('study_whiteboards').select('*').eq('id', id).single();
     if (data) {
-      setBoard(data);
-      const cd = data.canvas_data || {};
-      // Support both old format (array of paths) and new format ({ paths, images, links })
-      const rawPaths = Array.isArray(cd) ? cd : (cd.paths || []);
-      if (rawPaths.length) setPaths(rawPaths.map((p: any) => ({ ...p, path: Skia.Path.MakeFromSVGString(p.pathString) || Skia.Path.Make() })));
-      setImages(Array.isArray(cd) ? [] : (cd.images || []));
-      setLinks(Array.isArray(cd) ? [] : (cd.links || []));
+      loadDataIntoState(data);
+      // Cache it locally
+      try {
+        db.runSync(
+          `INSERT OR REPLACE INTO study_whiteboards (id, title, canvas_data, updated_at) VALUES (?, ?, ?, ?)`,
+          [data.id, data.title, typeof data.canvas_data === 'string' ? data.canvas_data : JSON.stringify(data.canvas_data), data.updated_at]
+        );
+      } catch(err) {}
     }
   };
 
-  useEffect(() => { fetchBoard(); }, [id]);
+  useEffect(() => { 
+    fetchBoard(); 
+    
+    // Setup Realtime Subscription
+    const channel = supabase
+      .channel(`whiteboard_${id}`)
+      .on('postgres_changes', { 
+        event: 'UPDATE', 
+        schema: 'public', 
+        table: 'study_whiteboards',
+        filter: `id=eq.${id}` 
+      }, (payload) => {
+        // Only update if the change came from another device
+        const cd = payload.new.canvas_data || {};
+        const remotePaths = cd.paths || [];
+        const remoteImages = cd.images || [];
+        const remoteLinks = cd.links || [];
+
+        // Save to local cache
+        try {
+          db.runSync(
+            `INSERT OR REPLACE INTO study_whiteboards (id, title, canvas_data, updated_at) VALUES (?, ?, ?, ?)`,
+            [payload.new.id, payload.new.title, JSON.stringify(cd), payload.new.updated_at]
+          );
+        } catch(err) {}
+
+        setPaths(remotePaths.map((p: any) => ({ ...p, path: Skia.Path.MakeFromSVGString(p.pathString) || Skia.Path.Make() })));
+        setImages(remoteImages);
+        setLinks(remoteLinks);
+      })
+      .subscribe();
+
+    channelRef.current = channel;
+    return () => { supabase.removeChannel(channel); };
+  }, [id]);
 
   const pathsRef = useRef(paths);
   const imagesRef = useRef(images);
@@ -129,12 +190,22 @@ export default function WhiteboardScreen() {
         isEraser: p.isEraser, opacity: p.opacity || 1,
         pathString: p.path?.toSVGString?.() || '',
       }));
-      // Store everything in canvas_data JSONB since images/links columns don't exist
-      const { error } = await supabase.from('study_whiteboards').update({
-        canvas_data: { paths: sP, images: saveImages, links: saveLinks },
-        updated_at: new Date().toISOString(),
-      }).eq('id', id);
-      if (error) console.warn('Save error:', error.message);
+      
+      const canvasData = { paths: sP, images: saveImages, links: saveLinks };
+      const updatedAt = new Date().toISOString();
+
+      // 1. Save to Local SQLite Cache
+      db.runSync(
+        `INSERT OR REPLACE INTO study_whiteboards (id, title, canvas_data, updated_at) VALUES (?, ?, ?, ?)`,
+        [id as string, board?.title || 'Board', JSON.stringify(canvasData), updatedAt]
+      );
+
+      // 2. Queue operation for Sync Engine (Offline-First)
+      queueSyncOperation('study_whiteboards', id as string, 'UPDATE', {
+        canvas_data: canvasData,
+        updated_at: updatedAt
+      });
+
     } catch (e) { console.warn('Save failed:', e); }
     finally { setIsSaving(false); }
   };
@@ -163,6 +234,27 @@ export default function WhiteboardScreen() {
   const openLink = (linkId: string) => {
     const link = links.find(l => l.id === linkId);
     if (link?.url) Linking.openURL(link.url.startsWith('http') ? link.url : `https://${link.url}`);
+  };
+
+  const undo = () => {
+    if (paths.length === 0) return;
+    const newPaths = paths.slice(0, -1);
+    setPaths(newPaths);
+    handleSave(newPaths);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const clearBoard = () => {
+    Alert.alert("Clear Board", "Are you sure you want to clear everything?", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Clear", style: "destructive", onPress: () => {
+        setPaths([]);
+        setImages([]);
+        setLinks([]);
+        handleSave([], [], []);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }}
+    ]);
   };
 
   const deleteSelected = () => {
@@ -398,15 +490,15 @@ export default function WhiteboardScreen() {
         <BlurView intensity={90} tint="light" style={styles.blur}>
           <TouchableOpacity onPress={() => router.back()}><ChevronLeft size={22} color="#000" /></TouchableOpacity>
           <View style={{ flex: 1, marginLeft: 10 }}>
-            <Text style={{ fontWeight: 'bold' }}>{board?.title || "Board"}</Text>
+            <Text style={{ fontWeight: 'bold', color: '#000' }}>{board?.title || "Board"}</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-              <View style={styles.zoom}><ZoomIn size={10} color="#666" /><Text style={{ fontSize: 9 }}>{zoomText}</Text></View>
+              <View style={styles.zoom}><ZoomIn size={10} color="#000" /><Text style={{ fontSize: 9, color: '#000' }}>{zoomText}</Text></View>
               <View style={[styles.dot, { backgroundColor: isSaving ? theme.tint : (isReviseMode ? '#FF2D55' : '#34C759') }]} />
-              <Text style={{ fontSize: 9 }}>{isReviseMode ? "REVISION" : (isSaving ? "SAVING" : "SYNCED")}</Text>
+              <Text style={{ fontSize: 9, color: '#333' }}>{isReviseMode ? "REVISION" : (isSaving ? "SAVING" : "SYNCED")}</Text>
             </View>
           </View>
           <TouchableOpacity onPress={() => { scale.value = 1; translateX.value = 0; translateY.value = 0; setZoomText('100%'); }} style={styles.btn}><Target size={20} color="#000" /></TouchableOpacity>
-          <TouchableOpacity onPress={() => fetchBoard()} style={styles.btn}><RotateCcw size={20} color="#000" /></TouchableOpacity>
+          <TouchableOpacity onPress={undo} style={styles.btn}><Undo2 size={20} color="#000" /></TouchableOpacity>
         </BlurView>
       </View>
 
@@ -457,8 +549,8 @@ export default function WhiteboardScreen() {
       )}
 
       <View style={styles.fabWrap} pointerEvents="box-none">
-        <AnimatePresence>{isToolsExpanded && (<MotiView from={{ opacity: 0, scale: 0.5, translateY: 50 }} animate={{ opacity: 1, scale: 1, translateY: 0 }} exit={{ opacity: 0, scale: 0.5, translateY: 50 }} style={menuStyle}><BlurView intensity={80} tint="light" style={styles.tBlur}><View style={styles.tRow}><TouchableOpacity onPress={() => setActiveTool('pen')} style={[styles.tCir, activeTool === 'pen' && { backgroundColor: theme.tint }]}><Pencil size={20} color={activeTool === 'pen' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveTool('high')} style={[styles.tCir, activeTool === 'high' && { backgroundColor: theme.tint }]}><Highlighter size={20} color={activeTool === 'high' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveTool('eraser')} style={[styles.tCir, activeTool === 'eraser' && { backgroundColor: theme.tint }]}><Eraser size={20} color={activeTool === 'eraser' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveTool('pan')} style={[styles.tCir, activeTool === 'pan' && { backgroundColor: theme.tint }]}><Hand size={20} color={activeTool === 'pan' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveMenu(activeMenu === 'settings' ? 'none' : 'settings')} style={[styles.tCir, activeMenu === 'settings' && { backgroundColor: theme.tint }]}><Settings2 size={20} color={activeMenu === 'settings' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveMenu(activeMenu === 'media' ? 'none' : 'media')} style={[styles.tCir, activeMenu === 'media' && { backgroundColor: theme.tint }]}><Plus size={20} color={activeMenu === 'media' ? '#fff' : '#000'} /></TouchableOpacity></View>
-              {activeMenu === 'settings' && (<View style={styles.tray}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}><View style={[styles.dot, { backgroundColor: color, opacity: activeTool === 'high' ? highOpacity : penOpacity }]} /><Text style={{ fontSize: 12 }}>Adjust Tool</Text></View><CustomSlider value={activeTool==='pen'?penSize:(activeTool==='high'?highSize:eraserSize)} onValueChange={(v:any)=>activeTool==='pen'?setPenSize(v):(activeTool==='high'?setHighSize(v):setEraserSize(v))} min={1} max={100} title="Size" />{activeTool !== 'eraser' && activeTool !== 'pan' && (<CustomSlider value={(activeTool==='pen'?penOpacity:highOpacity)*100} onValueChange={(v:any)=>activeTool==='pen'?setPenOpacity(v/100):setHighOpacity(v/100)} min={5} max={100} title="Opacity" />)}<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>{RAINBOW.map(c => <TouchableOpacity key={c} onPress={() => { setColor(c); setActiveTool('pen'); }} style={[styles.cOpt, { backgroundColor: c }, color === c && { borderColor: '#000', borderWidth: 2 }]} />)}</ScrollView></View>)}
+        <AnimatePresence>{isToolsExpanded && (<MotiView from={{ opacity: 0, scale: 0.5, translateY: 50 }} animate={{ opacity: 1, scale: 1, translateY: 0 }} exit={{ opacity: 0, scale: 0.5, translateY: 50 }} style={menuStyle}><BlurView intensity={80} tint="light" style={styles.tBlur}><View style={styles.tRow}><TouchableOpacity onPress={() => setActiveTool('pen')} style={[styles.tCir, activeTool === 'pen' && { backgroundColor: theme.tint }]}><Pencil size={20} color={activeTool === 'pen' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveTool('high')} style={[styles.tCir, activeTool === 'high' && { backgroundColor: theme.tint }]}><Highlighter size={20} color={activeTool === 'high' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveTool('eraser')} style={[styles.tCir, activeTool === 'eraser' && { backgroundColor: theme.tint }]}><Eraser size={20} color={activeTool === 'eraser' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveTool('pan')} style={[styles.tCir, activeTool === 'pan' && { backgroundColor: theme.tint }]}><Hand size={20} color={activeTool === 'pan' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={undo} style={styles.tCir}><Undo2 size={20} color="#000" /></TouchableOpacity><TouchableOpacity onPress={() => setActiveMenu(activeMenu === 'settings' ? 'none' : 'settings')} style={[styles.tCir, activeMenu === 'settings' && { backgroundColor: theme.tint }]}><Settings2 size={20} color={activeMenu === 'settings' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveMenu(activeMenu === 'media' ? 'none' : 'media')} style={[styles.tCir, activeMenu === 'media' && { backgroundColor: theme.tint }]}><Plus size={20} color={activeMenu === 'media' ? '#fff' : '#000'} /></TouchableOpacity></View>
+              {activeMenu === 'settings' && (<View style={styles.tray}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}><View style={[styles.dot, { backgroundColor: color, opacity: activeTool === 'high' ? highOpacity : penOpacity }]} /><Text style={{ fontSize: 12 }}>Adjust Tool</Text></View><CustomSlider value={activeTool==='pen'?penSize:(activeTool==='high'?highSize:eraserSize)} onValueChange={(v:any)=>activeTool==='pen'?setPenSize(v):(activeTool==='high'?setHighSize(v):setEraserSize(v))} min={1} max={100} title="Size" />{activeTool !== 'eraser' && activeTool !== 'pan' && (<CustomSlider value={(activeTool==='pen'?penOpacity:highOpacity)*100} onValueChange={(v:any)=>activeTool==='pen'?setPenOpacity(v/100):setHighOpacity(v/100)} min={5} max={100} title="Opacity" />)}<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>{RAINBOW.map(c => <TouchableOpacity key={c} onPress={() => { setColor(c); setActiveTool('pen'); }} style={[styles.cOpt, { backgroundColor: c }, color === c && { borderColor: '#000', borderWidth: 2 }]} />)}</ScrollView><TouchableOpacity onPress={clearBoard} style={[styles.mItem, { marginTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.05)', paddingTop: 10 }]}><Trash2 size={18} color="#FF3B30"/><Text style={{ color: '#FF3B30', fontWeight: 'bold' }}>Clear Board</Text></TouchableOpacity></View>)}
               {activeMenu === 'media' && (<View style={styles.tray}><TouchableOpacity onPress={addImage} style={styles.mItem}><ImageIcon size={18} color={theme.tint}/><Text style={{ color: '#000' }}>Image</Text></TouchableOpacity><TouchableOpacity onPress={() => { setEditingLinkId(null); setLUrl(''); setLTitle(''); setLinkModal(true); setIsToolsExpanded(false); }} style={styles.mItem}><LinkIcon size={18} color={theme.tint}/><Text style={{ color: '#000' }}>Link Pin</Text></TouchableOpacity><TouchableOpacity onPress={() => { setNewText(''); setTextModal(true); setIsToolsExpanded(false); }} style={styles.mItem}><Text style={{ fontSize: 18, color: theme.tint }}>Aa</Text><Text style={{ color: '#000' }}>Text / Sticker</Text></TouchableOpacity></View>)}
               <TouchableOpacity onPress={() => { setIsReviseMode(!isReviseMode); setIsToolsExpanded(false); }} style={[styles.revBtn, { backgroundColor: isReviseMode ? '#FF2D55' : 'rgba(0,0,0,0.05)' }]}><Text style={{ color: isReviseMode ? '#fff' : '#000', fontWeight: 'bold' }}>{isReviseMode ? 'EXIT REVISION' : 'ENTER REVISION'}</Text></TouchableOpacity></BlurView></MotiView>)}</AnimatePresence>
         <GestureDetector gesture={fabG}><Animated.View style={[styles.fab, { backgroundColor: theme.tint }, useAnimatedStyle(() => ({ transform: [{ translateX: fabX.value }, { translateY: fabY.value }], borderWidth: isDraggable ? 2 : 0, borderColor: '#fff' }))]}><Palette size={28} color="#fff" /></Animated.View></GestureDetector>

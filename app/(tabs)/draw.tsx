@@ -8,6 +8,7 @@ import Colors from '@/constants/Colors';
 import { Eraser, Pencil, Send, Trash2, History, X, Palette, Undo2, Check, Settings2, ZoomIn, Hand, Move, Layers } from 'lucide-react-native';
 import { MotiView, AnimatePresence } from 'moti';
 import { supabase } from '@/lib/supabase';
+import { db, queueSyncOperation } from '@/lib/db';
 import * as SecureStore from 'expo-secure-store';
 import { formatDistanceToNow } from 'date-fns';
 import { BlurView } from 'expo-blur';
@@ -72,6 +73,7 @@ export default function DrawScreen() {
     const init = async () => {
       const name = await SecureStore.getItemAsync("user_name");
       setCurrentUserName(name);
+      refreshFromSQLite();
       fetchPosts();
     };
     init();
@@ -79,9 +81,27 @@ export default function DrawScreen() {
     return () => DeviceEventEmitter.emit('show-navigator');
   }, []);
 
+  const refreshFromSQLite = () => {
+    try {
+      const data = db.getAllSync(`SELECT * FROM posts WHERE type = 'draw' ORDER BY created_at DESC LIMIT 50`) as any[];
+      if (data) {
+        setPosts(data.map(p => ({
+          ...p,
+          reactions: p.reactions ? JSON.parse(p.reactions) : {}
+        })));
+      }
+    } catch (e) {}
+  };
+
   const fetchPosts = async () => {
     const { data } = await supabase.from("posts").select("*").eq('type', 'draw').order("created_at", { ascending: false }).limit(50);
-    if (data) setPosts(data);
+    if (data) {
+      data.forEach(p => {
+        db.runSync(`INSERT OR REPLACE INTO posts (id, created_at, type, content, user_id, reactions, seen_by) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
+          [p.id, p.created_at, p.type, p.content, p.user_id, JSON.stringify(p.reactions), p.seen_by ? p.seen_by.join(',') : '']);
+      });
+      refreshFromSQLite();
+    }
   };
 
   // ✍️ Drawing Handlers
@@ -138,21 +158,32 @@ export default function DrawScreen() {
   const handleSend = async () => {
     if (paths.length === 0) return;
     setLoading(true);
+    const id = Math.random().toString(36).substr(2, 9);
+    const createdAt = new Date().toISOString();
+    
     try {
       const image = canvasRef.current?.makeImageSnapshot();
       if (image) {
         const base64 = image.encodeToBase64();
-        const filePath = `drawings/${Date.now()}.png`;
-        const byteArray = base64js.toByteArray(base64);
-        const { error: uploadError } = await supabase.storage.from('journal-assets').upload(filePath, byteArray, { contentType: 'image/png' });
-        if (uploadError) throw uploadError;
-        const { data: { publicUrl } } = supabase.storage.from('journal-assets').getPublicUrl(filePath);
-        await supabase.from("posts").insert([{ type: 'draw', content: publicUrl, user_id: currentUserName || "user_1", reactions: { board_bg: boardBg } }]);
+        // 1. Save locally immediately (with base64 as content for now)
+        db.runSync(`INSERT INTO posts (id, created_at, type, content, user_id, reactions, seen_by) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
+          [id, createdAt, 'draw', base64, currentUserName || "user_1", JSON.stringify({ board_bg: boardBg }), '']);
+        
+        // 2. Queue for Sync
+        queueSyncOperation('posts', id, 'INSERT', { 
+          id, type: 'draw', content: base64, user_id: currentUserName || "user_1", created_at: createdAt, reactions: { board_bg: boardBg } 
+        });
+
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        setPaths([]); fetchPosts(); setShowHistory(true);
+        setPaths([]); 
+        refreshFromSQLite();
+        setShowHistory(true);
       }
-    } catch (error: any) { Alert.alert('Error', error.message); }
-    finally { setLoading(false); }
+    } catch (error: any) { 
+      console.warn('Draw save error', error);
+    } finally { 
+      setLoading(false); 
+    }
   };
 
   return (

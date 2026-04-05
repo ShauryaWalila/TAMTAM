@@ -6,6 +6,7 @@ import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
 import { MessageSquarePlus, Heart, Sparkles, Send, X } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
+import { db, queueSyncOperation } from '@/lib/db';
 import { useRouter } from 'expo-router';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import * as SecureStore from 'expo-secure-store';
@@ -33,34 +34,46 @@ export default function MOTMScreen() {
   }, []);
 
   const fetchCurrentMoment = async (name: string) => {
-    const { data } = await supabase
-      .from('moments')
-      .select('message')
-      .eq('user_id', name.toLowerCase())
-      .single();
-    
-    if (data) {
-      setMessage(data.message);
-    }
+    try {
+      // 1. Load from local first
+      const data = db.getFirstSync(`SELECT message FROM moments WHERE user_id = ?`, [name.toLowerCase()]) as any;
+      if (data) {
+        setMessage(data.message);
+      }
+
+      // 2. Fetch from remote to update cache
+      const { data: remoteData } = await supabase
+        .from('moments')
+        .select('message')
+        .eq('user_id', name.toLowerCase())
+        .single();
+      
+      if (remoteData) {
+        setMessage(remoteData.message);
+        db.runSync(`INSERT OR REPLACE INTO moments (id, message, user_id, created_at) VALUES (?, ?, ?, ?)`, 
+          [name.toLowerCase(), remoteData.message, name.toLowerCase(), new Date().toISOString()]);
+      }
+    } catch (e) {}
   };
 
   const handleSendMoment = async () => {
     if (!message.trim() || !currentUserName) return;
 
     setLoading(true);
-    try {
-      const { error } = await supabase
-        .from('moments')
-        .upsert(
-          { 
-            message: message.trim(), 
-            user_id: currentUserName.toLowerCase(),
-            created_at: new Date().toISOString()
-          },
-          { onConflict: 'user_id' }
-        );
+    const userId = currentUserName.toLowerCase();
+    const payload = { 
+      message: message.trim(), 
+      user_id: userId,
+      created_at: new Date().toISOString()
+    };
 
-      if (error) throw error;
+    try {
+      // 1. Save to local SQLite
+      db.runSync(`INSERT OR REPLACE INTO moments (id, message, user_id, created_at) VALUES (?, ?, ?, ?)`, 
+        [userId, payload.message, payload.user_id, payload.created_at]);
+      
+      // 2. Queue for Sync Engine
+      queueSyncOperation('moments', userId, 'UPDATE', payload);
 
       setShowConfetti(true);
       setTimeout(() => {
@@ -69,7 +82,8 @@ export default function MOTMScreen() {
       }, 3000);
       
     } catch (error: any) {
-      Alert.alert('Error', error.message);
+      console.warn('MOTM save error', error);
+    } finally {
       setLoading(false);
     }
   };

@@ -2,6 +2,7 @@ import { Text, View as ThemedView } from "@/components/Themed";
 import { useColorScheme } from "@/components/useColorScheme";
 import Colors from "@/constants/Colors";
 import { supabase, supabaseAnonKey, supabaseUrl } from "@/lib/supabase";
+import { db, queueSyncOperation } from "@/lib/db";
 import * as base64js from "base64-js";
 import { format, formatDistanceToNow } from "date-fns";
 import * as FileSystem from "expo-file-system/legacy";
@@ -135,14 +136,17 @@ export default function JournalScreen() {
         { event: "*", schema: "public", table: "posts" },
         (payload) => {
           if (payload.eventType === "INSERT") {
-            setPosts((prev) => [payload.new as Post, ...prev]);
+            const n = payload.new as Post;
+            db.runSync(`INSERT OR REPLACE INTO posts (id, created_at, type, content, user_id, reactions, seen_by) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
+              [n.id, n.created_at, n.type, n.content, n.user_id, JSON.stringify(n.reactions), n.seen_by ? n.seen_by.join(',') : '']);
           } else if (payload.eventType === "UPDATE") {
-            setPosts((prev) =>
-              prev.map((p) => (p.id === payload.new.id ? (payload.new as Post) : p)),
-            );
+            const n = payload.new as Post;
+            db.runSync(`INSERT OR REPLACE INTO posts (id, created_at, type, content, user_id, reactions, seen_by) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
+              [n.id, n.created_at, n.type, n.content, n.user_id, JSON.stringify(n.reactions), n.seen_by ? n.seen_by.join(',') : '']);
           } else if (payload.eventType === "DELETE") {
-            setPosts((prev) => prev.filter((p) => p.id !== payload.old.id));
+            db.runSync(`DELETE FROM posts WHERE id = ?`, [payload.old.id]);
           }
+          refreshFromSQLite();
         },
       )
       .subscribe();
@@ -152,14 +156,31 @@ export default function JournalScreen() {
     };
   }, []);
 
+  const refreshFromSQLite = () => {
+    try {
+      const data = db.getAllSync(`SELECT * FROM posts ORDER BY created_at DESC LIMIT 50`) as any[];
+      if (data) {
+        setPosts(data.map(p => ({
+          ...p,
+          reactions: p.reactions ? JSON.parse(p.reactions) : {},
+          seen_by: p.seen_by ? p.seen_by.split(',') : []
+        })));
+      }
+    } catch (e) {}
+  };
+
   const fetchPosts = async (reset = false, userName?: string | null) => {
     if (isFetchingMore && !reset) return;
     
+    if (reset) {
+      setLoading(true);
+      refreshFromSQLite();
+    } else {
+      setIsFetchingMore(true);
+    }
+
     const start = reset ? 0 : (page + 1) * PAGE_SIZE;
     const end = start + PAGE_SIZE - 1;
-    
-    if (reset) setLoading(true);
-    else setIsFetchingMore(true);
 
     const { data, error } = await supabase
       .from("posts")
@@ -168,15 +189,19 @@ export default function JournalScreen() {
       .range(start, end);
 
     if (!error && data) {
+      data.forEach(n => {
+        db.runSync(`INSERT OR REPLACE INTO posts (id, created_at, type, content, user_id, reactions, seen_by) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
+          [n.id, n.created_at, n.type, n.content, n.user_id, JSON.stringify(n.reactions), n.seen_by ? n.seen_by.join(',') : '']);
+      });
+
       if (reset) {
-        setPosts(data);
         setPage(0);
         if (userName) markSeenBatch(data, userName);
       } else {
-        setPosts((prev) => [...prev, ...data]);
         setPage((p) => p + 1);
       }
       setHasMore(data.length === PAGE_SIZE);
+      refreshFromSQLite();
     }
     setLoading(false);
     setIsFetchingMore(false);
@@ -265,22 +290,30 @@ export default function JournalScreen() {
   const handleSend = async () => {
     if (!inputText.trim() && !selectedImage) return;
     setLoading(true);
+    const id = Math.random().toString(36).substr(2, 9);
+    const payload: any = {
+      id,
+      type: selectedImage ? "image" : "text",
+      content: selectedImage || inputText,
+      user_id: currentUserName || "user_1",
+      created_at: new Date().toISOString(),
+      reactions: {},
+      seen_by: []
+    };
+
     try {
-      let content = inputText;
-      let type: "text" | "image" = "text";
-      if (selectedImage) {
-        const publicUrl = await uploadImage(selectedImage);
-        type = "image";
-        content = publicUrl;
-      }
-      const { error } = await supabase
-        .from("posts")
-        .insert([{ type, content, user_id: currentUserName || "user_1" }]);
-      if (error) throw error;
+      // 1. Save to SQLite for immediate UI
+      db.runSync(`INSERT INTO posts (id, created_at, type, content, user_id, reactions, seen_by) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
+        [payload.id, payload.created_at, payload.type, payload.content, payload.user_id, JSON.stringify(payload.reactions), '']);
+      
+      // 2. Queue for Sync Engine
+      queueSyncOperation('posts', payload.id, 'INSERT', payload);
+
       setInputText("");
       setSelectedImage(null);
-    } catch (error: any) {
-      Alert.alert("Error", error.message);
+      refreshFromSQLite();
+    } catch (e) {
+      console.warn('Journal add error', e);
     } finally {
       setLoading(false);
     }
@@ -297,8 +330,9 @@ export default function JournalScreen() {
       { text: "Keep it", style: "cancel" },
       { text: "Delete", style: "destructive", onPress: async () => {
           setIsMenuVisible(false);
-          const { error } = await supabase.from("posts").delete().eq("id", selectedPost.id);
-          if (error) Alert.alert("Error", "Could not delete.");
+          db.runSync(`DELETE FROM posts WHERE id = ?`, [selectedPost.id]);
+          queueSyncOperation('posts', selectedPost.id, 'DELETE', {});
+          refreshFromSQLite();
         }
       }
     ]);
@@ -308,8 +342,14 @@ export default function JournalScreen() {
     if (!selectedPost || !currentUserName) return;
     const newReactions = { ...(selectedPost.reactions || {}), [currentUserName]: emoji };
     setIsMenuVisible(false);
-    const { error } = await supabase.from("posts").update({ reactions: newReactions }).eq("id", selectedPost.id);
-    if (error) console.error("Reaction error:", error);
+
+    // Update locally
+    db.runSync(`UPDATE posts SET reactions = ? WHERE id = ?`, [JSON.stringify(newReactions), selectedPost.id]);
+    
+    // Queue sync
+    queueSyncOperation('posts', selectedPost.id, 'UPDATE', { reactions: newReactions });
+    
+    refreshFromSQLite();
   };
 
   return (
@@ -331,8 +371,8 @@ export default function JournalScreen() {
           <>
             <View style={styles.header}>
               <View>
-                <Text style={[styles.title, { color: theme.text }]}>Memories</Text>
-                <Text style={[styles.subtitle, { color: theme.tabIconDefault }]}>Capturing our moments</Text>
+                <Text style={[styles.title, { color: '#000' }]}>Memories</Text>
+                <Text style={[styles.subtitle, { color: '#333' }]}>Capturing our moments</Text>
               </View>
               <TouchableOpacity onPress={() => setIsDetailsVisible(true)} style={[styles.infoBtn, { backgroundColor: theme.card }]}><Info size={20} color={theme.text} /></TouchableOpacity>
             </View>

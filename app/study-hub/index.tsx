@@ -6,6 +6,7 @@ import Colors from '@/constants/Colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
+import { db, queueSyncOperation } from '@/lib/db';
 import * as SecureStore from 'expo-secure-store';
 import { BookOpen, Plus, X, BrainCircuit, PenTool, LayoutDashboard, Clock, ChevronLeft } from 'lucide-react-native';
 import { BlurView } from 'expo-blur';
@@ -132,69 +133,104 @@ export default function StudyHubDashboard() {
     if (name) {
       const u = name.toLowerCase();
       setCurrentUser(u);
+      
+      // Load from SQLite first
+      refreshFromSQLite();
+      
+      // Background fetch
       fetchData(u);
-      // Wait for currentUser to be set before fetching sessions
+      
       setTimeout(() => fetchActiveSessions(), 500);
     }
   };
 
-  const fetchData = async (userId: string) => {
-    // Fetch Decks (Shared)
-    const { data: deckData } = await supabase
-      .from('study_decks')
-      .select('*, study_cards(count)')
-      .order('created_at', { ascending: false });
-    
-    if (deckData) setDecks(deckData);
-
-    // Fetch Whiteboards (Shared)
-    const { data: boardData } = await supabase
-      .from('study_whiteboards')
-      .select('*')
-      .order('updated_at', { ascending: false });
+  const refreshFromSQLite = () => {
+    try {
+      const d = db.getAllSync(`SELECT * FROM study_decks ORDER BY created_at DESC`) as any[];
+      setDecks(d || []);
       
-    if (boardData) setWhiteboards(boardData);
+      const w = db.getAllSync(`SELECT * FROM study_whiteboards ORDER BY updated_at DESC`) as any[];
+      setWhiteboards(w || []);
+    } catch (e) {}
+  };
+
+  const fetchData = async (userId: string) => {
+    try {
+      const { data: deckData } = await supabase.from('study_decks').select('*, study_cards(count)').order('created_at', { ascending: false });
+      if (deckData) {
+        deckData.forEach(d => {
+          db.runSync(`INSERT OR REPLACE INTO study_decks (id, title, description, color, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?)`, 
+            [d.id, d.title, d.description, d.color, d.user_id, d.created_at]);
+        });
+      }
+
+      const { data: boardData } = await supabase.from('study_whiteboards').select('*').order('updated_at', { ascending: false });
+      if (boardData) {
+        boardData.forEach(b => {
+          db.runSync(`INSERT OR REPLACE INTO study_whiteboards (id, title, canvas_data, updated_at) VALUES (?, ?, ?, ?)`, 
+            [b.id, b.title, typeof b.canvas_data === 'string' ? b.canvas_data : JSON.stringify(b.canvas_data), b.updated_at]);
+        });
+      }
+      refreshFromSQLite();
+    } catch (e) {}
   };
 
   const createDeck = async () => {
     if (!newDeckTitle.trim()) return;
-    const { data, error } = await supabase.from('study_decks').insert([{
+    const id = Math.random().toString(36).substr(2, 9);
+    const payload = {
+      id,
       title: newDeckTitle.trim(),
       description: newDeckDesc.trim(),
-      user_id: currentUser
-    }]).select().single();
+      user_id: currentUser,
+      created_at: new Date().toISOString()
+    };
 
-    if (!error && data) {
+    try {
+      db.runSync(`INSERT INTO study_decks (id, title, description, user_id, created_at) VALUES (?, ?, ?, ?, ?)`, 
+        [payload.id, payload.title, payload.description, payload.user_id, payload.created_at]);
+      
+      queueSyncOperation('study_decks', payload.id, 'INSERT', payload);
+
       setIsDeckModalVisible(false);
       setNewDeckTitle('');
       setNewDeckDesc('');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      fetchData(currentUser);
-    }
+      refreshFromSQLite();
+    } catch (e) {}
   };
 
   const createWhiteboard = async () => {
     if (!newWhiteboardTitle.trim()) return;
-    const { data, error } = await supabase.from('study_whiteboards').insert([{
+    const id = Math.random().toString(36).substr(2, 9);
+    const payload = {
+      id,
       title: newWhiteboardTitle.trim(),
-      user_id: currentUser
-    }]).select().single();
+      user_id: currentUser,
+      updated_at: new Date().toISOString()
+    };
 
-    if (!error && data) {
+    try {
+      db.runSync(`INSERT INTO study_whiteboards (id, title, user_id, updated_at) VALUES (?, ?, ?, ?)`, 
+        [payload.id, payload.title, payload.user_id, payload.updated_at]);
+      
+      queueSyncOperation('study_whiteboards', payload.id, 'INSERT', payload);
+
       setIsWhiteboardModalVisible(false);
       setNewWhiteboardTitle('');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      fetchData(currentUser);
-      router.push(`/study-hub/whiteboard/${data.id}`);
-    }
+      refreshFromSQLite();
+      router.push(`/study-hub/whiteboard/${payload.id}`);
+    } catch (e) {}
   };
 
   const deleteDeck = async (id: string) => {
     Alert.alert('Delete Deck?', 'This will permanently remove all cards inside.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => {
-        await supabase.from('study_decks').delete().eq('id', id);
-        fetchData(currentUser);
+        db.runSync(`DELETE FROM study_decks WHERE id = ?`, [id]);
+        queueSyncOperation('study_decks', id, 'DELETE', {});
+        refreshFromSQLite();
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       }}
     ]);
@@ -204,8 +240,9 @@ export default function StudyHubDashboard() {
     Alert.alert('Delete Board?', 'This will permanently remove this Med-Board.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => {
-        await supabase.from('study_whiteboards').delete().eq('id', id);
-        fetchData(currentUser);
+        db.runSync(`DELETE FROM study_whiteboards WHERE id = ?`, [id]);
+        queueSyncOperation('study_whiteboards', id, 'DELETE', {});
+        refreshFromSQLite();
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       }}
     ]);

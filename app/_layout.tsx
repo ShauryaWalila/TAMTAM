@@ -18,6 +18,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
 import { syncAllNotifications } from '@/lib/notifications';
 import { initLocationSystem } from '@/lib/location';
+import { initDB } from '@/lib/db';
+import { startSyncEngine, initialFullSync } from '@/lib/syncEngine';
 
 const { width } = Dimensions.get('window');
 
@@ -50,6 +52,11 @@ export default function RootLayout() {
   }, [loaded]);
 
   const initApp = async () => {
+    // 0. INITIALIZE OFFLINE DB & SYNC ENGINE
+    initDB();
+    startSyncEngine();
+    initialFullSync(false);
+
     // 1. REQUEST PERMISSIONS
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;

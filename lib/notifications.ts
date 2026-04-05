@@ -3,6 +3,7 @@ import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { supabase } from './supabase';
+import { db } from './db';
 import { addWeeks, addMonths, addYears, set, isAfter, startOfDay, isBefore, setDay } from 'date-fns';
 
 export async function registerForPushNotificationsAsync() {
@@ -48,7 +49,7 @@ export async function registerForPushNotificationsAsync() {
 }
 
 export async function syncAllNotifications() {
-  console.log('Syncing all notifications...');
+  console.log('Syncing all notifications from local DB...');
   await Notifications.cancelAllScheduledNotificationsAsync();
 
   const now = new Date();
@@ -61,43 +62,48 @@ export async function syncAllNotifications() {
     else scheduleMap[key].ends.push(item);
   };
 
-  // 1. GATHER ALL EVENTS
-  const { data: reminders } = await supabase.from('chill_items').select('*').eq('type', 'reminder');
-  if (reminders) {
-    for (const item of reminders) {
-      if (item.content.active && item.content.remType === 'time' && item.content.start_at) {
-        addToMap(new Date(item.content.start_at), { ...item, type: 'reminder' }, true);
-        if (item.content.end_at) addToMap(new Date(item.content.end_at), { ...item, type: 'reminder' }, false);
+  try {
+    // 1. GATHER ALL EVENTS FROM LOCAL SQLITE
+    const reminders = db.getAllSync(`SELECT * FROM chill_items WHERE type = 'reminder'`) as any[];
+    if (reminders) {
+      for (const item of reminders) {
+        let content = item.content;
+        if (typeof content === 'string') { try { content = JSON.parse(content); } catch(e) {} }
+        if (content.active && content.remType === 'time' && content.start_at) {
+          addToMap(new Date(content.start_at), { ...item, title: item.title, type: 'reminder' }, true);
+          if (content.end_at) addToMap(new Date(content.end_at), { ...item, title: item.title, type: 'reminder' }, false);
+        }
       }
     }
-  }
 
-  const { data: routines } = await supabase.from('timetable').select('*');
-  if (routines) {
-    const DAY_MAP: Record<string, number> = { 'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6 };
-    for (const item of routines) {
-      const dayIdx = DAY_MAP[item.day];
-      if (dayIdx === undefined) continue;
-      const [time, period] = item.time.split(' ');
-      let [hours, minutes] = time.split(':').map(Number);
-      if (period === 'PM' && hours !== 12) hours += 12;
-      if (period === 'AM' && hours === 12) hours = 0;
-      
-      let d = set(new Date(), { hours, minutes, seconds: 0, milliseconds: 0 });
-      d = setDay(d, dayIdx, { weekStartsOn: 0 });
-      if (!isAfter(d, now)) d = addWeeks(d, 1);
-      
-      addToMap(d, { ...item, title: item.activity, type: 'routine' }, true);
-      // Routines in this app don't have hard end times in DB, but we could infer if needed
+    const routines = db.getAllSync(`SELECT * FROM timetable`) as any[];
+    if (routines) {
+      const DAY_MAP: Record<string, number> = { 'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6 };
+      for (const item of routines) {
+        const dayIdx = DAY_MAP[item.day];
+        if (dayIdx === undefined) continue;
+        const [time, period] = item.time.split(' ');
+        let [hours, minutes] = time.split(':').map(Number);
+        if (period === 'PM' && hours !== 12) hours += 12;
+        if (period === 'AM' && hours === 12) hours = 0;
+        
+        let d = set(new Date(), { hours, minutes, seconds: 0, milliseconds: 0 });
+        d = setDay(d, dayIdx, { weekStartsOn: 0 });
+        if (!isAfter(d, now)) d = addWeeks(d, 1);
+        
+        addToMap(d, { ...item, title: item.activity, type: 'routine' }, true);
+      }
     }
-  }
 
-  const { data: calEvents } = await supabase.from('calendar_events').select('*');
-  if (calEvents) {
-    for (const item of calEvents) {
-      const d = set(new Date(item.event_date), { hours: 9, minutes: 0 });
-      if (isAfter(d, now)) addToMap(d, { ...item, type: 'calendar' }, true);
+    const calEvents = db.getAllSync(`SELECT * FROM calendar_events`) as any[];
+    if (calEvents) {
+      for (const item of calEvents) {
+        const d = set(new Date(item.event_date), { hours: 9, minutes: 0 });
+        if (isAfter(d, now)) addToMap(d, { ...item, type: 'calendar' }, true);
+      }
     }
+  } catch (err) {
+    console.warn('Sync notifications local read error', err);
   }
 
   // 2. SCHEDULE SMART NOTIFICATIONS
@@ -111,7 +117,6 @@ export async function syncAllNotifications() {
     let body = "";
 
     if (events.starts.length > 0 && events.ends.length > 0) {
-      // SMART HANDOVER
       const finished = events.ends.map(e => e.title).join(', ');
       const starting = events.starts.map(s => s.title).join(', ');
       title = "🔄 Smart Handover";
@@ -133,7 +138,7 @@ export async function syncAllNotifications() {
         ...(Platform.OS === 'android' ? { channelId: 'default' } : {}),
       },
       trigger: Platform.OS === 'ios' 
-        ? { type: 'timeInterval', seconds: secondsFromNow, repeats: false } as any
+        ? { type: 'timeInterval', seconds: Math.max(1, secondsFromNow), repeats: false } as any
         : { type: 'calendar', year: triggerDate.getFullYear(), month: triggerDate.getMonth(), day: triggerDate.getDate(), hour: triggerDate.getHours(), minute: triggerDate.getMinutes(), repeats: false } as any,
     });
     scheduledCount++;

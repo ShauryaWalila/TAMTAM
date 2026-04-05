@@ -6,6 +6,7 @@ import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
 import { Calendar, Clock, ChevronDown, Save, Repeat, Star, X, CalendarDays, CalendarRange } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
+import { db, queueSyncOperation } from '@/lib/db';
 import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { BlurView } from 'expo-blur';
@@ -72,22 +73,19 @@ export default function NextMeetScreen() {
 
   const fetchCurrentMeeting = async () => {
     try {
-      const { data } = await supabase.from('meetings').select('*').limit(1).maybeSingle();
+      // 1. Try local first
+      const local = db.getFirstSync(`SELECT * FROM meetings ORDER BY created_at DESC LIMIT 1`) as any;
+      if (local) {
+        applyMeetingData(local);
+      }
+
+      // 2. Background remote fetch
+      const { data } = await supabase.from('meetings').select('*').order('created_at', { ascending: false }).limit(1).maybeSingle();
       if (data) {
-        setMeetingId(data.id);
-        setType(data.type as any || 'specific');
-        if (data.date) {
-          setSelectedDate(data.date);
-          const d = new Date(data.date);
-          setSelDay(d.getDate().toString().padStart(2, '0'));
-          setSelMonth(MONTHS[d.getMonth()]);
-          setSelYear(d.getFullYear().toString());
-        }
-        setSelectedWeekday(data.weekday || 'Friday');
-        setSelectedDayOfMonth(data.day_of_month?.toString() || '15');
-        setMeetingTime(data.time || '06:00 PM');
-        setOccasionName(data.occasion_name || '');
-        setFrequency(data.frequency || (data.is_recurring ? 'weekly' : 'once'));
+        applyMeetingData(data);
+        // Cache it
+        db.runSync(`INSERT OR REPLACE INTO meetings (id, created_at, type, date, recurring_type, occasion_name, user_id, weekday, day_of_month, time, is_recurring, frequency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+          [data.id, data.created_at, data.type, data.date, data.recurring_type, data.occasion_name, data.user_id, data.weekday, data.day_of_month, data.time, data.is_recurring ? 1 : 0, data.frequency]);
       }
     } catch (e) {
       console.error(e);
@@ -96,28 +94,53 @@ export default function NextMeetScreen() {
     }
   };
 
+  const applyMeetingData = (data: any) => {
+    setMeetingId(data.id);
+    setType(data.type as any || 'specific');
+    if (data.date) {
+      setSelectedDate(data.date);
+      const d = new Date(data.date);
+      setSelDay(d.getDate().toString().padStart(2, '0'));
+      setSelMonth(MONTHS[d.getMonth()]);
+      setSelYear(d.getFullYear().toString());
+    }
+    setSelectedWeekday(data.weekday || 'Friday');
+    setSelectedDayOfMonth(data.day_of_month?.toString() || '15');
+    setMeetingTime(data.time || '06:00 PM');
+    setOccasionName(data.occasion_name || '');
+    const isRec = typeof data.is_recurring === 'boolean' ? data.is_recurring : data.is_recurring === 1;
+    setFrequency(data.frequency || (isRec ? 'weekly' : 'once'));
+  };
+
   const handleSave = async () => {
     if (!currentUserName) return;
     setLoading(true);
+    const id = meetingId || Math.random().toString(36).substr(2, 9);
+    const payload: any = {
+      id,
+      type,
+      date: type === 'specific' ? selectedDate : null,
+      weekday: type === 'weekly' ? selectedWeekday : null,
+      day_of_month: type === 'monthly' ? parseInt(selectedDayOfMonth) : null,
+      time: meetingTime,
+      occasion_name: occasionName,
+      frequency,
+      is_recurring: frequency !== 'once',
+      user_id: currentUserName.toLowerCase(),
+      created_at: new Date().toISOString()
+    };
+
     try {
-      const meetingData: any = {
-        type,
-        date: type === 'specific' ? selectedDate : null,
-        weekday: type === 'weekly' ? selectedWeekday : null,
-        day_of_month: type === 'monthly' ? parseInt(selectedDayOfMonth) : null,
-        time: meetingTime,
-        occasion_name: occasionName,
-        frequency,
-        is_recurring: frequency !== 'once',
-        user_id: currentUserName.toLowerCase(),
-        created_at: new Date().toISOString()
-      };
-      if (meetingId) meetingData.id = meetingId;
-      const { error } = await supabase.from('meetings').upsert(meetingData);
-      if (error) throw error;
+      // 1. Save local
+      db.runSync(`INSERT OR REPLACE INTO meetings (id, created_at, type, date, occasion_name, user_id, weekday, day_of_month, time, is_recurring, frequency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+        [payload.id, payload.created_at, payload.type, payload.date, payload.occasion_name, payload.user_id, payload.weekday, payload.day_of_month, payload.time, payload.is_recurring ? 1 : 0, payload.frequency]);
+      
+      // 2. Queue sync
+      queueSyncOperation('meetings', payload.id, 'UPDATE', payload);
+
       Alert.alert('Success ❤️', 'Your next meeting is set!', [{ text: 'Awesome', onPress: () => router.back() }]);
     } catch (error: any) {
-      Alert.alert('Error', error.message);
+      console.warn('Meeting save error', error);
     } finally {
       setLoading(false);
     }
