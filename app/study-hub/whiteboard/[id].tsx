@@ -58,6 +58,7 @@ export default function WhiteboardScreen() {
   const [isReviseMode, setIsReviseMode] = useState(false);
   const [zoomText, setZoomText] = useState('100%');
   const [showGrid, setShowGrid] = useState(true);
+  const [isToolsExpanded, setIsToolsExpanded] = useState(false);
 
   // Zoom & Pan states
   const scale = useSharedValue(1);
@@ -74,6 +75,16 @@ export default function WhiteboardScreen() {
   useEffect(() => {
     fetchBoard();
   }, [id]);
+
+  // Auto-save logic
+  useEffect(() => {
+    if (paths.length > 0 && !isReviseMode) {
+      const timer = setTimeout(() => {
+        handleSave();
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [paths]);
 
   const fetchBoard = async () => {
     const { data } = await supabase.from('study_whiteboards').select('*').eq('id', id).single();
@@ -108,7 +119,6 @@ export default function WhiteboardScreen() {
     }).eq('id', id);
 
     setIsSaving(false);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
   const updateZoomText = (s: number) => {
@@ -117,6 +127,10 @@ export default function WhiteboardScreen() {
 
   const onStart = useCallback((x: number, y: number) => {
     if (activeTool === 'pan') return;
+    if (isToolsExpanded) {
+        setIsToolsExpanded(false);
+        setActiveMenu('none');
+    }
     
     const pathId = Math.random().toString(36).substr(2, 9);
     const newPath = Skia.Path.Make();
@@ -143,7 +157,7 @@ export default function WhiteboardScreen() {
     
     setCurrentLocalPath(stroke);
     setActiveMenu('none');
-  }, [color, activeTool, penSize, highSize, eraserSize, penOpacity, highOpacity, translateX, translateY, scale]);
+  }, [color, activeTool, penSize, highSize, eraserSize, penOpacity, highOpacity, translateX, translateY, scale, isToolsExpanded]);
 
   const onUpdate = useCallback((x: number, y: number) => {
     if (!currentLocalPath) return;
@@ -254,7 +268,7 @@ export default function WhiteboardScreen() {
 
   const toggleTool = (tool: 'pen' | 'high' | 'eraser' | 'pan') => {
     setActiveTool(tool);
-    setActiveMenu('none');
+    // Keep menu open if we just switched tools to adjust settings
   };
 
   const getActiveRange = () => {
@@ -314,6 +328,19 @@ export default function WhiteboardScreen() {
     );
   };
 
+  const ToolIcon = ({ tool, icon: Icon }: any) => (
+    <TouchableOpacity 
+        onPress={() => toggleTool(tool)} 
+        style={[
+          styles.toolCircle, 
+          { backgroundColor: activeTool === tool ? theme.tint : 'rgba(0,0,0,0.08)' },
+          activeTool === tool && styles.activeToolShadow
+        ]}
+    >
+        <Icon size={22} color={activeTool === tool ? '#fff' : '#000'} />
+    </TouchableOpacity>
+  );
+
   return (
     <GestureHandlerRootView style={styles.container}>
       {/* HEADER */}
@@ -329,7 +356,7 @@ export default function WhiteboardScreen() {
               <ZoomIn size={10} color="#888" />
               <Text style={styles.zoomText}>{zoomText}</Text>
             </Animated.View>
-            <Text style={styles.statusText}>{isReviseMode ? "👓 REVISE" : (isSaving ? "SAVING..." : "EDIT")}</Text>
+            <Text style={styles.statusText}>{isReviseMode ? "👓 REVISE" : (isSaving ? "SAVING..." : "AUTO-SAVED")}</Text>
           </View>
         </View>
 
@@ -349,11 +376,11 @@ export default function WhiteboardScreen() {
             style={[styles.actionBtn, { backgroundColor: isReviseMode ? '#FF2D55' : theme.tint + '10' }]}
           >{isReviseMode ? <EyeOff size={20} color="white" /> : <Eye size={20} color={theme.tint} />}</TouchableOpacity>
           
-          <TouchableOpacity 
-            onPress={handleSave} 
-            disabled={isSaving || isReviseMode}
-            style={[styles.actionBtn, { backgroundColor: theme.tint, opacity: (isSaving || isReviseMode) ? 0.5 : 1 }]}
-          >{isSaving ? <ActivityIndicator size="small" color="white" /> : <Save size={20} color="white" />}</TouchableOpacity>
+          {isSaving && (
+            <View style={styles.actionBtn}>
+                <ActivityIndicator size="small" color={theme.tint} />
+            </View>
+          )}
         </View>
       </View>
 
@@ -398,99 +425,126 @@ export default function WhiteboardScreen() {
         </View>
       </GestureDetector>
 
-      {/* TOOLBAR */}
-      <View style={styles.toolbarContainer}>
+      {/* FREEFORM FLOATING TOOLBAR */}
+      <View style={styles.fabContainer} pointerEvents="box-none">
         <AnimatePresence>
-          {activeMenu !== 'none' && (
-            <MotiView from={{ opacity: 0, translateY: 20, scale: 0.9 }} animate={{ opacity: 1, translateY: 0, scale: 1 }} exit={{ opacity: 0, translateY: 20, scale: 0.9 }} style={styles.subToolbar}>
-              <BlurView intensity={90} tint="light" style={styles.subToolbarBlur}>
-                {activeMenu === 'color' && (
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-                    {RAINBOW_COLORS.map(c => (
-                      <TouchableOpacity key={c} onPress={() => { setColor(c); setActiveMenu('none'); if (activeTool==='eraser'||activeTool==='pan') setActiveTool('pen'); }} style={[styles.colorOption, { backgroundColor: c }, color === c && { borderColor: '#000', borderWidth: 2 }]} />
-                    ))}
-                  </ScrollView>
-                )}
-                {activeMenu === 'size' && (
-                  <View style={styles.settingsMenu}>
-                    <View style={styles.settingsHeader}>
-                      <View style={[styles.previewDot, { 
-                        width: Math.min(getActiveRange()?.current || 4, 30), 
-                        height: Math.min(getActiveRange()?.current || 4, 30), 
-                        borderRadius: 15, 
-                        backgroundColor: activeTool === 'eraser' ? '#ddd' : color,
-                        opacity: activeTool === 'pen' ? penOpacity : (activeTool === 'high' ? highOpacity : 1)
-                      }]} />
-                      <Text style={styles.settingsTitle}>{getActiveRange()?.title}</Text>
-                      
-                      <View style={{ flex: 1 }} />
-                      
-                      <TouchableOpacity 
-                        onPress={() => setShowGrid(!showGrid)}
-                        style={[styles.gridToggle, { backgroundColor: showGrid ? theme.tint : 'rgba(0,0,0,0.05)' }]}
-                      >
-                        <Text style={[styles.gridToggleText, { color: showGrid ? '#fff' : '#888' }]}>GRID</Text>
-                      </TouchableOpacity>
-                    </View>
+          {isToolsExpanded && (
+            <MotiView
+              from={{ opacity: 0, scale: 0.5, translateY: 50 }}
+              animate={{ opacity: 1, scale: 1, translateY: 0 }}
+              exit={{ opacity: 0, scale: 0.5, translateY: 50 }}
+              style={styles.expandedTools}
+            >
+              {/* BACKDROP to close when clicking outside */}
+              <TouchableOpacity 
+                activeOpacity={1} 
+                onPress={() => setIsToolsExpanded(false)} 
+                style={StyleSheet.absoluteFill} 
+              />
+              
+              <BlurView intensity={80} tint="light" style={styles.toolsBlur}>
+                {/* TOOL SELECTOR */}
+                <View style={styles.toolsRow}>
+                  <ToolIcon tool="pen" icon={Pencil} />
+                  <ToolIcon tool="high" icon={Highlighter} />
+                  <ToolIcon tool="eraser" icon={Eraser} />
+                  <ToolIcon tool="pan" icon={Hand} />
+                </View>
 
-                    {getActiveRange() && (
-                      <CustomSlider 
-                        value={getActiveRange()?.current} 
-                        onValueChange={getActiveRange()?.setter}
-                        min={getActiveRange()?.min}
-                        max={getActiveRange()?.max}
-                        title="Size"
-                      />
-                    )}
+                <View style={styles.toolDivider} />
 
-                    {activeTool !== 'eraser' && activeTool !== 'pan' && (
-                      <CustomSlider 
-                        value={activeTool === 'pen' ? penOpacity * 100 : highOpacity * 100}
-                        onValueChange={(v: number) => activeTool === 'pen' ? setPenOpacity(v / 100) : setHighOpacity(v / 100)}
-                        min={5}
-                        max={100}
-                        title="Opacity (%)"
-                      />
-                    )}
+                {/* COLOR SELECTOR */}
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.colorScroll}>
+                  {RAINBOW_COLORS.map(c => (
+                    <TouchableOpacity 
+                        key={c} 
+                        onPress={() => { setColor(c); if (activeTool==='eraser'||activeTool==='pan') setActiveTool('pen'); }} 
+                        style={[styles.colorOption, { backgroundColor: c }, color === c && { borderColor: '#000', borderWidth: 2 }]} 
+                    />
+                  ))}
+                </ScrollView>
+
+                <View style={styles.toolDivider} />
+
+                {/* SIZE & SETTINGS */}
+                <View style={styles.settingsSection}>
+                  <View style={styles.settingsHeader}>
+                    <View style={[styles.previewDot, { 
+                      width: Math.min(getActiveRange()?.current || 4, 24), 
+                      height: Math.min(getActiveRange()?.current || 4, 24), 
+                      borderRadius: 12, 
+                      backgroundColor: activeTool === 'eraser' ? '#ddd' : color,
+                      opacity: activeTool === 'pen' ? penOpacity : (activeTool === 'high' ? highOpacity : 1)
+                    }]} />
+                    <Text style={styles.settingsTitle}>{getActiveRange()?.title}</Text>
+                    <View style={{ flex: 1 }} />
+                    <TouchableOpacity 
+                        onPress={() => { setShowGrid(!showGrid); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                        style={[styles.gridFab, { backgroundColor: showGrid ? theme.tint : 'rgba(0,0,0,0.15)' }]}
+                    >
+                        <Text style={[styles.gridFabText, { color: showGrid ? '#fff' : '#000' }]}>GRID {showGrid ? 'ON' : 'OFF'}</Text>
+                    </TouchableOpacity>
                   </View>
-                )}
+
+                  {getActiveRange() && (
+                    <CustomSlider 
+                      value={getActiveRange()?.current} 
+                      onValueChange={getActiveRange()?.setter}
+                      min={getActiveRange()?.min}
+                      max={getActiveRange()?.max}
+                      title="Size"
+                    />
+                  )}
+
+                  {activeTool !== 'eraser' && activeTool !== 'pan' && (
+                    <CustomSlider 
+                      value={activeTool === 'pen' ? penOpacity * 100 : highOpacity * 100}
+                      onValueChange={(v: number) => activeTool === 'pen' ? setPenOpacity(v / 100) : setHighOpacity(v / 100)}
+                      min={5}
+                      max={100}
+                      title="Opacity (%)"
+                    />
+                  )}
+                </View>
+
+                <View style={styles.toolDivider} />
+
+                {/* BOTTOM UTILITIES */}
+                <View style={styles.utilRow}>
+                    <TouchableOpacity onPress={resetView} style={styles.utilBtn}>
+                        <View style={styles.utilIconBg}>
+                            <Target size={18} color="#000" strokeWidth={2.5} />
+                        </View>
+                        <Text style={styles.utilText}>Reset View</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={clearCanvas} style={styles.utilBtn}>
+                        <View style={[styles.utilIconBg, { backgroundColor: '#FF3B3015' }]}>
+                            <Trash2 size={18} color="#FF3B30" strokeWidth={2.5} />
+                        </View>
+                        <Text style={[styles.utilText, { color: '#FF3B30' }]}>Clear Board</Text>
+                    </TouchableOpacity>
+                </View>
               </BlurView>
             </MotiView>
           )}
         </AnimatePresence>
 
-        <View style={[styles.mainDock, { backgroundColor: theme.card }]}>
-          <TouchableOpacity onPress={() => toggleTool('pen')} style={[styles.tool, activeTool === 'pen' && styles.activeTool]}>
-            <Pencil size={22} color={activeTool === 'pen' ? theme.tint : theme.text} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => toggleTool('high')} style={[styles.tool, activeTool === 'high' && styles.activeTool]}>
-            <Highlighter size={22} color={activeTool === 'high' ? theme.tint : theme.text} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => toggleTool('eraser')} style={[styles.tool, activeTool === 'eraser' && styles.activeTool]}>
-            <Eraser size={22} color={activeTool === 'eraser' ? theme.tint : theme.text} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => toggleTool('pan')} style={[styles.tool, activeTool === 'pan' && styles.activeTool]}>
-            <Hand size={22} color={activeTool === 'pan' ? theme.tint : theme.text} />
-          </TouchableOpacity>
-          
-          <View style={styles.dockDivider} />
-          
-          <TouchableOpacity onPress={() => setActiveMenu(activeMenu === 'color' ? 'none' : 'color')} style={styles.tool}>
-            <Palette size={22} color={theme.text} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setActiveMenu(activeMenu === 'size' ? 'none' : 'size')} style={styles.tool}>
-            <Type size={22} color={theme.text} />
-          </TouchableOpacity>
-          
-          <View style={styles.dockDivider} />
-          
-          <TouchableOpacity onPress={resetView} style={styles.tool}>
-            <Target size={22} color={theme.text} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={clearCanvas} style={styles.tool}>
-            <Trash2 size={22} color="#FF3B30" />
-          </TouchableOpacity>
-        </View>
+        {/* MAIN FAB */}
+        <TouchableOpacity 
+            onPress={() => {
+                setIsToolsExpanded(!isToolsExpanded);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }}
+            activeOpacity={0.8}
+            style={[styles.mainFab, { backgroundColor: theme.tint }]}
+        >
+            <MotiView
+                animate={{ rotate: isToolsExpanded ? '45deg' : '0deg' }}
+                transition={{ type: 'spring', damping: 15 }}
+            >
+                <Palette size={28} color="white" />
+            </MotiView>
+        </TouchableOpacity>
       </View>
     </GestureHandlerRootView>
   );
@@ -508,26 +562,32 @@ const styles = StyleSheet.create({
   actions: { flexDirection: 'row', gap: 10 },
   actionBtn: { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
   canvasContainer: { flex: 1 },
-  toolbarContainer: { position: 'absolute', bottom: 50, alignSelf: 'center', width: '90%', alignItems: 'center', gap: 15 },
-  mainDock: { height: 64, borderRadius: 32, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 15, gap: 8, elevation: 10, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 15 },
-  tool: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
-  activeTool: { backgroundColor: 'rgba(0,0,0,0.05)' },
-  dockDivider: { width: 1, height: 24, backgroundColor: 'rgba(0,0,0,0.1)', marginHorizontal: 2 },
-  subToolbar: { width: '100%', borderRadius: 24, overflow: 'hidden', elevation: 5 },
-  subToolbarBlur: { padding: 20 },
-  scrollContent: { gap: 15, paddingRight: 10 },
-  colorOption: { width: 34, height: 34, borderRadius: 17, borderWidth: 1, borderColor: 'rgba(0,0,0,0.1)' },
-  settingsMenu: { gap: 20 },
-  settingsHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  previewDot: { borderWidth: 1, borderColor: 'rgba(0,0,0,0.1)', justifyContent: 'center', alignItems: 'center' },
-  settingsTitle: { fontSize: 14, fontWeight: '700', color: '#333' },
-  sliderContainer: { gap: 10 },
-  sliderHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  sliderTitle: { fontSize: 11, fontWeight: '600', color: '#888', textTransform: 'uppercase' },
-  sliderValue: { fontSize: 12, fontWeight: '800', color: '#333' },
-  sliderTrack: { height: 6, backgroundColor: 'rgba(0,0,0,0.05)', borderRadius: 3, justifyContent: 'center' },
-  sliderProgress: { height: 6, borderRadius: 3 },
-  sliderKnob: { position: 'absolute', width: 24, height: 24, borderRadius: 12, backgroundColor: '#fff', borderWidth: 2, elevation: 3, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 2 },
-  gridToggle: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
-  gridToggleText: { fontSize: 10, fontWeight: '900', letterSpacing: 0.5 },
+  fabContainer: { position: 'absolute', bottom: 40, right: 30, left: 30, alignItems: 'flex-end', justifyContent: 'flex-end', gap: 20 },
+  mainFab: { width: 64, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center', elevation: 8, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
+  expandedTools: { position: 'absolute', bottom: 80, width: '100%', borderRadius: 32, overflow: 'hidden', elevation: 10, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 20 },
+  toolsBlur: { padding: 20, gap: 15 },
+  toolsRow: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' },
+  toolCircle: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'transparent' },
+  activeIndicator: { position: 'absolute', bottom: 4, width: 4, height: 4, borderRadius: 2 },
+  toolDivider: { height: 1, backgroundColor: 'rgba(0,0,0,0.05)', marginHorizontal: 10 },
+  colorScroll: { gap: 12, paddingHorizontal: 5 },
+  colorOption: { width: 30, height: 30, borderRadius: 15, borderWidth: 1, borderColor: 'rgba(0,0,0,0.1)' },
+  settingsSection: { gap: 15 },
+  settingsHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  previewDot: { borderWidth: 1, borderColor: 'rgba(0,0,0,0.1)' },
+  settingsTitle: { fontSize: 13, fontWeight: '700', color: '#333' },
+  gridFab: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
+  gridFabText: { fontSize: 9, fontWeight: '900' },
+  sliderContainer: { gap: 8 },
+  sliderHeader: { flexDirection: 'row', justifyContent: 'space-between' },
+  sliderTitle: { fontSize: 10, fontWeight: '600', color: '#999', textTransform: 'uppercase' },
+  sliderValue: { fontSize: 11, fontWeight: '900', color: '#000' },
+  sliderTrack: { height: 4, backgroundColor: 'rgba(0,0,0,0.1)', borderRadius: 2, justifyContent: 'center' },
+  sliderProgress: { height: 4, borderRadius: 2 },
+  sliderKnob: { position: 'absolute', width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff', borderWidth: 2, elevation: 4, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 3 },
+  utilRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 5 },
+  utilBtn: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  utilIconBg: { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(0,0,0,0.08)', justifyContent: 'center', alignItems: 'center' },
+  utilText: { fontSize: 12, fontWeight: '800', color: '#444' },
+  activeToolShadow: { elevation: 5, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 5, shadowOffset: { width: 0, height: 2 } },
 });
