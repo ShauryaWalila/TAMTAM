@@ -231,9 +231,15 @@ export default function WhiteboardScreen() {
     setSelectedId(null); setSelectedType(null);
   }, [images, links, selectedId, selectedType, scale, translateX, translateY, insets]);
 
-  const onPanUpdate = useCallback((x: number, y: number, dx: number, dy: number) => {
+  const onPanUpdate = useCallback((x: number, y: number, dx: number, dy: number, totalX: number, totalY: number) => {
     const s = scale.value;
     const adX = dx / s; const adY = dy / s;
+    // Nothing hit - pan canvas
+    if (!dragId.current && resizeCorner.current === 0) {
+      translateX.value = savedTranslateX.value + totalX;
+      translateY.value = savedTranslateY.value + totalY;
+      return;
+    }
     if (resizeCorner.current !== 0 && selectedId) {
       setImages(prev => {
         const next = prev.map(img => {
@@ -261,6 +267,8 @@ export default function WhiteboardScreen() {
 
   const onPanEnd = useCallback(() => {
     if (dragId.current || resizeCorner.current !== 0) handleSave(paths, images, links);
+    savedTranslateX.value = translateX.value;
+    savedTranslateY.value = translateY.value;
     dragId.current = null; resizeCorner.current = 0;
   }, [paths, images, links]);
 
@@ -275,20 +283,19 @@ export default function WhiteboardScreen() {
     .onUpdate((e) => runOnJS(onDrawUpdate)(e.x, e.y))
     .onEnd(() => runOnJS(onDrawEnd)());
 
-  // Element interaction gesture - active when tool IS pan AND we hit an element
-  const elementGesture = Gesture.Pan().minPointers(1).maxPointers(1)
+  // Hand tool gesture - pans canvas OR drags/resizes elements
+  const handGesture = Gesture.Pan().minPointers(1).maxPointers(1)
     .enabled(activeTool === 'pan')
     .onBegin((e) => { lastTX.value = 0; lastTY.value = 0; runOnJS(onPanStart)(e.x, e.y); })
     .onUpdate((e) => {
       const dx = e.translationX - lastTX.value; const dy = e.translationY - lastTY.value;
       lastTX.value = e.translationX; lastTY.value = e.translationY;
-      runOnJS(onPanUpdate)(e.x, e.y, dx, dy);
+      runOnJS(onPanUpdate)(e.x, e.y, dx, dy, e.translationX, e.translationY);
     })
     .onEnd(() => runOnJS(onPanEnd)());
 
-  // Canvas pan gesture - active when tool IS pan (pans canvas when no element hit)
-  const canvasPanGesture = Gesture.Pan().minPointers(1).maxPointers(1)
-    .enabled(activeTool === 'pan')
+  // 3-finger pan - always works regardless of tool
+  const threeFingerPan = Gesture.Pan().minPointers(3)
     .onUpdate((e) => { translateX.value = savedTranslateX.value + e.translationX; translateY.value = savedTranslateY.value + e.translationY; })
     .onEnd(() => { savedTranslateX.value = translateX.value; savedTranslateY.value = translateY.value; });
 
@@ -303,15 +310,16 @@ export default function WhiteboardScreen() {
     })
     .onEnd(() => { savedScale.value = scale.value; savedTranslateX.value = translateX.value; savedTranslateY.value = translateY.value; });
 
-  // Compose: same pattern as working draw.tsx
+  // Compose: draw/hand exclusive for 1-finger, pinch + 3-finger pan simultaneous
   const composedGesture = Gesture.Simultaneous(
-    Gesture.Exclusive(drawGesture, elementGesture, canvasPanGesture),
-    pinchGesture
+    Gesture.Exclusive(drawGesture, handGesture),
+    pinchGesture,
+    threeFingerPan
   );
 
   const animatedTransform = useDerivedValue(() => [{ translateX: translateX.value }, { translateY: translateY.value }, { scale: scale.value }]);
   const menuStyle = useAnimatedStyle(() => ({ position: 'absolute' as const, left: 20, bottom: fabY.value > SCREEN_HEIGHT / 2 ? (SCREEN_HEIGHT - fabY.value + 10) : undefined, top: fabY.value > SCREEN_HEIGHT / 2 ? undefined : (fabY.value + 74), width: SCREEN_WIDTH - 40 }));
-  const gridPoints = useMemo(() => { const pts: any[] = []; for (let x = -15000; x <= 15000; x += 150) for (let y = -15000; y <= 15000; y += 150) pts.push(vec(x, y)); return pts; }, []);
+  const gridPoints = useMemo(() => { const pts: any[] = []; for (let x = -5000; x <= 5000; x += 100) for (let y = -5000; y <= 5000; y += 100) pts.push(vec(x, y)); return pts; }, []);
 
   const fabG = Gesture.Exclusive(Gesture.Tap().numberOfTaps(2).onEnd(() => runOnJS(setIsDraggable)(!isDraggable)), Gesture.Tap().numberOfTaps(1).onEnd(() => runOnJS(setIsToolsExpanded)(!isToolsExpanded)), Gesture.Pan().enabled(isDraggable).onStart(() => { savedFabX.value = fabX.value; savedFabY.value = fabY.value; }).onUpdate(e => { fabX.value = savedFabX.value + e.translationX; fabY.value = savedFabY.value + e.translationY; }));
 
@@ -380,7 +388,7 @@ export default function WhiteboardScreen() {
       <View style={styles.fabWrap} pointerEvents="box-none">
         <AnimatePresence>{isToolsExpanded && (<MotiView from={{ opacity: 0, scale: 0.5, translateY: 50 }} animate={{ opacity: 1, scale: 1, translateY: 0 }} exit={{ opacity: 0, scale: 0.5, translateY: 50 }} style={menuStyle}><BlurView intensity={80} tint="light" style={styles.tBlur}><View style={styles.tRow}><TouchableOpacity onPress={() => setActiveTool('pen')} style={[styles.tCir, activeTool === 'pen' && { backgroundColor: theme.tint }]}><Pencil size={20} color={activeTool === 'pen' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveTool('high')} style={[styles.tCir, activeTool === 'high' && { backgroundColor: theme.tint }]}><Highlighter size={20} color={activeTool === 'high' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveTool('eraser')} style={[styles.tCir, activeTool === 'eraser' && { backgroundColor: theme.tint }]}><Eraser size={20} color={activeTool === 'eraser' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveTool('pan')} style={[styles.tCir, activeTool === 'pan' && { backgroundColor: theme.tint }]}><Hand size={20} color={activeTool === 'pan' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveMenu(activeMenu === 'settings' ? 'none' : 'settings')} style={[styles.tCir, activeMenu === 'settings' && { backgroundColor: theme.tint }]}><Settings2 size={20} color={activeMenu === 'settings' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveMenu(activeMenu === 'media' ? 'none' : 'media')} style={[styles.tCir, activeMenu === 'media' && { backgroundColor: theme.tint }]}><Plus size={20} color={activeMenu === 'media' ? '#fff' : '#000'} /></TouchableOpacity></View>
               {activeMenu === 'settings' && (<View style={styles.tray}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}><View style={[styles.dot, { backgroundColor: color, opacity: activeTool === 'high' ? highOpacity : penOpacity }]} /><Text style={{ fontSize: 12 }}>Adjust Tool</Text></View><CustomSlider value={activeTool==='pen'?penSize:(activeTool==='high'?highSize:eraserSize)} onValueChange={(v:any)=>activeTool==='pen'?setPenSize(v):(activeTool==='high'?setHighSize(v):setEraserSize(v))} min={1} max={100} title="Size" />{activeTool !== 'eraser' && activeTool !== 'pan' && (<CustomSlider value={(activeTool==='pen'?penOpacity:highOpacity)*100} onValueChange={(v:any)=>activeTool==='pen'?setPenOpacity(v/100):setHighOpacity(v/100)} min={5} max={100} title="Opacity" />)}<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>{RAINBOW.map(c => <TouchableOpacity key={c} onPress={() => { setColor(c); setActiveTool('pen'); }} style={[styles.cOpt, { backgroundColor: c }, color === c && { borderColor: '#000', borderWidth: 2 }]} />)}</ScrollView></View>)}
-              {activeMenu === 'media' && (<View style={styles.tray}><TouchableOpacity onPress={addImage} style={styles.mItem}><ImageIcon size={18} color={theme.tint}/><Text>Image</Text></TouchableOpacity><TouchableOpacity onPress={() => { setEditingLinkId(null); setLUrl(''); setLTitle(''); setLinkModal(true); setIsToolsExpanded(false); }} style={styles.mItem}><LinkIcon size={18} color={theme.tint}/><Text>Link Pin</Text></TouchableOpacity><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 15 }}>{['🧠','🫀','🦴','🧬','💉','🧪'].map(s => <TouchableOpacity key={s} onPress={() => { const wX = (SCREEN_WIDTH/2 - translateX.value)/scale.value - 30; const wY = (SCREEN_HEIGHT/2 - translateY.value)/scale.value - 30; setLinks([...links, { id: Math.random().toString(36).substr(2, 9), url: '', title: s, x: wX, y: wY }]); setActiveMenu('none'); }}><Text style={{ fontSize: 28 }}>{s}</Text></TouchableOpacity>)}</ScrollView></View>)}
+              {activeMenu === 'media' && (<View style={styles.tray}><TouchableOpacity onPress={addImage} style={styles.mItem}><ImageIcon size={18} color={theme.tint}/><Text>Image</Text></TouchableOpacity><TouchableOpacity onPress={() => { setEditingLinkId(null); setLUrl(''); setLTitle(''); setLinkModal(true); setIsToolsExpanded(false); }} style={styles.mItem}><LinkIcon size={18} color={theme.tint}/><Text>Link Pin</Text></TouchableOpacity><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 15 }}>{['🧠','🫀','🦴','🧬','💉','🧪'].map(s => <TouchableOpacity key={s} onPress={() => { const wX = (SCREEN_WIDTH/2 - translateX.value)/scale.value - 30; const wY = (SCREEN_HEIGHT/2 - translateY.value)/scale.value - 30; const newLinks = [...links, { id: Math.random().toString(36).substr(2, 9), url: '', title: s, x: wX, y: wY }]; setLinks(newLinks); setActiveMenu('none'); handleSave(paths, images, newLinks); }}><Text style={{ fontSize: 28 }}>{s}</Text></TouchableOpacity>)}</ScrollView></View>)}
               <TouchableOpacity onPress={() => { setIsReviseMode(!isReviseMode); setIsToolsExpanded(false); }} style={[styles.revBtn, { backgroundColor: isReviseMode ? '#FF2D55' : 'rgba(0,0,0,0.05)' }]}><Text style={{ color: isReviseMode ? '#fff' : '#000', fontWeight: 'bold' }}>{isReviseMode ? 'EXIT REVISION' : 'ENTER REVISION'}</Text></TouchableOpacity></BlurView></MotiView>)}</AnimatePresence>
         <GestureDetector gesture={fabG}><Animated.View style={[styles.fab, { backgroundColor: theme.tint }, useAnimatedStyle(() => ({ transform: [{ translateX: fabX.value }, { translateY: fabY.value }], borderWidth: isDraggable ? 2 : 0, borderColor: '#fff' }))]}><Palette size={28} color="#fff" /></Animated.View></GestureDetector>
       </View>
