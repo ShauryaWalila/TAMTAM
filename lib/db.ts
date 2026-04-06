@@ -149,8 +149,12 @@ export const initDB = () => {
         back_content TEXT,
         front_image_url TEXT,
         back_image_url TEXT,
-        options TEXT, -- JSON string array
+        options TEXT,
         custom_color TEXT,
+        difficulty TEXT,
+        correct_count INTEGER DEFAULT 0,
+        incorrect_count INTEGER DEFAULT 0,
+        skip_count INTEGER DEFAULT 0,
         next_review DATETIME,
         interval_days INTEGER,
         ease_factor REAL,
@@ -181,6 +185,17 @@ export const initDB = () => {
         created_at DATETIME
       );
     `);
+
+    // Local Migration: Add missing columns to study_cards if they don't exist
+    try { db.execSync('ALTER TABLE study_cards ADD COLUMN front_image_url TEXT;'); } catch(e) {}
+    try { db.execSync('ALTER TABLE study_cards ADD COLUMN back_image_url TEXT;'); } catch(e) {}
+    try { db.execSync('ALTER TABLE study_cards ADD COLUMN options TEXT;'); } catch(e) {}
+    try { db.execSync('ALTER TABLE study_cards ADD COLUMN custom_color TEXT;'); } catch(e) {}
+    try { db.execSync('ALTER TABLE study_cards ADD COLUMN difficulty TEXT;'); } catch(e) {}
+    try { db.execSync('ALTER TABLE study_cards ADD COLUMN correct_count INTEGER DEFAULT 0;'); } catch(e) {}
+    try { db.execSync('ALTER TABLE study_cards ADD COLUMN incorrect_count INTEGER DEFAULT 0;'); } catch(e) {}
+    try { db.execSync('ALTER TABLE study_cards ADD COLUMN skip_count INTEGER DEFAULT 0;'); } catch(e) {}
+
     console.log('Local SQLite DB initialized.');
   } catch (error) {
     console.error('Failed to initialize local DB', error);
@@ -213,7 +228,7 @@ export const clearAllData = () => {
     const tables = [
       'moments', 'meetings', 'timetable', 'calendar_events', 
       'posts', 'finances', 'targets', 'study_decks', 
-      'study_whiteboards', 'chill_categories', 'chill_items'
+      'study_whiteboards', 'chill_categories', 'chill_items', 'study_cards'
     ];
     db.withTransactionSync(() => {
       tables.forEach(table => {

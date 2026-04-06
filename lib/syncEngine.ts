@@ -46,11 +46,11 @@ export const initialFullSync = async (shouldClear = false) => {
 
   // 1. URGENT DATA (Home screen essentials)
   await syncTable('moments', supabase.from('moments').select('*'), 
-    m => db.runSync(`INSERT OR REPLACE INTO moments (id, message, user_id, created_at) VALUES (?, ?, ?, ?)`, [m.id, m.message, m.user_id, m.created_at]));
+    m => db.runSync(`INSERT OR REPLACE INTO moments (id, created_at, message, user_id) VALUES (?, ?, ?, ?)`, [m.id, m.created_at, m.message, m.user_id]));
   
   await syncTable('meetings', supabase.from('meetings').select('*'), 
-    n => db.runSync(`INSERT OR REPLACE INTO meetings (id, created_at, type, date, occasion_name, user_id, weekday, day_of_month, time, is_recurring, frequency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
-      [n.id, n.created_at, n.type, n.date, n.occasion_name, n.user_id, n.weekday, n.day_of_month, n.time, n.is_recurring ? 1 : 0, n.frequency]));
+    n => db.runSync(`INSERT OR REPLACE INTO meetings (id, created_at, type, date, occasion_name, user_id, weekday, day_of_month, time, is_recurring, frequency, recurring_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+      [n.id, n.created_at, n.type, n.date, n.occasion_name, n.user_id, n.weekday, n.day_of_month, n.time, n.is_recurring ? 1 : 0, n.frequency, n.recurring_type]));
 
   // 2. BACKGROUND DATA (The rest, non-blocking)
   const backgroundSync = async () => {
@@ -79,12 +79,12 @@ export const initialFullSync = async (shouldClear = false) => {
         [d.id, d.title, d.description, d.color, d.user_id, d.created_at]));
 
     await syncTable('study_cards', supabase.from('study_cards').select('*'), 
-      c => db.runSync(`INSERT OR REPLACE INTO study_cards (id, deck_id, front_content, back_content, front_image_url, back_image_url, options, custom_color, next_review, interval_days, ease_factor, review_count, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
-        [c.id, c.deck_id, c.front_content, c.back_content, c.front_image_url, c.back_image_url, JSON.stringify(c.options || []), c.custom_color, c.next_review, c.interval_days, c.ease_factor, c.review_count, c.created_at]));
+      c => db.runSync(`INSERT OR REPLACE INTO study_cards (id, deck_id, front_content, back_content, front_image_url, back_image_url, options, custom_color, difficulty, correct_count, incorrect_count, skip_count, next_review, interval_days, ease_factor, review_count, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+        [c.id, c.deck_id, c.front_content, c.back_content, c.front_image_url, c.back_image_url, JSON.stringify(c.options || []), c.custom_color, c.difficulty, c.correct_count, c.incorrect_count, c.skip_count, c.next_review, c.interval_days, c.ease_factor, c.review_count, c.created_at]));
 
     await syncTable('study_whiteboards', supabase.from('study_whiteboards').select('*'), 
-      b => db.runSync(`INSERT OR REPLACE INTO study_whiteboards (id, title, canvas_data, updated_at) VALUES (?, ?, ?, ?)`, 
-        [b.id, b.title, typeof b.canvas_data === 'string' ? b.canvas_data : JSON.stringify(b.canvas_data), b.updated_at]));
+      b => db.runSync(`INSERT OR REPLACE INTO study_whiteboards (id, title, deck_id, canvas_data, thumbnail_url, user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, 
+        [b.id, b.title, b.deck_id, typeof b.canvas_data === 'string' ? b.canvas_data : JSON.stringify(b.canvas_data), b.thumbnail_url, b.user_id, b.created_at, b.updated_at]));
 
     await syncTable('chill_categories', supabase.from('chill_categories').select('*'), 
       n => db.runSync(`INSERT OR REPLACE INTO chill_categories (id, name, icon, color, bg_color, image_url, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
@@ -141,8 +141,15 @@ const processSyncQueue = async () => {
           console.log(`Synced ${op.operation} on ${op.table_name} (${op.record_id})`);
         } else {
           console.error(`Failed to sync ${op.id} [${op.table_name}]:`, error.message);
-          // 22P02 is the Postgres error code for "Invalid input syntax for type UUID"
-          if (error.code === '23505' || error.code === 'PGRST116' || error.code === '22P02') {
+          
+          const isUnfixable = 
+            error.code === '23505' || // Duplicate key
+            error.code === 'PGRST116' || // Not found
+            error.code === '22P02' || // Invalid UUID syntax
+            error.message?.toLowerCase().includes('invalid input syntax for type uuid') ||
+            error.message?.toLowerCase().includes('not found');
+
+          if (isUnfixable) {
             console.log(`Removing unfixable record ${op.id} from queue.`);
             removeSyncOperation(op.id);
           }

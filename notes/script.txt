@@ -1163,4 +1163,48 @@ CREATE TABLE study_decks (
 
 
 
+    ALTER PUBLICATION supabase_realtime ADD TABLE study_whiteboards;
+   
+    -- Ensure RLS allows shared access (if not already handled by your catch-all policy)
+    ALTER TABLE study_whiteboards ENABLE ROW LEVEL SECURITY;
+    CREATE POLICY "Shared Whiteboard Access" ON study_whiteboards FOR ALL USING (true) WITH CHECK (true);
+
+
+
+
+
+
+
+
+    TRUNCATE TABLE moments, meetings, timetable, calendar_events, posts, finances, targets, study_decks,
+      study_whiteboards, chill_items CASCADE;
     
+  
+
+
+
+
+
+
+  ALTER TABLE study_cards ADD COLUMN IF NOT EXISTS options JSONB DEFAULT '[]';
+ ALTER TABLE study_cards ADD COLUMN IF NOT EXISTS front_image_url TEXT;
+ ALTER TABLE study_cards ADD COLUMN IF NOT EXISTS back_image_url TEXT;
+ ALTER TABLE study_cards ADD COLUMN IF NOT EXISTS custom_color TEXT;
+
+
+
+
+
+ ALTER TABLE study_cards ADD COLUMN IF NOT EXISTS difficulty TEXT;
+
+
+
+
+
+ ALTER TABLE finances RENAME COLUMN user__id TO user_id;
+
+
+
+
+
+ 
