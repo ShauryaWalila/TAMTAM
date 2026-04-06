@@ -2,7 +2,7 @@ import { Text, View as ThemedView } from "@/components/Themed";
 import { useColorScheme } from "@/components/useColorScheme";
 import Colors from "@/constants/Colors";
 import { supabase, supabaseAnonKey, supabaseUrl } from "@/lib/supabase";
-import { db, queueSyncOperation } from "@/lib/db";
+import { db, queueSyncOperation, generateUUID } from "@/lib/db";
 import * as base64js from "base64-js";
 import { format, formatDistanceToNow } from "date-fns";
 import * as FileSystem from "expo-file-system/legacy";
@@ -290,7 +290,7 @@ export default function JournalScreen() {
   const handleSend = async () => {
     if (!inputText.trim() && !selectedImage) return;
     setLoading(true);
-    const id = Math.random().toString(36).substr(2, 9);
+    const id = generateUUID();
     const payload: any = {
       id,
       type: selectedImage ? "image" : "text",
@@ -371,8 +371,8 @@ export default function JournalScreen() {
           <>
             <View style={styles.header}>
               <View>
-                <Text style={[styles.title, { color: '#000' }]}>Memories</Text>
-                <Text style={[styles.subtitle, { color: '#333' }]}>Capturing our moments</Text>
+                <Text style={[styles.title, { color: theme.text }]}>Memories</Text>
+                <Text style={[styles.subtitle, { color: theme.tabIconDefault }]}>Capturing our moments</Text>
               </View>
               <TouchableOpacity onPress={() => setIsDetailsVisible(true)} style={[styles.infoBtn, { backgroundColor: theme.card }]}><Info size={20} color={theme.text} /></TouchableOpacity>
             </View>

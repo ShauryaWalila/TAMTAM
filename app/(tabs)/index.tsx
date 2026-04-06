@@ -11,7 +11,7 @@ import {
   isSameMonth, isSameDay, addYears, differenceInYears, differenceInDays 
 } from 'date-fns';
 import { supabase } from '@/lib/supabase';
-import { db, queueSyncOperation } from '@/lib/db';
+import { db, queueSyncOperation, generateUUID } from '@/lib/db';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import LottieView from 'lottie-react-native';
@@ -348,7 +348,7 @@ export default function DashboardScreen() {
       }
     }
     setIsSaving(true);
-    const id = Math.random().toString(36).substr(2, 9);
+    const id = generateUUID();
     const payload = {
       id,
       day: selectedDay,
@@ -400,7 +400,7 @@ export default function DashboardScreen() {
   const addCalendarEvent = async () => {
     if (!newCalendarTitle || !currentUserName) return;
     setIsSaving(true);
-    const id = Math.random().toString(36).substr(2, 9);
+    const id = generateUUID();
     const payload = {
       id,
       event_date: format(selectedCalendarDate, 'yyyy-MM-dd'),
@@ -461,8 +461,8 @@ export default function DashboardScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={[styles.greeting, { color: '#000' }]}>Hello, TAMTAM</Text>
-            <Text style={[styles.subtitle, { color: '#333' }]}>Thinking of you today</Text>
+            <Text style={[styles.greeting, { color: theme.text }]}>Hello, TAMTAM</Text>
+            <Text style={[styles.subtitle, { color: theme.tabIconDefault }]}>Thinking of you today</Text>
           </View>
           <TouchableOpacity onPress={() => DeviceEventEmitter.emit('show-navigator')}>
             <LottieView autoPlay loop source={{ uri: 'https://assets9.lottiefiles.com/packages/lf20_at6mscsc.json' }} style={styles.lottieHeart} />

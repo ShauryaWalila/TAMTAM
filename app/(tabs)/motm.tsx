@@ -6,7 +6,7 @@ import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
 import { MessageSquarePlus, Heart, Sparkles, Send, X } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
-import { db, queueSyncOperation } from '@/lib/db';
+import { db, queueSyncOperation, generateUUID } from '@/lib/db';
 import { useRouter } from 'expo-router';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import * as SecureStore from 'expo-secure-store';
@@ -61,7 +61,9 @@ export default function MOTMScreen() {
 
     setLoading(true);
     const userId = currentUserName.toLowerCase();
+    const id = generateUUID();
     const payload = { 
+      id,
       message: message.trim(), 
       user_id: userId,
       created_at: new Date().toISOString()
@@ -70,10 +72,10 @@ export default function MOTMScreen() {
     try {
       // 1. Save to local SQLite
       db.runSync(`INSERT OR REPLACE INTO moments (id, message, user_id, created_at) VALUES (?, ?, ?, ?)`, 
-        [userId, payload.message, payload.user_id, payload.created_at]);
+        [payload.id, payload.message, payload.user_id, payload.created_at]);
       
       // 2. Queue for Sync Engine
-      queueSyncOperation('moments', userId, 'UPDATE', payload);
+      queueSyncOperation('moments', payload.id, 'UPDATE', payload);
 
       setShowConfetti(true);
       setTimeout(() => {

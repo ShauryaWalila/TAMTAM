@@ -11,7 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '@/lib/supabase';
-import { db, queueSyncOperation } from '@/lib/db';
+import { db, queueSyncOperation, generateUUID } from '@/lib/db';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { Text } from '@/components/Themed';
@@ -275,7 +275,7 @@ export default function WhiteboardScreen() {
       const asset = res.assets[0];
       const wX = (SCREEN_WIDTH / 2 - translateX.value) / scale.value - 150;
       const wY = (SCREEN_HEIGHT / 2 - translateY.value) / scale.value - 150;
-      const nI = [...images, { id: Math.random().toString(36).substr(2, 9), uri: asset.uri, x: wX, y: wY, width: 300, height: (asset.height / asset.width) * 300 }];
+      const nI = [...images, { id: generateUUID(), uri: asset.uri, x: wX, y: wY, width: 300, height: (asset.height / asset.width) * 300 }];
       setImages(nI); setActiveMenu('none'); handleSave(undefined, nI);
     }
   };
@@ -291,7 +291,7 @@ export default function WhiteboardScreen() {
     nP.moveTo(wX - r, wY);
     nP.lineTo(wX + r, wY);
     setCurrentPath({
-      id: Math.random().toString(36).substr(2, 9),
+      id: generateUUID(),
       path: nP, color: activeTool === 'eraser' ? '#fff' : color,
       strokeWidth: sw, isEraser: activeTool === 'eraser',
       opacity: activeTool === 'high' ? highOpacity : (activeTool === 'eraser' ? 1 : penOpacity),
@@ -490,11 +490,11 @@ export default function WhiteboardScreen() {
         <BlurView intensity={90} tint="light" style={styles.blur}>
           <TouchableOpacity onPress={() => router.back()}><ChevronLeft size={22} color="#000" /></TouchableOpacity>
           <View style={{ flex: 1, marginLeft: 10 }}>
-            <Text style={{ fontWeight: 'bold', color: '#000' }}>{board?.title || "Board"}</Text>
+            <Text style={{ fontWeight: 'bold', color: 'black' }}>{board?.title || "Board"}</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-              <View style={styles.zoom}><ZoomIn size={10} color="#000" /><Text style={{ fontSize: 9, color: '#000' }}>{zoomText}</Text></View>
+              <View style={styles.zoom}><ZoomIn size={10} color={theme.tabIconDefault} /><Text style={{ fontSize: 9, color: 'black' }}>{zoomText}</Text></View>
               <View style={[styles.dot, { backgroundColor: isSaving ? theme.tint : (isReviseMode ? '#FF2D55' : '#34C759') }]} />
-              <Text style={{ fontSize: 9, color: '#333' }}>{isReviseMode ? "REVISION" : (isSaving ? "SAVING" : "SYNCED")}</Text>
+              <Text style={{ fontSize: 9, color: theme.tabIconDefault }}>{isReviseMode ? "REVISION" : (isSaving ? "SAVING" : "SYNCED")}</Text>
             </View>
           </View>
           <TouchableOpacity onPress={() => { scale.value = 1; translateX.value = 0; translateY.value = 0; setZoomText('100%'); }} style={styles.btn}><Target size={20} color="#000" /></TouchableOpacity>
@@ -571,7 +571,7 @@ export default function WhiteboardScreen() {
                 } else {
                   const wX = (SCREEN_WIDTH / 2 - translateX.value) / scale.value - 20;
                   const wY = (SCREEN_HEIGHT / 2 - translateY.value) / scale.value - 20;
-                  const newLinks = [...linksRef.current, { id: Math.random().toString(36).substr(2, 9), url: lUrl, title: lTitle || 'Link', x: wX, y: wY }];
+                  const newLinks = [...linksRef.current, { id: generateUUID(), url: lUrl, title: lTitle || 'Link', x: wX, y: wY }];
                   setLinks(newLinks); handleSave(undefined, undefined, newLinks);
                 }
                 setLinkModal(false); setEditingLinkId(null); setLUrl(''); setLTitle('');
@@ -592,7 +592,7 @@ export default function WhiteboardScreen() {
                 if (!newText.trim()) return;
                 const wX = (SCREEN_WIDTH / 2 - translateX.value) / scale.value - 30;
                 const wY = (SCREEN_HEIGHT / 2 - translateY.value) / scale.value - 30;
-                const newLinks = [...linksRef.current, { id: Math.random().toString(36).substr(2, 9), url: '', title: newText.trim(), x: wX, y: wY, fontSize: 40 }];
+                const newLinks = [...linksRef.current, { id: generateUUID(), url: '', title: newText.trim(), x: wX, y: wY, fontSize: 40 }];
                 setLinks(newLinks);
                 setTextModal(false);
                 setNewText('');

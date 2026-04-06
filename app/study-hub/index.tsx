@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput, FlatList } from 'react-native';
 import { Text, View as ThemedView } from '@/components/Themed';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -6,13 +6,14 @@ import Colors from '@/constants/Colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
-import { db, queueSyncOperation } from '@/lib/db';
+import { db, queueSyncOperation, generateUUID } from '@/lib/db';
 import * as SecureStore from 'expo-secure-store';
-import { BookOpen, Plus, X, BrainCircuit, PenTool, LayoutDashboard, Clock, ChevronLeft } from 'lucide-react-native';
+import { BookOpen, Plus, X, BrainCircuit, PenTool, LayoutDashboard, Clock, ChevronLeft, Search as SearchIcon } from 'lucide-react-native';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import RadialNavigator from '@/components/RadialNavigator';
 import { KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { MotiView } from 'moti';
 
 export default function StudyHubDashboard() {
   const colorScheme = useColorScheme() ?? 'light';
@@ -30,6 +31,8 @@ export default function StudyHubDashboard() {
 
   const [isWhiteboardModalVisible, setIsWhiteboardModalVisible] = useState(false);
   const [newWhiteboardTitle, setNewWhiteboardTitle] = useState('');
+
+  const [searchQuery, setSearchQuery] = useState('');
 
   // POMODORO & SYNC STATE
   const [isTimerRunning, setIsTimerStarted] = useState(false);
@@ -133,13 +136,8 @@ export default function StudyHubDashboard() {
     if (name) {
       const u = name.toLowerCase();
       setCurrentUser(u);
-      
-      // Load from SQLite first
       refreshFromSQLite();
-      
-      // Background fetch
       fetchData(u);
-      
       setTimeout(() => fetchActiveSessions(), 500);
     }
   };
@@ -148,7 +146,6 @@ export default function StudyHubDashboard() {
     try {
       const d = db.getAllSync(`SELECT * FROM study_decks ORDER BY created_at DESC`) as any[];
       setDecks(d || []);
-      
       const w = db.getAllSync(`SELECT * FROM study_whiteboards ORDER BY updated_at DESC`) as any[];
       setWhiteboards(w || []);
     } catch (e) {}
@@ -163,7 +160,6 @@ export default function StudyHubDashboard() {
             [d.id, d.title, d.description, d.color, d.user_id, d.created_at]);
         });
       }
-
       const { data: boardData } = await supabase.from('study_whiteboards').select('*').order('updated_at', { ascending: false });
       if (boardData) {
         boardData.forEach(b => {
@@ -175,26 +171,26 @@ export default function StudyHubDashboard() {
     } catch (e) {}
   };
 
+  const filteredDecks = useMemo(() => {
+    if (!searchQuery.trim()) return decks;
+    const q = searchQuery.toLowerCase();
+    return decks.filter(d => d.title?.toLowerCase().includes(q) || d.description?.toLowerCase().includes(q));
+  }, [decks, searchQuery]);
+
+  const filteredWhiteboards = useMemo(() => {
+    if (!searchQuery.trim()) return whiteboards;
+    const q = searchQuery.toLowerCase();
+    return whiteboards.filter(w => w.title?.toLowerCase().includes(q));
+  }, [whiteboards, searchQuery]);
+
   const createDeck = async () => {
     if (!newDeckTitle.trim()) return;
-    const id = Math.random().toString(36).substr(2, 9);
-    const payload = {
-      id,
-      title: newDeckTitle.trim(),
-      description: newDeckDesc.trim(),
-      user_id: currentUser,
-      created_at: new Date().toISOString()
-    };
-
+    const id = generateUUID();
+    const payload = { id, title: newDeckTitle.trim(), description: newDeckDesc.trim(), user_id: currentUser, created_at: new Date().toISOString() };
     try {
-      db.runSync(`INSERT INTO study_decks (id, title, description, user_id, created_at) VALUES (?, ?, ?, ?, ?)`, 
-        [payload.id, payload.title, payload.description, payload.user_id, payload.created_at]);
-      
+      db.runSync(`INSERT INTO study_decks (id, title, description, user_id, created_at) VALUES (?, ?, ?, ?, ?)`, [payload.id, payload.title, payload.description, payload.user_id, payload.created_at]);
       queueSyncOperation('study_decks', payload.id, 'INSERT', payload);
-
-      setIsDeckModalVisible(false);
-      setNewDeckTitle('');
-      setNewDeckDesc('');
+      setIsDeckModalVisible(false); setNewDeckTitle(''); setNewDeckDesc('');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       refreshFromSQLite();
     } catch (e) {}
@@ -202,22 +198,12 @@ export default function StudyHubDashboard() {
 
   const createWhiteboard = async () => {
     if (!newWhiteboardTitle.trim()) return;
-    const id = Math.random().toString(36).substr(2, 9);
-    const payload = {
-      id,
-      title: newWhiteboardTitle.trim(),
-      user_id: currentUser,
-      updated_at: new Date().toISOString()
-    };
-
+    const id = generateUUID();
+    const payload = { id, title: newWhiteboardTitle.trim(), user_id: currentUser, updated_at: new Date().toISOString() };
     try {
-      db.runSync(`INSERT INTO study_whiteboards (id, title, user_id, updated_at) VALUES (?, ?, ?, ?)`, 
-        [payload.id, payload.title, payload.user_id, payload.updated_at]);
-      
+      db.runSync(`INSERT INTO study_whiteboards (id, title, user_id, updated_at) VALUES (?, ?, ?, ?)`, [payload.id, payload.title, payload.user_id, payload.updated_at]);
       queueSyncOperation('study_whiteboards', payload.id, 'INSERT', payload);
-
-      setIsWhiteboardModalVisible(false);
-      setNewWhiteboardTitle('');
+      setIsWhiteboardModalVisible(false); setNewWhiteboardTitle('');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       refreshFromSQLite();
       router.push(`/study-hub/whiteboard/${payload.id}`);
@@ -251,18 +237,29 @@ export default function StudyHubDashboard() {
   return (
     <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={{ marginBottom: 30 }}>
+        <View style={{ marginBottom: 20 }}>
           <Text style={[styles.title, { color: theme.text }]}>Study Hub</Text>
           <Text style={[styles.subtitle, { color: theme.tabIconDefault }]}>Exam Mode Activated 🧠</Text>
         </View>
 
+        {/* SEARCH BAR */}
+        <View style={[styles.searchContainer, { backgroundColor: theme.card }]}>
+          <SearchIcon size={18} color={theme.tabIconDefault} />
+          <TextInput 
+            style={[styles.searchInput, { color: theme.text }]} 
+            placeholder="Search decks or boards..." 
+            placeholderTextColor={theme.tabIconDefault}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery !== '' && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}><X size={18} color={theme.tabIconDefault} /></TouchableOpacity>
+          )}
+        </View>
+
         {/* PARTNER STATUS */}
         {partnerSession && (
-          <MotiView 
-            from={{ scale: 0.9, opacity: 0 }} 
-            animate={{ scale: 1, opacity: 1 }} 
-            style={[styles.partnerCard, { backgroundColor: '#FF2D55' }]}
-          >
+          <MotiView from={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={[styles.partnerCard, { backgroundColor: '#FF2D55' }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <View style={styles.liveIndicator} />
               <Text style={styles.partnerText}>Partner is studying right now! ❤️</Text>
@@ -278,11 +275,7 @@ export default function StudyHubDashboard() {
               {!isTimerRunning ? (
                 <View style={styles.durationRow}>
                   {[25, 45, 60, 90].map(d => (
-                    <TouchableOpacity 
-                      key={d} 
-                      onPress={() => { setSelectedDuration(d); setTimeLeft(d * 60); }}
-                      style={[styles.durationChip, selectedDuration === d && { backgroundColor: theme.tint }]}
-                    >
+                    <TouchableOpacity key={d} onPress={() => { setSelectedDuration(d); setTimeLeft(d * 60); }} style={[styles.durationChip, selectedDuration === d && { backgroundColor: theme.tint }]}>
                       <Text style={[styles.durationText, selectedDuration === d && { color: 'white' }]}>{d}m</Text>
                     </TouchableOpacity>
                   ))}
@@ -293,10 +286,7 @@ export default function StudyHubDashboard() {
               <Text style={[styles.timerValue, { color: theme.text }]}>{formatTime(timeLeft)}</Text>
             </View>
           </View>
-          <TouchableOpacity 
-            onPress={toggleTimer} 
-            style={[styles.timerBtn, { backgroundColor: isTimerRunning ? '#FF3B30' : theme.tint }]}
-          >
+          <TouchableOpacity onPress={toggleTimer} style={[styles.timerBtn, { backgroundColor: isTimerRunning ? '#FF3B30' : theme.tint }]}>
             <Text style={styles.timerBtnText}>{isTimerRunning ? 'PAUSE' : 'START'}</Text>
           </TouchableOpacity>
         </View>
@@ -313,24 +303,20 @@ export default function StudyHubDashboard() {
         </View>
 
         <View style={styles.grid}>
-          {decks.map(deck => (
-            <TouchableOpacity 
-              key={deck.id} 
-              style={[styles.card, { backgroundColor: theme.card, borderTopColor: deck.color, borderTopWidth: 4 }]}
-              onPress={() => router.push(`/study-hub/deck/${deck.id}`)}
-              onLongPress={() => deleteDeck(deck.id)}
-            >
+          {filteredDecks.map(deck => (
+            <TouchableOpacity key={deck.id} style={[styles.card, { backgroundColor: theme.card, borderTopColor: deck.color || theme.tint, borderTopWidth: 4 }]} onPress={() => router.push(`/study-hub/deck/${deck.id}`)} onLongPress={() => deleteDeck(deck.id)}>
               <Text style={[styles.cardTitle, { color: theme.text }]}>{deck.title}</Text>
-              <Text style={[styles.cardSub, { color: theme.tabIconDefault }]} numberOfLines={2}>
-                {deck.description || "No description"}
-              </Text>
+              <Text style={[styles.cardSub, { color: theme.tabIconDefault }]} numberOfLines={2}>{deck.description || "No description"}</Text>
               <View style={styles.cardFooter}>
-                <Text style={styles.cardStat}>{deck.study_cards?.[0]?.count || 0} Cards</Text>
+                <Text style={styles.cardStat}>Revise</Text>
               </View>
             </TouchableOpacity>
           ))}
-          {decks.length === 0 && (
-            <Text style={{ color: theme.tabIconDefault, fontStyle: 'italic', padding: 20 }}>No decks yet. Create one to start revising!</Text>
+          {filteredDecks.length === 0 && searchQuery !== '' && (
+            <Text style={{ color: theme.tabIconDefault, fontStyle: 'italic', padding: 20 }}>No decks match your search.</Text>
+          )}
+          {decks.length === 0 && searchQuery === '' && (
+            <Text style={{ color: theme.tabIconDefault, fontStyle: 'italic', padding: 20 }}>No decks yet. Create one to start!</Text>
           )}
         </View>
 
@@ -346,80 +332,46 @@ export default function StudyHubDashboard() {
         </View>
 
         <View style={styles.grid}>
-          {whiteboards.map(board => (
-            <TouchableOpacity 
-              key={board.id} 
-              style={[styles.card, { backgroundColor: theme.card }]}
-              onPress={() => router.push(`/study-hub/whiteboard/${board.id}`)}
-              onLongPress={() => deleteWhiteboard(board.id)}
-            >
-              <View style={[styles.boardThumb, { backgroundColor: theme.tint + '10' }]}>
-                <LayoutDashboard size={32} color={theme.tint} opacity={0.5} />
-              </View>
+          {filteredWhiteboards.map(board => (
+            <TouchableOpacity key={board.id} style={[styles.card, { backgroundColor: theme.card }]} onPress={() => router.push(`/study-hub/whiteboard/${board.id}`)} onLongPress={() => deleteWhiteboard(board.id)}>
+              <View style={[styles.boardThumb, { backgroundColor: theme.tint + '10' }]}><LayoutDashboard size={32} color={theme.tint} opacity={0.5} /></View>
               <Text style={[styles.cardTitle, { color: theme.text, marginTop: 10 }]}>{board.title}</Text>
             </TouchableOpacity>
           ))}
-          {whiteboards.length === 0 && (
+          {filteredWhiteboards.length === 0 && searchQuery !== '' && (
+            <Text style={{ color: theme.tabIconDefault, fontStyle: 'italic', padding: 20 }}>No boards match your search.</Text>
+          )}
+          {whiteboards.length === 0 && searchQuery === '' && (
             <Text style={{ color: theme.tabIconDefault, fontStyle: 'italic', padding: 20 }}>No whiteboards created yet.</Text>
           )}
         </View>
 
       </ScrollView>
 
-      {/* NEW DECK MODAL */}
+      {/* MODALS REMAIN UNCHANGED BUT USE THEME */}
       <Modal visible={isDeckModalVisible} transparent animationType="fade">
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={styles.modalOverlay}>
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ width: '100%' }}>
               <BlurView intensity={100} tint={colorScheme} style={styles.modalContent}>
-                <View style={styles.modalHeader}>
-                  <Text style={[styles.modalTitle, { color: theme.text }]}>New Study Deck</Text>
-                  <TouchableOpacity onPress={() => setIsDeckModalVisible(false)}><X size={24} color={theme.text} /></TouchableOpacity>
-                </View>
-                <TextInput 
-                  style={[styles.input, { backgroundColor: theme.background, color: theme.text }]} 
-                  placeholder="Subject (e.g., Anatomy)" 
-                  placeholderTextColor={theme.tabIconDefault}
-                  value={newDeckTitle} 
-                  onChangeText={setNewDeckTitle} 
-                />
-                <TextInput 
-                  style={[styles.input, { backgroundColor: theme.background, color: theme.text, height: 100, textAlignVertical: 'top' }]} 
-                  placeholder="Description" 
-                  placeholderTextColor={theme.tabIconDefault}
-                  multiline
-                  value={newDeckDesc} 
-                  onChangeText={setNewDeckDesc} 
-                />
-                <TouchableOpacity onPress={createDeck} style={[styles.saveBtn, { backgroundColor: theme.tint }]}>
-                  <Text style={styles.saveBtnText}>Create Deck</Text>
-                </TouchableOpacity>
+                <View style={styles.modalHeader}><Text style={[styles.modalTitle, { color: theme.text }]}>New Study Deck</Text><TouchableOpacity onPress={() => setIsDeckModalVisible(false)}><X size={24} color={theme.text} /></TouchableOpacity></View>
+                <TextInput style={[styles.input, { backgroundColor: theme.background, color: theme.text }]} placeholder="Subject (e.g., Anatomy)" placeholderTextColor={theme.tabIconDefault} value={newDeckTitle} onChangeText={setNewDeckTitle} />
+                <TextInput style={[styles.input, { backgroundColor: theme.background, color: theme.text, height: 100, textAlignVertical: 'top' }]} placeholder="Description" placeholderTextColor={theme.tabIconDefault} multiline value={newDeckDesc} onChangeText={setNewDeckDesc} />
+                <TouchableOpacity onPress={createDeck} style={[styles.saveBtn, { backgroundColor: theme.tint }]}><Text style={styles.saveBtnText}>Create Deck</Text></TouchableOpacity>
               </BlurView>
             </KeyboardAvoidingView>
           </View>
         </TouchableWithoutFeedback>
       </Modal>
 
-      {/* NEW WHITEBOARD MODAL */}
       <Modal visible={isWhiteboardModalVisible} transparent animationType="fade">
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={styles.modalOverlay}>
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ width: '100%' }}>
               <BlurView intensity={100} tint={colorScheme} style={styles.modalContent}>
-                <View style={styles.modalHeader}>
-                  <Text style={[styles.modalTitle, { color: theme.text }]}>New Med-Board</Text>
-                  <TouchableOpacity onPress={() => setIsWhiteboardModalVisible(false)}><X size={24} color={theme.text} /></TouchableOpacity>
-                </View>
-                <TextInput 
-                  style={[styles.input, { backgroundColor: theme.background, color: theme.text }]} 
-                  placeholder="Board Name (e.g., Cardiac Cycle)" 
-                  placeholderTextColor={theme.tabIconDefault}
-                  value={newWhiteboardTitle} 
-                  onChangeText={setNewWhiteboardTitle} 
-                />
-                <TouchableOpacity onPress={createWhiteboard} style={[styles.saveBtn, { backgroundColor: theme.tint }]}>
-                  <Text style={styles.saveBtnText}>Create Board</Text>
-                </TouchableOpacity>
+                <View style={styles.modalHeader}><Text style={[styles.modalTitle, { color: theme.text }]}>New Med-Board</Text><TouchableOpacity onPress={() => setIsWhiteboardModalVisible(false)}><X size={24} color={theme.text} /></TouchableOpacity></View>
+                <TextInput style={[styles.input, { backgroundColor: theme.background, color: theme.text }]} placeholder="Board Name (e.g., Cardiac Cycle)" placeholderTextColor={theme.tabIconDefault} value={newWhiteboardTitle} onChangeText={setNewWhiteboardTitle} />
+                <TouchableOpacity onPress={createWhiteboard} style={[styles.saveBtn, { backgroundColor: theme.tint }]}><Text style={styles.saveBtnText}>Create Board</Text></TouchableOpacity>
               </BlurView>
             </KeyboardAvoidingView>
           </View>
@@ -436,11 +388,13 @@ const styles = StyleSheet.create({
   header: { padding: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   title: { fontSize: 34, fontWeight: '900', letterSpacing: -1 },
   subtitle: { fontSize: 16, fontWeight: '600' },
+  searchContainer: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, marginBottom: 25, paddingHorizontal: 15, height: 50, borderRadius: 15 },
+  searchInput: { flex: 1, marginLeft: 10, fontSize: 16, fontWeight: '600' },
   scrollContent: { padding: 20, paddingBottom: 100 },
   timerCard: { padding: 25, borderRadius: 32, marginBottom: 35, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', elevation: 4, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10 },
   timerInfo: { flexDirection: 'row', alignItems: 'center' },
   timerLabel: { fontSize: 10, fontWeight: '900', color: '#888', letterSpacing: 1 },
-  timerValue: { fontSize: 32, fontWeight: '900', fontFamily: 'SpaceMono' },
+  timerValue: { fontSize: 32, fontWeight: '900' },
   timerBtn: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 15 },
   timerBtnText: { color: 'white', fontWeight: '900', fontSize: 14 },
   durationRow: { flexDirection: 'row', gap: 8, marginBottom: 5 },

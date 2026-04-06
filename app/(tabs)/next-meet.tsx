@@ -6,7 +6,7 @@ import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
 import { Calendar, Clock, ChevronDown, Save, Repeat, Star, X, CalendarDays, CalendarRange } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
-import { db, queueSyncOperation } from '@/lib/db';
+import { db, queueSyncOperation, generateUUID } from '@/lib/db';
 import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { BlurView } from 'expo-blur';
@@ -115,7 +115,7 @@ export default function NextMeetScreen() {
   const handleSave = async () => {
     if (!currentUserName) return;
     setLoading(true);
-    const id = meetingId || Math.random().toString(36).substr(2, 9);
+    const id = meetingId || generateUUID();
     const payload: any = {
       id,
       type,

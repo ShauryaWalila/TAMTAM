@@ -8,6 +8,7 @@ import { MotiView, AnimatePresence } from 'moti';
 import { BlurView } from 'expo-blur';
 
 import { supabase } from '@/lib/supabase';
+import { generateUUID } from '@/lib/db';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 
@@ -129,7 +130,7 @@ export default function SharedCanvas({ tripId, onClose }: CanvasProps) {
     if (data && data.paths) {
       const reconstructed = data.paths.map((p: any) => ({
         ...p,
-        id: p.id || Math.random().toString(36).substr(2, 9),
+        id: p.id || generateUUID(),
         path: Skia.Path.MakeFromSVGString(p.pathString)
       }));
       setPaths(reconstructed);
@@ -158,7 +159,7 @@ export default function SharedCanvas({ tripId, onClose }: CanvasProps) {
   };
 
   const onStart = useCallback((x: number, y: number) => {
-    const id = Math.random().toString(36).substr(2, 9);
+    const id = generateUUID();
     currentPathId.current = id;
     const newPath = Skia.Path.Make();
     const adjX = (x - translateX.value) / scale.value;

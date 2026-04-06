@@ -10,7 +10,7 @@ import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-g
 import Svg, { G, Path, Text as SvgText, Circle as SvgCircle, Rect as SvgRect, Line } from 'react-native-svg';
 import { MotiView, AnimatePresence } from 'moti';
 import { supabase } from '@/lib/supabase';
-import { db, queueSyncOperation } from '@/lib/db';
+import { db, queueSyncOperation, generateUUID } from '@/lib/db';
 import * as SecureStore from 'expo-secure-store';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -173,7 +173,7 @@ export default function ChillZoneScreen() {
     else if (newItemType === 'match') content = { ...content, choices: newItemOptions.filter(o => o.trim() !== '').map(o => ({ text: o.trim(), swiped: {} })) };
     else content = { ...content, options: newItemOptions.filter(o => o.trim() !== '').map(o => ({ text: o.trim(), completed: false, votes: [] })) };
 
-    const id = Math.random().toString(36).substr(2, 9);
+    const id = generateUUID();
     const payload = {
       id,
       category_id: selectedCategory.id,

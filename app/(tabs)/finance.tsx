@@ -267,7 +267,7 @@ export default function FinanceScreen() {
   const handleSaveTransaction = async () => {
     if (!amount || isNaN(parseFloat(amount)) || !currentUserName) return;
     setIsSaving(true);
-    const id = Math.random().toString(36).substr(2, 9);
+    const id = generateUUID();
     const payload = {
       id,
       amount: parseFloat(amount),
@@ -317,7 +317,7 @@ export default function FinanceScreen() {
   const handleSaveTarget = async () => {
     if (!targetTitle || !targetAmount || !currentUserName) return;
     setIsSaving(true);
-    const id = Math.random().toString(36).substr(2, 9);
+    const id = generateUUID();
     
     let finalStart = startDate;
     let finalEnd = endDate;

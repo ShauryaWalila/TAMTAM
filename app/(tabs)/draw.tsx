@@ -8,7 +8,7 @@ import Colors from '@/constants/Colors';
 import { Eraser, Pencil, Send, Trash2, History, X, Palette, Undo2, Check, Settings2, ZoomIn, Hand, Move, Layers } from 'lucide-react-native';
 import { MotiView, AnimatePresence } from 'moti';
 import { supabase } from '@/lib/supabase';
-import { db, queueSyncOperation } from '@/lib/db';
+import { db, queueSyncOperation, generateUUID } from '@/lib/db';
 import * as SecureStore from 'expo-secure-store';
 import { formatDistanceToNow } from 'date-fns';
 import { BlurView } from 'expo-blur';
@@ -106,7 +106,7 @@ export default function DrawScreen() {
 
   // ✍️ Drawing Handlers
   const onStart = useCallback((x: number, y: number) => {
-    const id = Math.random().toString(36).substr(2, 9);
+    const id = generateUUID();
     const newPath = Skia.Path.Make();
     const adjX = (x - translateX.value) / scale.value;
     const adjY = (y - translateY.value) / scale.value;
@@ -158,7 +158,7 @@ export default function DrawScreen() {
   const handleSend = async () => {
     if (paths.length === 0) return;
     setLoading(true);
-    const id = Math.random().toString(36).substr(2, 9);
+    const id = generateUUID();
     const createdAt = new Date().toISOString();
     
     try {

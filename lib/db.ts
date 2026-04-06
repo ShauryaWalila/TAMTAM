@@ -2,6 +2,15 @@ import * as SQLite from 'expo-sqlite';
 
 export const db = SQLite.openDatabaseSync('tamtam_offline.db');
 
+export const generateUUID = () => {
+  // Pure JS UUID v4 implementation
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
 export const initDB = () => {
   try {
     db.execSync(`
@@ -138,7 +147,10 @@ export const initDB = () => {
         deck_id TEXT,
         front_content TEXT,
         back_content TEXT,
-        image_url TEXT,
+        front_image_url TEXT,
+        back_image_url TEXT,
+        options TEXT, -- JSON string array
+        custom_color TEXT,
         next_review DATETIME,
         interval_days INTEGER,
         ease_factor REAL,

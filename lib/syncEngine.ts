@@ -78,6 +78,10 @@ export const initialFullSync = async (shouldClear = false) => {
       d => db.runSync(`INSERT OR REPLACE INTO study_decks (id, title, description, color, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?)`, 
         [d.id, d.title, d.description, d.color, d.user_id, d.created_at]));
 
+    await syncTable('study_cards', supabase.from('study_cards').select('*'), 
+      c => db.runSync(`INSERT OR REPLACE INTO study_cards (id, deck_id, front_content, back_content, front_image_url, back_image_url, options, custom_color, next_review, interval_days, ease_factor, review_count, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+        [c.id, c.deck_id, c.front_content, c.back_content, c.front_image_url, c.back_image_url, JSON.stringify(c.options || []), c.custom_color, c.next_review, c.interval_days, c.ease_factor, c.review_count, c.created_at]));
+
     await syncTable('study_whiteboards', supabase.from('study_whiteboards').select('*'), 
       b => db.runSync(`INSERT OR REPLACE INTO study_whiteboards (id, title, canvas_data, updated_at) VALUES (?, ?, ?, ?)`, 
         [b.id, b.title, typeof b.canvas_data === 'string' ? b.canvas_data : JSON.stringify(b.canvas_data), b.updated_at]));
@@ -136,8 +140,12 @@ const processSyncQueue = async () => {
           removeSyncOperation(op.id);
           console.log(`Synced ${op.operation} on ${op.table_name} (${op.record_id})`);
         } else {
-          console.error(`Failed to sync ${op.id}:`, error.message);
-          if (error.code === '23505' || error.code === 'PGRST116') removeSyncOperation(op.id); 
+          console.error(`Failed to sync ${op.id} [${op.table_name}]:`, error.message);
+          // 22P02 is the Postgres error code for "Invalid input syntax for type UUID"
+          if (error.code === '23505' || error.code === 'PGRST116' || error.code === '22P02') {
+            console.log(`Removing unfixable record ${op.id} from queue.`);
+            removeSyncOperation(op.id);
+          }
         }
       } catch (err) {
         console.error('Network error during sync operation:', err);
