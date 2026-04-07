@@ -155,10 +155,11 @@ export const initDB = () => {
         correct_count INTEGER DEFAULT 0,
         incorrect_count INTEGER DEFAULT 0,
         skip_count INTEGER DEFAULT 0,
+        last_result TEXT, -- 'correct', 'incorrect', 'skip'
         next_review DATETIME,
-        interval_days INTEGER,
-        ease_factor REAL,
-        review_count INTEGER,
+        interval_days INTEGER DEFAULT 0,
+        ease_factor REAL DEFAULT 2.5,
+        review_count INTEGER DEFAULT 0,
         created_at DATETIME
       );
 
@@ -195,6 +196,7 @@ export const initDB = () => {
     try { db.execSync('ALTER TABLE study_cards ADD COLUMN correct_count INTEGER DEFAULT 0;'); } catch(e) {}
     try { db.execSync('ALTER TABLE study_cards ADD COLUMN incorrect_count INTEGER DEFAULT 0;'); } catch(e) {}
     try { db.execSync('ALTER TABLE study_cards ADD COLUMN skip_count INTEGER DEFAULT 0;'); } catch(e) {}
+    try { db.execSync('ALTER TABLE study_cards ADD COLUMN last_result TEXT;'); } catch(e) {}
 
     console.log('Local SQLite DB initialized.');
   } catch (error) {

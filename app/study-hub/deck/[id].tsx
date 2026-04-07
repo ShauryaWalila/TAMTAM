@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { db, queueSyncOperation, generateUUID } from '@/lib/db';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
-import { ChevronLeft, Plus, X, Brain, CheckCircle2, AlertCircle, Sparkles, Image as ImageIcon, Flame, History, Trophy, Rotate3d, Check, Ghost, Palette, Trash2, Repeat, FastForward } from 'lucide-react-native';
+import { ChevronLeft, Plus, X, Brain, CheckCircle2, AlertCircle, Sparkles, Image as ImageIcon, Flame, History, Trophy, Rotate3d, Check, Ghost, Palette, Trash2, Repeat, FastForward, Info } from 'lucide-react-native';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import Animated, { 
@@ -61,7 +61,8 @@ export default function DeckDetailScreen() {
   const [currentCardIdx, setCurrentCardIdx] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   
-  const [isAddModalVisible, setIsAddModalVisible] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [editingCard, setEditingCard] = useState<any>(null);
   const [front, setFront] = useState('');
   const [back, setBack] = useState('');
   const [frontImg, setFrontImg] = useState<string | null>(null);
@@ -109,7 +110,6 @@ export default function DeckDetailScreen() {
       const trackHeight = 200;
       const handleHeight = 60;
       const range = trackHeight - handleHeight;
-      // Map touch position relative to track height
       let pos = e.y - (handleHeight / 2);
       pos = Math.max(0, Math.min(range, pos));
       scrollOffset.value = (pos / range) * maxScroll.value;
@@ -140,8 +140,8 @@ export default function DeckDetailScreen() {
       const { data: cardData } = await supabase.from('study_cards').select('*').eq('deck_id', id).order('next_review', { ascending: true });
       if (cardData) {
         cardData.forEach(c => {
-          db.runSync(`INSERT OR REPLACE INTO study_cards (id, deck_id, front_content, back_content, front_image_url, back_image_url, options, custom_color, difficulty, correct_count, incorrect_count, skip_count, next_review, interval_days, ease_factor, review_count, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
-            [c.id, c.deck_id, c.front_content, c.back_content, c.front_image_url, c.back_image_url, JSON.stringify(c.options || []), c.custom_color, c.difficulty, c.correct_count, c.incorrect_count, c.skip_count, c.next_review, c.interval_days, c.ease_factor, c.review_count, c.created_at]);
+          db.runSync(`INSERT OR REPLACE INTO study_cards (id, deck_id, front_content, back_content, front_image_url, back_image_url, options, custom_color, difficulty, correct_count, incorrect_count, skip_count, last_result, next_review, interval_days, ease_factor, review_count, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+            [c.id, c.deck_id, c.front_content, c.back_content, c.front_image_url, c.back_image_url, JSON.stringify(c.options || []), c.custom_color, c.difficulty, c.correct_count, c.incorrect_count, c.skip_count, c.last_result, c.next_review, c.interval_days, c.ease_factor, c.review_count, c.created_at]);
         });
       }
       refreshFromSQLite();
@@ -154,6 +154,15 @@ export default function DeckDetailScreen() {
   }, [cards]);
 
   const cardsToReview = useMemo(() => reviewMode === 'due' ? dueCards : cards, [reviewMode, dueCards, cards]);
+
+  const stats = useMemo(() => {
+    return cards.reduce((acc, card) => {
+      if (card.last_result === 'correct') acc.correct += 1;
+      else if (card.last_result === 'incorrect') acc.incorrect += 1;
+      else if (card.last_result === 'skip') acc.skip += 1;
+      return acc;
+    }, { correct: 0, incorrect: 0, skip: 0 });
+  }, [cards]);
 
   const progressBarStyle = useAnimatedStyle(() => ({ width: `${progressWidth.value}%` }));
   const frontAnimatedStyle = useAnimatedStyle(() => ({ transform: [{ rotateY: `${flipRotation.value}deg` }], backfaceVisibility: 'hidden' }));
@@ -191,19 +200,63 @@ export default function DeckDetailScreen() {
     }
   };
 
-  const addCard = async () => {
+  const openAddModal = () => {
+    setEditingCard(null);
+    setFront(''); setBack(''); setFrontImg(null); setBackImg(null); setOptions([]); setCustomColor(null);
+    setIsModalVisible(true);
+  };
+
+  const openEditModal = (card: any) => {
+    setEditingCard(card);
+    setFront(card.front_content);
+    setBack(card.back_content);
+    setFrontImg(card.front_image_url);
+    setBackImg(card.back_image_url);
+    setOptions(card.options || []);
+    setCustomColor(card.custom_color);
+    setIsModalVisible(true);
+  };
+
+  const saveCard = async () => {
     if (!front.trim() || !back.trim()) return;
-    const cardId = generateUUID();
-    const payload = { id: cardId, deck_id: id as string, front_content: front.trim(), back_content: back.trim(), front_image_url: frontImg, back_image_url: backImg, options: options.filter(o => o.trim() !== ''), custom_color: customColor, difficulty: null, next_review: new Date().toISOString(), interval_days: 0, ease_factor: 2.5, review_count: 0, created_at: new Date().toISOString() };
+    const cardId = editingCard ? editingCard.id : generateUUID();
+    const payload = { 
+      id: cardId, 
+      deck_id: id as string, 
+      front_content: front.trim(), 
+      back_content: back.trim(), 
+      front_image_url: frontImg, 
+      back_image_url: backImg, 
+      options: options.filter(o => o.trim() !== ''), 
+      custom_color: customColor, 
+      difficulty: editingCard ? editingCard.difficulty : null, 
+      next_review: editingCard ? editingCard.next_review : new Date().toISOString(), 
+      interval_days: editingCard ? editingCard.interval_days : 0, 
+      ease_factor: editingCard ? editingCard.ease_factor : 2.5, 
+      review_count: editingCard ? editingCard.review_count : 0,
+      correct_count: editingCard ? editingCard.correct_count : 0,
+      incorrect_count: editingCard ? editingCard.incorrect_count : 0,
+      skip_count: editingCard ? editingCard.skip_count : 0,
+      last_result: editingCard ? editingCard.last_result : null,
+      created_at: editingCard ? editingCard.created_at : new Date().toISOString() 
+    };
+
     try {
-      db.runSync(`INSERT INTO study_cards (id, deck_id, front_content, back_content, front_image_url, back_image_url, options, custom_color, difficulty, next_review, interval_days, ease_factor, review_count, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
-        [payload.id, payload.deck_id, payload.front_content, payload.back_content, payload.front_image_url, payload.back_image_url, JSON.stringify(payload.options), payload.custom_color, payload.difficulty, payload.next_review, payload.interval_days, payload.ease_factor, payload.review_count, payload.created_at]);
-      queueSyncOperation('study_cards', payload.id, 'INSERT', payload);
-      setFront(''); setBack(''); setFrontImg(null); setBackImg(null); setOptions([]); setCustomColor(null);
-      setIsAddModalVisible(false);
+      if (editingCard) {
+        db.runSync(`UPDATE study_cards SET front_content = ?, back_content = ?, front_image_url = ?, back_image_url = ?, options = ?, custom_color = ? WHERE id = ?`,
+          [payload.front_content, payload.back_content, payload.front_image_url, payload.back_image_url, JSON.stringify(payload.options), payload.custom_color, payload.id]);
+        queueSyncOperation('study_cards', payload.id, 'UPDATE', payload);
+      } else {
+        db.runSync(`INSERT INTO study_cards (id, deck_id, front_content, back_content, front_image_url, back_image_url, options, custom_color, difficulty, next_review, interval_days, ease_factor, review_count, correct_count, incorrect_count, skip_count, last_result, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+          [payload.id, payload.deck_id, payload.front_content, payload.back_content, payload.front_image_url, payload.back_image_url, JSON.stringify(payload.options), payload.custom_color, payload.difficulty, payload.next_review, payload.interval_days, payload.ease_factor, payload.review_count, payload.correct_count, payload.incorrect_count, payload.skip_count, payload.last_result, payload.created_at]);
+        queueSyncOperation('study_cards', payload.id, 'INSERT', payload);
+      }
+      setIsModalVisible(false);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       refreshFromSQLite();
-    } catch (e) {}
+    } catch (e) {
+      Alert.alert("Error", "Failed to save card");
+    }
   };
 
   const setDifficultyFirstTime = (rating: 'hard' | 'good' | 'easy') => {
@@ -221,8 +274,8 @@ export default function DeckDetailScreen() {
     if (result === 'skip') {
       const newSkipCount = (card.skip_count || 0) + 1;
       try {
-        db.runSync(`UPDATE study_cards SET skip_count = ? WHERE id = ?`, [newSkipCount, card.id]);
-        queueSyncOperation('study_cards', card.id, 'UPDATE', { skip_count: newSkipCount });
+        db.runSync(`UPDATE study_cards SET skip_count = ?, last_result = ? WHERE id = ?`, [newSkipCount, 'skip', card.id]);
+        queueSyncOperation('study_cards', card.id, 'UPDATE', { skip_count: newSkipCount, last_result: 'skip' });
       } catch (e) {}
       goToNextCard();
       return;
@@ -234,8 +287,8 @@ export default function DeckDetailScreen() {
     const newIncorrectCount = (card.incorrect_count || 0) + (result === 'incorrect' ? 1 : 0);
     const nextReviewStr = nextReview.toISOString();
     try {
-      db.runSync(`UPDATE study_cards SET next_review = ?, interval_days = ?, ease_factor = ?, review_count = ?, correct_count = ?, incorrect_count = ? WHERE id = ?`, [nextReviewStr, interval, ease, updatedCount, newCorrectCount, newIncorrectCount, card.id]);
-      queueSyncOperation('study_cards', card.id, 'UPDATE', { next_review: nextReviewStr, interval_days: interval, ease_factor: ease, review_count: updatedCount, correct_count: newCorrectCount, incorrect_count: newIncorrectCount });
+      db.runSync(`UPDATE study_cards SET next_review = ?, interval_days = ?, ease_factor = ?, review_count = ?, correct_count = ?, incorrect_count = ?, last_result = ? WHERE id = ?`, [nextReviewStr, interval, ease, updatedCount, newCorrectCount, newIncorrectCount, result, card.id]);
+      queueSyncOperation('study_cards', card.id, 'UPDATE', { next_review: nextReviewStr, interval_days: interval, ease_factor: ease, review_count: updatedCount, correct_count: newCorrectCount, incorrect_count: newIncorrectCount, last_result: result });
       goToNextCard();
     } catch (e) {}
   };
@@ -277,13 +330,10 @@ export default function DeckDetailScreen() {
   const swipeGesture = Gesture.Pan()
     .activeOffsetX([-20, 20])
     .onUpdate((e) => {
-      // Horizontal swipe logic
       if (Math.abs(e.translationX) > Math.abs(e.translationY)) {
         translateX.value = e.translationX;
         translateY.value = 0;
-      } 
-      // Vertical skip logic (Up)
-      else if (e.translationY < 0) {
+      } else if (e.translationY < 0) {
         translateX.value = 0;
         translateY.value = e.translationY;
       }
@@ -317,34 +367,52 @@ export default function DeckDetailScreen() {
               <Text style={[styles.subtitle, { color: theme.tabIconDefault }]}>{cards.length} cards</Text>
             </View>
           </View>
-          {!isReviewing && <TouchableOpacity onPress={() => setIsAddModalVisible(true)} style={[styles.addBtn, { backgroundColor: theme.tint }]}><Plus size={24} color="white" /></TouchableOpacity>}
+          {!isReviewing && <TouchableOpacity onPress={openAddModal} style={[styles.addBtn, { backgroundColor: theme.tint }]}><Plus size={24} color="white" /></TouchableOpacity>}
         </View>
 
         {!isReviewing ? (
           <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            {/* MAIN DASHBOARD */}
             <View style={[styles.statsCard, { backgroundColor: theme.card }]}>
-              <View style={styles.statItem}><View style={[styles.statIcon, { backgroundColor: theme.tint + '15' }]}><Brain size={20} color={theme.tint} /></View><Text style={[styles.statValue, { color: theme.tint }]}>{dueCards.length}</Text><Text style={styles.statLabel}>Ready</Text></View>
-              <View style={[styles.statDivider, { backgroundColor: theme.background }]} />
-              <View style={styles.statItem}><View style={[styles.statIcon, { backgroundColor: '#34C75915' }]}><Trophy size={20} color="#34C759" /></View><Text style={[styles.statValue, { color: '#34C759' }]}>{cards.length - dueCards.length}</Text><Text style={styles.statLabel}>Mastered</Text></View>
-              <View style={[styles.statDivider, { backgroundColor: theme.background }]} />
-              <View style={styles.statItem}><View style={[styles.statIcon, { backgroundColor: '#FF950015' }]}><History size={20} color="#FF9500" /></View><Text style={[styles.statValue, { color: '#FF9500' }]}>{cards.length}</Text><Text style={styles.statLabel}>Total</Text></View>
+              <View style={styles.statsRow}>
+                <View style={styles.statItem}><View style={[styles.statIcon, { backgroundColor: theme.tint + '15' }]}><Brain size={18} color={theme.tint} /></View><Text style={[styles.statValue, { color: theme.tint }]}>{dueCards.length}</Text><Text style={styles.statLabel}>Ready</Text></View>
+                <View style={[styles.statDivider, { backgroundColor: theme.background }]} />
+                <View style={styles.statItem}><View style={[styles.statIcon, { backgroundColor: '#34C75915' }]}><Trophy size={18} color="#34C759" /></View><Text style={[styles.statValue, { color: '#34C759' }]}>{cards.filter(c => c.interval_days > 7).length}</Text><Text style={styles.statLabel}>Master</Text></View>
+                <View style={[styles.statDivider, { backgroundColor: theme.background }]} />
+                <View style={styles.statItem}><View style={[styles.statIcon, { backgroundColor: '#FF950015' }]}><History size={18} color="#FF9500" /></View><Text style={[styles.statValue, { color: '#FF9500' }]}>{cards.length}</Text><Text style={styles.statLabel}>Total</Text></View>
+              </View>
+              <View style={[styles.horizontalDivider, { backgroundColor: theme.background }]} />
+              <View style={styles.statsRow}>
+                <View style={styles.statItem}><Text style={[styles.statValueMini, { color: '#34C759' }]}>{stats.correct}</Text><View style={styles.statLabelBadge}><Check size={10} color="#34C759" /><Text style={styles.statLabelMini}>CORRECT</Text></View></View>
+                <View style={styles.statItem}><Text style={[styles.statValueMini, { color: '#FF3B30' }]}>{stats.incorrect}</Text><View style={styles.statLabelBadge}><X size={10} color="#FF3B30" /><Text style={styles.statLabelMini}>WRONG</Text></View></View>
+                <View style={styles.statItem}><Text style={[styles.statValueMini, { color: '#8E8E93' }]}>{stats.skip}</Text><View style={styles.statLabelBadge}><FastForward size={10} color="#8E8E93" /><Text style={styles.statLabelMini}>SKIPPED</Text></View></View>
+              </View>
             </View>
+
             <View style={styles.reviewOptions}>
               <TouchableOpacity activeOpacity={0.9} disabled={dueCards.length === 0} style={[styles.startBtn, { backgroundColor: theme.tint, flex: 1 }, dueCards.length === 0 && { opacity: 0.5 }]} onPress={() => { setReviewMode('due'); setIsReviewing(true); setCurrentCardIdx(0); setIsFlipped(false); flipRotation.value = 0; translateX.value = 0; translateY.value = 0; cardOpacity.value = 1; }}><Brain size={24} color="white" /><Text style={styles.startBtnText}>DUE TODAY</Text></TouchableOpacity>
               <TouchableOpacity activeOpacity={0.9} disabled={cards.length === 0} style={[styles.startBtn, { backgroundColor: theme.secondary, flex: 1 }, cards.length === 0 && { opacity: 0.5 }]} onPress={() => { setReviewMode('all'); setIsReviewing(true); setCurrentCardIdx(0); setIsFlipped(false); flipRotation.value = 0; translateX.value = 0; translateY.value = 0; cardOpacity.value = 1; }}><Repeat size={24} color="white" /><Text style={styles.startBtnText}>PRACTICE ALL</Text></TouchableOpacity>
             </View>
+
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>Flashcards</Text>
+              <View style={styles.countBadge}><Text style={styles.countText}>{cards.length}</Text></View>
+            </View>
+
             {cards.map((card) => (
-              <View key={card.id} style={[styles.cardItem, { backgroundColor: theme.card }]}>
+              <TouchableOpacity key={card.id} onPress={() => openEditModal(card)} style={[styles.cardItem, { backgroundColor: theme.card }]}>
                 <View style={[styles.cardTag, { backgroundColor: card.custom_color || (isAfter(new Date(card.next_review), new Date()) ? '#34C759' : theme.tint) }]} />
-                <View style={{ flex: 1 }}><Text style={[styles.cardFront, { color: theme.text }]} numberOfLines={1}>{card.front_content}</Text><Text style={[styles.cardNext, { color: theme.tabIconDefault }]}>{card.difficulty?.toUpperCase() || 'NEW'} • {format(new Date(card.next_review), 'MMM d')}</Text></View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.cardFront, { color: theme.text }]} numberOfLines={1}>{card.front_content}</Text>
+                  <Text style={[styles.cardNext, { color: colorScheme === 'dark' ? 'rgba(255,255,255,0.5)' : '#666' }]}>{card.difficulty?.toUpperCase() || 'NEW'} • {format(new Date(card.next_review), 'MMM d')}</Text>
+                </View>
                 <ChevronLeft size={16} color={theme.tabIconDefault} style={{ transform: [{ rotate: '180deg' }] }} />
-              </View>
+              </TouchableOpacity>
             ))}
           </ScrollView>
         ) : (
           <View style={styles.reviewContainer}>
             <View style={styles.reviewProgress}><View style={styles.progressBarBase}><Animated.View style={[styles.progressFill, { backgroundColor: theme.tint }, progressBarStyle]} /></View><View style={styles.progressLabelRow}><Text style={styles.progressLabel}>CARD {currentCardIdx + 1} / {cardsToReview.length}</Text><TouchableOpacity onPress={() => setIsReviewing(false)} style={styles.exitBtn}><X size={18} color="#888" /></TouchableOpacity></View></View>
-            
             <View style={styles.deckStackContainer}>
               <GestureDetector gesture={swipeGesture}>
                 <Animated.View style={[styles.cardStack, containerAnimatedStyle]}>
@@ -382,12 +450,10 @@ export default function DeckDetailScreen() {
                   </Pressable>
                 </Animated.View>
               </GestureDetector>
-
               <GestureDetector gesture={sliderGesture}>
                 <View style={styles.sliderTrack}><Animated.View style={[styles.sliderHandle, { backgroundColor: theme.tint }, sliderHandleStyle]} /></View>
               </GestureDetector>
             </View>
-
             <View style={styles.reviewFooter}>
               {!cardsToReview[currentCardIdx]?.difficulty ? (
                 <View style={{ width: '100%', alignItems: 'center' }}>
@@ -412,18 +478,19 @@ export default function DeckDetailScreen() {
           </View>
         )}
 
-        <Modal visible={isAddModalVisible} transparent animationType="fade">
+        <Modal visible={isModalVisible} transparent animationType="fade">
           <View style={styles.modalOverlay}>
-            <Pressable style={StyleSheet.absoluteFill} onPress={() => setIsAddModalVisible(false)} />
+            <Pressable style={StyleSheet.absoluteFill} onPress={() => setIsModalVisible(false)} />
             <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
-              <View style={styles.modalHeader}><Text style={[styles.modalTitle, { color: theme.text }]}>Add Cue Card</Text><TouchableOpacity onPress={() => setIsAddModalVisible(false)} style={styles.modalClose}><X size={20} color={theme.text} /></TouchableOpacity></View>
+              <View style={styles.modalHeader}><Text style={[styles.modalTitle, { color: theme.text }]}>{editingCard ? 'Edit Card' : 'Add Cue Card'}</Text><TouchableOpacity onPress={() => setIsModalVisible(false)} style={styles.modalClose}><X size={20} color={theme.text} /></TouchableOpacity></View>
               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 20 }}>
                 <View style={styles.sideBySide}>
-                  <View style={{ flex: 1 }}><Text style={styles.inputLabel}>PROMPT / QUESTION</Text><TextInput style={[styles.input, { backgroundColor: theme.background, color: theme.text }]} placeholder="Question..." multiline value={front} onChangeText={setFront} /><TouchableOpacity onPress={() => pickImage('front')} style={styles.imgPicker}>{frontImg ? <Image source={{ uri: frontImg }} style={styles.pickedImg} /> : <Text style={styles.imgPickerText}>Add Front Image</Text>}</TouchableOpacity></View>
-                  <View style={{ flex: 1 }}><Text style={styles.inputLabel}>REVEAL / ANSWER</Text><TextInput style={[styles.input, { backgroundColor: theme.background, color: theme.text }]} placeholder="Answer..." multiline value={back} onChangeText={setBack} /><TouchableOpacity onPress={() => pickImage('back')} style={styles.imgPicker}>{backImg ? <Image source={{ uri: backImg }} style={styles.pickedImg} /> : <Text style={styles.imgPickerText}>Add Back Image</Text>}</TouchableOpacity></View>
+                  <View style={{ flex: 1 }}><Text style={styles.inputLabel}>PROMPT / QUESTION</Text><TextInput style={[styles.input, { backgroundColor: theme.background, color: theme.text }]} placeholder="Question..." multiline value={front} onChangeText={setFront} /><TouchableOpacity onPress={() => pickImage('front')} style={styles.imgPicker}>{frontImg ? <Image source={{ uri: frontImg }} style={styles.pickedImg} /> : <Text style={styles.imgPickerText}>Add Image</Text>}</TouchableOpacity></View>
+                  <View style={{ flex: 1 }}><Text style={styles.inputLabel}>REVEAL / ANSWER</Text><TextInput style={[styles.input, { backgroundColor: theme.background, color: theme.text }]} placeholder="Answer..." multiline value={back} onChangeText={setBack} /><TouchableOpacity onPress={() => pickImage('back')} style={styles.imgPicker}>{backImg ? <Image source={{ uri: backImg }} style={styles.pickedImg} /> : <Text style={styles.imgPickerText}>Add Image</Text>}</TouchableOpacity></View>
                 </View>
-                <View><Text style={styles.inputLabel}>MULTIPLE CHOICE OPTIONS</Text>{options.map((opt, i) => (<View key={i} style={styles.optionInputRow}><TextInput style={[styles.input, { flex: 1, backgroundColor: theme.background, color: theme.text }]} value={opt} onChangeText={(t) => { const n = [...options]; n[i] = t; setOptions(n); }} /><TouchableOpacity onPress={() => setOptions(options.filter((_, idx) => idx !== i))}><Trash2 size={18} color="#FF3B30" /></TouchableOpacity></View>))}<TouchableOpacity onPress={() => setOptions([...options, ''])} style={styles.addOptionBtn}><Plus size={16} color={theme.tint} /><Text style={{ color: theme.tint, fontWeight: 'bold' }}>Add Option</Text></TouchableOpacity></View>
-                <TouchableOpacity onPress={addCard} style={[styles.saveBtn, { backgroundColor: theme.tint }]}><Text style={styles.saveBtnText}>Save to Deck</Text></TouchableOpacity>
+                <View><Text style={styles.inputLabel}>OPTIONS</Text>{options.map((opt, i) => (<View key={i} style={styles.optionInputRow}><TextInput style={[styles.input, { flex: 1, backgroundColor: theme.background, color: theme.text }]} value={opt} onChangeText={(t) => { const n = [...options]; n[i] = t; setOptions(n); }} /><TouchableOpacity onPress={() => setOptions(options.filter((_, idx) => idx !== i))}><Trash2 size={18} color="#FF3B30" /></TouchableOpacity></View>))}<TouchableOpacity onPress={() => setOptions([...options, ''])} style={styles.addOptionBtn}><Plus size={16} color={theme.tint} /><Text style={{ color: theme.tint, fontWeight: 'bold' }}>Add Option</Text></TouchableOpacity></View>
+                <View><Text style={styles.inputLabel}>CARD COLOR</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}><TouchableOpacity onPress={() => setCustomColor(null)} style={[styles.colorOpt, { backgroundColor: 'rgba(150,150,150,0.1)' }, !customColor && { borderWidth: 2, borderColor: theme.text }]} />{RAINBOW.map(c => <TouchableOpacity key={c} onPress={() => setCustomColor(c)} style={[styles.colorOpt, { backgroundColor: c }, customColor === c && { borderWidth: 2, borderColor: theme.text }]} />)}</ScrollView></View>
+                <TouchableOpacity onPress={saveCard} style={[styles.saveBtn, { backgroundColor: theme.tint }]}><Text style={styles.saveBtnText}>{editingCard ? 'Update Card' : 'Save to Deck'}</Text></TouchableOpacity>
               </ScrollView>
             </View>
           </View>
@@ -444,19 +511,28 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 12, fontWeight: '700', opacity: 0.6 },
   addBtn: { width: 44, height: 44, borderRadius: 15, justifyContent: 'center', alignItems: 'center', elevation: 4 },
   scrollContent: { paddingHorizontal: 20, paddingBottom: 100 },
-  statsCard: { flexDirection: 'row', padding: 20, borderRadius: 28, marginBottom: 25, elevation: 2 },
+  statsCard: { padding: 20, borderRadius: 28, marginBottom: 25, elevation: 2 },
+  statsRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   statItem: { flex: 1, alignItems: 'center', gap: 5 },
-  statIcon: { width: 36, height: 36, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  statValue: { fontSize: 24, fontWeight: '900' },
-  statLabel: { fontSize: 10, fontWeight: '800', color: '#888', textTransform: 'uppercase' },
-  statDivider: { width: 1, height: 40, opacity: 0.1 },
+  statIcon: { width: 32, height: 32, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  statValue: { fontSize: 20, fontWeight: '900' },
+  statValueMini: { fontSize: 16, fontWeight: '900' },
+  statLabel: { fontSize: 9, fontWeight: '800', color: '#888', textTransform: 'uppercase' },
+  statLabelMini: { fontSize: 8, fontWeight: '900', color: '#888' },
+  statLabelBadge: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  statDivider: { width: 1, height: 30, opacity: 0.1 },
+  horizontalDivider: { height: 1, width: '100%', marginVertical: 15, opacity: 0.1 },
   reviewOptions: { flexDirection: 'row', gap: 15, marginBottom: 25 },
   startBtn: { height: 65, borderRadius: 22, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, elevation: 4 },
   startBtnText: { color: 'white', fontSize: 14, fontWeight: '900', letterSpacing: 1 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 15, marginTop: 10 },
+  sectionTitle: { fontSize: 18, fontWeight: '900' },
+  countBadge: { backgroundColor: 'rgba(0,0,0,0.05)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
+  countText: { fontSize: 12, fontWeight: '900', color: '#888' },
   cardItem: { padding: 16, borderRadius: 20, marginBottom: 12, flexDirection: 'row', alignItems: 'center', elevation: 1 },
   cardTag: { width: 4, height: 30, borderRadius: 2, marginRight: 15 },
-  cardFront: { fontSize: 15, fontWeight: '700' },
-  cardNext: { fontSize: 11, fontWeight: '600', marginTop: 2, textTransform: 'uppercase' },
+  cardFront: { fontSize: 15, fontWeight: '700', marginBottom: 2 },
+  cardNext: { fontSize: 11, fontWeight: '600', textTransform: 'uppercase' },
   reviewContainer: { flex: 1, paddingHorizontal: 20 },
   reviewProgress: { marginBottom: 30 },
   progressBarBase: { height: 6, backgroundColor: 'rgba(0,0,0,0.05)', borderRadius: 3, overflow: 'hidden' },
@@ -469,7 +545,7 @@ const styles = StyleSheet.create({
   cardVisibleArea: { flex: 1, height: '100%', overflow: 'hidden' },
   cardContentWrapper: { padding: 30, alignItems: 'center', width: '100%' },
   sliderTrack: { width: 30, height: 200, backgroundColor: 'rgba(0,0,0,0.05)', borderRadius: 15, overflow: 'hidden', alignItems: 'center' },
-  sliderHandle: { width: 10, height: 60, borderRadius: 5, marginTop: 0 },
+  sliderHandle: { width: 10, height: 60, borderRadius: 5 },
   flashcard: { flex: 1, borderRadius: 40, elevation: 8, overflow: 'hidden', borderWidth: 2 },
   flashcardBack: { ...StyleSheet.absoluteFillObject },
   cardContainer: { flex: 1 },
@@ -501,6 +577,7 @@ const styles = StyleSheet.create({
   imgPickerText: { fontSize: 10, fontWeight: '800', color: '#888' },
   optionInputRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
   addOptionBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, padding: 10 },
+  colorOpt: { width: 32, height: 32, borderRadius: 16 },
   saveBtn: { height: 60, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginTop: 20 },
   saveBtnText: { color: 'white', fontSize: 16, fontWeight: '900' }
 });
