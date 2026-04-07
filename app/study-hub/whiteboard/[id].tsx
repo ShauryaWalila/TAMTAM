@@ -132,6 +132,7 @@ export default function WhiteboardScreen() {
   const reviseRef = useRef(isReviseMode);
   const boardRef = useRef(board);
   const isDrawingRef = useRef(false);
+  const currentPathRef = useRef<any>(null);
 
   useEffect(() => { pathsRef.current = paths; }, [paths]);
   useEffect(() => { imagesRef.current = images; }, [images]);
@@ -217,35 +218,55 @@ export default function WhiteboardScreen() {
     const sw = (activeTool === 'high' ? highSize : (activeTool === 'eraser' ? eraserSize : penSize)) / s;
     const nP = Skia.Path.Make();
     nP.moveTo(wX, wY);
-    setCurrentPath({ id: generateUUID(), path: nP, color: activeTool === 'eraser' ? '#fff' : color, strokeWidth: sw, isEraser: activeTool === 'eraser', opacity: activeTool === 'high' ? highOpacity : (activeTool === 'eraser' ? 1 : penOpacity), startX: wX, startY: wY, swOrig: sw });
+    const newPath = { id: generateUUID(), path: nP, color: activeTool === 'eraser' ? '#fff' : color, strokeWidth: sw, isEraser: activeTool === 'eraser', opacity: activeTool === 'high' ? highOpacity : (activeTool === 'eraser' ? 1 : penOpacity), startX: wX, startY: wY, swOrig: sw };
+    currentPathRef.current = newPath;
+    setCurrentPath(newPath);
   }, [activeTool, color, penSize, highSize, eraserSize, penOpacity, highOpacity, scale, translateX, translateY]);
 
   const onDrawUpdate = useCallback((x: number, y: number) => {
-    if (currentPath) {
+    const cp = currentPathRef.current;
+    if (cp) {
       const wX = (x - translateX.value) / scale.value;
       const wY = (y - translateY.value) / scale.value;
-      currentPath.path.lineTo(wX, wY);
-      setCurrentPath({ ...currentPath });
+      cp.path.lineTo(wX, wY);
+      const updated = { ...cp };
+      currentPathRef.current = updated;
+      setCurrentPath(updated);
     }
-  }, [currentPath, scale, translateX, translateY]);
+  }, [scale, translateX, translateY]);
 
   const onDrawFinalize = useCallback(() => {
-    if (currentPath) {
-      let finalPath = currentPath.path.copy();
+    const cp = currentPathRef.current;
+    if (cp) {
+      let finalPath = cp.path.copy();
       const bounds = finalPath.getBounds();
       // 🔥 DEFINITIVE DOT FIX: Geometric Circle survives all conversions
       if (bounds.width < 0.1 && bounds.height < 0.1) {
         finalPath = Skia.Path.Make();
-        finalPath.addCircle(currentPath.startX, currentPath.startY, currentPath.swOrig / 2);
+        finalPath.addCircle(cp.startX, cp.startY, cp.swOrig / 2);
       }
-      const finalized = { ...currentPath, path: finalPath };
+      const finalized = { ...cp, path: finalPath };
       if (reviseRef.current) setGlassPaths(p => [...p, finalized]);
       else setPaths(prev => { const next = [...prev, finalized]; handleSave(next); return next; });
+      currentPathRef.current = null;
       setCurrentPath(null);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
     isDrawingRef.current = false;
-  }, [currentPath]);
+  }, []);
+
+  const onDrawTap = useCallback((x: number, y: number) => {
+    const s = scale.value;
+    const wX = (x - translateX.value) / s;
+    const wY = (y - translateY.value) / s;
+    const sw = (activeTool === 'high' ? highSize : (activeTool === 'eraser' ? eraserSize : penSize)) / s;
+    const dotPath = Skia.Path.Make();
+    dotPath.addCircle(wX, wY, sw / 2);
+    const dot = { id: generateUUID(), path: dotPath, color: activeTool === 'eraser' ? '#fff' : color, strokeWidth: sw, isEraser: activeTool === 'eraser', opacity: activeTool === 'high' ? highOpacity : (activeTool === 'eraser' ? 1 : penOpacity), startX: wX, startY: wY, swOrig: sw };
+    if (reviseRef.current) setGlassPaths(p => [...p, dot]);
+    else setPaths(prev => { const next = [...prev, dot]; handleSave(next); return next; });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }, [activeTool, color, penSize, highSize, eraserSize, penOpacity, highOpacity, scale, translateX, translateY]);
 
   const undo = () => {
     if (paths.length === 0) return;
@@ -357,6 +378,7 @@ export default function WhiteboardScreen() {
   const dragType = useRef<string | null>(null);
   const resizeCorner = useRef(0);
 
+  const dotTapGesture = Gesture.Tap().enabled(activeTool !== 'pan').onEnd((e) => runOnJS(onDrawTap)(e.x, e.y));
   const drawGesture = Gesture.Pan().minPointers(1).maxPointers(1).enabled(activeTool !== 'pan').onBegin((e) => runOnJS(onDrawStart)(e.x, e.y)).onUpdate((e) => runOnJS(onDrawUpdate)(e.x, e.y)).onFinalize(() => runOnJS(onDrawFinalize)());
   const lastTX = useSharedValue(0); const lastTY = useSharedValue(0);
   const handGesture = Gesture.Pan().minPointers(1).maxPointers(1).enabled(activeTool === 'pan').onBegin((e) => runOnJS(onPanStart)(e.x, e.y)).onUpdate((e) => {
@@ -369,7 +391,7 @@ export default function WhiteboardScreen() {
     translateX.value = focalX.value - (focalX.value - savedTranslateX.value) * s; translateY.value = focalY.value - (focalY.value - savedTranslateY.value) * s;
     scale.value = nS; runOnJS(setZoomText)(`${Math.round(nS * 100)}%`);
   }).onEnd(() => { savedScale.value = scale.value; savedTranslateX.value = translateX.value; savedTranslateY.value = translateY.value; });
-  const composedGesture = Gesture.Simultaneous(Gesture.Exclusive(drawGesture, handGesture), pinchGesture, Gesture.Pan().minPointers(3).onUpdate(e => { translateX.value = savedTranslateX.value + e.translationX; translateY.value = savedTranslateY.value + e.translationY; }).onEnd(() => { savedTranslateX.value = translateX.value; savedTranslateY.value = translateY.value; }));
+  const composedGesture = Gesture.Simultaneous(Gesture.Exclusive(drawGesture, dotTapGesture, handGesture), pinchGesture, Gesture.Pan().minPointers(3).onUpdate(e => { translateX.value = savedTranslateX.value + e.translationX; translateY.value = savedTranslateY.value + e.translationY; }).onEnd(() => { savedTranslateX.value = translateX.value; savedTranslateY.value = translateY.value; }));
 
   const animatedTransform = useDerivedValue(() => [{ translateX: translateX.value }, { translateY: translateY.value }, { scale: scale.value }]);
   const fabG = Gesture.Exclusive(Gesture.Tap().numberOfTaps(2).onEnd(() => runOnJS(setIsDraggable)(!isDraggable)), Gesture.Tap().numberOfTaps(1).onEnd(() => runOnJS(setIsToolsExpanded)(!isToolsExpanded)), Gesture.Pan().enabled(isDraggable).onStart(() => { savedFabX.value = fabX.value; savedFabY.value = fabY.value; }).onUpdate(e => { fabX.value = savedFabX.value + e.translationX; fabY.value = savedFabY.value + e.translationY; }));
