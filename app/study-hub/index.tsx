@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput, FlatList } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput, FlatList, Dimensions, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { Text, View as ThemedView } from '@/components/Themed';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
@@ -8,12 +8,16 @@ import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { db, queueSyncOperation, generateUUID } from '@/lib/db';
 import * as SecureStore from 'expo-secure-store';
-import { BookOpen, Plus, X, BrainCircuit, PenTool, LayoutDashboard, Clock, ChevronLeft, Search as SearchIcon } from 'lucide-react-native';
+import { BookOpen, Plus, X, BrainCircuit, PenTool, LayoutDashboard, Clock, ChevronLeft, Search as SearchIcon, Calendar, Flame, MessageSquare, Check, Trash2, ChevronRight, ListChecks, Minus, Edit3, Moon, Play, Pause, Bell } from 'lucide-react-native';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import RadialNavigator from '@/components/RadialNavigator';
-import { KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
-import { MotiView } from 'moti';
+import { MotiView, AnimatePresence } from 'moti';
+import { format, differenceInDays, startOfToday, eachDayOfInterval, subDays, differenceInMinutes } from 'date-fns';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { sendStudyNotification } from '@/lib/notifications';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function StudyHubDashboard() {
   const colorScheme = useColorScheme() ?? 'light';
@@ -24,112 +28,54 @@ export default function StudyHubDashboard() {
   const [decks, setDecks] = useState<any[]>([]);
   const [whiteboards, setWhiteboards] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState<string>('');
-  
+  const [exams, setExams] = useState<any[]>([]);
+  const [habitLog, setHabitLog] = useState<any[]>([]);
+  const [brainDump, setBrainDump] = useState<any[]>([]);
+  const [syllabus, setSyllabus] = useState<any[]>([]);
+
   const [isDeckModalVisible, setIsDeckModalVisible] = useState(false);
   const [newDeckTitle, setNewDeckTitle] = useState('');
   const [newDeckDesc, setNewDeckDesc] = useState('');
-
   const [isWhiteboardModalVisible, setIsWhiteboardModalVisible] = useState(false);
   const [newWhiteboardTitle, setNewWhiteboardTitle] = useState('');
-
+  const [isExamModalVisible, setIsExamModalVisible] = useState(false);
+  const [examTitle, setExamTitle] = useState('');
+  const [examDate, setExamDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [isDumpModalVisible, setIsDumpModalVisible] = useState(false);
+  const [dumpContent, setDumpContent] = useState('');
+  const [editingDumpId, setEditingDumpId] = useState<string | null>(null);
+  const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // POMODORO & SYNC STATE
+  // --- FOCUS TIMER STATE ---
   const [isTimerRunning, setIsTimerStarted] = useState(false);
+  const [isTimerPaused, setIsTimerPaused] = useState(false);
   const [timeLeft, setTimeLeft] = useState(25 * 60);
   const [selectedDuration, setSelectedDuration] = useState(25);
+  const [isTimerModalVisible, setIsTimerModalVisible] = useState(false);
   const [partnerSession, setPartnerSession] = useState<any>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // --- NAP STATE ---
+  const [isNapping, setIsNapping] = useState(false);
+  const [napStartTime, setNapStartTime] = useState<Date | null>(null);
+
   useEffect(() => {
     init();
-    const subscription = supabase
-      .channel('timer_sync')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'active_study_sessions' }, () => fetchActiveSessions())
-      .subscribe();
-    
-    return () => { subscription.unsubscribe(); };
-  }, []);
-
-  const fetchActiveSessions = async () => {
-    const { data } = await supabase.from('active_study_sessions').select('*');
-    if (data) {
-      const mySession = data.find(s => s.user_id === currentUser);
-      const herSession = data.find(s => s.user_id !== currentUser);
-
-      if (mySession) {
-        const elapsed = Math.floor((new Date().getTime() - new Date(mySession.start_time).getTime()) / 1000);
-        const remaining = (mySession.duration_minutes * 60) - elapsed;
-        if (remaining > 0) {
-          setTimeLeft(remaining);
-          setIsTimerStarted(true);
-        } else {
-          handleTimerComplete();
+    const subscription = supabase.channel('study_hub_sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'active_study_sessions' }, (payload) => {
+        if (payload.eventType === 'INSERT' && payload.new.user_id !== currentUser) {
+          sendStudyNotification(payload.new.user_id, 'started a new study session! 🧠');
         }
-      }
-
-      if (herSession) {
-        setPartnerSession(herSession);
-      } else {
-        setPartnerSession(null);
-      }
-    }
-  };
-
-  useEffect(() => {
-    if (isTimerRunning && timeLeft > 0) {
-      timerRef.current = setInterval(() => setTimeLeft(t => t - 1), 1000);
-    } else if (timeLeft <= 0 && isTimerRunning) {
-      handleTimerComplete();
-    }
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [isTimerRunning, timeLeft]);
-
-  const handleTimerComplete = async () => {
-    setIsTimerStarted(false);
-    setTimeLeft(selectedDuration * 60);
-    await supabase.from('active_study_sessions').delete().eq('user_id', currentUser);
-    
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Alert.alert("🎉 Session Complete!", "Great job focusing!");
-    
-    await supabase.from('focus_sessions').insert([{
-      user_id: currentUser,
-      duration_minutes: selectedDuration
-    }]);
-    fetchActiveSessions();
-  };
-
-  const toggleTimer = async () => {
-    if (!isTimerRunning) {
-      const { error } = await supabase.from('active_study_sessions').upsert({
-        user_id: currentUser,
-        start_time: new Date().toISOString(),
-        duration_minutes: selectedDuration
-      });
-      if (!error) {
-        setTimeLeft(selectedDuration * 60);
-        setIsTimerStarted(true);
-      }
-    } else {
-      Alert.alert("Stop Session?", "Progress won't be saved.", [
-        { text: "Cancel" },
-        { text: "Stop", style: 'destructive', onPress: async () => {
-          await supabase.from('active_study_sessions').delete().eq('user_id', currentUser);
-          setIsTimerStarted(false);
-          setTimeLeft(selectedDuration * 60);
-          fetchActiveSessions();
-        }}
-      ]);
-    }
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  };
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(Math.max(0, seconds) / 60);
-    const secs = Math.max(0, seconds) % 60;
-    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-  };
+        fetchActiveSessions();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'study_exams' }, () => refreshData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'study_brain_dump' }, () => refreshData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'study_syllabus' }, () => refreshData())
+      .subscribe();
+    return () => { subscription.unsubscribe(); };
+  }, [currentUser]);
 
   const init = async () => {
     const name = await SecureStore.getItemAsync('user_name');
@@ -142,34 +88,194 @@ export default function StudyHubDashboard() {
     }
   };
 
+  const refreshData = () => { if (currentUser) fetchData(currentUser); };
+
   const refreshFromSQLite = () => {
     try {
-      const d = db.getAllSync(`SELECT * FROM study_decks ORDER BY created_at DESC`) as any[];
-      setDecks(d || []);
-      const w = db.getAllSync(`SELECT * FROM study_whiteboards ORDER BY updated_at DESC`) as any[];
-      setWhiteboards(w || []);
+      setDecks(db.getAllSync(`SELECT * FROM study_decks ORDER BY created_at DESC`) || []);
+      setWhiteboards(db.getAllSync(`SELECT * FROM study_whiteboards ORDER BY updated_at DESC`) || []);
+      setExams(db.getAllSync(`SELECT * FROM study_exams ORDER BY exam_date ASC`) || []);
+      setHabitLog(db.getAllSync(`SELECT * FROM study_habit_log ORDER BY date DESC LIMIT 365`) || []);
+      setBrainDump(db.getAllSync(`SELECT * FROM study_brain_dump WHERE is_processed = 0 ORDER BY created_at DESC`) || []);
+      setSyllabus(db.getAllSync(`SELECT * FROM study_syllabus ORDER BY order_index ASC`) || []);
     } catch (e) {}
   };
 
   const fetchData = async (userId: string) => {
     try {
       const { data: deckData } = await supabase.from('study_decks').select('*, study_cards(count)').order('created_at', { ascending: false });
-      if (deckData) {
-        deckData.forEach(d => {
-          db.runSync(`INSERT OR REPLACE INTO study_decks (id, title, description, color, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?)`, 
-            [d.id, d.title, d.description, d.color, d.user_id, d.created_at]);
-        });
-      }
+      if (deckData) deckData.forEach(d => db.runSync(`INSERT OR REPLACE INTO study_decks (id, title, description, color, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?)`, [d.id, d.title, d.description, d.color, d.user_id, d.created_at]));
       const { data: boardData } = await supabase.from('study_whiteboards').select('*').order('updated_at', { ascending: false });
-      if (boardData) {
-        boardData.forEach(b => {
-          db.runSync(`INSERT OR REPLACE INTO study_whiteboards (id, title, canvas_data, updated_at) VALUES (?, ?, ?, ?)`, 
-            [b.id, b.title, typeof b.canvas_data === 'string' ? b.canvas_data : JSON.stringify(b.canvas_data), b.updated_at]);
-        });
-      }
+      if (boardData) boardData.forEach(b => db.runSync(`INSERT OR REPLACE INTO study_whiteboards (id, title, canvas_data, updated_at) VALUES (?, ?, ?, ?)`, [b.id, b.title, typeof b.canvas_data === 'string' ? b.canvas_data : JSON.stringify(b.canvas_data), b.updated_at]));
+      const { data: examData } = await supabase.from('study_exams').select('*');
+      if (examData) examData.forEach(e => db.runSync(`INSERT OR REPLACE INTO study_exams (id, title, exam_date, start_date, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?)`, [e.id, e.title, e.exam_date, e.start_date, e.user_id, e.created_at]));
+      const { data: dumpData } = await supabase.from('study_brain_dump').select('*').eq('is_processed', 0);
+      if (dumpData) dumpData.forEach(b => db.runSync(`INSERT OR REPLACE INTO study_brain_dump (id, content, user_id, is_processed, created_at) VALUES (?, ?, ?, ?, ?)`, [b.id, b.content, b.user_id, b.is_processed, b.created_at]));
+      const { data: syllabusData } = await supabase.from('study_syllabus').select('*');
+      if (syllabusData) syllabusData.forEach(s => db.runSync(`INSERT OR REPLACE INTO study_syllabus (id, parent_id, title, status, user_id, order_index, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`, [s.id, s.parent_id, s.title, s.status, s.user_id, s.order_index, s.created_at]));
       refreshFromSQLite();
     } catch (e) {}
   };
+
+  const fetchActiveSessions = async () => {
+    const { data } = await supabase.from('active_study_sessions').select('*');
+    if (data) {
+      const mySession = data.find(s => s.user_id === currentUser);
+      const herSession = data.find(s => s.user_id !== currentUser);
+      if (mySession) {
+        if (mySession.is_paused) { setIsTimerPaused(true); setTimeLeft(mySession.time_left); setIsTimerStarted(true); } 
+        else {
+          const elapsed = Math.floor((new Date().getTime() - new Date(mySession.start_time).getTime()) / 1000);
+          const remaining = (mySession.duration_minutes * 60) - elapsed;
+          if (remaining > 0) { setTimeLeft(remaining); setSelectedDuration(mySession.duration_minutes); setIsTimerStarted(true); setIsTimerPaused(false); }
+          else handleTimerComplete();
+        }
+      } else {
+        setIsTimerStarted(false);
+        setIsTimerPaused(false);
+      }
+      setPartnerSession(herSession || null);
+    }
+  };
+
+  useEffect(() => {
+    if (isTimerRunning && !isTimerPaused && timeLeft > 0) timerRef.current = setInterval(() => setTimeLeft(t => t - 1), 1000);
+    else if (timerRef.current) clearInterval(timerRef.current);
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [isTimerRunning, isTimerPaused, timeLeft]);
+
+  const handleTimerComplete = async () => {
+    setIsTimerStarted(false); setIsTimerPaused(false); setTimeLeft(selectedDuration * 60);
+    await supabase.from('active_study_sessions').delete().eq('user_id', currentUser);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Alert.alert("🎉 Session Complete!", "Great job focusing!");
+    const today = format(new Date(), 'yyyy-MM-dd');
+    db.runSync(`INSERT OR IGNORE INTO study_habit_log (id, date, user_id) VALUES (?, ?, ?)`, [generateUUID(), today, currentUser]);
+    db.runSync(`UPDATE study_habit_log SET focus_minutes = focus_minutes + ? WHERE date = ?`, [selectedDuration, today]);
+    await supabase.from('focus_sessions').insert([{ user_id: currentUser, duration_minutes: selectedDuration }]);
+    fetchActiveSessions(); refreshFromSQLite();
+  };
+
+  const toggleTimer = async () => {
+    if (!isTimerRunning) {
+      const { error } = await supabase.from('active_study_sessions').upsert({ user_id: currentUser, start_time: new Date().toISOString(), duration_minutes: selectedDuration, is_paused: 0 });
+      if (!error) { setTimeLeft(selectedDuration * 60); setIsTimerStarted(true); setIsTimerPaused(false); setIsTimerModalVisible(false); }
+    } else {
+      Alert.alert("Abandon Session?", "Focus time won't be saved.", [
+        { text: "Cancel" },
+        { text: "Abandon", style: 'destructive', onPress: async () => {
+          await supabase.from('active_study_sessions').delete().eq('user_id', currentUser);
+          setIsTimerStarted(false); setIsTimerPaused(false); setTimeLeft(selectedDuration * 60); fetchActiveSessions();
+        }}
+      ]);
+    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const togglePause = async () => {
+    const nextPaused = !isTimerPaused;
+    setIsTimerPaused(nextPaused);
+    await supabase.from('active_study_sessions').update({ is_paused: nextPaused ? 1 : 0, time_left: timeLeft }).eq('user_id', currentUser);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  };
+
+  const startNap = () => {
+    if (isTimerRunning && !isTimerPaused) togglePause();
+    setIsNapping(true); setIsTimerModalVisible(false); setNapStartTime(new Date());
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const endNap = async () => {
+    if (!napStartTime) return;
+    const end = new Date();
+    const duration = differenceInMinutes(end, napStartTime);
+    const id = generateUUID();
+    const payload = { id, user_id: currentUser, start_time: napStartTime.toISOString(), end_time: end.toISOString(), duration_minutes: duration, created_at: end.toISOString() };
+    db.runSync(`INSERT INTO study_naps (id, user_id, start_time, end_time, duration_minutes, created_at) VALUES (?, ?, ?, ?, ?, ?)`, [id, payload.user_id, payload.start_time, payload.end_time, payload.duration_minutes, payload.created_at]);
+    queueSyncOperation('study_naps', id, 'INSERT', payload);
+    setIsNapping(false); setNapStartTime(null); Alert.alert("Recovery Complete", `You rested for ${duration} minutes. Stay sharp!`);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+  };
+
+  const adjustTimer = (mins: number) => {
+    const next = Math.max(1, Math.min(180, selectedDuration + mins));
+    setSelectedDuration(next); setTimeLeft(next * 60);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(Math.max(0, seconds) / 60);
+    const secs = Math.max(0, seconds) % 60;
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
+  const createDeck = async () => {
+    if (!newDeckTitle.trim()) return;
+    const id = generateUUID();
+    const payload = { id, title: newDeckTitle.trim(), description: newDeckDesc.trim(), user_id: currentUser, created_at: new Date().toISOString() };
+    db.runSync(`INSERT INTO study_decks (id, title, description, user_id, created_at) VALUES (?, ?, ?, ?, ?)`, [payload.id, payload.title, payload.description, payload.user_id, payload.created_at]);
+    queueSyncOperation('study_decks', payload.id, 'INSERT', payload);
+    setIsDeckModalVisible(false); setNewDeckTitle(''); setNewDeckDesc(''); refreshFromSQLite();
+  };
+
+  const createWhiteboard = async () => {
+    if (!newWhiteboardTitle.trim()) return;
+    const id = generateUUID();
+    const payload = { id, title: newWhiteboardTitle.trim(), user_id: currentUser, updated_at: new Date().toISOString() };
+    db.runSync(`INSERT INTO study_whiteboards (id, title, user_id, updated_at) VALUES (?, ?, ?, ?)`, [payload.id, payload.title, payload.user_id, payload.updated_at]);
+    queueSyncOperation('study_whiteboards', payload.id, 'INSERT', payload);
+    setIsWhiteboardModalVisible(false); setNewWhiteboardTitle(''); refreshFromSQLite();
+    router.push(`/study-hub/whiteboard/${payload.id}`);
+  };
+
+  const addExam = async () => {
+    if (!examTitle.trim()) return;
+    const id = generateUUID();
+    const formattedDate = format(examDate, 'yyyy-MM-dd');
+    const examPayload = { id, title: examTitle.trim(), exam_date: formattedDate, start_date: format(new Date(), 'yyyy-MM-dd'), user_id: currentUser, created_at: new Date().toISOString() };
+    
+    // Add to Study Exams
+    db.runSync(`INSERT INTO study_exams (id, title, exam_date, start_date, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?)`, [examPayload.id, examPayload.title, examPayload.exam_date, examPayload.start_date, examPayload.user_id, examPayload.created_at]);
+    queueSyncOperation('study_exams', examPayload.id, 'INSERT', examPayload);
+
+    // Sync to Common Calendar
+    const calPayload = { id, event_date: formattedDate, title: `📚 EXAM: ${examTitle.trim()}`, user_id: currentUser, frequency: 'once', created_at: new Date().toISOString() };
+    db.runSync(`INSERT INTO calendar_events (id, event_date, title, user_id, frequency, created_at) VALUES (?, ?, ?, ?, ?, ?)`, [calPayload.id, calPayload.event_date, calPayload.title, calPayload.user_id, calPayload.frequency, calPayload.created_at]);
+    queueSyncOperation('calendar_events', calPayload.id, 'INSERT', calPayload);
+
+    setIsExamModalVisible(false); setExamTitle(''); setExamDate(new Date()); refreshFromSQLite();
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const deleteExam = (id: string) => {
+    Alert.alert('Delete Exam?', 'Remove this countdown and calendar event?', [
+      { text: 'Cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => {
+        // Remove from Study Exams
+        db.runSync(`DELETE FROM study_exams WHERE id = ?`, [id]);
+        queueSyncOperation('study_exams', id, 'DELETE', {});
+
+        // Remove from Common Calendar
+        db.runSync(`DELETE FROM calendar_events WHERE id = ?`, [id]);
+        queueSyncOperation('calendar_events', id, 'DELETE', {});
+
+        refreshFromSQLite();
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      }}
+    ]);
+  };
+
+  const addBrainDump = async () => {
+    if (!dumpContent.trim()) return;
+    const id = editingDumpId || generateUUID();
+    const payload = { id, content: dumpContent.trim(), user_id: currentUser, is_processed: 0, created_at: new Date().toISOString() };
+    if (editingDumpId) { db.runSync(`UPDATE study_brain_dump SET content = ? WHERE id = ?`, [dumpContent.trim(), id]); queueSyncOperation('study_brain_dump', id, 'UPDATE', { content: dumpContent.trim() }); }
+    else { db.runSync(`INSERT INTO study_brain_dump (id, content, user_id, is_processed, created_at) VALUES (?, ?, ?, ?, ?)`, [id, payload.content, payload.user_id, payload.is_processed, payload.created_at]); queueSyncOperation('study_brain_dump', id, 'INSERT', payload); }
+    setIsDumpModalVisible(false); setDumpContent(''); setEditingDumpId(null); refreshFromSQLite();
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const onDateChange = (event: any, selectedDate?: Date) => { const currentDate = selectedDate || examDate; setShowDatePicker(Platform.OS === 'ios'); setExamDate(currentDate); };
 
   const filteredDecks = useMemo(() => {
     if (!searchQuery.trim()) return decks;
@@ -183,199 +289,169 @@ export default function StudyHubDashboard() {
     return whiteboards.filter(w => w.title?.toLowerCase().includes(q));
   }, [whiteboards, searchQuery]);
 
-  const createDeck = async () => {
-    if (!newDeckTitle.trim()) return;
-    const id = generateUUID();
-    const payload = { id, title: newDeckTitle.trim(), description: newDeckDesc.trim(), user_id: currentUser, created_at: new Date().toISOString() };
-    try {
-      db.runSync(`INSERT INTO study_decks (id, title, description, user_id, created_at) VALUES (?, ?, ?, ?, ?)`, [payload.id, payload.title, payload.description, payload.user_id, payload.created_at]);
-      queueSyncOperation('study_decks', payload.id, 'INSERT', payload);
-      setIsDeckModalVisible(false); setNewDeckTitle(''); setNewDeckDesc('');
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      refreshFromSQLite();
-    } catch (e) {}
-  };
+  const heatmapData = useMemo(() => {
+    const last30Days = eachDayOfInterval({ start: subDays(startOfToday(), 29), end: startOfToday() });
+    return last30Days.map(date => {
+      const dayStr = format(date, 'yyyy-MM-dd');
+      const entry = habitLog.find(h => h.date === dayStr);
+      return { date, count: entry ? (entry.completed_tasks + entry.focus_minutes / 10 + entry.cards_reviewed / 5) : 0 };
+    });
+  }, [habitLog]);
 
-  const createWhiteboard = async () => {
-    if (!newWhiteboardTitle.trim()) return;
-    const id = generateUUID();
-    const payload = { id, title: newWhiteboardTitle.trim(), user_id: currentUser, updated_at: new Date().toISOString() };
-    try {
-      db.runSync(`INSERT INTO study_whiteboards (id, title, user_id, updated_at) VALUES (?, ?, ?, ?)`, [payload.id, payload.title, payload.user_id, payload.updated_at]);
-      queueSyncOperation('study_whiteboards', payload.id, 'INSERT', payload);
-      setIsWhiteboardModalVisible(false); setNewWhiteboardTitle('');
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      refreshFromSQLite();
-      router.push(`/study-hub/whiteboard/${payload.id}`);
-    } catch (e) {}
-  };
-
-  const deleteDeck = async (id: string) => {
-    Alert.alert('Delete Deck?', 'This will permanently remove all cards inside.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => {
-        db.runSync(`DELETE FROM study_decks WHERE id = ?`, [id]);
-        queueSyncOperation('study_decks', id, 'DELETE', {});
-        refreshFromSQLite();
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      }}
-    ]);
-  };
-
-  const deleteWhiteboard = async (id: string) => {
-    Alert.alert('Delete Board?', 'This will permanently remove this Med-Board.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => {
-        db.runSync(`DELETE FROM study_whiteboards WHERE id = ?`, [id]);
-        queueSyncOperation('study_whiteboards', id, 'DELETE', {});
-        refreshFromSQLite();
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      }}
-    ]);
-  };
+  const syllabusProgress = useMemo(() => {
+    if (syllabus.length === 0) return 0;
+    const leafNodes = syllabus.filter(item => !syllabus.some(s => s.parent_id === item.id));
+    if (leafNodes.length === 0) return 0;
+    const completed = leafNodes.filter(item => item.status === 'done' || item.status === 'revised').length;
+    return Math.round((completed / leafNodes.length) * 100);
+  }, [syllabus]);
 
   return (
     <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={styles.header}>
+        <View style={{ flex: 1 }}><Text style={[styles.title, { color: theme.text }]}>Study Hub</Text><Text style={[styles.subtitle, { color: theme.tabIconDefault }]}>Exam Mode Activated 🧠</Text></View>
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <TouchableOpacity onPress={() => setIsTimerModalVisible(true)} style={[styles.headerBtn, { backgroundColor: isTimerRunning ? (isTimerPaused ? '#FFCC00' : '#FF2D55') : theme.card }]}>
+            <Clock size={22} color={isTimerRunning ? '#fff' : theme.text} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => { setIsSearchVisible(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} style={[styles.headerBtn, { backgroundColor: theme.card }]}><SearchIcon size={22} color={theme.text} /></TouchableOpacity>
+        </View>
+      </View>
+
+      <AnimatePresence>{isSearchVisible && (<MotiView from={{ opacity: 0, translateY: -20 }} animate={{ opacity: 1, translateY: 0 }} exit={{ opacity: 0, translateY: -20 }} style={[styles.searchOverlay, { backgroundColor: theme.card }]}><SearchIcon size={18} color={theme.tabIconDefault} /><TextInput style={[styles.searchInput, { color: theme.text }]} placeholder="Search everything..." placeholderTextColor={theme.tabIconDefault} autoFocus value={searchQuery} onChangeText={setSearchQuery} /><TouchableOpacity onPress={() => { setIsSearchVisible(false); setSearchQuery(''); }} style={styles.closeSearch}><X size={20} color={theme.text} /></TouchableOpacity></MotiView>)}</AnimatePresence>
+
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={{ marginBottom: 20 }}>
-          <Text style={[styles.title, { color: theme.text }]}>Study Hub</Text>
-          <Text style={[styles.subtitle, { color: theme.tabIconDefault }]}>Exam Mode Activated 🧠</Text>
-        </View>
-
-        {/* SEARCH BAR */}
-        <View style={[styles.searchContainer, { backgroundColor: theme.card }]}>
-          <SearchIcon size={18} color={theme.tabIconDefault} />
-          <TextInput 
-            style={[styles.searchInput, { color: theme.text }]} 
-            placeholder="Search decks or boards..." 
-            placeholderTextColor={theme.tabIconDefault}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery !== '' && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}><X size={18} color={theme.tabIconDefault} /></TouchableOpacity>
-          )}
-        </View>
-
-        {/* PARTNER STATUS */}
-        {partnerSession && (
+        {/* PARTNER NOTIFICATION (Only if it's the other person) */}
+        {partnerSession && partnerSession.user_id !== currentUser && (
           <MotiView from={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={[styles.partnerCard, { backgroundColor: '#FF2D55' }]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <View style={styles.liveIndicator} />
-              <Text style={styles.partnerText}>Partner is studying right now! ❤️</Text>
-            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}><Bell size={18} color="#fff" /><Text style={styles.partnerText}>Partner is studying right now! ❤️</Text></View>
           </MotiView>
         )}
-        
-        {/* FOCUS TIMER SECTION */}
-        <View style={[styles.timerCard, { backgroundColor: theme.card }]}>
-          <View style={styles.timerInfo}>
-            <Clock size={32} color={isTimerRunning ? '#FF2D55' : theme.tint} />
-            <View style={{ marginLeft: 15 }}>
-              {!isTimerRunning ? (
-                <View style={styles.durationRow}>
-                  {[25, 45, 60, 90].map(d => (
-                    <TouchableOpacity key={d} onPress={() => { setSelectedDuration(d); setTimeLeft(d * 60); }} style={[styles.durationChip, selectedDuration === d && { backgroundColor: theme.tint }]}>
-                      <Text style={[styles.durationText, selectedDuration === d && { color: 'white' }]}>{d}m</Text>
-                    </TouchableOpacity>
-                  ))}
+
+        {/* ACTIVE TIMER DASHBOARD CARD (Only when running) */}
+        <AnimatePresence>
+          {(isTimerRunning || isNapping) && (
+            <MotiView from={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} style={[styles.activeTimerCard, { backgroundColor: isNapping ? '#AF52DE' : (isTimerPaused ? '#FFCC00' : '#FF2D55') }]}>
+              <View style={styles.activeTimerTop}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  {isNapping ? <Moon size={24} color="#fff" /> : <Clock size={24} color="#fff" />}
+                  <Text style={styles.activeTimerLabel}>{isNapping ? 'POWER NAP' : (isTimerPaused ? 'PAUSED' : 'FOCUSING')}</Text>
                 </View>
-              ) : (
-                <Text style={styles.timerLabel}>STAY FOCUSED</Text>
-              )}
-              <Text style={[styles.timerValue, { color: theme.text }]}>{formatTime(timeLeft)}</Text>
-            </View>
-          </View>
-          <TouchableOpacity onPress={toggleTimer} style={[styles.timerBtn, { backgroundColor: isTimerRunning ? '#FF3B30' : theme.tint }]}>
-            <Text style={styles.timerBtnText}>{isTimerRunning ? 'PAUSE' : 'START'}</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* DECKS SECTION */}
-        <View style={styles.sectionHeader}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <BookOpen color={theme.tint} size={24} />
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>Flashcard Decks</Text>
-          </View>
-          <TouchableOpacity onPress={() => setIsDeckModalVisible(true)} style={[styles.addBtn, { backgroundColor: theme.tint + '20' }]}>
-            <Plus size={20} color={theme.tint} />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.grid}>
-          {filteredDecks.map(deck => (
-            <TouchableOpacity key={deck.id} style={[styles.card, { backgroundColor: theme.card, borderTopColor: deck.color || theme.tint, borderTopWidth: 4 }]} onPress={() => router.push(`/study-hub/deck/${deck.id}`)} onLongPress={() => deleteDeck(deck.id)}>
-              <Text style={[styles.cardTitle, { color: theme.text }]}>{deck.title}</Text>
-              <Text style={[styles.cardSub, { color: theme.tabIconDefault }]} numberOfLines={2}>{deck.description || "No description"}</Text>
-              <View style={styles.cardFooter}>
-                <Text style={styles.cardStat}>Revise</Text>
+                <Text style={styles.activeTimerValue}>{isNapping ? 'RECOVERING' : formatTime(timeLeft)}</Text>
               </View>
-            </TouchableOpacity>
-          ))}
-          {filteredDecks.length === 0 && searchQuery !== '' && (
-            <Text style={{ color: theme.tabIconDefault, fontStyle: 'italic', padding: 20 }}>No decks match your search.</Text>
+              <View style={styles.activeTimerActions}>
+                {isNapping ? (
+                  <TouchableOpacity onPress={endNap} style={styles.activeBtn}><Text style={styles.activeBtnText}>WAKE UP</Text></TouchableOpacity>
+                ) : (
+                  <>
+                    <TouchableOpacity onPress={togglePause} style={styles.activeBtn}>{isTimerPaused ? <Play size={20} color="#fff" /> : <Pause size={20} color="#fff" />}</TouchableOpacity>
+                    <TouchableOpacity onPress={toggleTimer} style={styles.activeBtn}><X size={20} color="#fff" /></TouchableOpacity>
+                  </>
+                )}
+              </View>
+            </MotiView>
           )}
-          {decks.length === 0 && searchQuery === '' && (
-            <Text style={{ color: theme.tabIconDefault, fontStyle: 'italic', padding: 20 }}>No decks yet. Create one to start!</Text>
-          )}
-        </View>
+        </AnimatePresence>
 
-        {/* WHITEBOARDS SECTION */}
-        <View style={[styles.sectionHeader, { marginTop: 40 }]}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <PenTool color={theme.tint} size={24} />
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>Med-Boards</Text>
+        {/* SYLLABUS MASTERY */}
+        <TouchableOpacity style={[styles.syllabusCard, { backgroundColor: theme.card }]} onPress={() => router.push('/study-hub/syllabus')}>
+          <View style={styles.syllabusHeader}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}><View style={[styles.statIcon, { backgroundColor: '#AF52DE15' }]}><ListChecks size={24} color="#AF52DE" /></View><View><Text style={[styles.cardTitle, { color: theme.text, marginBottom: 2 }]}>Syllabus Mastery</Text><Text style={styles.cardSub}>{syllabus.length} topics tracked</Text></View></View>
+            <View style={styles.progressCircle}><Text style={[styles.progressText, { color: theme.text }]}>{syllabusProgress}%</Text></View>
           </View>
-          <TouchableOpacity onPress={() => setIsWhiteboardModalVisible(true)} style={[styles.addBtn, { backgroundColor: theme.tint + '20' }]}>
-            <Plus size={20} color={theme.tint} />
-          </TouchableOpacity>
+          <View style={styles.syllabusProgressBar}><View style={[styles.syllabusProgressFill, { width: `${syllabusProgress}%`, backgroundColor: '#AF52DE' }]} /></View>
+        </TouchableOpacity>
+
+        {/* EXAM COUNTDOWN */}
+        <View style={styles.sectionHeader}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Calendar color={theme.tint} size={24} /><Text style={[styles.sectionTitle, { color: theme.text }]}>Exam Countdown</Text></View>
+          <TouchableOpacity onPress={() => setIsExamModalVisible(true)} style={[styles.addBtn, { backgroundColor: theme.tint + '20' }]}><Plus size={20} color={theme.tint} /></TouchableOpacity>
+        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 15, paddingBottom: 10 }}>
+          {exams.map(exam => {
+            const daysLeft = differenceInDays(new Date(exam.exam_date), startOfToday());
+            return (
+              <TouchableOpacity key={exam.id} style={[styles.examCard, { backgroundColor: theme.card }]} onLongPress={() => { Alert.alert('Delete Exam?', 'Remove this countdown?', [{ text: 'Cancel' }, { text: 'Delete', style: 'destructive', onPress: () => { db.runSync(`DELETE FROM study_exams WHERE id = ?`, [exam.id]); queueSyncOperation('study_exams', exam.id, 'DELETE', {}); refreshFromSQLite(); }}]); }}>
+                <Text style={[styles.examTitle, { color: theme.text }]}>{exam.title}</Text>
+                <Text style={[styles.examDays, { color: theme.tint }]}>{daysLeft} Days Left</Text>
+                <View style={styles.examProgressBase}><View style={[styles.examProgressFill, { backgroundColor: theme.tint, width: `${Math.min(100, Math.max(5, (1 - daysLeft/60) * 100))}%` }]} /></View>
+              </TouchableOpacity>
+            );
+          })}
+          {exams.length === 0 && <Text style={styles.emptyText}>Add your next Prof exam!</Text>}
+        </ScrollView>
+
+        {/* HABIT HEATMAP */}
+        <View style={[styles.sectionHeader, { marginTop: 30 }]}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Flame color="#FF9500" size={24} /><Text style={[styles.sectionTitle, { color: theme.text }]}>Consistency Heatmap</Text></View></View>
+        <View style={[styles.heatmapCard, { backgroundColor: theme.card }]}>
+          <View style={styles.heatmapGrid}>{heatmapData.map((d, i) => <View key={i} style={[styles.heatmapSquare, { backgroundColor: d.count > 0 ? `rgba(52, 199, 89, ${Math.min(1, d.count/10 + 0.2)})` : theme.background }]} />)}</View>
+          <Text style={styles.heatmapLabel}>Last 30 days of medical focus</Text>
         </View>
 
-        <View style={styles.grid}>
-          {filteredWhiteboards.map(board => (
-            <TouchableOpacity key={board.id} style={[styles.card, { backgroundColor: theme.card }]} onPress={() => router.push(`/study-hub/whiteboard/${board.id}`)} onLongPress={() => deleteWhiteboard(board.id)}>
-              <View style={[styles.boardThumb, { backgroundColor: theme.tint + '10' }]}><LayoutDashboard size={32} color={theme.tint} opacity={0.5} /></View>
-              <Text style={[styles.cardTitle, { color: theme.text, marginTop: 10 }]}>{board.title}</Text>
-            </TouchableOpacity>
+        {/* BRAIN DUMP */}
+        <View style={[styles.sectionHeader, { marginTop: 30 }]}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><MessageSquare color={theme.secondary} size={24} /><Text style={[styles.sectionTitle, { color: theme.text }]}>Brain Dump Inbox</Text></View><TouchableOpacity onPress={() => { setEditingDumpId(null); setDumpContent(''); setIsDumpModalVisible(true); }} style={[styles.addBtn, { backgroundColor: theme.secondary + '20' }]}><Plus size={20} color={theme.secondary} /></TouchableOpacity></View>
+        <View style={[styles.dumpCard, { backgroundColor: theme.card }]}>
+          {brainDump.slice(0, 3).map(item => (
+            <View key={item.id} style={styles.dumpItem}>
+              <Text style={[styles.dumpText, { color: theme.text }]} numberOfLines={1}>{item.content}</Text>
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <TouchableOpacity onPress={() => { setEditingDumpId(item.id); setDumpContent(item.content); setIsDumpModalVisible(true); }}><Edit3 size={18} color={theme.tabIconDefault} /></TouchableOpacity>
+                <TouchableOpacity onPress={() => { db.runSync(`UPDATE study_brain_dump SET is_processed = 1 WHERE id = ?`, [item.id]); queueSyncOperation('study_brain_dump', item.id, 'UPDATE', { is_processed: 1 }); refreshFromSQLite(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}><Check size={18} color="#34C759" /></TouchableOpacity>
+              </View>
+            </View>
           ))}
-          {filteredWhiteboards.length === 0 && searchQuery !== '' && (
-            <Text style={{ color: theme.tabIconDefault, fontStyle: 'italic', padding: 20 }}>No boards match your search.</Text>
-          )}
-          {whiteboards.length === 0 && searchQuery === '' && (
-            <Text style={{ color: theme.tabIconDefault, fontStyle: 'italic', padding: 20 }}>No whiteboards created yet.</Text>
-          )}
+          {brainDump.length === 0 && <Text style={styles.emptyText}>Inbox is clean!</Text>}
         </View>
 
+        {/* DECKS & BOARDS */}
+        <View style={[styles.sectionHeader, { marginTop: 40 }]}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><BookOpen color={theme.tint} size={24} /><Text style={[styles.sectionTitle, { color: theme.text }]}>Flashcard Decks</Text></View><TouchableOpacity onPress={() => setIsDeckModalVisible(true)} style={[styles.addBtn, { backgroundColor: theme.tint + '20' }]}><Plus size={20} color={theme.tint} /></TouchableOpacity></View>
+        <View style={styles.grid}>{filteredDecks.map(deck => (<TouchableOpacity key={deck.id} style={[styles.card, { backgroundColor: theme.card, borderTopColor: deck.color || theme.tint, borderTopWidth: 4 }]} onPress={() => router.push(`/study-hub/deck/${deck.id}`)} onLongPress={() => { Alert.alert('Delete Deck?', 'Remove this deck?', [{ text: 'Cancel' }, { text: 'Delete', style: 'destructive', onPress: () => { db.runSync(`DELETE FROM study_decks WHERE id = ?`, [deck.id]); queueSyncOperation('study_decks', deck.id, 'DELETE', {}); refreshFromSQLite(); }}]); }}><Text style={[styles.cardTitle, { color: theme.text }]}>{deck.title}</Text><Text style={[styles.cardSub, { color: theme.tabIconDefault }]} numberOfLines={2}>{deck.description || "No description"}</Text></TouchableOpacity>))}</View>
+
+        <View style={[styles.sectionHeader, { marginTop: 40 }]}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><PenTool color={theme.tint} size={24} /><Text style={[styles.sectionTitle, { color: theme.text }]}>Med-Boards</Text></View><TouchableOpacity onPress={() => setIsWhiteboardModalVisible(true)} style={[styles.addBtn, { backgroundColor: theme.tint + '20' }]}><Plus size={20} color={theme.tint} /></TouchableOpacity></View>
+        <View style={styles.grid}>{filteredWhiteboards.map(board => (<TouchableOpacity key={board.id} style={[styles.card, { backgroundColor: theme.card }]} onPress={() => router.push(`/study-hub/whiteboard/${board.id}`)} onLongPress={() => { Alert.alert('Delete Board?', 'Remove this board?', [{ text: 'Cancel' }, { text: 'Delete', style: 'destructive', onPress: () => { db.runSync(`DELETE FROM study_whiteboards WHERE id = ?`, [board.id]); queueSyncOperation('study_whiteboards', board.id, 'DELETE', {}); refreshFromSQLite(); }}]); }}><View style={[styles.boardThumb, { backgroundColor: theme.tint + '10' }]}><LayoutDashboard size={32} color={theme.tint} opacity={0.5} /></View><Text style={[styles.cardTitle, { color: theme.text, marginTop: 10 }]}>{board.title}</Text></TouchableOpacity>))}</View>
       </ScrollView>
 
-      {/* MODALS REMAIN UNCHANGED BUT USE THEME */}
-      <Modal visible={isDeckModalVisible} transparent animationType="fade">
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View style={styles.modalOverlay}>
-            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ width: '100%' }}>
-              <BlurView intensity={100} tint={colorScheme} style={styles.modalContent}>
-                <View style={styles.modalHeader}><Text style={[styles.modalTitle, { color: theme.text }]}>New Study Deck</Text><TouchableOpacity onPress={() => setIsDeckModalVisible(false)}><X size={24} color={theme.text} /></TouchableOpacity></View>
-                <TextInput style={[styles.input, { backgroundColor: theme.background, color: theme.text }]} placeholder="Subject (e.g., Anatomy)" placeholderTextColor={theme.tabIconDefault} value={newDeckTitle} onChangeText={setNewDeckTitle} />
-                <TextInput style={[styles.input, { backgroundColor: theme.background, color: theme.text, height: 100, textAlignVertical: 'top' }]} placeholder="Description" placeholderTextColor={theme.tabIconDefault} multiline value={newDeckDesc} onChangeText={setNewDeckDesc} />
-                <TouchableOpacity onPress={createDeck} style={[styles.saveBtn, { backgroundColor: theme.tint }]}><Text style={styles.saveBtnText}>Create Deck</Text></TouchableOpacity>
-              </BlurView>
-            </KeyboardAvoidingView>
+      {/* NEW MINIMALIST TIMER MODAL */}
+      <Modal visible={isTimerModalVisible} transparent animationType="slide">
+        <View style={styles.modalOverlay}><BlurView intensity={100} tint={colorScheme} style={styles.modalContent}>
+          <View style={styles.modalHeader}><Text style={[styles.modalTitle, { color: theme.text }]}>Focus Engine</Text><TouchableOpacity onPress={() => setIsTimerModalVisible(false)}><X size={24} color={theme.text} /></TouchableOpacity></View>
+          
+          <View style={styles.timerPickerMain}>
+            <View style={styles.timerValues}>
+              <View style={styles.adjustRow}>
+                <TouchableOpacity onPress={() => adjustTimer(-5)} style={styles.adjustBtn}><Minus size={24} color={theme.text} /></TouchableOpacity>
+                <Text style={styles.timerLabel}>SET MINUTES</Text>
+                <TouchableOpacity onPress={() => adjustTimer(5)} style={styles.adjustBtn}><Plus size={24} color={theme.text} /></TouchableOpacity>
+              </View>
+              <Text style={[styles.bigTimerValue, { color: theme.text }]}>{selectedDuration}:00</Text>
+            </View>
           </View>
-        </TouchableWithoutFeedback>
+
+          <View style={styles.presetRow}>
+            {[25, 45, 60, 90].map(p => (
+              <TouchableOpacity key={p} onPress={() => { setSelectedDuration(p); setTimeLeft(p * 60); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); }} style={[styles.presetBtn, selectedDuration === p && { backgroundColor: theme.tint }]}>
+                <Text style={[styles.presetText, { color: selectedDuration === p ? '#fff' : theme.tabIconDefault }]}>{p}m</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <View style={{ flexDirection: 'row', gap: 15 }}>
+            <TouchableOpacity onPress={toggleTimer} style={[styles.saveBtn, { backgroundColor: theme.tint, flex: 2 }]}><Text style={styles.saveBtnText}>START FOCUSING</Text></TouchableOpacity>
+            <TouchableOpacity onPress={startNap} style={[styles.saveBtn, { backgroundColor: '#AF52DE', flex: 1 }]}><Moon size={24} color="#fff" /></TouchableOpacity>
+          </View>
+        </BlurView></View>
       </Modal>
 
-      <Modal visible={isWhiteboardModalVisible} transparent animationType="fade">
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View style={styles.modalOverlay}>
-            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ width: '100%' }}>
-              <BlurView intensity={100} tint={colorScheme} style={styles.modalContent}>
-                <View style={styles.modalHeader}><Text style={[styles.modalTitle, { color: theme.text }]}>New Med-Board</Text><TouchableOpacity onPress={() => setIsWhiteboardModalVisible(false)}><X size={24} color={theme.text} /></TouchableOpacity></View>
-                <TextInput style={[styles.input, { backgroundColor: theme.background, color: theme.text }]} placeholder="Board Name (e.g., Cardiac Cycle)" placeholderTextColor={theme.tabIconDefault} value={newWhiteboardTitle} onChangeText={setNewWhiteboardTitle} />
-                <TouchableOpacity onPress={createWhiteboard} style={[styles.saveBtn, { backgroundColor: theme.tint }]}><Text style={styles.saveBtnText}>Create Board</Text></TouchableOpacity>
-              </BlurView>
-            </KeyboardAvoidingView>
-          </View>
-        </TouchableWithoutFeedback>
+      {/* BRAIN DUMP MODAL */}
+      <Modal visible={isDumpModalVisible} transparent animationType="fade">
+        <TouchableWithoutFeedback onPress={() => { Keyboard.dismiss(); setIsDumpModalVisible(false); }}><View style={styles.modalOverlay}><KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ width: '100%' }}><TouchableWithoutFeedback onPress={Keyboard.dismiss}><View style={[styles.modalContent, { backgroundColor: theme.card }]}><View style={styles.modalHeader}><Text style={[styles.modalTitle, { color: theme.text }]}>{editingDumpId ? 'Edit Thought' : 'Brain Dump'}</Text><TouchableOpacity onPress={() => setIsDumpModalVisible(false)}><X size={24} color={theme.text} /></TouchableOpacity></View><TextInput style={[styles.input, { backgroundColor: theme.background, color: theme.text, height: 120, textAlignVertical: 'top' }]} placeholder="MNEMONICS, THOUGHTS..." multiline autoFocus value={dumpContent} onChangeText={setDumpContent} /><TouchableOpacity onPress={addBrainDump} style={[styles.saveBtn, { backgroundColor: theme.secondary }]}><Text style={styles.saveBtnText}>{editingDumpId ? 'SAVE CHANGES' : 'DUMP IT'}</Text></TouchableOpacity></View></TouchableWithoutFeedback></KeyboardAvoidingView></View></TouchableWithoutFeedback>
+      </Modal>
+
+      {/* EXAM MODAL */}
+      <Modal visible={isExamModalVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}><BlurView intensity={100} tint={colorScheme} style={styles.modalContent}><Text style={[styles.modalTitle, { color: theme.text }]}>Add Exam</Text><TextInput style={[styles.input, { backgroundColor: theme.background, color: theme.text }]} placeholder="Exam Title" value={examTitle} onChangeText={setExamTitle} /><TouchableOpacity onPress={() => setShowDatePicker(true)} style={[styles.dateInput, { backgroundColor: theme.background }]}><Calendar size={20} color={theme.tint} /><Text style={{ color: theme.text, fontWeight: '600', marginLeft: 10 }}>{format(examDate, 'PPP')}</Text></TouchableOpacity>
+          {showDatePicker && (<DateTimePicker value={examDate} mode="date" display={Platform.OS === 'ios' ? 'inline' : 'default'} onChange={onDateChange} minimumDate={new Date()} />)}
+          <TouchableOpacity onPress={addExam} style={[styles.saveBtn, { backgroundColor: theme.tint, marginTop: 10 }]}><Text style={styles.saveBtnText}>Add countdown</Text></TouchableOpacity><TouchableOpacity onPress={() => setIsExamModalVisible(false)}><Text style={{ textAlign: 'center', color: '#888', marginTop: 10 }}>Cancel</Text></TouchableOpacity></BlurView></View>
       </Modal>
 
       <RadialNavigator />
@@ -388,36 +464,69 @@ const styles = StyleSheet.create({
   header: { padding: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   title: { fontSize: 34, fontWeight: '900', letterSpacing: -1 },
   subtitle: { fontSize: 16, fontWeight: '600' },
-  searchContainer: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, marginBottom: 25, paddingHorizontal: 15, height: 50, borderRadius: 15 },
+  headerBtn: { width: 44, height: 44, borderRadius: 15, justifyContent: 'center', alignItems: 'center' },
+  searchOverlay: { position: 'absolute', top: 60, left: 20, right: 20, zIndex: 1000, height: 55, borderRadius: 18, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 15, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 15, elevation: 5 },
   searchInput: { flex: 1, marginLeft: 10, fontSize: 16, fontWeight: '600' },
+  closeSearch: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
   scrollContent: { padding: 20, paddingBottom: 100 },
-  timerCard: { padding: 25, borderRadius: 32, marginBottom: 35, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', elevation: 4, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10 },
-  timerInfo: { flexDirection: 'row', alignItems: 'center' },
-  timerLabel: { fontSize: 10, fontWeight: '900', color: '#888', letterSpacing: 1 },
-  timerValue: { fontSize: 32, fontWeight: '900' },
-  timerBtn: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 15 },
-  timerBtnText: { color: 'white', fontWeight: '900', fontSize: 14 },
-  durationRow: { flexDirection: 'row', gap: 8, marginBottom: 5 },
-  durationChip: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, backgroundColor: 'rgba(150,150,150,0.1)' },
-  durationText: { fontSize: 10, fontWeight: '800' },
+  syllabusCard: { padding: 20, borderRadius: 28, marginBottom: 25, elevation: 4 },
+  syllabusHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
+  progressCircle: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(0,0,0,0.05)', justifyContent: 'center', alignItems: 'center' },
+  progressText: { fontSize: 12, fontWeight: '900' },
+  syllabusProgressBar: { height: 6, backgroundColor: 'rgba(0,0,0,0.05)', borderRadius: 3, overflow: 'hidden' },
+  syllabusProgressFill: { height: '100%', borderRadius: 3 },
+  
+  // ACTIVE TIMER STYLES (Floating card when started)
+  activeTimerCard: { padding: 20, borderRadius: 30, marginBottom: 25, elevation: 10 },
+  activeTimerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  activeTimerLabel: { color: 'white', fontSize: 10, fontWeight: '900', letterSpacing: 2 },
+  activeTimerValue: { color: 'white', fontSize: 28, fontWeight: '900' },
+  activeTimerActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 15, marginTop: 15 },
+  activeBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
+  activeBtnText: { color: 'white', fontWeight: '900', fontSize: 14 },
+
+  // MODAL TIMER STYLES
+  timerPickerMain: { alignItems: 'center', marginVertical: 30 },
+  timerValues: { alignItems: 'center' },
+  bigTimerValue: { fontSize: 64, fontWeight: '900', letterSpacing: -2 },
+  timerLabel: { fontSize: 10, fontWeight: '900', color: '#888', letterSpacing: 2 },
+  adjustRow: { flexDirection: 'row', alignItems: 'center', gap: 20, marginBottom: 10 },
+  adjustBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(0,0,0,0.05)', justifyContent: 'center', alignItems: 'center' },
+  presetRow: { flexDirection: 'row', justifyContent: 'center', gap: 12, marginBottom: 30 },
+  presetBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 15, backgroundColor: 'rgba(0,0,0,0.03)' },
+  presetText: { fontSize: 14, fontWeight: '800' },
+
   partnerCard: { padding: 15, borderRadius: 20, marginBottom: 20 },
   partnerText: { color: 'white', fontWeight: '900', fontSize: 14 },
   liveIndicator: { width: 8, height: 8, borderRadius: 4, backgroundColor: 'white' },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  sectionTitle: { fontSize: 22, fontWeight: '800' },
-  addBtn: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
+  sectionTitle: { fontSize: 20, fontWeight: '800' },
+  addBtn: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
+  examCard: { width: 200, padding: 20, borderRadius: 24, elevation: 2 },
+  examTitle: { fontSize: 16, fontWeight: '800', marginBottom: 5 },
+  examDays: { fontSize: 20, fontWeight: '900' },
+  examProgressBase: { height: 6, backgroundColor: 'rgba(0,0,0,0.05)', borderRadius: 3, marginTop: 10, overflow: 'hidden' },
+  examProgressFill: { height: '100%', borderRadius: 3 },
+  heatmapCard: { padding: 20, borderRadius: 24, marginBottom: 10 },
+  heatmapGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
+  heatmapSquare: { width: 12, height: 12, borderRadius: 2 },
+  heatmapLabel: { fontSize: 10, color: '#888', marginTop: 10, textAlign: 'center' },
+  dumpCard: { padding: 12, borderRadius: 24, elevation: 2 },
+  dumpItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 8, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.03)' },
+  dumpText: { flex: 1, fontSize: 14, fontWeight: '600', marginRight: 15 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 15 },
-  card: { width: '47%', padding: 20, borderRadius: 24, elevation: 4, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10 },
-  cardTitle: { fontSize: 18, fontWeight: '800', marginBottom: 5 },
-  cardSub: { fontSize: 12, fontWeight: '500', opacity: 0.8 },
-  cardFooter: { marginTop: 15, flexDirection: 'row', justifyContent: 'space-between' },
-  cardStat: { fontSize: 12, fontWeight: '900', color: '#888' },
-  boardThumb: { width: '100%', height: 100, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+  card: { width: '47%', padding: 20, borderRadius: 24, elevation: 4 },
+  cardTitle: { fontSize: 16, fontWeight: '800' },
+  cardSub: { fontSize: 11, fontWeight: '500', opacity: 0.7 },
+  boardThumb: { width: '100%', height: 80, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+  statIcon: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  emptyText: { color: '#888', fontStyle: 'italic', padding: 10 },
   modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
   modalContent: { padding: 30, borderTopLeftRadius: 40, borderTopRightRadius: 40, gap: 15 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   modalTitle: { fontSize: 24, fontWeight: '900' },
   input: { padding: 20, borderRadius: 20, fontSize: 16, fontWeight: '600' },
+  dateInput: { padding: 20, borderRadius: 20, flexDirection: 'row', alignItems: 'center' },
   saveBtn: { height: 60, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginTop: 10 },
   saveBtnText: { color: 'white', fontSize: 18, fontWeight: '900' }
 });

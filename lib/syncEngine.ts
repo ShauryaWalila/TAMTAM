@@ -94,6 +94,30 @@ export const initialFullSync = async (shouldClear = false) => {
       n => db.runSync(`INSERT OR REPLACE INTO chill_items (id, category_id, type, title, content, bg_color, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, 
         [n.id, n.category_id, n.type, n.title, JSON.stringify(n.content), n.bg_color, n.created_by, n.created_at]));
 
+    await syncTable('study_exams', supabase.from('study_exams').select('*'), 
+      n => db.runSync(`INSERT OR REPLACE INTO study_exams (id, title, exam_date, start_date, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?)`, 
+        [n.id, n.title, n.exam_date, n.start_date, n.user_id, n.created_at]));
+
+    await syncTable('study_habit_log', supabase.from('study_habit_log').select('*'), 
+      n => db.runSync(`INSERT OR REPLACE INTO study_habit_log (id, date, completed_tasks, focus_minutes, cards_reviewed, user_id) VALUES (?, ?, ?, ?, ?, ?)`, 
+        [n.id, n.date, n.completed_tasks, n.focus_minutes, n.cards_reviewed, n.user_id]));
+
+    await syncTable('study_brain_dump', supabase.from('study_brain_dump').select('*'), 
+      n => db.runSync(`INSERT OR REPLACE INTO study_brain_dump (id, content, user_id, is_processed, created_at) VALUES (?, ?, ?, ?, ?)`, 
+        [n.id, n.content, n.user_id, n.is_processed, n.created_at]));
+
+    await syncTable('focus_sessions', supabase.from('focus_sessions').select('*'), 
+      n => db.runSync(`INSERT OR REPLACE INTO focus_sessions (id, user_id, subject, duration_minutes, completed_at) VALUES (?, ?, ?, ?, ?)`, 
+        [n.id, n.user_id, n.subject, n.duration_minutes, n.completed_at]));
+
+    await syncTable('active_study_sessions', supabase.from('active_study_sessions').select('*'), 
+      n => db.runSync(`INSERT OR REPLACE INTO active_study_sessions (user_id, start_time, duration_minutes) VALUES (?, ?, ?)`, 
+        [n.user_id, n.start_time, n.duration_minutes]));
+
+    await syncTable('study_syllabus', supabase.from('study_syllabus').select('*'), 
+      n => db.runSync(`INSERT OR REPLACE INTO study_syllabus (id, parent_id, title, status, user_id, order_index, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
+        [n.id, n.parent_id, n.title, n.status, n.user_id, n.order_index, n.created_at]));
+
     console.log('Background lazy sync complete.');
   };
 

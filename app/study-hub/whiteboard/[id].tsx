@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { StyleSheet, View, TouchableOpacity, Dimensions, ScrollView, Modal, TextInput, Linking, Alert } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Dimensions, ScrollView, Modal, TextInput, Linking, Alert, ActivityIndicator } from 'react-native';
 import { Canvas, Path, Skia, useCanvasRef, Group, Rect, Points, vec, Image, Text as SkiaText, useImage, matchFont, Circle, RoundedRect } from '@shopify/react-native-skia';
 import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, { useSharedValue, runOnJS, useDerivedValue, useAnimatedStyle, cancelAnimation } from 'react-native-reanimated';
@@ -17,6 +17,9 @@ import { useColorScheme } from '@/components/useColorScheme';
 import { Text } from '@/components/Themed';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const SESSION_ID = Math.random().toString(36).substring(7);
+
+// --- Helper Components (Outside to fix hook order) ---
 
 const RemoteImage = ({ img, isSelected }: any) => {
   const skiaImg = useImage(img.uri);
@@ -37,6 +40,33 @@ const RemoteImage = ({ img, isSelected }: any) => {
   );
 };
 
+const CustomSlider = ({ value, onValueChange, min, max, title, theme }: any) => {
+  const sliderWidth = SCREEN_WIDTH * 0.6;
+  const knobX = useSharedValue(((value - min) / (max - min)) * sliderWidth);
+  useEffect(() => { knobX.value = ((value - min) / (max - min)) * sliderWidth; }, [value]);
+  const g = Gesture.Pan().onUpdate((e) => {
+    const x = Math.max(0, Math.min(sliderWidth, e.x));
+    knobX.value = x;
+    runOnJS(onValueChange)(min + (x / sliderWidth) * (max - min));
+  });
+  const knobStyle = useAnimatedStyle(() => ({ transform: [{ translateX: knobX.value - 8 }] }));
+  const fillStyle = useAnimatedStyle(() => ({ width: knobX.value }));
+  return (
+    <View style={{ gap: 4 }}>
+      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+        <Text style={{ fontSize: 10, color: "#999" }}>{title}</Text>
+        <Text style={{ fontSize: 10, fontWeight: "bold", color: "black" }}>{Math.round(value)}</Text>
+      </View>
+      <GestureDetector gesture={g}>
+        <View style={{ height: 4, backgroundColor: "rgba(0,0,0,0.1)", borderRadius: 2 }}>
+          <Animated.View style={[{ height: 4, borderRadius: 2, backgroundColor: theme.tint }, fillStyle]} />
+          <Animated.View style={[styles.knob, knobStyle]} />
+        </View>
+      </GestureDetector>
+    </View>
+  );
+};
+
 const RAINBOW = ['#000', '#8E8E93', '#FF3B30', '#FF9500', '#FFCC00', '#34C759', '#007AFF', '#5856D6', '#AF52DE', '#FF2D55', '#FFF'];
 
 export default function WhiteboardScreen() {
@@ -46,6 +76,7 @@ export default function WhiteboardScreen() {
   const theme = Colors[useColorScheme() ?? 'light'];
   const canvasRef = useCanvasRef();
 
+  // Paths & Objects
   const [paths, setPaths] = useState<any[]>([]);
   const [glassPaths, setGlassPaths] = useState<any[]>([]);
   const [currentPath, setCurrentPath] = useState<any>(null);
@@ -53,6 +84,7 @@ export default function WhiteboardScreen() {
   const [links, setLinks] = useState<any[]>([]);
   const [board, setBoard] = useState<any>(null);
 
+  // Tools & UI
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<any>(null);
   const [menuPos, setMenuPos] = useState({ x: 0, y: 0 });
@@ -71,6 +103,7 @@ export default function WhiteboardScreen() {
   const [penOpacity, setPenOpacity] = useState(1);
   const [highOpacity, setHighOpacity] = useState(0.35);
 
+  // Transform
   const scale = useSharedValue(1);
   const savedScale = useSharedValue(1);
   const translateX = useSharedValue(0);
@@ -84,6 +117,7 @@ export default function WhiteboardScreen() {
   const savedFabX = useSharedValue(20);
   const savedFabY = useSharedValue(SCREEN_HEIGHT / 2);
 
+  // Modals
   const [linkModal, setLinkModal] = useState(false);
   const [textModal, setTextModal] = useState(false);
   const [editingLinkId, setEditingLinkId] = useState<string | null>(null);
@@ -91,14 +125,13 @@ export default function WhiteboardScreen() {
   const [lTitle, setLTitle] = useState('');
   const [newText, setNewText] = useState('');
 
-  const fontLink = matchFont({ fontFamily: "Arial", fontSize: 16, fontWeight: "bold" });
-  const makeStickerFont = (size: number) => matchFont({ fontFamily: "Arial", fontSize: size });
-
+  // Refs for logic consistency
   const pathsRef = useRef(paths);
   const imagesRef = useRef(images);
   const linksRef = useRef(links);
   const reviseRef = useRef(isReviseMode);
   const boardRef = useRef(board);
+  const isDrawingRef = useRef(false);
 
   useEffect(() => { pathsRef.current = paths; }, [paths]);
   useEffect(() => { imagesRef.current = images; }, [images]);
@@ -106,16 +139,23 @@ export default function WhiteboardScreen() {
   useEffect(() => { reviseRef.current = isReviseMode; }, [isReviseMode]);
   useEffect(() => { boardRef.current = board; }, [board]);
 
+  const gridPoints = useMemo(() => { 
+    const pts: any[] = []; 
+    for (let x = -5000; x <= 5000; x += 100) for (let y = -5000; y <= 5000; y += 100) pts.push(vec(x, y)); 
+    return pts; 
+  }, []);
+
+  const fontLink = useMemo(() => matchFont({ fontFamily: "Arial", fontSize: 16, fontWeight: "bold" }), []);
+  const makeStickerFont = (size: number) => matchFont({ fontFamily: "Arial", fontSize: size });
+
   const loadDataIntoState = (data: any) => {
     setBoard(data);
     let cd = data.canvas_data || {};
-    if (typeof cd === 'string') {
-      try { cd = JSON.parse(cd); } catch (e) { cd = {}; }
-    }
+    if (typeof cd === 'string') { try { cd = JSON.parse(cd); } catch (e) { cd = {}; } }
     const rawPaths = Array.isArray(cd) ? cd : (cd.paths || []);
     setPaths(rawPaths.map((p: any) => ({ ...p, path: Skia.Path.MakeFromSVGString(p.pathString) || Skia.Path.Make() })));
-    setImages(Array.isArray(cd) ? [] : (cd.images || []));
-    setLinks(Array.isArray(cd) ? [] : (cd.links || []));
+    setImages(data.images || cd.images || []);
+    setLinks(data.links || cd.links || []);
   };
 
   const handleSave = async (fP?: any[], fI?: any[], fL?: any[]) => {
@@ -123,27 +163,17 @@ export default function WhiteboardScreen() {
     try {
       setIsSaving(true);
       const savePaths = fP ?? pathsRef.current;
-      const saveImages = fI ?? imagesRef.current;
-      const saveLinks = fL ?? linksRef.current;
-      const sP = savePaths.map((p: any) => ({
-        id: p.id, color: p.color, strokeWidth: p.strokeWidth,
-        isEraser: p.isEraser, opacity: p.opacity || 1,
-        pathString: p.path?.toSVGString?.() || '',
-      }));
-      
-      const canvasData = { paths: sP, images: saveImages, links: saveLinks };
+      const sP = savePaths.map((p: any) => ({ id: p.id, color: p.color, strokeWidth: p.strokeWidth, isEraser: p.isEraser, opacity: p.opacity || 1, pathString: p.path?.toSVGString?.() || '' }));
+      const canvasData = { paths: sP, images: fI ?? imagesRef.current, links: fL ?? linksRef.current };
       const updatedAt = new Date().toISOString();
-
-      db.runSync(
-        `INSERT OR REPLACE INTO study_whiteboards (id, title, canvas_data, updated_at) VALUES (?, ?, ?, ?)`,
-        [id as string, boardRef.current?.title || 'Board', JSON.stringify(canvasData), updatedAt]
-      );
-
+      
+      db.runSync(`INSERT OR REPLACE INTO study_whiteboards (id, title, canvas_data, updated_at) VALUES (?, ?, ?, ?)`, [id as string, boardRef.current?.title || 'Board', JSON.stringify(canvasData), updatedAt]);
+      
       queueSyncOperation('study_whiteboards', id as string, 'UPDATE', {
         canvas_data: canvasData,
-        updated_at: updatedAt
+        updated_at: updatedAt,
+        last_editor: SESSION_ID // 👈 TAG OUR UPDATE
       });
-
     } catch (e) { console.warn('Save failed:', e); }
     finally { setIsSaving(false); }
   };
@@ -152,77 +182,81 @@ export default function WhiteboardScreen() {
     let localUpdatedAt = 0;
     try {
       const local = db.getFirstSync(`SELECT * FROM study_whiteboards WHERE id = ?`, [id as string]) as any;
-      if (local) {
-        loadDataIntoState(local);
-        localUpdatedAt = new Date(local.updated_at).getTime();
-      }
+      if (local) { loadDataIntoState(local); localUpdatedAt = new Date(local.updated_at).getTime(); }
     } catch (e) {}
-
     const { data } = await supabase.from('study_whiteboards').select('*').eq('id', id).single();
     if (data) {
       const remoteUpdatedAt = new Date(data.updated_at).getTime();
       if (remoteUpdatedAt > localUpdatedAt) {
         loadDataIntoState(data);
-        try {
-          db.runSync(
-            `INSERT OR REPLACE INTO study_whiteboards (id, title, canvas_data, updated_at) VALUES (?, ?, ?, ?)`,
-            [data.id, data.title, typeof data.canvas_data === 'string' ? data.canvas_data : JSON.stringify(data.canvas_data), data.updated_at]
-          );
-        } catch(err) {}
+        try { db.runSync(`INSERT OR REPLACE INTO study_whiteboards (id, title, canvas_data, updated_at) VALUES (?, ?, ?, ?)`, [data.id, data.title, typeof data.canvas_data === 'string' ? data.canvas_data : JSON.stringify(data.canvas_data), data.updated_at]); } catch(err) {}
       }
     }
   };
 
   useEffect(() => { 
     fetchBoard(); 
-    const channel = supabase
-      .channel(`whiteboard_${id}`)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'study_whiteboards', filter: `id=eq.${id}` }, (payload) => {
-        const remoteData = payload.new;
-        const remoteUpdatedAt = new Date(remoteData.updated_at).getTime();
-        const local = db.getFirstSync(`SELECT * FROM study_whiteboards WHERE id = ?`, [id as string]) as any;
-        const localUpdatedAt = local ? new Date(local.updated_at).getTime() : 0;
-
-        if (remoteUpdatedAt > localUpdatedAt) {
-          loadDataIntoState(remoteData);
-          try {
-            db.runSync(
-              `INSERT OR REPLACE INTO study_whiteboards (id, title, canvas_data, updated_at) VALUES (?, ?, ?, ?)`,
-              [remoteData.id, remoteData.title, typeof remoteData.canvas_data === 'string' ? remoteData.canvas_data : JSON.stringify(remoteData.canvas_data), remoteData.updated_at]
-            );
-          } catch(err) {}
-        }
-      })
-      .subscribe();
+    const channel = supabase.channel(`whiteboard_${id}`).on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'study_whiteboards', filter: `id=eq.${id}` }, (payload) => {
+      // 🛡️ SYNC PROTECTION: Ignore our own updates & don't interrupt active drawing
+      if (isDrawingRef.current || payload.new.last_editor === SESSION_ID) return;
+      
+      const remoteData = payload.new;
+      const remoteUpdatedAt = new Date(remoteData.updated_at).getTime();
+      const local = db.getFirstSync(`SELECT * FROM study_whiteboards WHERE id = ?`, [id as string]) as any;
+      const localUpdatedAt = local ? new Date(local.updated_at).getTime() : 0;
+      if (remoteUpdatedAt > localUpdatedAt) loadDataIntoState(remoteData);
+    }).subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [id]);
+
+  const onDrawStart = useCallback((x: number, y: number) => {
+    isDrawingRef.current = true;
+    const s = scale.value;
+    const wX = (x - translateX.value) / s;
+    const wY = (y - translateY.value) / s;
+    const sw = (activeTool === 'high' ? highSize : (activeTool === 'eraser' ? eraserSize : penSize)) / s;
+    const nP = Skia.Path.Make();
+    nP.moveTo(wX, wY);
+    setCurrentPath({ id: generateUUID(), path: nP, color: activeTool === 'eraser' ? '#fff' : color, strokeWidth: sw, isEraser: activeTool === 'eraser', opacity: activeTool === 'high' ? highOpacity : (activeTool === 'eraser' ? 1 : penOpacity), startX: wX, startY: wY, swOrig: sw });
+  }, [activeTool, color, penSize, highSize, eraserSize, penOpacity, highOpacity, scale, translateX, translateY]);
+
+  const onDrawUpdate = useCallback((x: number, y: number) => {
+    if (currentPath) {
+      const wX = (x - translateX.value) / scale.value;
+      const wY = (y - translateY.value) / scale.value;
+      currentPath.path.lineTo(wX, wY);
+      setCurrentPath({ ...currentPath });
+    }
+  }, [currentPath, scale, translateX, translateY]);
+
+  const onDrawFinalize = useCallback(() => {
+    if (currentPath) {
+      let finalPath = currentPath.path.copy();
+      const bounds = finalPath.getBounds();
+      // 🔥 DEFINITIVE DOT FIX: Geometric Circle survives all conversions
+      if (bounds.width < 0.1 && bounds.height < 0.1) {
+        finalPath = Skia.Path.Make();
+        finalPath.addCircle(currentPath.startX, currentPath.startY, currentPath.swOrig / 2);
+      }
+      const finalized = { ...currentPath, path: finalPath };
+      if (reviseRef.current) setGlassPaths(p => [...p, finalized]);
+      else setPaths(prev => { const next = [...prev, finalized]; handleSave(next); return next; });
+      setCurrentPath(null);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    isDrawingRef.current = false;
+  }, [currentPath]);
 
   const undo = () => {
     if (paths.length === 0) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const newPaths = [...paths];
-    newPaths.pop();
-    setPaths(newPaths);
-    handleSave(newPaths);
-  };
-
-  const updateMenu = (objId: string, type: any, curI: any[], curL: any[]) => {
-    const obj = type === 'image' ? curI.find(i => i.id === objId) : curL.find(l => l.id === objId);
-    if (obj) {
-      const sx = obj.x * scale.value + translateX.value;
-      const sy = obj.y * scale.value + translateY.value;
-      const w = type === 'image' ? (obj.width * scale.value) : 140 * scale.value;
-      setMenuPos({ x: sx + w / 2 - 40, y: Math.max(insets.top + 80, sy - 55) });
-    }
+    setPaths(prev => { const next = prev.slice(0, -1); handleSave(next); return next; });
   };
 
   const editLink = (linkId: string) => {
     const link = links.find(l => l.id === linkId);
     if (!link) return;
-    setEditingLinkId(linkId);
-    setLTitle(link.title || '');
-    setLUrl(link.url || '');
-    setLinkModal(true);
+    setEditingLinkId(linkId); setLTitle(link.title || ''); setLUrl(link.url || ''); setLinkModal(true);
   };
 
   const openLink = (linkId: string) => {
@@ -234,10 +268,7 @@ export default function WhiteboardScreen() {
     if (!selectedId) return;
     const newImages = images.filter(i => i.id !== selectedId);
     const newLinks = links.filter(l => l.id !== selectedId);
-    setImages(newImages);
-    setLinks(newLinks);
-    setSelectedId(null);
-    setSelectedType(null);
+    setImages(newImages); setLinks(newLinks); setSelectedId(null); setSelectedType(null);
     handleSave(paths, newImages, newLinks);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
@@ -253,64 +284,11 @@ export default function WhiteboardScreen() {
     }
   };
 
-  // ---- Drawing handlers ----
-  const onDrawStart = useCallback((x: number, y: number) => {
-    const s = scale.value;
-    const wX = (x - translateX.value) / s;
-    const wY = (y - translateY.value) / s;
-    const sw = (activeTool === 'high' ? highSize : (activeTool === 'eraser' ? eraserSize : penSize)) / s;
-    
-    // 🔥 DOT FIX: Create a tiny invisible line immediately so it has length
-    const nP = Skia.Path.Make();
-    nP.moveTo(wX, wY);
-    nP.lineTo(wX + 0.1, wY + 0.1); 
-    
-    setCurrentPath({
-      id: generateUUID(),
-      path: nP, color: activeTool === 'eraser' ? '#fff' : color,
-      strokeWidth: sw, isEraser: activeTool === 'eraser',
-      opacity: activeTool === 'high' ? highOpacity : (activeTool === 'eraser' ? 1 : penOpacity),
-    });
-  }, [activeTool, color, penSize, highSize, eraserSize, penOpacity, highOpacity, scale, translateX, translateY]);
-
-  const onDrawUpdate = useCallback((x: number, y: number) => {
-    if (currentPath) {
-      const wX = (x - translateX.value) / scale.value;
-      const wY = (y - translateY.value) / scale.value;
-      currentPath.path.lineTo(wX, wY);
-      setCurrentPath({ ...currentPath });
-    }
-  }, [currentPath, scale, translateX, translateY]);
-
-  const onDrawFinalize = useCallback(() => {
-    if (currentPath) {
-      // Create a fresh copy of the path to prevent Skia reference loss
-      const finalized = { ...currentPath, path: currentPath.path.copy() };
-      if (isReviseMode) {
-        setGlassPaths(p => [...p, finalized]);
-      } else {
-        setPaths(p => {
-          const next = [...p, finalized];
-          handleSave(next);
-          return next;
-        });
-      }
-      setCurrentPath(null);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
-  }, [currentPath, isReviseMode]);
-
-  // ---- Pan-tool handlers ----
-  const dragId = useRef<string | null>(null);
-  const dragType = useRef<string | null>(null);
-  const resizeCorner = useRef(0);
-
   const onPanStart = useCallback((x: number, y: number) => {
     const s = scale.value;
     const wX = (x - translateX.value) / s;
     const wY = (y - translateY.value) / s;
     dragId.current = null; dragType.current = null; resizeCorner.current = 0;
-
     if (selectedId && selectedType === 'image') {
       const img = images.find(i => i.id === selectedId);
       if (img) {
@@ -335,121 +313,71 @@ export default function WhiteboardScreen() {
       if (l.url) return wX >= l.x - 10 && wX <= l.x + 130 && wY >= l.y - 10 && wY <= l.y + 30;
       return wX >= l.x - 10 && wX <= l.x + 60 && wY >= l.y - 10 && wY <= l.y + 60;
     });
-    if (hitL) { dragId.current = hitL.id; dragType.current = hitL.url ? 'link' : 'sticker'; setSelectedId(hitL.id); setSelectedType(hitL.url ? 'link' : 'sticker'); updateMenu(hitL.id, 'link', images, links); return; }
+    if (hitL) { dragId.current = hitL.id; dragType.current = hitL.url ? 'link' : 'sticker'; setSelectedId(hitL.id); setSelectedType(hitL.url ? 'link' : 'sticker'); return; }
     const hitI = [...images].reverse().find(img => wX >= img.x && wX <= img.x + img.width && wY >= img.y && wY <= img.y + img.height);
-    if (hitI) { dragId.current = hitI.id; dragType.current = 'image'; setSelectedId(hitI.id); setSelectedType('image'); updateMenu(hitI.id, 'image', images, links); return; }
+    if (hitI) { dragId.current = hitI.id; dragType.current = 'image'; setSelectedId(hitI.id); setSelectedType('image'); return; }
     setSelectedId(null); setSelectedType(null);
-  }, [images, links, selectedId, selectedType, scale, translateX, translateY, insets]);
+  }, [images, links, selectedId, selectedType, scale, translateX, translateY]);
 
   const onPanUpdate = useCallback((x: number, y: number, dx: number, dy: number, totalX: number, totalY: number) => {
     const s = scale.value;
     const adX = dx / s; const adY = dy / s;
-    if (!dragId.current && resizeCorner.current === 0) {
-      translateX.value = savedTranslateX.value + totalX;
-      translateY.value = savedTranslateY.value + totalY;
-      return;
-    }
+    if (!dragId.current && resizeCorner.current === 0) { translateX.value = savedTranslateX.value + totalX; translateY.value = savedTranslateY.value + totalY; return; }
     if (resizeCorner.current !== 0 && selectedId) {
       if (selectedType === 'image') {
-        setImages(prev => {
-          const next = prev.map(img => {
-            if (img.id !== selectedId) return img;
-            let n = { ...img };
-            if (resizeCorner.current === 4) { n.width = Math.max(50, img.width + adX); n.height = Math.max(50, img.height + adY); }
-            else if (resizeCorner.current === 1) { n.x += adX; n.y += adY; n.width = Math.max(50, n.width - adX); n.height = Math.max(50, n.height - adY); }
-            else if (resizeCorner.current === 2) { n.y += adY; n.width = Math.max(50, n.width + adX); n.height = Math.max(50, n.height - adY); }
-            else if (resizeCorner.current === 3) { n.x += adX; n.width = Math.max(50, n.width - adX); n.height = Math.max(50, n.height + adY); }
-            return n;
-          });
-          updateMenu(selectedId, 'image', next, links);
-          return next;
-        });
+        setImages(prev => prev.map(img => {
+          if (img.id !== selectedId) return img;
+          let n = { ...img };
+          if (resizeCorner.current === 4) { n.width = Math.max(50, img.width + adX); n.height = Math.max(50, img.height + adY); }
+          else if (resizeCorner.current === 1) { n.x += adX; n.y += adY; n.width = Math.max(50, n.width - adX); n.height = Math.max(50, n.height - adY); }
+          else if (resizeCorner.current === 2) { n.y += adY; n.width = Math.max(50, n.width + adX); n.height = Math.max(50, n.height - adY); }
+          else if (resizeCorner.current === 3) { n.x += adX; n.width = Math.max(50, n.width - adX); n.height = Math.max(50, n.height + adY); }
+          return n;
+        }));
       } else {
-        setLinks(prev => {
-          const next = prev.map(l => {
-            if (l.id !== selectedId) return l;
-            const newSize = Math.max(10, Math.min(200, (l.fontSize || 40) + adX * 0.5));
-            return { ...l, fontSize: newSize };
-          });
-          updateMenu(selectedId, 'link', images, next);
-          return next;
-        });
+        setLinks(prev => prev.map(l => {
+          if (l.id !== selectedId) return l;
+          return { ...l, fontSize: Math.max(10, Math.min(200, (l.fontSize || 40) + adX * 0.5)) };
+        }));
       }
       return;
     }
     if (dragId.current && selectedId) {
-      if (dragType.current === 'image') {
-        setImages(p => { const next = p.map(i => i.id === selectedId ? { ...i, x: i.x + adX, y: i.y + adY } : i); updateMenu(selectedId, 'image', next, links); return next; });
-      } else {
-        setLinks(p => { const next = p.map(i => i.id === selectedId ? { ...i, x: i.x + adX, y: i.y + adY } : i); updateMenu(selectedId, 'link', images, next); return next; });
-      }
+      if (dragType.current === 'image') setImages(p => p.map(i => i.id === selectedId ? { ...i, x: i.x + adX, y: i.y + adY } : i));
+      else setLinks(p => p.map(i => i.id === selectedId ? { ...i, x: i.x + adX, y: i.y + adY } : i));
     }
-  }, [selectedId, images, links, scale, translateX, translateY, insets]);
+  }, [selectedId, scale, savedTranslateX, savedTranslateY]);
 
   const onPanEnd = useCallback(() => {
     if (dragId.current || resizeCorner.current !== 0) handleSave(paths, images, links);
-    savedTranslateX.value = translateX.value;
-    savedTranslateY.value = translateY.value;
-    dragId.current = null; resizeCorner.current = 0;
+    savedTranslateX.value = translateX.value; savedTranslateY.value = translateY.value; dragId.current = null; resizeCorner.current = 0;
   }, [paths, images, links]);
 
-  // ---- Gestures ----
-  const lastTX = useSharedValue(0);
-  const lastTY = useSharedValue(0);
+  const dragId = useRef<string | null>(null);
+  const dragType = useRef<string | null>(null);
+  const resizeCorner = useRef(0);
 
-  const drawGesture = Gesture.Pan().minPointers(1).maxPointers(1)
-    .enabled(activeTool !== 'pan')
-    .onBegin((e) => runOnJS(onDrawStart)(e.x, e.y))
-    .onUpdate((e) => runOnJS(onDrawUpdate)(e.x, e.y))
-    .onFinalize(() => runOnJS(onDrawFinalize)());
-
-  const handGesture = Gesture.Pan().minPointers(1).maxPointers(1)
-    .enabled(activeTool === 'pan')
-    .onBegin((e) => { lastTX.value = 0; lastTY.value = 0; runOnJS(onPanStart)(e.x, e.y); })
-    .onUpdate((e) => {
-      const dx = e.translationX - lastTX.value; const dy = e.translationY - lastTY.value;
-      lastTX.value = e.translationX; lastTY.value = e.translationY;
-      runOnJS(onPanUpdate)(e.x, e.y, dx, dy, e.translationX, e.translationY);
-    })
-    .onEnd(() => runOnJS(onPanEnd)());
-
-  const threeFingerPan = Gesture.Pan().minPointers(3)
-    .onUpdate((e) => { translateX.value = savedTranslateX.value + e.translationX; translateY.value = savedTranslateY.value + e.translationY; })
-    .onEnd(() => { savedTranslateX.value = translateX.value; savedTranslateY.value = translateY.value; });
-
-  const pinchGesture = Gesture.Pinch()
-    .onStart((e) => { savedScale.value = scale.value; focalX.value = e.focalX; focalY.value = e.focalY; savedTranslateX.value = translateX.value; savedTranslateY.value = translateY.value; })
-    .onUpdate((e) => {
-      const nS = Math.max(0.1, Math.min(savedScale.value * e.scale, 15.0)); const s = nS / savedScale.value;
-      translateX.value = focalX.value - (focalX.value - savedTranslateX.value) * s;
-      translateY.value = focalY.value - (focalY.value - savedTranslateY.value) * s;
-      scale.value = nS; runOnJS(setZoomText)(`${Math.round(nS * 100)}%`);
-    })
-    .onEnd(() => { savedScale.value = scale.value; savedTranslateX.value = translateX.value; savedTranslateY.value = translateY.value; });
-
-  const composedGesture = Gesture.Simultaneous(
-    Gesture.Exclusive(drawGesture, handGesture),
-    pinchGesture,
-    threeFingerPan
-  );
+  const drawGesture = Gesture.Pan().minPointers(1).maxPointers(1).enabled(activeTool !== 'pan').onBegin((e) => runOnJS(onDrawStart)(e.x, e.y)).onUpdate((e) => runOnJS(onDrawUpdate)(e.x, e.y)).onFinalize(() => runOnJS(onDrawFinalize)());
+  const lastTX = useSharedValue(0); const lastTY = useSharedValue(0);
+  const handGesture = Gesture.Pan().minPointers(1).maxPointers(1).enabled(activeTool === 'pan').onBegin((e) => runOnJS(onPanStart)(e.x, e.y)).onUpdate((e) => {
+    const dx = e.translationX - lastTX.value; const dy = e.translationY - lastTY.value;
+    lastTX.value = e.translationX; lastTY.value = e.translationY;
+    runOnJS(onPanUpdate)(e.x, e.y, dx, dy, e.translationX, e.translationY);
+  }).onEnd(() => runOnJS(onPanEnd)());
+  const pinchGesture = Gesture.Pinch().onStart((e) => { savedScale.value = scale.value; savedTranslateX.value = translateX.value; savedTranslateY.value = translateY.value; focalX.value = e.focalX; focalY.value = e.focalY; }).onUpdate((e) => {
+    const nS = Math.max(0.1, Math.min(savedScale.value * e.scale, 15.0)); const s = nS / savedScale.value;
+    translateX.value = focalX.value - (focalX.value - savedTranslateX.value) * s; translateY.value = focalY.value - (focalY.value - savedTranslateY.value) * s;
+    scale.value = nS; runOnJS(setZoomText)(`${Math.round(nS * 100)}%`);
+  }).onEnd(() => { savedScale.value = scale.value; savedTranslateX.value = translateX.value; savedTranslateY.value = translateY.value; });
+  const composedGesture = Gesture.Simultaneous(Gesture.Exclusive(drawGesture, handGesture), pinchGesture, Gesture.Pan().minPointers(3).onUpdate(e => { translateX.value = savedTranslateX.value + e.translationX; translateY.value = savedTranslateY.value + e.translationY; }).onEnd(() => { savedTranslateX.value = translateX.value; savedTranslateY.value = translateY.value; }));
 
   const animatedTransform = useDerivedValue(() => [{ translateX: translateX.value }, { translateY: translateY.value }, { scale: scale.value }]);
-  const menuStyle = useAnimatedStyle(() => ({ position: 'absolute' as const, left: 20, bottom: fabY.value > SCREEN_HEIGHT / 2 ? (SCREEN_HEIGHT - fabY.value + 10) : undefined, top: fabY.value > SCREEN_HEIGHT / 2 ? undefined : (fabY.value + 74), width: SCREEN_WIDTH - 40 }));
-  const gridPoints = useMemo(() => { const pts: any[] = []; for (let x = -5000; x <= 5000; x += 100) for (let y = -5000; y <= 5000; y += 100) pts.push(vec(x, y)); return pts; }, []);
-
   const fabG = Gesture.Exclusive(Gesture.Tap().numberOfTaps(2).onEnd(() => runOnJS(setIsDraggable)(!isDraggable)), Gesture.Tap().numberOfTaps(1).onEnd(() => runOnJS(setIsToolsExpanded)(!isToolsExpanded)), Gesture.Pan().enabled(isDraggable).onStart(() => { savedFabX.value = fabX.value; savedFabY.value = fabY.value; }).onUpdate(e => { fabX.value = savedFabX.value + e.translationX; fabY.value = savedFabY.value + e.translationY; }));
 
-  const CustomSlider = ({ value, onValueChange, min, max, title }: any) => {
-    const sliderWidth = SCREEN_WIDTH * 0.6; const knobX = useSharedValue(((value - min) / (max - min)) * sliderWidth);
-    useEffect(() => { knobX.value = ((value - min) / (max - min)) * sliderWidth; }, [value]);
-    const g = Gesture.Pan().onUpdate(e => { const x = Math.max(0, Math.min(sliderWidth, e.x)); knobX.value = x; runOnJS(onValueChange)(min + (x / sliderWidth) * (max - min)); });
-    return (
-      <View style={{ gap: 4 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={{ fontSize: 10, color: '#999' }}>{title}</Text><Text style={{ fontSize: 10, fontWeight: 'bold' }}>{Math.round(value)}</Text></View>
-        <GestureDetector gesture={g}><View style={{ height: 4, backgroundColor: 'rgba(0,0,0,0.1)', borderRadius: 2 }}><Animated.View style={[{ height: 4, borderRadius: 2, backgroundColor: theme.tint }, useAnimatedStyle(() => ({ width: knobX.value }))]}/><Animated.View style={[{ position: 'absolute', width: 16, height: 16, borderRadius: 8, backgroundColor: '#fff', borderWidth: 2, borderColor: theme.tint, top: -6 }, useAnimatedStyle(() => ({ transform: [{ translateX: knobX.value - 8 }] }))]}/></View></GestureDetector>
-      </View>
-    );
-  };
+  const fabStyle = useAnimatedStyle(() => ({ transform: [{ translateX: fabX.value }, { translateY: fabY.value }], borderWidth: isDraggable ? 2 : 0, borderColor: '#fff' }));
+  const toolsStyle = useAnimatedStyle(() => ({ position: 'absolute' as const, left: 20, bottom: fabY.value > SCREEN_HEIGHT / 2 ? (SCREEN_HEIGHT - fabY.value + 10) : undefined, top: fabY.value > SCREEN_HEIGHT / 2 ? undefined : (fabY.value + 74), width: SCREEN_WIDTH - 40 }));
+
+  if (!board) return <View style={styles.centered}><ActivityIndicator color={theme.tint} /></View>;
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#fff' }}>
@@ -515,33 +443,33 @@ export default function WhiteboardScreen() {
       )}
 
       <View style={styles.fabWrap} pointerEvents="box-none">
-        <AnimatePresence>{isToolsExpanded && (<MotiView from={{ opacity: 0, scale: 0.5, translateY: 50 }} animate={{ opacity: 1, scale: 1, translateY: 0 }} exit={{ opacity: 0, scale: 0.5, translateY: 50 }} style={menuStyle}><BlurView intensity={80} tint="light" style={styles.tBlur}><View style={styles.tRow}><TouchableOpacity onPress={() => setActiveTool('pen')} style={[styles.tCir, activeTool === 'pen' && { backgroundColor: theme.tint }]}><Pencil size={20} color={activeTool === 'pen' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveTool('high')} style={[styles.tCir, activeTool === 'high' && { backgroundColor: theme.tint }]}><Highlighter size={20} color={activeTool === 'high' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveTool('eraser')} style={[styles.tCir, activeTool === 'eraser' && { backgroundColor: theme.tint }]}><Eraser size={20} color={activeTool === 'eraser' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveTool('pan')} style={[styles.tCir, activeTool === 'pan' && { backgroundColor: theme.tint }]}><Hand size={20} color={activeTool === 'pan' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveMenu(activeMenu === 'settings' ? 'none' : 'settings')} style={[styles.tCir, activeMenu === 'settings' && { backgroundColor: theme.tint }]}><Settings2 size={20} color={activeMenu === 'settings' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveMenu(activeMenu === 'media' ? 'none' : 'media')} style={[styles.tCir, activeMenu === 'media' && { backgroundColor: theme.tint }]}><Plus size={20} color={activeMenu === 'media' ? '#fff' : '#000'} /></TouchableOpacity></View>
-              {activeMenu === 'settings' && (<View style={styles.tray}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}><View style={[styles.dot, { backgroundColor: color, opacity: activeTool === 'high' ? highOpacity : penOpacity }]} /><Text style={{ fontSize: 12, color: 'black' }}>Adjust Tool</Text></View><CustomSlider value={activeTool==='pen'?penSize:(activeTool==='high'?highSize:eraserSize)} onValueChange={(v:any)=>activeTool==='pen'?setPenSize(v):(activeTool==='high'?setHighSize(v):setEraserSize(v))} min={1} max={100} title="Size" />{activeTool !== 'eraser' && activeTool !== 'pan' && (<CustomSlider value={(activeTool==='pen'?penOpacity:highOpacity)*100} onValueChange={(v:any)=>activeTool==='pen'?setPenOpacity(v/100):setHighOpacity(v/100)} min={5} max={100} title="Opacity" />)}<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>{RAINBOW.map(c => <TouchableOpacity key={c} onPress={() => { setColor(c); setActiveTool('pen'); }} style={[styles.cOpt, { backgroundColor: c }, color === c && { borderColor: '#000', borderWidth: 2 }]} />)}</ScrollView></View>)}
+        <AnimatePresence>{isToolsExpanded && (<MotiView from={{ opacity: 0, scale: 0.5, translateY: 50 }} animate={{ opacity: 1, scale: 1, translateY: 0 }} exit={{ opacity: 0, scale: 0.5, translateY: 50 }} style={toolsStyle}><BlurView intensity={80} tint="light" style={styles.tBlur}><View style={styles.tRow}><TouchableOpacity onPress={() => setActiveTool('pen')} style={[styles.tCir, activeTool === 'pen' && { backgroundColor: theme.tint }]}><Pencil size={20} color={activeTool === 'pen' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveTool('high')} style={[styles.tCir, activeTool === 'high' && { backgroundColor: theme.tint }]}><Highlighter size={20} color={activeTool === 'high' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveTool('eraser')} style={[styles.tCir, activeTool === 'eraser' && { backgroundColor: theme.tint }]}><Eraser size={20} color={activeTool === 'eraser' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveTool('pan')} style={[styles.tCir, activeTool === 'pan' && { backgroundColor: theme.tint }]}><Hand size={20} color={activeTool === 'pan' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveMenu(activeMenu === 'settings' ? 'none' : 'settings')} style={[styles.tCir, activeMenu === 'settings' && { backgroundColor: theme.tint }]}><Settings2 size={20} color={activeMenu === 'settings' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveMenu(activeMenu === 'media' ? 'none' : 'media')} style={[styles.tCir, activeMenu === 'media' && { backgroundColor: theme.tint }]}><Plus size={20} color={activeMenu === 'media' ? '#fff' : '#000'} /></TouchableOpacity></View>
+              {activeMenu === 'settings' && (<View style={styles.tray}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}><View style={[styles.dot, { backgroundColor: color, opacity: activeTool === 'high' ? highOpacity : penOpacity }]} /><Text style={{ fontSize: 12, color: 'black' }}>Adjust Tool</Text></View><CustomSlider value={activeTool==='pen'?penSize:(activeTool==='high'?highSize:eraserSize)} onValueChange={(v:any)=>activeTool==='pen'?setPenSize(v):(activeTool==='high'?setHighSize(v):setEraserSize(v))} min={1} max={100} title="Size" theme={theme} />{activeTool !== 'eraser' && activeTool !== 'pan' && (<CustomSlider value={(activeTool==='pen'?penOpacity:highOpacity)*100} onValueChange={(v:any)=>activeTool==='pen'?setPenOpacity(v/100):setHighOpacity(v/100)} min={5} max={100} title="Opacity" theme={theme} />)}<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>{RAINBOW.map(c => <TouchableOpacity key={c} onPress={() => { setColor(c); setActiveTool('pen'); }} style={[styles.cOpt, { backgroundColor: c }, color === c && { borderColor: '#000', borderWidth: 2 }]} />)}</ScrollView></View>)}
               {activeMenu === 'media' && (<View style={styles.tray}><TouchableOpacity onPress={addImage} style={styles.mItem}><ImageIcon size={18} color={theme.tint}/><Text style={{ color: '#000' }}>Image</Text></TouchableOpacity><TouchableOpacity onPress={() => { setEditingLinkId(null); setLUrl(''); setLTitle(''); setLinkModal(true); setIsToolsExpanded(false); }} style={styles.mItem}><LinkIcon size={18} color={theme.tint}/><Text style={{ color: '#000' }}>Link Pin</Text></TouchableOpacity><TouchableOpacity onPress={() => { setNewText(''); setTextModal(true); setIsToolsExpanded(false); }} style={styles.mItem}><Text style={{ fontSize: 18, color: theme.tint }}>Aa</Text><Text style={{ color: '#000' }}>Text / Sticker</Text></TouchableOpacity></View>)}
               <TouchableOpacity onPress={() => { setIsReviseMode(!isReviseMode); setIsToolsExpanded(false); }} style={[styles.revBtn, { backgroundColor: isReviseMode ? '#FF2D55' : 'rgba(0,0,0,0.05)' }]}><Text style={{ color: isReviseMode ? '#fff' : '#000', fontWeight: 'bold' }}>{isReviseMode ? 'EXIT REVISION' : 'ENTER REVISION'}</Text></TouchableOpacity></BlurView></MotiView>)}</AnimatePresence>
-        <GestureDetector gesture={fabG}><Animated.View style={[styles.fab, { backgroundColor: theme.tint }, useAnimatedStyle(() => ({ transform: [{ translateX: fabX.value }, { translateY: fabY.value }], borderWidth: isDraggable ? 2 : 0, borderColor: '#fff' }))]}><Palette size={28} color="#fff" /></Animated.View></GestureDetector>
+        <GestureDetector gesture={fabG}><Animated.View style={[styles.fab, { backgroundColor: theme.tint }, fabStyle]}><Palette size={28} color="#fff" /></Animated.View></GestureDetector>
       </View>
 
       <Modal visible={linkModal} transparent animationType="slide">
         <View style={styles.mOver}>
           <View style={[styles.mCont, { backgroundColor: theme.card }]}>
-            <Text style={{ fontWeight: 'bold', fontSize: 18, color: 'black' }}>{editingLinkId ? 'Edit Link Pin' : 'Add Link Pin'}</Text>
-            <TextInput style={[styles.inp, { color: '#000' }]} placeholder="Title" placeholderTextColor="#999" value={lTitle} onChangeText={setLTitle} />
-            <TextInput style={[styles.inp, { color: '#000' }]} placeholder="URL (https://...)" placeholderTextColor="#999" value={lUrl} onChangeText={setLUrl} autoCapitalize="none" keyboardType="url" />
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <TouchableOpacity onPress={() => { setLinkModal(false); setEditingLinkId(null); setLUrl(''); setLTitle(''); }} style={styles.mBtn}><Text style={{ color: '#000' }}>Cancel</Text></TouchableOpacity>
+            <Text style={{ fontWeight: "bold", fontSize: 18, color: "black" }}>{editingLinkId ? "Edit Link Pin" : "Add Link Pin"}</Text>
+            <TextInput style={[styles.inp, { color: "#000" }]} placeholder="Title" placeholderTextColor="#999" value={lTitle} onChangeText={setLTitle} />
+            <TextInput style={[styles.inp, { color: "#000" }]} placeholder="URL (https://...)" placeholderTextColor="#999" value={lUrl} onChangeText={setLUrl} autoCapitalize="none" keyboardType="url" />
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              <TouchableOpacity onPress={() => { setLinkModal(false); setEditingLinkId(null); setLUrl(""); setLTitle(""); }} style={styles.mBtn}><Text style={{ color: "#000" }}>Cancel</Text></TouchableOpacity>
               <TouchableOpacity onPress={() => {
                 if (editingLinkId) {
-                  const updated = linksRef.current.map(l => l.id === editingLinkId ? { ...l, url: lUrl, title: lTitle || 'Link' } : l);
-                  setLinks(updated); handleSave(undefined, updated); setSelectedId(null); setSelectedType(null);
+                  const updated = linksRef.current.map(l => l.id === editingLinkId ? { ...l, url: lUrl, title: lTitle || "Link" } : l);
+                  setLinks(updated); handleSave(undefined, undefined, updated); setSelectedId(null); setSelectedType(null);
                 } else {
                   const wX = (SCREEN_WIDTH / 2 - translateX.value) / scale.value - 20;
                   const wY = (SCREEN_HEIGHT / 2 - translateY.value) / scale.value - 20;
-                  const newLinks = [...linksRef.current, { id: Math.random().toString(36).substr(2, 9), url: lUrl, title: lTitle || 'Link', x: wX, y: wY }];
+                  const newLinks = [...linksRef.current, { id: generateUUID(), url: lUrl, title: lTitle || "Link", x: wX, y: wY }];
                   setLinks(newLinks); handleSave(undefined, undefined, newLinks);
                 }
-                setLinkModal(false); setEditingLinkId(null); setLUrl(''); setLTitle('');
-              }} style={[styles.mBtn, { backgroundColor: theme.tint }]}><Text style={{ color: '#fff', fontWeight: 'bold' }}>{editingLinkId ? 'Save' : 'Add'}</Text></TouchableOpacity>
+                setLinkModal(false); setEditingLinkId(null); setLUrl(""); setLTitle("");
+              }} style={[styles.mBtn, { backgroundColor: theme.tint }]}><Text style={{ color: "#fff", fontWeight: "bold" }}>{editingLinkId ? "Save" : "Add"}</Text></TouchableOpacity>
             </View>
           </View>
         </View>
@@ -550,20 +478,17 @@ export default function WhiteboardScreen() {
       <Modal visible={textModal} transparent animationType="slide">
         <View style={styles.mOver}>
           <View style={[styles.mCont, { backgroundColor: theme.card }]}>
-            <Text style={{ fontWeight: 'bold', fontSize: 18, color: 'black' }}>Add Text / Sticker</Text>
-            <TextInput style={[styles.inp, { color: '#000', fontSize: 18 }]} placeholder="Type text or paste emoji..." placeholderTextColor="#999" value={newText} onChangeText={setNewText} autoFocus />
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <TouchableOpacity onPress={() => setTextModal(false)} style={styles.mBtn}><Text style={{ color: '#000' }}>Cancel</Text></TouchableOpacity>
+            <Text style={{ fontWeight: "bold", fontSize: 18, color: "black" }}>Add Text / Sticker</Text>
+            <TextInput style={[styles.inp, { color: "#000", fontSize: 18 }]} placeholder="Type text..." placeholderTextColor="#999" value={newText} onChangeText={setNewText} autoFocus />
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              <TouchableOpacity onPress={() => setTextModal(false)} style={styles.mBtn}><Text style={{ color: "#000" }}>Cancel</Text></TouchableOpacity>
               <TouchableOpacity onPress={() => {
                 if (!newText.trim()) return;
                 const wX = (SCREEN_WIDTH / 2 - translateX.value) / scale.value - 30;
                 const wY = (SCREEN_HEIGHT / 2 - translateY.value) / scale.value - 30;
-                const newLinks = [...linksRef.current, { id: Math.random().toString(36).substr(2, 9), url: '', title: newText.trim(), x: wX, y: wY, fontSize: 40 }];
-                setLinks(newLinks);
-                setTextModal(false);
-                setNewText('');
-                handleSave(undefined, undefined, newLinks);
-              }} style={[styles.mBtn, { backgroundColor: theme.tint }]}><Text style={{ color: '#fff', fontWeight: 'bold' }}>Add</Text></TouchableOpacity>
+                const newLinks = [...linksRef.current, { id: generateUUID(), url: "", title: newText.trim(), x: wX, y: wY, fontSize: 40 }];
+                setLinks(newLinks); setTextModal(false); setNewText(""); handleSave(undefined, undefined, newLinks);
+              }} style={[styles.mBtn, { backgroundColor: theme.tint }]}><Text style={{ color: "#fff", fontWeight: "bold" }}>Add</Text></TouchableOpacity>
             </View>
           </View>
         </View>
@@ -593,4 +518,6 @@ const styles = StyleSheet.create({
   mCont: { padding: 20, borderRadius: 25, gap: 15 },
   inp: { padding: 12, borderRadius: 12, backgroundColor: '#f5f5f5' },
   mBtn: { flex: 1, padding: 12, borderRadius: 12, alignItems: 'center' },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  knob: { position: 'absolute', width: 16, height: 16, borderRadius: 8, backgroundColor: '#fff', borderWidth: 2, borderColor: '#AF52DE', top: -6 },
 });

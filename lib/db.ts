@@ -185,6 +185,74 @@ export const initDB = () => {
         created_by TEXT,
         created_at DATETIME
       );
+
+      -- Phase 4: Study Exams
+      CREATE TABLE IF NOT EXISTS study_exams (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        exam_date DATE NOT NULL,
+        start_date DATE NOT NULL,
+        user_id TEXT NOT NULL,
+        created_at DATETIME
+      );
+
+      -- Phase 4: Study Habit Log (Heatmap)
+      CREATE TABLE IF NOT EXISTS study_habit_log (
+        id TEXT PRIMARY KEY,
+        date DATE UNIQUE,
+        completed_tasks INTEGER DEFAULT 0,
+        focus_minutes INTEGER DEFAULT 0,
+        cards_reviewed INTEGER DEFAULT 0,
+        user_id TEXT NOT NULL
+      );
+
+      -- Phase 4: Brain Dump Inbox
+      CREATE TABLE IF NOT EXISTS study_brain_dump (
+        id TEXT PRIMARY KEY,
+        content TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        is_processed INTEGER DEFAULT 0,
+        created_at DATETIME
+      );
+
+      -- Phase 4: Focus Sessions
+      CREATE TABLE IF NOT EXISTS focus_sessions (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        subject TEXT,
+        duration_minutes INTEGER NOT NULL,
+        completed_at DATETIME
+      );
+
+      -- Phase 4: Active Study Sessions (Realtime Sync)
+      CREATE TABLE IF NOT EXISTS active_study_sessions (
+        user_id TEXT PRIMARY KEY,
+        start_time DATETIME,
+        duration_minutes INTEGER NOT NULL,
+        is_paused INTEGER DEFAULT 0,
+        time_left INTEGER -- Seconds remaining when paused
+      );
+
+      -- Phase 4: Nap Tracker
+      CREATE TABLE IF NOT EXISTS study_naps (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        start_time DATETIME NOT NULL,
+        end_time DATETIME,
+        duration_minutes INTEGER,
+        created_at DATETIME
+      );
+
+      -- Phase 4: Syllabus Tracker
+      CREATE TABLE IF NOT EXISTS study_syllabus (
+        id TEXT PRIMARY KEY,
+        parent_id TEXT, -- Self-reference for nesting
+        title TEXT NOT NULL,
+        status TEXT DEFAULT 'none', -- 'none', 'touched', 'done', 'revised'
+        user_id TEXT NOT NULL,
+        order_index INTEGER DEFAULT 0,
+        created_at DATETIME
+      );
     `);
 
     // Local Migration: Add missing columns to study_cards if they don't exist
