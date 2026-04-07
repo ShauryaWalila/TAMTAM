@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { StyleSheet, View, TouchableOpacity, Dimensions, ScrollView, Modal, TextInput, Linking, Alert } from 'react-native';
 import { Canvas, Path, Skia, useCanvasRef, Group, Rect, Points, vec, Image, Text as SkiaText, useImage, matchFont, Circle, RoundedRect } from '@shopify/react-native-skia';
 import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
-import Animated, { useSharedValue, runOnJS, useDerivedValue, useAnimatedStyle } from 'react-native-reanimated';
+import Animated, { useSharedValue, runOnJS, useDerivedValue, useAnimatedStyle, cancelAnimation } from 'react-native-reanimated';
 import { Eraser, Pencil, Trash2, ChevronLeft, Target, Hand, ZoomIn, RotateCcw, Highlighter, Palette, Settings2, Image as ImageIcon, Link as LinkIcon, Plus, Check, ExternalLink, Undo2 } from 'lucide-react-native';
 import { MotiView, AnimatePresence } from 'moti';
 import { BlurView } from 'expo-blur';
@@ -94,7 +94,17 @@ export default function WhiteboardScreen() {
   const fontLink = matchFont({ fontFamily: "Arial", fontSize: 16, fontWeight: "bold" });
   const makeStickerFont = (size: number) => matchFont({ fontFamily: "Arial", fontSize: size });
 
-  const channelRef = useRef<any>(null);
+  const pathsRef = useRef(paths);
+  const imagesRef = useRef(images);
+  const linksRef = useRef(links);
+  const reviseRef = useRef(isReviseMode);
+  const boardRef = useRef(board);
+
+  useEffect(() => { pathsRef.current = paths; }, [paths]);
+  useEffect(() => { imagesRef.current = images; }, [images]);
+  useEffect(() => { linksRef.current = links; }, [links]);
+  useEffect(() => { reviseRef.current = isReviseMode; }, [isReviseMode]);
+  useEffect(() => { boardRef.current = board; }, [board]);
 
   const loadDataIntoState = (data: any) => {
     setBoard(data);
@@ -103,80 +113,10 @@ export default function WhiteboardScreen() {
       try { cd = JSON.parse(cd); } catch (e) { cd = {}; }
     }
     const rawPaths = Array.isArray(cd) ? cd : (cd.paths || []);
-    if (rawPaths.length) setPaths(rawPaths.map((p: any) => ({ ...p, path: Skia.Path.MakeFromSVGString(p.pathString) || Skia.Path.Make() })));
+    setPaths(rawPaths.map((p: any) => ({ ...p, path: Skia.Path.MakeFromSVGString(p.pathString) || Skia.Path.Make() })));
     setImages(Array.isArray(cd) ? [] : (cd.images || []));
     setLinks(Array.isArray(cd) ? [] : (cd.links || []));
   };
-
-  const fetchBoard = async () => {
-    // 1. Try loading from local SQLite first for immediate UI render
-    try {
-      const localData = db.getFirstSync(`SELECT * FROM study_whiteboards WHERE id = ?`, [id as string]) as any;
-      if (localData) {
-        loadDataIntoState(localData);
-      }
-    } catch (err) {
-      console.warn('Local DB read error', err);
-    }
-
-    // 2. Fetch from Supabase to ensure we have the absolute latest data
-    const { data } = await supabase.from('study_whiteboards').select('*').eq('id', id).single();
-    if (data) {
-      loadDataIntoState(data);
-      // Cache it locally
-      try {
-        db.runSync(
-          `INSERT OR REPLACE INTO study_whiteboards (id, title, canvas_data, updated_at) VALUES (?, ?, ?, ?)`,
-          [data.id, data.title, typeof data.canvas_data === 'string' ? data.canvas_data : JSON.stringify(data.canvas_data), data.updated_at]
-        );
-      } catch(err) {}
-    }
-  };
-
-  useEffect(() => { 
-    fetchBoard(); 
-    
-    // Setup Realtime Subscription
-    const channel = supabase
-      .channel(`whiteboard_${id}`)
-      .on('postgres_changes', { 
-        event: 'UPDATE', 
-        schema: 'public', 
-        table: 'study_whiteboards',
-        filter: `id=eq.${id}` 
-      }, (payload) => {
-        // Only update if the change came from another device
-        const cd = payload.new.canvas_data || {};
-        const remotePaths = cd.paths || [];
-        const remoteImages = cd.images || [];
-        const remoteLinks = cd.links || [];
-
-        // Save to local cache
-        try {
-          db.runSync(
-            `INSERT OR REPLACE INTO study_whiteboards (id, title, canvas_data, updated_at) VALUES (?, ?, ?, ?)`,
-            [payload.new.id, payload.new.title, JSON.stringify(cd), payload.new.updated_at]
-          );
-        } catch(err) {}
-
-        setPaths(remotePaths.map((p: any) => ({ ...p, path: Skia.Path.MakeFromSVGString(p.pathString) || Skia.Path.Make() })));
-        setImages(remoteImages);
-        setLinks(remoteLinks);
-      })
-      .subscribe();
-
-    channelRef.current = channel;
-    return () => { supabase.removeChannel(channel); };
-  }, [id]);
-
-  const pathsRef = useRef(paths);
-  const imagesRef = useRef(images);
-  const linksRef = useRef(links);
-  const reviseRef = useRef(isReviseMode);
-  useEffect(() => { pathsRef.current = paths; }, [paths]);
-  useEffect(() => { imagesRef.current = images; }, [images]);
-  useEffect(() => { linksRef.current = links; }, [links]);
-  useEffect(() => { reviseRef.current = isReviseMode; }, [isReviseMode]);
 
   const handleSave = async (fP?: any[], fI?: any[], fL?: any[]) => {
     if (reviseRef.current) return;
@@ -194,13 +134,11 @@ export default function WhiteboardScreen() {
       const canvasData = { paths: sP, images: saveImages, links: saveLinks };
       const updatedAt = new Date().toISOString();
 
-      // 1. Save to Local SQLite Cache
       db.runSync(
         `INSERT OR REPLACE INTO study_whiteboards (id, title, canvas_data, updated_at) VALUES (?, ?, ?, ?)`,
-        [id as string, board?.title || 'Board', JSON.stringify(canvasData), updatedAt]
+        [id as string, boardRef.current?.title || 'Board', JSON.stringify(canvasData), updatedAt]
       );
 
-      // 2. Queue operation for Sync Engine (Offline-First)
       queueSyncOperation('study_whiteboards', id as string, 'UPDATE', {
         canvas_data: canvasData,
         updated_at: updatedAt
@@ -210,7 +148,63 @@ export default function WhiteboardScreen() {
     finally { setIsSaving(false); }
   };
 
-  useEffect(() => { const t = setTimeout(() => { if (!reviseRef.current && board) handleSave(); }, 5000); return () => clearTimeout(t); }, [paths, images, links]);
+  const fetchBoard = async () => {
+    let localUpdatedAt = 0;
+    try {
+      const local = db.getFirstSync(`SELECT * FROM study_whiteboards WHERE id = ?`, [id as string]) as any;
+      if (local) {
+        loadDataIntoState(local);
+        localUpdatedAt = new Date(local.updated_at).getTime();
+      }
+    } catch (e) {}
+
+    const { data } = await supabase.from('study_whiteboards').select('*').eq('id', id).single();
+    if (data) {
+      const remoteUpdatedAt = new Date(data.updated_at).getTime();
+      if (remoteUpdatedAt > localUpdatedAt) {
+        loadDataIntoState(data);
+        try {
+          db.runSync(
+            `INSERT OR REPLACE INTO study_whiteboards (id, title, canvas_data, updated_at) VALUES (?, ?, ?, ?)`,
+            [data.id, data.title, typeof data.canvas_data === 'string' ? data.canvas_data : JSON.stringify(data.canvas_data), data.updated_at]
+          );
+        } catch(err) {}
+      }
+    }
+  };
+
+  useEffect(() => { 
+    fetchBoard(); 
+    const channel = supabase
+      .channel(`whiteboard_${id}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'study_whiteboards', filter: `id=eq.${id}` }, (payload) => {
+        const remoteData = payload.new;
+        const remoteUpdatedAt = new Date(remoteData.updated_at).getTime();
+        const local = db.getFirstSync(`SELECT * FROM study_whiteboards WHERE id = ?`, [id as string]) as any;
+        const localUpdatedAt = local ? new Date(local.updated_at).getTime() : 0;
+
+        if (remoteUpdatedAt > localUpdatedAt) {
+          loadDataIntoState(remoteData);
+          try {
+            db.runSync(
+              `INSERT OR REPLACE INTO study_whiteboards (id, title, canvas_data, updated_at) VALUES (?, ?, ?, ?)`,
+              [remoteData.id, remoteData.title, typeof remoteData.canvas_data === 'string' ? remoteData.canvas_data : JSON.stringify(remoteData.canvas_data), remoteData.updated_at]
+            );
+          } catch(err) {}
+        }
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [id]);
+
+  const undo = () => {
+    if (paths.length === 0) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const newPaths = [...paths];
+    newPaths.pop();
+    setPaths(newPaths);
+    handleSave(newPaths);
+  };
 
   const updateMenu = (objId: string, type: any, curI: any[], curL: any[]) => {
     const obj = type === 'image' ? curI.find(i => i.id === objId) : curL.find(l => l.id === objId);
@@ -236,36 +230,15 @@ export default function WhiteboardScreen() {
     if (link?.url) Linking.openURL(link.url.startsWith('http') ? link.url : `https://${link.url}`);
   };
 
-  const undo = () => {
-    if (paths.length === 0) return;
-    const newPaths = paths.slice(0, -1);
-    setPaths(newPaths);
-    handleSave(newPaths);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  };
-
-  const clearBoard = () => {
-    Alert.alert("Clear Board", "Are you sure you want to clear everything?", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Clear", style: "destructive", onPress: () => {
-        setPaths([]);
-        setImages([]);
-        setLinks([]);
-        handleSave([], [], []);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      }}
-    ]);
-  };
-
   const deleteSelected = () => {
     if (!selectedId) return;
-    const newImages = imagesRef.current.filter(i => i.id !== selectedId);
-    const newLinks = linksRef.current.filter(l => l.id !== selectedId);
+    const newImages = images.filter(i => i.id !== selectedId);
+    const newLinks = links.filter(l => l.id !== selectedId);
     setImages(newImages);
     setLinks(newLinks);
     setSelectedId(null);
     setSelectedType(null);
-    handleSave(undefined, newImages, newLinks);
+    handleSave(paths, newImages, newLinks);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
@@ -276,20 +249,22 @@ export default function WhiteboardScreen() {
       const wX = (SCREEN_WIDTH / 2 - translateX.value) / scale.value - 150;
       const wY = (SCREEN_HEIGHT / 2 - translateY.value) / scale.value - 150;
       const nI = [...images, { id: generateUUID(), uri: asset.uri, x: wX, y: wY, width: 300, height: (asset.height / asset.width) * 300 }];
-      setImages(nI); setActiveMenu('none'); handleSave(undefined, nI);
+      setImages(nI); setActiveMenu('none'); handleSave(paths, nI, links);
     }
   };
 
-  // ---- Drawing handlers (run on JS thread via runOnJS) ----
+  // ---- Drawing handlers ----
   const onDrawStart = useCallback((x: number, y: number) => {
     const s = scale.value;
     const wX = (x - translateX.value) / s;
     const wY = (y - translateY.value) / s;
     const sw = (activeTool === 'high' ? highSize : (activeTool === 'eraser' ? eraserSize : penSize)) / s;
-    const r = Math.max(0.5, sw * 0.1);
+    
+    // 🔥 DOT FIX: Create a tiny invisible line immediately so it has length
     const nP = Skia.Path.Make();
-    nP.moveTo(wX - r, wY);
-    nP.lineTo(wX + r, wY);
+    nP.moveTo(wX, wY);
+    nP.lineTo(wX + 0.1, wY + 0.1); 
+    
     setCurrentPath({
       id: generateUUID(),
       path: nP, color: activeTool === 'eraser' ? '#fff' : color,
@@ -307,20 +282,25 @@ export default function WhiteboardScreen() {
     }
   }, [currentPath, scale, translateX, translateY]);
 
-  const onDrawEnd = useCallback(() => {
+  const onDrawFinalize = useCallback(() => {
     if (currentPath) {
+      // Create a fresh copy of the path to prevent Skia reference loss
+      const finalized = { ...currentPath, path: currentPath.path.copy() };
       if (isReviseMode) {
-        setGlassPaths(p => [...p, currentPath]);
+        setGlassPaths(p => [...p, finalized]);
       } else {
-        const newPaths = [...pathsRef.current, currentPath];
-        setPaths(newPaths);
-        handleSave(newPaths);
+        setPaths(p => {
+          const next = [...p, finalized];
+          handleSave(next);
+          return next;
+        });
       }
       setCurrentPath(null);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
   }, [currentPath, isReviseMode]);
 
-  // ---- Pan-tool handlers (select/drag/resize elements) ----
+  // ---- Pan-tool handlers ----
   const dragId = useRef<string | null>(null);
   const dragType = useRef<string | null>(null);
   const resizeCorner = useRef(0);
@@ -329,11 +309,8 @@ export default function WhiteboardScreen() {
     const s = scale.value;
     const wX = (x - translateX.value) / s;
     const wY = (y - translateY.value) / s;
-    dragId.current = null;
-    dragType.current = null;
-    resizeCorner.current = 0;
+    dragId.current = null; dragType.current = null; resizeCorner.current = 0;
 
-    // Resize handles for images
     if (selectedId && selectedType === 'image') {
       const img = images.find(i => i.id === selectedId);
       if (img) {
@@ -344,7 +321,6 @@ export default function WhiteboardScreen() {
         if (Math.abs(wX - (img.x + img.width)) < p && Math.abs(wY - (img.y + img.height)) < p) { resizeCorner.current = 4; return; }
       }
     }
-    // Resize handle for text/stickers (purple dot at bottom-right)
     if (selectedId && selectedType === 'sticker') {
       const lnk = links.find(l => l.id === selectedId);
       if (lnk) {
@@ -355,13 +331,11 @@ export default function WhiteboardScreen() {
         if (Math.abs(wX - handleX) < p && Math.abs(wY - handleY) < p) { resizeCorner.current = 4; return; }
       }
     }
-    // Hit test links/stickers
     const hitL = [...links].reverse().find(l => {
       if (l.url) return wX >= l.x - 10 && wX <= l.x + 130 && wY >= l.y - 10 && wY <= l.y + 30;
       return wX >= l.x - 10 && wX <= l.x + 60 && wY >= l.y - 10 && wY <= l.y + 60;
     });
     if (hitL) { dragId.current = hitL.id; dragType.current = hitL.url ? 'link' : 'sticker'; setSelectedId(hitL.id); setSelectedType(hitL.url ? 'link' : 'sticker'); updateMenu(hitL.id, 'link', images, links); return; }
-    // Hit test images
     const hitI = [...images].reverse().find(img => wX >= img.x && wX <= img.x + img.width && wY >= img.y && wY <= img.y + img.height);
     if (hitI) { dragId.current = hitI.id; dragType.current = 'image'; setSelectedId(hitI.id); setSelectedType('image'); updateMenu(hitI.id, 'image', images, links); return; }
     setSelectedId(null); setSelectedType(null);
@@ -370,7 +344,6 @@ export default function WhiteboardScreen() {
   const onPanUpdate = useCallback((x: number, y: number, dx: number, dy: number, totalX: number, totalY: number) => {
     const s = scale.value;
     const adX = dx / s; const adY = dy / s;
-    // Nothing hit - pan canvas
     if (!dragId.current && resizeCorner.current === 0) {
       translateX.value = savedTranslateX.value + totalX;
       translateY.value = savedTranslateY.value + totalY;
@@ -392,7 +365,6 @@ export default function WhiteboardScreen() {
           return next;
         });
       } else {
-        // Resize text/sticker = change fontSize
         setLinks(prev => {
           const next = prev.map(l => {
             if (l.id !== selectedId) return l;
@@ -415,24 +387,22 @@ export default function WhiteboardScreen() {
   }, [selectedId, images, links, scale, translateX, translateY, insets]);
 
   const onPanEnd = useCallback(() => {
-    if (dragId.current || resizeCorner.current !== 0) handleSave();
+    if (dragId.current || resizeCorner.current !== 0) handleSave(paths, images, links);
     savedTranslateX.value = translateX.value;
     savedTranslateY.value = translateY.value;
     dragId.current = null; resizeCorner.current = 0;
-  }, []);
+  }, [paths, images, links]);
 
-  // ---- Gestures (same pattern as working draw.tsx) ----
+  // ---- Gestures ----
   const lastTX = useSharedValue(0);
   const lastTY = useSharedValue(0);
 
-  // Drawing gesture - active when tool is NOT pan
   const drawGesture = Gesture.Pan().minPointers(1).maxPointers(1)
     .enabled(activeTool !== 'pan')
     .onBegin((e) => runOnJS(onDrawStart)(e.x, e.y))
     .onUpdate((e) => runOnJS(onDrawUpdate)(e.x, e.y))
-    .onEnd(() => runOnJS(onDrawEnd)());
+    .onFinalize(() => runOnJS(onDrawFinalize)());
 
-  // Hand tool gesture - pans canvas OR drags/resizes elements
   const handGesture = Gesture.Pan().minPointers(1).maxPointers(1)
     .enabled(activeTool === 'pan')
     .onBegin((e) => { lastTX.value = 0; lastTY.value = 0; runOnJS(onPanStart)(e.x, e.y); })
@@ -443,12 +413,10 @@ export default function WhiteboardScreen() {
     })
     .onEnd(() => runOnJS(onPanEnd)());
 
-  // 3-finger pan - always works regardless of tool
   const threeFingerPan = Gesture.Pan().minPointers(3)
     .onUpdate((e) => { translateX.value = savedTranslateX.value + e.translationX; translateY.value = savedTranslateY.value + e.translationY; })
     .onEnd(() => { savedTranslateX.value = translateX.value; savedTranslateY.value = translateY.value; });
 
-  // Pinch to zoom
   const pinchGesture = Gesture.Pinch()
     .onStart((e) => { savedScale.value = scale.value; focalX.value = e.focalX; focalY.value = e.focalY; savedTranslateX.value = translateX.value; savedTranslateY.value = translateY.value; })
     .onUpdate((e) => {
@@ -459,7 +427,6 @@ export default function WhiteboardScreen() {
     })
     .onEnd(() => { savedScale.value = scale.value; savedTranslateX.value = translateX.value; savedTranslateY.value = translateY.value; });
 
-  // Compose: draw/hand exclusive for 1-finger, pinch + 3-finger pan simultaneous
   const composedGesture = Gesture.Simultaneous(
     Gesture.Exclusive(drawGesture, handGesture),
     pinchGesture,
@@ -492,17 +459,16 @@ export default function WhiteboardScreen() {
           <View style={{ flex: 1, marginLeft: 10 }}>
             <Text style={{ fontWeight: 'bold', color: 'black' }}>{board?.title || "Board"}</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-              <View style={styles.zoom}><ZoomIn size={10} color={theme.tabIconDefault} /><Text style={{ fontSize: 9, color: 'black' }}>{zoomText}</Text></View>
+              <View style={styles.zoom}><ZoomIn size={10} color="#666" /><Text style={{ fontSize: 9, color: 'black' }}>{zoomText}</Text></View>
               <View style={[styles.dot, { backgroundColor: isSaving ? theme.tint : (isReviseMode ? '#FF2D55' : '#34C759') }]} />
-              <Text style={{ fontSize: 9, color: theme.tabIconDefault }}>{isReviseMode ? "REVISION" : (isSaving ? "SAVING" : "SYNCED")}</Text>
+              <Text style={{ fontSize: 9, color: '#666' }}>{isReviseMode ? "REVISION" : (isSaving ? "SAVING" : "SYNCED")}</Text>
             </View>
           </View>
-          <TouchableOpacity onPress={() => { scale.value = 1; translateX.value = 0; translateY.value = 0; setZoomText('100%'); }} style={styles.btn}><Target size={20} color="#000" /></TouchableOpacity>
           <TouchableOpacity onPress={undo} style={styles.btn}><Undo2 size={20} color="#000" /></TouchableOpacity>
+          <TouchableOpacity onPress={() => { scale.value = 1; translateX.value = 0; translateY.value = 0; setZoomText('100%'); }} style={styles.btn}><Target size={20} color="#000" /></TouchableOpacity>
         </BlurView>
       </View>
 
-      {/* Canvas - GestureDetector wraps Canvas directly like draw.tsx */}
       <View style={{ flex: 1 }}>
         <GestureDetector gesture={composedGesture}>
           <Canvas ref={canvasRef} style={StyleSheet.absoluteFill}>
@@ -549,8 +515,8 @@ export default function WhiteboardScreen() {
       )}
 
       <View style={styles.fabWrap} pointerEvents="box-none">
-        <AnimatePresence>{isToolsExpanded && (<MotiView from={{ opacity: 0, scale: 0.5, translateY: 50 }} animate={{ opacity: 1, scale: 1, translateY: 0 }} exit={{ opacity: 0, scale: 0.5, translateY: 50 }} style={menuStyle}><BlurView intensity={80} tint="light" style={styles.tBlur}><View style={styles.tRow}><TouchableOpacity onPress={() => setActiveTool('pen')} style={[styles.tCir, activeTool === 'pen' && { backgroundColor: theme.tint }]}><Pencil size={20} color={activeTool === 'pen' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveTool('high')} style={[styles.tCir, activeTool === 'high' && { backgroundColor: theme.tint }]}><Highlighter size={20} color={activeTool === 'high' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveTool('eraser')} style={[styles.tCir, activeTool === 'eraser' && { backgroundColor: theme.tint }]}><Eraser size={20} color={activeTool === 'eraser' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveTool('pan')} style={[styles.tCir, activeTool === 'pan' && { backgroundColor: theme.tint }]}><Hand size={20} color={activeTool === 'pan' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={undo} style={styles.tCir}><Undo2 size={20} color="#000" /></TouchableOpacity><TouchableOpacity onPress={() => setActiveMenu(activeMenu === 'settings' ? 'none' : 'settings')} style={[styles.tCir, activeMenu === 'settings' && { backgroundColor: theme.tint }]}><Settings2 size={20} color={activeMenu === 'settings' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveMenu(activeMenu === 'media' ? 'none' : 'media')} style={[styles.tCir, activeMenu === 'media' && { backgroundColor: theme.tint }]}><Plus size={20} color={activeMenu === 'media' ? '#fff' : '#000'} /></TouchableOpacity></View>
-              {activeMenu === 'settings' && (<View style={styles.tray}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}><View style={[styles.dot, { backgroundColor: color, opacity: activeTool === 'high' ? highOpacity : penOpacity }]} /><Text style={{ fontSize: 12 }}>Adjust Tool</Text></View><CustomSlider value={activeTool==='pen'?penSize:(activeTool==='high'?highSize:eraserSize)} onValueChange={(v:any)=>activeTool==='pen'?setPenSize(v):(activeTool==='high'?setHighSize(v):setEraserSize(v))} min={1} max={100} title="Size" />{activeTool !== 'eraser' && activeTool !== 'pan' && (<CustomSlider value={(activeTool==='pen'?penOpacity:highOpacity)*100} onValueChange={(v:any)=>activeTool==='pen'?setPenOpacity(v/100):setHighOpacity(v/100)} min={5} max={100} title="Opacity" />)}<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>{RAINBOW.map(c => <TouchableOpacity key={c} onPress={() => { setColor(c); setActiveTool('pen'); }} style={[styles.cOpt, { backgroundColor: c }, color === c && { borderColor: '#000', borderWidth: 2 }]} />)}</ScrollView><TouchableOpacity onPress={clearBoard} style={[styles.mItem, { marginTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.05)', paddingTop: 10 }]}><Trash2 size={18} color="#FF3B30"/><Text style={{ color: '#FF3B30', fontWeight: 'bold' }}>Clear Board</Text></TouchableOpacity></View>)}
+        <AnimatePresence>{isToolsExpanded && (<MotiView from={{ opacity: 0, scale: 0.5, translateY: 50 }} animate={{ opacity: 1, scale: 1, translateY: 0 }} exit={{ opacity: 0, scale: 0.5, translateY: 50 }} style={menuStyle}><BlurView intensity={80} tint="light" style={styles.tBlur}><View style={styles.tRow}><TouchableOpacity onPress={() => setActiveTool('pen')} style={[styles.tCir, activeTool === 'pen' && { backgroundColor: theme.tint }]}><Pencil size={20} color={activeTool === 'pen' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveTool('high')} style={[styles.tCir, activeTool === 'high' && { backgroundColor: theme.tint }]}><Highlighter size={20} color={activeTool === 'high' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveTool('eraser')} style={[styles.tCir, activeTool === 'eraser' && { backgroundColor: theme.tint }]}><Eraser size={20} color={activeTool === 'eraser' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveTool('pan')} style={[styles.tCir, activeTool === 'pan' && { backgroundColor: theme.tint }]}><Hand size={20} color={activeTool === 'pan' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveMenu(activeMenu === 'settings' ? 'none' : 'settings')} style={[styles.tCir, activeMenu === 'settings' && { backgroundColor: theme.tint }]}><Settings2 size={20} color={activeMenu === 'settings' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveMenu(activeMenu === 'media' ? 'none' : 'media')} style={[styles.tCir, activeMenu === 'media' && { backgroundColor: theme.tint }]}><Plus size={20} color={activeMenu === 'media' ? '#fff' : '#000'} /></TouchableOpacity></View>
+              {activeMenu === 'settings' && (<View style={styles.tray}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}><View style={[styles.dot, { backgroundColor: color, opacity: activeTool === 'high' ? highOpacity : penOpacity }]} /><Text style={{ fontSize: 12, color: 'black' }}>Adjust Tool</Text></View><CustomSlider value={activeTool==='pen'?penSize:(activeTool==='high'?highSize:eraserSize)} onValueChange={(v:any)=>activeTool==='pen'?setPenSize(v):(activeTool==='high'?setHighSize(v):setEraserSize(v))} min={1} max={100} title="Size" />{activeTool !== 'eraser' && activeTool !== 'pan' && (<CustomSlider value={(activeTool==='pen'?penOpacity:highOpacity)*100} onValueChange={(v:any)=>activeTool==='pen'?setPenOpacity(v/100):setHighOpacity(v/100)} min={5} max={100} title="Opacity" />)}<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>{RAINBOW.map(c => <TouchableOpacity key={c} onPress={() => { setColor(c); setActiveTool('pen'); }} style={[styles.cOpt, { backgroundColor: c }, color === c && { borderColor: '#000', borderWidth: 2 }]} />)}</ScrollView></View>)}
               {activeMenu === 'media' && (<View style={styles.tray}><TouchableOpacity onPress={addImage} style={styles.mItem}><ImageIcon size={18} color={theme.tint}/><Text style={{ color: '#000' }}>Image</Text></TouchableOpacity><TouchableOpacity onPress={() => { setEditingLinkId(null); setLUrl(''); setLTitle(''); setLinkModal(true); setIsToolsExpanded(false); }} style={styles.mItem}><LinkIcon size={18} color={theme.tint}/><Text style={{ color: '#000' }}>Link Pin</Text></TouchableOpacity><TouchableOpacity onPress={() => { setNewText(''); setTextModal(true); setIsToolsExpanded(false); }} style={styles.mItem}><Text style={{ fontSize: 18, color: theme.tint }}>Aa</Text><Text style={{ color: '#000' }}>Text / Sticker</Text></TouchableOpacity></View>)}
               <TouchableOpacity onPress={() => { setIsReviseMode(!isReviseMode); setIsToolsExpanded(false); }} style={[styles.revBtn, { backgroundColor: isReviseMode ? '#FF2D55' : 'rgba(0,0,0,0.05)' }]}><Text style={{ color: isReviseMode ? '#fff' : '#000', fontWeight: 'bold' }}>{isReviseMode ? 'EXIT REVISION' : 'ENTER REVISION'}</Text></TouchableOpacity></BlurView></MotiView>)}</AnimatePresence>
         <GestureDetector gesture={fabG}><Animated.View style={[styles.fab, { backgroundColor: theme.tint }, useAnimatedStyle(() => ({ transform: [{ translateX: fabX.value }, { translateY: fabY.value }], borderWidth: isDraggable ? 2 : 0, borderColor: '#fff' }))]}><Palette size={28} color="#fff" /></Animated.View></GestureDetector>
@@ -559,7 +525,7 @@ export default function WhiteboardScreen() {
       <Modal visible={linkModal} transparent animationType="slide">
         <View style={styles.mOver}>
           <View style={[styles.mCont, { backgroundColor: theme.card }]}>
-            <Text style={{ fontWeight: 'bold', fontSize: 18, color: '#000' }}>{editingLinkId ? 'Edit Link Pin' : 'Add Link Pin'}</Text>
+            <Text style={{ fontWeight: 'bold', fontSize: 18, color: 'black' }}>{editingLinkId ? 'Edit Link Pin' : 'Add Link Pin'}</Text>
             <TextInput style={[styles.inp, { color: '#000' }]} placeholder="Title" placeholderTextColor="#999" value={lTitle} onChangeText={setLTitle} />
             <TextInput style={[styles.inp, { color: '#000' }]} placeholder="URL (https://...)" placeholderTextColor="#999" value={lUrl} onChangeText={setLUrl} autoCapitalize="none" keyboardType="url" />
             <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -567,11 +533,11 @@ export default function WhiteboardScreen() {
               <TouchableOpacity onPress={() => {
                 if (editingLinkId) {
                   const updated = linksRef.current.map(l => l.id === editingLinkId ? { ...l, url: lUrl, title: lTitle || 'Link' } : l);
-                  setLinks(updated); handleSave(undefined, undefined, updated); setSelectedId(null); setSelectedType(null);
+                  setLinks(updated); handleSave(undefined, updated); setSelectedId(null); setSelectedType(null);
                 } else {
                   const wX = (SCREEN_WIDTH / 2 - translateX.value) / scale.value - 20;
                   const wY = (SCREEN_HEIGHT / 2 - translateY.value) / scale.value - 20;
-                  const newLinks = [...linksRef.current, { id: generateUUID(), url: lUrl, title: lTitle || 'Link', x: wX, y: wY }];
+                  const newLinks = [...linksRef.current, { id: Math.random().toString(36).substr(2, 9), url: lUrl, title: lTitle || 'Link', x: wX, y: wY }];
                   setLinks(newLinks); handleSave(undefined, undefined, newLinks);
                 }
                 setLinkModal(false); setEditingLinkId(null); setLUrl(''); setLTitle('');
@@ -584,7 +550,7 @@ export default function WhiteboardScreen() {
       <Modal visible={textModal} transparent animationType="slide">
         <View style={styles.mOver}>
           <View style={[styles.mCont, { backgroundColor: theme.card }]}>
-            <Text style={{ fontWeight: 'bold', fontSize: 18, color: '#000' }}>Add Text / Sticker</Text>
+            <Text style={{ fontWeight: 'bold', fontSize: 18, color: 'black' }}>Add Text / Sticker</Text>
             <TextInput style={[styles.inp, { color: '#000', fontSize: 18 }]} placeholder="Type text or paste emoji..." placeholderTextColor="#999" value={newText} onChangeText={setNewText} autoFocus />
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <TouchableOpacity onPress={() => setTextModal(false)} style={styles.mBtn}><Text style={{ color: '#000' }}>Cancel</Text></TouchableOpacity>
@@ -592,7 +558,7 @@ export default function WhiteboardScreen() {
                 if (!newText.trim()) return;
                 const wX = (SCREEN_WIDTH / 2 - translateX.value) / scale.value - 30;
                 const wY = (SCREEN_HEIGHT / 2 - translateY.value) / scale.value - 30;
-                const newLinks = [...linksRef.current, { id: generateUUID(), url: '', title: newText.trim(), x: wX, y: wY, fontSize: 40 }];
+                const newLinks = [...linksRef.current, { id: Math.random().toString(36).substr(2, 9), url: '', title: newText.trim(), x: wX, y: wY, fontSize: 40 }];
                 setLinks(newLinks);
                 setTextModal(false);
                 setNewText('');
