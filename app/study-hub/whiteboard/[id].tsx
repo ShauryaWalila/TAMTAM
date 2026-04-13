@@ -1,17 +1,19 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { StyleSheet, View, TouchableOpacity, Dimensions, ScrollView, Modal, TextInput, Linking, Alert, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Dimensions, ScrollView, Modal, TextInput, Linking, Alert, ActivityIndicator, DeviceEventEmitter } from 'react-native';
 import { Canvas, Path, Skia, useCanvasRef, Group, Rect, Points, vec, Image, Text as SkiaText, useImage, matchFont, Circle, RoundedRect } from '@shopify/react-native-skia';
 import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, { useSharedValue, runOnJS, useDerivedValue, useAnimatedStyle, cancelAnimation } from 'react-native-reanimated';
-import { Eraser, Pencil, Trash2, ChevronLeft, Target, Hand, ZoomIn, RotateCcw, Highlighter, Palette, Settings2, Image as ImageIcon, Link as LinkIcon, Plus, Check, ExternalLink, Undo2 } from 'lucide-react-native';
+import { Eraser, Pencil, Trash2, ChevronLeft, Target, Hand, ZoomIn, RotateCcw, Highlighter, Palette, Settings2, Image as ImageIcon, Link as LinkIcon, Plus, Check, ExternalLink, Undo2, Sparkles, BrainCircuit, X, Database, PlusCircle } from 'lucide-react-native';
 import { MotiView, AnimatePresence } from 'moti';
 import { BlurView } from 'expo-blur';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
+import * as SecureStore from 'expo-secure-store';
 import { supabase } from '@/lib/supabase';
 import { db, queueSyncOperation, generateUUID } from '@/lib/db';
+import { analyzeWhiteboardDrawing } from '@/lib/aiEngine';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { Text } from '@/components/Themed';
@@ -19,8 +21,7 @@ import { Text } from '@/components/Themed';
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const SESSION_ID = Math.random().toString(36).substring(7);
 
-// --- Helper Components (Outside to fix hook order) ---
-
+// --- Helper Components ---
 const RemoteImage = ({ img, isSelected }: any) => {
   const skiaImg = useImage(img.uri);
   if (!skiaImg) return null;
@@ -76,15 +77,14 @@ export default function WhiteboardScreen() {
   const theme = Colors[useColorScheme() ?? 'light'];
   const canvasRef = useCanvasRef();
 
-  // Paths & Objects
   const [paths, setPaths] = useState<any[]>([]);
   const [glassPaths, setGlassPaths] = useState<any[]>([]);
   const [currentPath, setCurrentPath] = useState<any>(null);
   const [images, setImages] = useState<any[]>([]);
   const [links, setLinks] = useState<any[]>([]);
   const [board, setBoard] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState('');
 
-  // Tools & UI
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<any>(null);
   const [menuPos, setMenuPos] = useState({ x: 0, y: 0 });
@@ -103,7 +103,10 @@ export default function WhiteboardScreen() {
   const [penOpacity, setPenOpacity] = useState(1);
   const [highOpacity, setHighOpacity] = useState(0.35);
 
-  // Transform
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [suggestedDeck, setSuggestedDeck] = useState<any>(null);
+
   const scale = useSharedValue(1);
   const savedScale = useSharedValue(1);
   const translateX = useSharedValue(0);
@@ -117,7 +120,6 @@ export default function WhiteboardScreen() {
   const savedFabX = useSharedValue(20);
   const savedFabY = useSharedValue(SCREEN_HEIGHT / 2);
 
-  // Modals
   const [linkModal, setLinkModal] = useState(false);
   const [textModal, setTextModal] = useState(false);
   const [editingLinkId, setEditingLinkId] = useState<string | null>(null);
@@ -125,7 +127,6 @@ export default function WhiteboardScreen() {
   const [lTitle, setLTitle] = useState('');
   const [newText, setNewText] = useState('');
 
-  // Refs for logic consistency
   const pathsRef = useRef(paths);
   const imagesRef = useRef(images);
   const linksRef = useRef(links);
@@ -167,14 +168,8 @@ export default function WhiteboardScreen() {
       const sP = savePaths.map((p: any) => ({ id: p.id, color: p.color, strokeWidth: p.strokeWidth, isEraser: p.isEraser, opacity: p.opacity || 1, pathString: p.path?.toSVGString?.() || '' }));
       const canvasData = { paths: sP, images: fI ?? imagesRef.current, links: fL ?? linksRef.current };
       const updatedAt = new Date().toISOString();
-      
       db.runSync(`INSERT OR REPLACE INTO study_whiteboards (id, title, canvas_data, updated_at) VALUES (?, ?, ?, ?)`, [id as string, boardRef.current?.title || 'Board', JSON.stringify(canvasData), updatedAt]);
-      
-      queueSyncOperation('study_whiteboards', id as string, 'UPDATE', {
-        canvas_data: canvasData,
-        updated_at: updatedAt,
-        last_editor: SESSION_ID // 👈 TAG OUR UPDATE
-      });
+      queueSyncOperation('study_whiteboards', id as string, 'UPDATE', { canvas_data: canvasData, updated_at: updatedAt, last_editor: SESSION_ID });
     } catch (e) { console.warn('Save failed:', e); }
     finally { setIsSaving(false); }
   };
@@ -197,10 +192,9 @@ export default function WhiteboardScreen() {
 
   useEffect(() => { 
     fetchBoard(); 
+    SecureStore.getItemAsync('user_name').then(name => setCurrentUser(name?.toLowerCase() || ''));
     const channel = supabase.channel(`whiteboard_${id}`).on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'study_whiteboards', filter: `id=eq.${id}` }, (payload) => {
-      // 🛡️ SYNC PROTECTION: Ignore our own updates & don't interrupt active drawing
       if (isDrawingRef.current || payload.new.last_editor === SESSION_ID) return;
-      
       const remoteData = payload.new;
       const remoteUpdatedAt = new Date(remoteData.updated_at).getTime();
       const local = db.getFirstSync(`SELECT * FROM study_whiteboards WHERE id = ?`, [id as string]) as any;
@@ -209,6 +203,58 @@ export default function WhiteboardScreen() {
     }).subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [id]);
+
+  const runAIVision = async () => {
+    if (isAnalyzing) return;
+    setIsAnalyzing(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    try {
+      const snapshot = canvasRef.current?.makeImageSnapshot();
+      if (snapshot) {
+        const base64 = snapshot.encodeToBase64();
+        
+        // 🔥 GATHER EXISTING QUESTIONS TO PREVENT REPETITION
+        const existingCards = db.getAllSync(
+          `SELECT front_content FROM study_cards 
+           JOIN study_decks ON study_cards.deck_id = study_decks.id 
+           WHERE study_decks.user_id = ?`, 
+          [currentUser]
+        ) as any[];
+        const existingQs = existingCards.map(c => c.front_content);
+
+        const result = await analyzeWhiteboardDrawing(base64, board?.title || "Board", currentUser, existingQs);
+        if (result) {
+          const existing = db.getFirstSync(`SELECT id, title FROM study_decks WHERE title LIKE ? LIMIT 1`, [`%${result.subject}%`]) as any;
+          setSuggestedDeck(existing || null);
+          setAnalysisResult(result);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
+      }
+    } catch (error: any) {
+      Alert.alert("AI Vision Error", error.message || "Analysis failed.");
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const saveToDeck = (deckId: string | null) => {
+    if (!analysisResult) return;
+    let targetDeckId = deckId;
+    const now = new Date().toISOString();
+    if (!targetDeckId) {
+      targetDeckId = generateUUID();
+      db.runSync(`INSERT INTO study_decks (id, title, user_id, created_at) VALUES (?, ?, ?, ?)`, [targetDeckId, analysisResult.subject || `Board: ${board?.title}`, currentUser, now]);
+      queueSyncOperation('study_decks', targetDeckId, 'INSERT', { id: targetDeckId, title: analysisResult.subject, user_id: currentUser, created_at: now });
+    }
+    analysisResult.cards.forEach((card: any) => {
+      const cardId = generateUUID();
+      db.runSync(`INSERT INTO study_cards (id, deck_id, front_content, back_content, created_at) VALUES (?, ?, ?, ?, ?)`, [cardId, targetDeckId, card.front, card.back, now]);
+      queueSyncOperation('study_cards', cardId, 'INSERT', { id: cardId, deck_id: targetDeckId, front_content: card.front, back_content: card.back, created_at: now });
+    });
+    setAnalysisResult(null); setSuggestedDeck(null); DeviceEventEmitter.emit('DATA_REFRESH');
+    Alert.alert("Knowledge Saved", `Added ${analysisResult.cards.length} new cards!`);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
 
   const onDrawStart = useCallback((x: number, y: number) => {
     isDrawingRef.current = true;
@@ -240,7 +286,6 @@ export default function WhiteboardScreen() {
     if (cp) {
       let finalPath = cp.path.copy();
       const bounds = finalPath.getBounds();
-      // 🔥 DEFINITIVE DOT FIX: Geometric Circle survives all conversions
       if (bounds.width < 0.1 && bounds.height < 0.1) {
         finalPath = Skia.Path.Make();
         finalPath.addCircle(cp.startX, cp.startY, cp.swOrig / 2);
@@ -403,7 +448,7 @@ export default function WhiteboardScreen() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#fff' }}>
-      <View style={[styles.header, { paddingTop: insets.top + 5 }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 5, zIndex: 1000 }]}>
         <BlurView intensity={90} tint="light" style={styles.blur}>
           <TouchableOpacity onPress={() => router.back()}><ChevronLeft size={22} color="#000" /></TouchableOpacity>
           <View style={{ flex: 1, marginLeft: 10 }}>
@@ -414,6 +459,9 @@ export default function WhiteboardScreen() {
               <Text style={{ fontSize: 9, color: '#666' }}>{isReviseMode ? "REVISION" : (isSaving ? "SAVING" : "SYNCED")}</Text>
             </View>
           </View>
+          <TouchableOpacity onPress={runAIVision} disabled={isAnalyzing} style={[styles.btn, { backgroundColor: '#AF52DE15' }]}>
+            {isAnalyzing ? <ActivityIndicator size="small" color="#AF52DE" /> : <Sparkles size={20} color="#AF52DE" />}
+          </TouchableOpacity>
           <TouchableOpacity onPress={undo} style={styles.btn}><Undo2 size={20} color="#000" /></TouchableOpacity>
           <TouchableOpacity onPress={() => { scale.value = 1; translateX.value = 0; translateY.value = 0; setZoomText('100%'); }} style={styles.btn}><Target size={20} color="#000" /></TouchableOpacity>
         </BlurView>
@@ -454,6 +502,51 @@ export default function WhiteboardScreen() {
           </Canvas>
         </GestureDetector>
       </View>
+
+      <Modal visible={analysisResult !== null} transparent animationType="slide">
+        <View style={styles.mOver}>
+          <View style={[styles.mCont, { backgroundColor: '#fff', paddingBottom: 25 }]}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <BrainCircuit size={24} color="#AF52DE" />
+                <Text style={{ fontSize: 20, fontWeight: '900', color: 'black' }}>Smart Insight</Text>
+              </View>
+              <TouchableOpacity onPress={() => setAnalysisResult(null)}><X size={24} color="#000" /></TouchableOpacity>
+            </View>
+            <ScrollView style={{ maxHeight: SCREEN_HEIGHT * 0.5 }} contentContainerStyle={{ paddingBottom: 20 }}>
+              <Text style={{ fontSize: 16, color: '#444', lineHeight: 24, marginBottom: 15 }}>{analysisResult?.summary}</Text>
+              
+              <View style={styles.suggestionBox}>
+                <Database size={18} color="#AF52DE" />
+                <Text style={styles.suggestionText}>
+                  {suggestedDeck ? `Suggested Deck: "${suggestedDeck.title}"` : `New Subject: "${analysisResult?.subject}"`}
+                </Text>
+              </View>
+
+              <View style={styles.cardsBox}>
+                <Text style={styles.sectionLabel}>NEW CUE CARDS ({analysisResult?.cards?.length})</Text>
+                {analysisResult?.cards?.map((c: any, i: number) => (
+                  <View key={i} style={styles.cardPreview}><Text style={styles.cardQ}>Q: {c.front}</Text></View>
+                ))}
+              </View>
+            </ScrollView>
+
+            <View style={{ gap: 10 }}>
+              <TouchableOpacity onPress={() => saveToDeck(suggestedDeck?.id || null)} style={[styles.mBtn, { backgroundColor: '#AF52DE' }]}>
+                <Check size={20} color="white" style={{ marginRight: 8 }} />
+                <Text style={{ color: 'white', fontWeight: '900' }}>
+                  {suggestedDeck ? `ADD TO ${suggestedDeck.title.toUpperCase()}` : 'CREATE NEW DECK'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => saveToDeck(null)} style={[styles.mBtn, { backgroundColor: 'rgba(0,0,0,0.05)' }]}>
+                <PlusCircle size={20} color="#666" style={{ marginRight: 8 }} />
+                <Text style={{ color: '#666', fontWeight: '900' }}>CREATE AS NEW DECK REGARDLESS</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setAnalysisResult(null)} style={[styles.mBtn, { backgroundColor: '#FF3B3010' }]}><Text style={{ color: '#FF3B30', fontWeight: '900' }}>DISCARD</Text></TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {selectedId && (
         <MotiView from={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1, left: menuPos.x, top: menuPos.y }} style={styles.ctx}>
@@ -539,7 +632,13 @@ const styles = StyleSheet.create({
   mOver: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', padding: 20 },
   mCont: { padding: 20, borderRadius: 25, gap: 15 },
   inp: { padding: 12, borderRadius: 12, backgroundColor: '#f5f5f5' },
-  mBtn: { flex: 1, padding: 12, borderRadius: 12, alignItems: 'center' },
+  mBtn: { flexDirection: 'row', padding: 12, borderRadius: 12, alignItems: 'center', minHeight: 50, justifyContent: 'center' },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   knob: { position: 'absolute', width: 16, height: 16, borderRadius: 8, backgroundColor: '#fff', borderWidth: 2, borderColor: '#AF52DE', top: -6 },
+  suggestionBox: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#AF52DE10', padding: 15, borderRadius: 15, marginBottom: 15 },
+  suggestionText: { fontSize: 14, fontWeight: '800', color: '#AF52DE', flex: 1 },
+  cardsBox: { marginBottom: 20 },
+  sectionLabel: { fontSize: 10, fontWeight: '900', color: '#888', letterSpacing: 1.5, marginBottom: 10 },
+  cardPreview: { backgroundColor: 'rgba(0,0,0,0.02)', padding: 12, borderRadius: 12, marginBottom: 8 },
+  cardQ: { fontSize: 13, fontWeight: '700', color: '#444' }
 });

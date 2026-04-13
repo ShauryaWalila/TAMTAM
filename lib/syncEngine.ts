@@ -115,8 +115,8 @@ export const initialFullSync = async (shouldClear = false) => {
         [n.user_id, n.start_time, n.duration_minutes]));
 
     await syncTable('study_syllabus', supabase.from('study_syllabus').select('*'), 
-      n => db.runSync(`INSERT OR REPLACE INTO study_syllabus (id, parent_id, title, status, user_id, order_index, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
-        [n.id, n.parent_id, n.title, n.status, n.user_id, n.order_index, n.created_at]));
+      n => db.runSync(`INSERT OR REPLACE INTO study_syllabus (id, parent_id, title, theory_status, practical_status, theory_last_reviewed, practical_last_reviewed, user_id, order_index, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+        [n.id, n.parent_id, n.title, n.theory_status, n.practical_status, n.theory_last_reviewed, n.practical_last_reviewed, n.user_id, n.order_index, n.created_at]));
 
     console.log('Background lazy sync complete.');
   };

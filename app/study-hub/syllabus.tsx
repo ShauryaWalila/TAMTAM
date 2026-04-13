@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { db, queueSyncOperation, generateUUID } from '@/lib/db';
 import * as SecureStore from 'expo-secure-store';
-import { ChevronLeft, Plus, Trash2, ChevronDown, ChevronRight, Circle, PlayCircle, CheckCircle2, Sparkles, Edit3, X, Search, BookOpen, Layers } from 'lucide-react-native';
+import { ChevronLeft, Plus, Trash2, ChevronDown, ChevronRight, Circle, PlayCircle, CheckCircle2, Sparkles, Edit3, X, Search, BookOpen, Layers, Microscope, BookText } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Animated, { Layout, FadeIn, FadeOut } from 'react-native-reanimated';
 import { MotiView, AnimatePresence } from 'moti';
@@ -19,7 +19,10 @@ interface SyllabusItem {
   id: string;
   parent_id: string | null;
   title: string;
-  status: SyllabusStatus;
+  theory_status: SyllabusStatus;
+  practical_status: SyllabusStatus;
+  theory_last_reviewed?: string;
+  practical_last_reviewed?: string;
   user_id: string;
   order_index: number;
   created_at: string;
@@ -48,7 +51,7 @@ const SyllabusNode = memo(({
   allNodes: SyllabusItem[], 
   level: number, 
   isEditMode: boolean, 
-  onToggleStatus: (id: string, current: SyllabusStatus) => void,
+  onToggleStatus: (id: string, type: 'theory' | 'practical', current: SyllabusStatus) => void,
   onAddSubtopic: (parentId: string) => void,
   onDelete: (id: string) => void,
   theme: any,
@@ -64,14 +67,37 @@ const SyllabusNode = memo(({
   const isExpanded = isSearching ? expandedIds.has(item.id) : internalExpanded;
   const hasChildren = children.length > 0;
 
-  const StatusIcon = STATUS_CONFIG[item.status].icon;
-  const statusColor = STATUS_CONFIG[item.status].color;
+  const tStatus = item.theory_status || 'none';
+  const pStatus = item.practical_status || 'none';
+
+  const TIcon = STATUS_CONFIG[tStatus].icon;
+  const PIcon = STATUS_CONFIG[pStatus].icon;
 
   const progress = useMemo(() => {
     if (!hasChildren) return null;
-    const completed = children.filter(c => c.status === 'done' || c.status === 'revised').length;
-    return Math.round((completed / children.length) * 100);
-  }, [children]);
+    // Calculate progress based on leaf nodes below this parent
+    const getLeafNodes = (parentId: string): SyllabusItem[] => {
+      const nodes = allNodes.filter(n => n.parent_id === parentId);
+      let leaves: SyllabusItem[] = [];
+      nodes.forEach(n => {
+        const subChildren = allNodes.filter(child => child.parent_id === n.id);
+        if (subChildren.length === 0) leaves.push(n);
+        else leaves = [...leaves, ...getLeafNodes(n.id)];
+      });
+      return leaves;
+    };
+
+    const leaves = getLeafNodes(item.id);
+    if (leaves.length === 0) return 0;
+    const totalChecks = leaves.length * 2; // Each leaf has Theory + Practical
+    const completedChecks = leaves.reduce((acc, curr) => {
+      let count = 0;
+      if (curr.theory_status === 'done' || curr.theory_status === 'revised') count++;
+      if (curr.practical_status === 'done' || curr.practical_status === 'revised') count++;
+      return acc + count;
+    }, 0);
+    return Math.round((completedChecks / totalChecks) * 100);
+  }, [allNodes, item.id, hasChildren]);
 
   return (
     <Animated.View entering={FadeIn} layout={Layout.springify()} style={[styles.nodeContainer, { marginLeft: level > 0 ? 16 : 0 }]}>
@@ -89,7 +115,7 @@ const SyllabusNode = memo(({
 
         <TouchableOpacity 
           style={styles.titleContainer} 
-          onPress={() => hasChildren ? setInternalExpanded(!internalExpanded) : onToggleStatus(item.id, item.status)}
+          onPress={() => hasChildren ? setInternalExpanded(!internalExpanded) : null}
           activeOpacity={0.7}
         >
           <Text style={[styles.nodeTitle, { color: theme.text, fontSize: level === 0 ? 17 : 15, fontWeight: level === 0 ? '800' : '600' }]} numberOfLines={1}>
@@ -107,10 +133,22 @@ const SyllabusNode = memo(({
             <TouchableOpacity onPress={() => onAddSubtopic(item.id)} style={styles.actionBtn}><Plus size={18} color={theme.tint} /></TouchableOpacity>
             <TouchableOpacity onPress={() => onDelete(item.id)} style={styles.actionBtn}><Trash2 size={18} color="#FF3B30" /></TouchableOpacity>
           </View>
-        ) : (
-          <TouchableOpacity onPress={() => onToggleStatus(item.id, item.status)} style={styles.statusBtn}>
-            <StatusIcon size={22} color={statusColor} />
-          </TouchableOpacity>
+        ) : !hasChildren && (
+          <View style={styles.dualStatusRow}>
+            {/* Theory Toggle */}
+            <TouchableOpacity onPress={() => onToggleStatus(item.id, 'theory', tStatus)} style={styles.statusBox}>
+              <Text style={styles.statusLabel}>T</Text>
+              <TIcon size={18} color={STATUS_CONFIG[tStatus].color} />
+            </TouchableOpacity>
+            
+            <View style={styles.divider} />
+
+            {/* Practical Toggle */}
+            <TouchableOpacity onPress={() => onToggleStatus(item.id, 'practical', pStatus)} style={styles.statusBox}>
+              <Text style={styles.statusLabel}>P</Text>
+              <PIcon size={18} color={STATUS_CONFIG[pStatus].color} />
+            </TouchableOpacity>
+          </View>
         )}
       </View>
 
@@ -148,12 +186,9 @@ export default function SyllabusTracker() {
   const [nodes, setNodes] = useState<SyllabusItem[]>([]);
   const [currentUser, setCurrentUser] = useState<string>('');
   const [isEditMode, setIsEditMode] = useState(false);
-  
-  // Search UI State
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Modals
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [newItemTitle, setNewItemTitle] = useState('');
   const [targetParentId, setTargetParentId] = useState<string | null>(null);
@@ -192,17 +227,44 @@ export default function SyllabusTracker() {
 
   const rootNodes = useMemo(() => filteredNodes.filter(n => !n.parent_id).sort((a, b) => a.order_index - b.order_index), [filteredNodes]);
 
-  const toggleStatus = (id: string, currentStatus: SyllabusStatus) => {
+  const toggleStatus = (id: string, type: 'theory' | 'practical', currentStatus: SyllabusStatus) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const nextStatus = STATUS_CONFIG[currentStatus].next as SyllabusStatus;
-    setNodes(prev => prev.map(n => n.id === id ? { ...n, status: nextStatus } : n));
-    try { db.runSync(`UPDATE study_syllabus SET status = ? WHERE id = ?`, [nextStatus, id]); queueSyncOperation('study_syllabus', id, 'UPDATE', { status: nextStatus }); } catch (e) {}
+    const now = new Date().toISOString();
+    
+    const updateObj: any = {};
+    if (type === 'theory') {
+      updateObj.theory_status = nextStatus;
+      updateObj.theory_last_reviewed = now;
+    } else {
+      updateObj.practical_status = nextStatus;
+      updateObj.practical_last_reviewed = now;
+    }
+
+    setNodes(prev => prev.map(n => n.id === id ? { ...n, ...updateObj } : n));
+    
+    try {
+      const query = type === 'theory' 
+        ? `UPDATE study_syllabus SET theory_status = ?, theory_last_reviewed = ? WHERE id = ?`
+        : `UPDATE study_syllabus SET practical_status = ?, practical_last_reviewed = ? WHERE id = ?`;
+      db.runSync(query, [nextStatus, now, id]);
+      queueSyncOperation('study_syllabus', id, 'UPDATE', updateObj);
+    } catch (e) {}
   };
 
   const handleAddItem = () => {
     if (!newItemTitle.trim()) return;
-    const newItem: SyllabusItem = { id: generateUUID(), parent_id: targetParentId, title: newItemTitle.trim(), status: 'none', user_id: currentUser, order_index: nodes.filter(n => n.parent_id === targetParentId).length, created_at: new Date().toISOString() };
-    db.runSync(`INSERT INTO study_syllabus (id, parent_id, title, status, user_id, order_index, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`, [newItem.id, newItem.parent_id, newItem.title, newItem.status, newItem.user_id, newItem.order_index, newItem.created_at]);
+    const newItem: SyllabusItem = { 
+      id: generateUUID(), 
+      parent_id: targetParentId, 
+      title: newItemTitle.trim(), 
+      theory_status: 'none', 
+      practical_status: 'none',
+      user_id: currentUser, 
+      order_index: nodes.filter(n => n.parent_id === targetParentId).length, 
+      created_at: new Date().toISOString() 
+    };
+    db.runSync(`INSERT INTO study_syllabus (id, parent_id, title, theory_status, practical_status, user_id, order_index, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [newItem.id, newItem.parent_id, newItem.title, newItem.theory_status, newItem.practical_status, newItem.user_id, newItem.order_index, newItem.created_at]);
     queueSyncOperation('study_syllabus', newItem.id, 'INSERT', newItem);
     setNodes(prev => [...prev, newItem]); setIsAddModalVisible(false); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
@@ -225,8 +287,16 @@ export default function SyllabusTracker() {
   };
 
   const overallProgress = useMemo(() => {
-    if (nodes.length === 0) return 0;
-    return Math.round((nodes.filter(n => n.status === 'done' || n.status === 'revised').length / nodes.length) * 100);
+    const leafNodes = nodes.filter(item => !nodes.some(s => s.parent_id === item.id));
+    if (leafNodes.length === 0) return 0;
+    const totalChecks = leafNodes.length * 2;
+    const completedChecks = leafNodes.reduce((acc, curr) => {
+      let count = 0;
+      if (curr.theory_status === 'done' || curr.theory_status === 'revised') count++;
+      if (curr.practical_status === 'done' || curr.practical_status === 'revised') count++;
+      return acc + count;
+    }, 0);
+    return Math.round((completedChecks / totalChecks) * 100);
   }, [nodes]);
 
   return (
@@ -236,7 +306,7 @@ export default function SyllabusTracker() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}><ChevronLeft size={24} color={theme.text} /></TouchableOpacity>
           <View style={{ flex: 1, marginLeft: 12 }}>
             <Text style={[styles.title, { color: theme.text }]}>Syllabus</Text>
-            <Text style={[styles.subtitle, { color: theme.tabIconDefault }]}>{overallProgress}% Mastered</Text>
+            <Text style={[styles.subtitle, { color: theme.tabIconDefault }]}>{overallProgress}% Mastered (T+P)</Text>
           </View>
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <TouchableOpacity onPress={() => { setIsSearchVisible(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} style={styles.headerBtn}><Search size={20} color={theme.text} /></TouchableOpacity>
@@ -246,21 +316,9 @@ export default function SyllabusTracker() {
 
         <AnimatePresence>
           {isSearchVisible && (
-            <MotiView 
-              from={{ opacity: 0, height: 0, marginTop: 0 }} 
-              animate={{ opacity: 1, height: 46, marginTop: 10 }} 
-              exit={{ opacity: 0, height: 0, marginTop: 0 }}
-              style={[styles.searchBar, { backgroundColor: theme.card }]}
-            >
+            <MotiView from={{ opacity: 0, height: 0, marginTop: 0 }} animate={{ opacity: 1, height: 46, marginTop: 10 }} exit={{ opacity: 0, height: 0, marginTop: 0 }} style={[styles.searchBar, { backgroundColor: theme.card }]}>
               <Search size={18} color={theme.tabIconDefault} />
-              <TextInput 
-                style={[styles.searchInput, { color: theme.text }]} 
-                placeholder="Search subjects or chapters..." 
-                placeholderTextColor={theme.tabIconDefault}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                autoFocus
-              />
+              <TextInput style={[styles.searchInput, { color: theme.text }]} placeholder="Search subjects or chapters..." placeholderTextColor={theme.tabIconDefault} value={searchQuery} onChangeText={setSearchQuery} autoFocus />
               <TouchableOpacity onPress={() => { setIsSearchVisible(false); setSearchQuery(''); }} style={styles.closeSearch}><X size={18} color={theme.text} /></TouchableOpacity>
             </MotiView>
           )}
@@ -310,7 +368,13 @@ const styles = StyleSheet.create({
   nodeTitle: { flexShrink: 1 },
   miniBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
   miniBadgeText: { fontSize: 9, fontWeight: '900' },
-  statusBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
+  
+  // DUAL STATUS STYLES
+  dualStatusRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.03)', borderRadius: 10, padding: 4 },
+  statusBox: { alignItems: 'center', paddingHorizontal: 8, paddingVertical: 2, minWidth: 35 },
+  statusLabel: { fontSize: 8, fontWeight: '900', color: '#888', marginBottom: 2 },
+  divider: { width: 1, height: 20, backgroundColor: 'rgba(0,0,0,0.05)' },
+
   editActions: { flexDirection: 'row', gap: 8 },
   actionBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.03)', justifyContent: 'center', alignItems: 'center' },
   childrenWrapper: { flexDirection: 'row' },

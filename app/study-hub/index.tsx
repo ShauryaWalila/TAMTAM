@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput, FlatList, Dimensions, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput, FlatList, Dimensions, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, ActivityIndicator, DeviceEventEmitter } from 'react-native';
 import { Text, View as ThemedView } from '@/components/Themed';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
@@ -8,7 +8,7 @@ import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { db, queueSyncOperation, generateUUID } from '@/lib/db';
 import * as SecureStore from 'expo-secure-store';
-import { BookOpen, Plus, X, BrainCircuit, PenTool, LayoutDashboard, Clock, ChevronLeft, Search as SearchIcon, Calendar, Flame, MessageSquare, Check, Trash2, ChevronRight, ListChecks, Minus, Edit3, Moon, Play, Pause, Bell } from 'lucide-react-native';
+import { BookOpen, Plus, X, BrainCircuit, PenTool, LayoutDashboard, Clock, ChevronLeft, Search as SearchIcon, Calendar, Flame, MessageSquare, Check, Trash2, ChevronRight, ListChecks, Minus, Edit3, Moon, Play, Pause, Bell, Sparkles, Bot } from 'lucide-react-native';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import RadialNavigator from '@/components/RadialNavigator';
@@ -16,6 +16,7 @@ import { MotiView, AnimatePresence } from 'moti';
 import { format, differenceInDays, startOfToday, eachDayOfInterval, subDays, differenceInMinutes } from 'date-fns';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { sendStudyNotification } from '@/lib/notifications';
+import { getMotivationalBoost } from '@/lib/aiEngine';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -33,6 +34,9 @@ export default function StudyHubDashboard() {
   const [brainDump, setBrainDump] = useState<any[]>([]);
   const [syllabus, setSyllabus] = useState<any[]>([]);
 
+  const [aiBoost, setAiBoost] = useState<string>('Your medical journey is a marathon, keep going! 🩺');
+  const [loadingBoost, setLoadingBoost] = useState(false);
+
   const [isDeckModalVisible, setIsDeckModalVisible] = useState(false);
   const [newDeckTitle, setNewDeckTitle] = useState('');
   const [newDeckDesc, setNewDeckDesc] = useState('');
@@ -48,7 +52,6 @@ export default function StudyHubDashboard() {
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // --- FOCUS TIMER STATE ---
   const [isTimerRunning, setIsTimerStarted] = useState(false);
   const [isTimerPaused, setIsTimerPaused] = useState(false);
   const [timeLeft, setTimeLeft] = useState(25 * 60);
@@ -57,24 +60,28 @@ export default function StudyHubDashboard() {
   const [partnerSession, setPartnerSession] = useState<any>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // --- NAP STATE ---
   const [isNapping, setIsNapping] = useState(false);
   const [napStartTime, setNapStartTime] = useState<Date | null>(null);
 
   useEffect(() => {
     init();
+    
+    // 🔥 LIVE REFRESH LISTENER: Updates UI instantly when AI organizes things
+    const sub = DeviceEventEmitter.addListener('DATA_REFRESH', () => {
+      console.log("[Dashboard] AI-Driven data refresh triggered.");
+      refreshFromSQLite();
+    });
+
     const subscription = supabase.channel('study_hub_sync')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'active_study_sessions' }, (payload) => {
-        if (payload.eventType === 'INSERT' && payload.new.user_id !== currentUser) {
-          sendStudyNotification(payload.new.user_id, 'started a new study session! 🧠');
-        }
+        if (payload.eventType === 'INSERT' && payload.new.user_id !== currentUser) { sendStudyNotification(payload.new.user_id, 'started a study session! 🧠'); }
         fetchActiveSessions();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'study_exams' }, () => refreshData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'study_brain_dump' }, () => refreshData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'study_syllabus' }, () => refreshData())
       .subscribe();
-    return () => { subscription.unsubscribe(); };
+    return () => { subscription.unsubscribe(); sub.remove(); };
   }, [currentUser]);
 
   const init = async () => {
@@ -84,8 +91,16 @@ export default function StudyHubDashboard() {
       setCurrentUser(u);
       refreshFromSQLite();
       fetchData(u);
+      fetchAIBoost(u);
       setTimeout(() => fetchActiveSessions(), 500);
     }
+  };
+
+  const fetchAIBoost = async (uid: string) => {
+    setLoadingBoost(true);
+    const boost = await getMotivationalBoost(uid);
+    setAiBoost(boost);
+    setLoadingBoost(false);
   };
 
   const refreshData = () => { if (currentUser) fetchData(currentUser); };
@@ -112,7 +127,7 @@ export default function StudyHubDashboard() {
       const { data: dumpData } = await supabase.from('study_brain_dump').select('*').eq('is_processed', 0);
       if (dumpData) dumpData.forEach(b => db.runSync(`INSERT OR REPLACE INTO study_brain_dump (id, content, user_id, is_processed, created_at) VALUES (?, ?, ?, ?, ?)`, [b.id, b.content, b.user_id, b.is_processed, b.created_at]));
       const { data: syllabusData } = await supabase.from('study_syllabus').select('*');
-      if (syllabusData) syllabusData.forEach(s => db.runSync(`INSERT OR REPLACE INTO study_syllabus (id, parent_id, title, status, user_id, order_index, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`, [s.id, s.parent_id, s.title, s.status, s.user_id, s.order_index, s.created_at]));
+      if (syllabusData) syllabusData.forEach(s => db.runSync(`INSERT OR REPLACE INTO study_syllabus (id, parent_id, title, theory_status, practical_status, theory_last_reviewed, practical_last_reviewed, user_id, order_index, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [s.id, s.parent_id, s.title, s.theory_status, s.practical_status, s.theory_last_reviewed, s.practical_last_reviewed, s.user_id, s.order_index, s.created_at]));
       refreshFromSQLite();
     } catch (e) {}
   };
@@ -130,10 +145,7 @@ export default function StudyHubDashboard() {
           if (remaining > 0) { setTimeLeft(remaining); setSelectedDuration(mySession.duration_minutes); setIsTimerStarted(true); setIsTimerPaused(false); }
           else handleTimerComplete();
         }
-      } else {
-        setIsTimerStarted(false);
-        setIsTimerPaused(false);
-      }
+      } else { setIsTimerStarted(false); setIsTimerPaused(false); }
       setPartnerSession(herSession || null);
     }
   };
@@ -179,11 +191,7 @@ export default function StudyHubDashboard() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
 
-  const startNap = () => {
-    if (isTimerRunning && !isTimerPaused) togglePause();
-    setIsNapping(true); setIsTimerModalVisible(false); setNapStartTime(new Date());
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-  };
+  const startNap = () => { if (isTimerRunning && !isTimerPaused) togglePause(); setIsNapping(true); setIsTimerModalVisible(false); setNapStartTime(new Date()); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); };
 
   const endNap = async () => {
     if (!napStartTime) return;
@@ -197,17 +205,9 @@ export default function StudyHubDashboard() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
   };
 
-  const adjustTimer = (mins: number) => {
-    const next = Math.max(1, Math.min(180, selectedDuration + mins));
-    setSelectedDuration(next); setTimeLeft(next * 60);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  };
+  const adjustTimer = (mins: number) => { const next = Math.max(1, Math.min(180, selectedDuration + mins)); setSelectedDuration(next); setTimeLeft(next * 60); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); };
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(Math.max(0, seconds) / 60);
-    const secs = Math.max(0, seconds) % 60;
-    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-  };
+  const formatTime = (seconds: number) => { const mins = Math.floor(Math.max(0, seconds) / 60); const secs = Math.max(0, seconds) % 60; return `${mins}:${secs < 10 ? '0' : ''}${secs}`; };
 
   const createDeck = async () => {
     if (!newDeckTitle.trim()) return;
@@ -233,36 +233,13 @@ export default function StudyHubDashboard() {
     const id = generateUUID();
     const formattedDate = format(examDate, 'yyyy-MM-dd');
     const examPayload = { id, title: examTitle.trim(), exam_date: formattedDate, start_date: format(new Date(), 'yyyy-MM-dd'), user_id: currentUser, created_at: new Date().toISOString() };
-    
-    // Add to Study Exams
     db.runSync(`INSERT INTO study_exams (id, title, exam_date, start_date, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?)`, [examPayload.id, examPayload.title, examPayload.exam_date, examPayload.start_date, examPayload.user_id, examPayload.created_at]);
     queueSyncOperation('study_exams', examPayload.id, 'INSERT', examPayload);
-
-    // Sync to Common Calendar
     const calPayload = { id, event_date: formattedDate, title: `📚 EXAM: ${examTitle.trim()}`, user_id: currentUser, frequency: 'once', created_at: new Date().toISOString() };
     db.runSync(`INSERT INTO calendar_events (id, event_date, title, user_id, frequency, created_at) VALUES (?, ?, ?, ?, ?, ?)`, [calPayload.id, calPayload.event_date, calPayload.title, calPayload.user_id, calPayload.frequency, calPayload.created_at]);
     queueSyncOperation('calendar_events', calPayload.id, 'INSERT', calPayload);
-
     setIsExamModalVisible(false); setExamTitle(''); setExamDate(new Date()); refreshFromSQLite();
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-  };
-
-  const deleteExam = (id: string) => {
-    Alert.alert('Delete Exam?', 'Remove this countdown and calendar event?', [
-      { text: 'Cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => {
-        // Remove from Study Exams
-        db.runSync(`DELETE FROM study_exams WHERE id = ?`, [id]);
-        queueSyncOperation('study_exams', id, 'DELETE', {});
-
-        // Remove from Common Calendar
-        db.runSync(`DELETE FROM calendar_events WHERE id = ?`, [id]);
-        queueSyncOperation('calendar_events', id, 'DELETE', {});
-
-        refreshFromSQLite();
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      }}
-    ]);
   };
 
   const addBrainDump = async () => {
@@ -302,8 +279,14 @@ export default function StudyHubDashboard() {
     if (syllabus.length === 0) return 0;
     const leafNodes = syllabus.filter(item => !syllabus.some(s => s.parent_id === item.id));
     if (leafNodes.length === 0) return 0;
-    const completed = leafNodes.filter(item => item.status === 'done' || item.status === 'revised').length;
-    return Math.round((completed / leafNodes.length) * 100);
+    const totalChecks = leafNodes.length * 2;
+    const completedChecks = leafNodes.reduce((acc, curr) => {
+      let count = 0;
+      if (curr.theory_status === 'done' || curr.theory_status === 'revised') count++;
+      if (curr.practical_status === 'done' || curr.practical_status === 'revised') count++;
+      return acc + count;
+    }, 0);
+    return Math.round((completedChecks / totalChecks) * 100);
   }, [syllabus]);
 
   return (
@@ -311,9 +294,7 @@ export default function StudyHubDashboard() {
       <View style={styles.header}>
         <View style={{ flex: 1 }}><Text style={[styles.title, { color: theme.text }]}>Study Hub</Text><Text style={[styles.subtitle, { color: theme.tabIconDefault }]}>Exam Mode Activated 🧠</Text></View>
         <View style={{ flexDirection: 'row', gap: 10 }}>
-          <TouchableOpacity onPress={() => setIsTimerModalVisible(true)} style={[styles.headerBtn, { backgroundColor: isTimerRunning ? (isTimerPaused ? '#FFCC00' : '#FF2D55') : theme.card }]}>
-            <Clock size={22} color={isTimerRunning ? '#fff' : theme.text} />
-          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setIsTimerModalVisible(true)} style={[styles.headerBtn, { backgroundColor: isTimerRunning ? (isTimerPaused ? '#FFCC00' : '#FF2D55') : theme.card }]}><Clock size={22} color={isTimerRunning ? '#fff' : theme.text} /></TouchableOpacity>
           <TouchableOpacity onPress={() => { setIsSearchVisible(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} style={[styles.headerBtn, { backgroundColor: theme.card }]}><SearchIcon size={22} color={theme.text} /></TouchableOpacity>
         </View>
       </View>
@@ -321,39 +302,29 @@ export default function StudyHubDashboard() {
       <AnimatePresence>{isSearchVisible && (<MotiView from={{ opacity: 0, translateY: -20 }} animate={{ opacity: 1, translateY: 0 }} exit={{ opacity: 0, translateY: -20 }} style={[styles.searchOverlay, { backgroundColor: theme.card }]}><SearchIcon size={18} color={theme.tabIconDefault} /><TextInput style={[styles.searchInput, { color: theme.text }]} placeholder="Search everything..." placeholderTextColor={theme.tabIconDefault} autoFocus value={searchQuery} onChangeText={setSearchQuery} /><TouchableOpacity onPress={() => { setIsSearchVisible(false); setSearchQuery(''); }} style={styles.closeSearch}><X size={20} color={theme.text} /></TouchableOpacity></MotiView>)}</AnimatePresence>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* PARTNER NOTIFICATION (Only if it's the other person) */}
         {partnerSession && partnerSession.user_id !== currentUser && (
-          <MotiView from={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={[styles.partnerCard, { backgroundColor: '#FF2D55' }]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}><Bell size={18} color="#fff" /><Text style={styles.partnerText}>Partner is studying right now! ❤️</Text></View>
-          </MotiView>
+          <MotiView from={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={[styles.partnerCard, { backgroundColor: '#FF2D55' }]}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}><Bell size={18} color="#fff" /><Text style={styles.partnerText}>Partner is studying right now! ❤️</Text></View></MotiView>
         )}
 
-        {/* ACTIVE TIMER DASHBOARD CARD (Only when running) */}
         <AnimatePresence>
           {(isTimerRunning || isNapping) && (
             <MotiView from={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} style={[styles.activeTimerCard, { backgroundColor: isNapping ? '#AF52DE' : (isTimerPaused ? '#FFCC00' : '#FF2D55') }]}>
-              <View style={styles.activeTimerTop}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                  {isNapping ? <Moon size={24} color="#fff" /> : <Clock size={24} color="#fff" />}
-                  <Text style={styles.activeTimerLabel}>{isNapping ? 'POWER NAP' : (isTimerPaused ? 'PAUSED' : 'FOCUSING')}</Text>
-                </View>
-                <Text style={styles.activeTimerValue}>{isNapping ? 'RECOVERING' : formatTime(timeLeft)}</Text>
-              </View>
-              <View style={styles.activeTimerActions}>
-                {isNapping ? (
-                  <TouchableOpacity onPress={endNap} style={styles.activeBtn}><Text style={styles.activeBtnText}>WAKE UP</Text></TouchableOpacity>
-                ) : (
-                  <>
-                    <TouchableOpacity onPress={togglePause} style={styles.activeBtn}>{isTimerPaused ? <Play size={20} color="#fff" /> : <Pause size={20} color="#fff" />}</TouchableOpacity>
-                    <TouchableOpacity onPress={toggleTimer} style={styles.activeBtn}><X size={20} color="#fff" /></TouchableOpacity>
-                  </>
-                )}
-              </View>
+              <View style={styles.activeTimerTop}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>{isNapping ? <Moon size={24} color="#fff" /> : <Clock size={24} color="#fff" />}<Text style={styles.activeTimerLabel}>{isNapping ? 'POWER NAP' : (isTimerPaused ? 'PAUSED' : 'FOCUSING')}</Text></View><Text style={styles.activeTimerValue}>{isNapping ? 'RECOVERING' : formatTime(timeLeft)}</Text></View>
+              <View style={styles.activeTimerActions}>{isNapping ? (<TouchableOpacity onPress={endNap} style={styles.activeBtn}><Text style={styles.activeBtnText}>WAKE UP</Text></TouchableOpacity>) : (<><TouchableOpacity onPress={togglePause} style={styles.activeBtn}>{isTimerPaused ? <Play size={20} color="#fff" /> : <Pause size={20} color="#fff" />}</TouchableOpacity><TouchableOpacity onPress={toggleTimer} style={styles.activeBtn}><X size={20} color="#fff" /></TouchableOpacity></>)}</View>
             </MotiView>
           )}
         </AnimatePresence>
 
-        {/* SYLLABUS MASTERY */}
+        <TouchableOpacity style={[styles.buddyCard, { backgroundColor: theme.card }]} onPress={() => router.push('/study-hub/buddy')}>
+          <View style={styles.buddyHeader}>
+            <View style={[styles.buddyAvatar, { backgroundColor: '#AF52DE15' }]}><Bot size={24} color="#AF52DE" /></View>
+            <View style={{ flex: 1 }}><Text style={[styles.cardTitle, { color: theme.text, marginBottom: 2 }]}>Study Buddy</Text><Text style={styles.buddyStatus}>Always active for you</Text></View>
+            <Sparkles size={18} color="#AF52DE" />
+          </View>
+          <View style={styles.boostContainer}>{loadingBoost ? <ActivityIndicator size="small" color="#AF52DE" /> : <Text style={styles.boostText}>"{aiBoost}"</Text>}</View>
+          <View style={styles.buddyFooter}><Text style={styles.buddyAction}>TAP TO CHAT</Text><ChevronRight size={14} color="#AF52DE" /></View>
+        </TouchableOpacity>
+
         <TouchableOpacity style={[styles.syllabusCard, { backgroundColor: theme.card }]} onPress={() => router.push('/study-hub/syllabus')}>
           <View style={styles.syllabusHeader}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}><View style={[styles.statIcon, { backgroundColor: '#AF52DE15' }]}><ListChecks size={24} color="#AF52DE" /></View><View><Text style={[styles.cardTitle, { color: theme.text, marginBottom: 2 }]}>Syllabus Mastery</Text><Text style={styles.cardSub}>{syllabus.length} topics tracked</Text></View></View>
@@ -362,48 +333,15 @@ export default function StudyHubDashboard() {
           <View style={styles.syllabusProgressBar}><View style={[styles.syllabusProgressFill, { width: `${syllabusProgress}%`, backgroundColor: '#AF52DE' }]} /></View>
         </TouchableOpacity>
 
-        {/* EXAM COUNTDOWN */}
-        <View style={styles.sectionHeader}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Calendar color={theme.tint} size={24} /><Text style={[styles.sectionTitle, { color: theme.text }]}>Exam Countdown</Text></View>
-          <TouchableOpacity onPress={() => setIsExamModalVisible(true)} style={[styles.addBtn, { backgroundColor: theme.tint + '20' }]}><Plus size={20} color={theme.tint} /></TouchableOpacity>
-        </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 15, paddingBottom: 10 }}>
-          {exams.map(exam => {
-            const daysLeft = differenceInDays(new Date(exam.exam_date), startOfToday());
-            return (
-              <TouchableOpacity key={exam.id} style={[styles.examCard, { backgroundColor: theme.card }]} onLongPress={() => { Alert.alert('Delete Exam?', 'Remove this countdown?', [{ text: 'Cancel' }, { text: 'Delete', style: 'destructive', onPress: () => { db.runSync(`DELETE FROM study_exams WHERE id = ?`, [exam.id]); queueSyncOperation('study_exams', exam.id, 'DELETE', {}); refreshFromSQLite(); }}]); }}>
-                <Text style={[styles.examTitle, { color: theme.text }]}>{exam.title}</Text>
-                <Text style={[styles.examDays, { color: theme.tint }]}>{daysLeft} Days Left</Text>
-                <View style={styles.examProgressBase}><View style={[styles.examProgressFill, { backgroundColor: theme.tint, width: `${Math.min(100, Math.max(5, (1 - daysLeft/60) * 100))}%` }]} /></View>
-              </TouchableOpacity>
-            );
-          })}
-          {exams.length === 0 && <Text style={styles.emptyText}>Add your next Prof exam!</Text>}
-        </ScrollView>
+        <View style={styles.sectionHeader}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Calendar color={theme.tint} size={24} /><Text style={[styles.sectionTitle, { color: theme.text }]}>Exam Countdown</Text></View><TouchableOpacity onPress={() => setIsExamModalVisible(true)} style={[styles.addBtn, { backgroundColor: theme.tint + '20' }]}><Plus size={20} color={theme.tint} /></TouchableOpacity></View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 15, paddingBottom: 10 }}>{exams.map(exam => { const daysLeft = differenceInDays(new Date(exam.exam_date), startOfToday()); return (<TouchableOpacity key={exam.id} style={[styles.examCard, { backgroundColor: theme.card }]} onLongPress={() => { Alert.alert('Delete Exam?', 'Remove this countdown?', [{ text: 'Cancel' }, { text: 'Delete', style: 'destructive', onPress: () => { db.runSync(`DELETE FROM study_exams WHERE id = ?`, [exam.id]); db.runSync(`DELETE FROM calendar_events WHERE id = ?`, [exam.id]); queueSyncOperation('study_exams', exam.id, 'DELETE', {}); queueSyncOperation('calendar_events', exam.id, 'DELETE', {}); refreshFromSQLite(); }}]); }}><Text style={[styles.examTitle, { color: theme.text }]}>{exam.title}</Text><Text style={[styles.examDays, { color: theme.tint }]}>{daysLeft} Days Left</Text><View style={styles.examProgressBase}><View style={[styles.examProgressFill, { backgroundColor: theme.tint, width: `${Math.min(100, Math.max(5, (1 - daysLeft/60) * 100))}%` }]} /></View></TouchableOpacity>); })}{exams.length === 0 && <Text style={styles.emptyText}>Add your next Prof exam!</Text>}</ScrollView>
 
-        {/* HABIT HEATMAP */}
         <View style={[styles.sectionHeader, { marginTop: 30 }]}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Flame color="#FF9500" size={24} /><Text style={[styles.sectionTitle, { color: theme.text }]}>Consistency Heatmap</Text></View></View>
-        <View style={[styles.heatmapCard, { backgroundColor: theme.card }]}>
-          <View style={styles.heatmapGrid}>{heatmapData.map((d, i) => <View key={i} style={[styles.heatmapSquare, { backgroundColor: d.count > 0 ? `rgba(52, 199, 89, ${Math.min(1, d.count/10 + 0.2)})` : theme.background }]} />)}</View>
-          <Text style={styles.heatmapLabel}>Last 30 days of medical focus</Text>
-        </View>
+        <View style={[styles.heatmapCard, { backgroundColor: theme.card }]}><View style={styles.heatmapGrid}>{heatmapData.map((d, i) => <View key={i} style={[styles.heatmapSquare, { backgroundColor: d.count > 0 ? `rgba(52, 199, 89, ${Math.min(1, d.count/10 + 0.2)})` : theme.background }]} />)}</View><Text style={styles.heatmapLabel}>Last 30 days of medical focus</Text></View>
 
-        {/* BRAIN DUMP */}
         <View style={[styles.sectionHeader, { marginTop: 30 }]}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><MessageSquare color={theme.secondary} size={24} /><Text style={[styles.sectionTitle, { color: theme.text }]}>Brain Dump Inbox</Text></View><TouchableOpacity onPress={() => { setEditingDumpId(null); setDumpContent(''); setIsDumpModalVisible(true); }} style={[styles.addBtn, { backgroundColor: theme.secondary + '20' }]}><Plus size={20} color={theme.secondary} /></TouchableOpacity></View>
-        <View style={[styles.dumpCard, { backgroundColor: theme.card }]}>
-          {brainDump.slice(0, 3).map(item => (
-            <View key={item.id} style={styles.dumpItem}>
-              <Text style={[styles.dumpText, { color: theme.text }]} numberOfLines={1}>{item.content}</Text>
-              <View style={{ flexDirection: 'row', gap: 12 }}>
-                <TouchableOpacity onPress={() => { setEditingDumpId(item.id); setDumpContent(item.content); setIsDumpModalVisible(true); }}><Edit3 size={18} color={theme.tabIconDefault} /></TouchableOpacity>
-                <TouchableOpacity onPress={() => { db.runSync(`UPDATE study_brain_dump SET is_processed = 1 WHERE id = ?`, [item.id]); queueSyncOperation('study_brain_dump', item.id, 'UPDATE', { is_processed: 1 }); refreshFromSQLite(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}><Check size={18} color="#34C759" /></TouchableOpacity>
-              </View>
-            </View>
-          ))}
-          {brainDump.length === 0 && <Text style={styles.emptyText}>Inbox is clean!</Text>}
-        </View>
+        <View style={[styles.dumpCard, { backgroundColor: theme.card }]}>{brainDump.slice(0, 3).map(item => (<View key={item.id} style={styles.dumpItem}><Text style={[styles.dumpText, { color: theme.text }]} numberOfLines={1}>{item.content}</Text><View style={{ flexDirection: 'row', gap: 12 }}><TouchableOpacity onPress={() => { setEditingDumpId(item.id); setDumpContent(item.content); setIsDumpModalVisible(true); }}><Edit3 size={18} color={theme.tabIconDefault} /></TouchableOpacity><TouchableOpacity onPress={() => { db.runSync(`UPDATE study_brain_dump SET is_processed = 1 WHERE id = ?`, [item.id]); queueSyncOperation('study_brain_dump', item.id, 'UPDATE', { is_processed: 1 }); refreshFromSQLite(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}><Check size={18} color="#34C759" /></TouchableOpacity></View></View>))}{brainDump.length === 0 && <Text style={styles.emptyText}>Inbox is clean!</Text>}</View>
 
-        {/* DECKS & BOARDS */}
         <View style={[styles.sectionHeader, { marginTop: 40 }]}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><BookOpen color={theme.tint} size={24} /><Text style={[styles.sectionTitle, { color: theme.text }]}>Flashcard Decks</Text></View><TouchableOpacity onPress={() => setIsDeckModalVisible(true)} style={[styles.addBtn, { backgroundColor: theme.tint + '20' }]}><Plus size={20} color={theme.tint} /></TouchableOpacity></View>
         <View style={styles.grid}>{filteredDecks.map(deck => (<TouchableOpacity key={deck.id} style={[styles.card, { backgroundColor: theme.card, borderTopColor: deck.color || theme.tint, borderTopWidth: 4 }]} onPress={() => router.push(`/study-hub/deck/${deck.id}`)} onLongPress={() => { Alert.alert('Delete Deck?', 'Remove this deck?', [{ text: 'Cancel' }, { text: 'Delete', style: 'destructive', onPress: () => { db.runSync(`DELETE FROM study_decks WHERE id = ?`, [deck.id]); queueSyncOperation('study_decks', deck.id, 'DELETE', {}); refreshFromSQLite(); }}]); }}><Text style={[styles.cardTitle, { color: theme.text }]}>{deck.title}</Text><Text style={[styles.cardSub, { color: theme.tabIconDefault }]} numberOfLines={2}>{deck.description || "No description"}</Text></TouchableOpacity>))}</View>
 
@@ -411,49 +349,11 @@ export default function StudyHubDashboard() {
         <View style={styles.grid}>{filteredWhiteboards.map(board => (<TouchableOpacity key={board.id} style={[styles.card, { backgroundColor: theme.card }]} onPress={() => router.push(`/study-hub/whiteboard/${board.id}`)} onLongPress={() => { Alert.alert('Delete Board?', 'Remove this board?', [{ text: 'Cancel' }, { text: 'Delete', style: 'destructive', onPress: () => { db.runSync(`DELETE FROM study_whiteboards WHERE id = ?`, [board.id]); queueSyncOperation('study_whiteboards', board.id, 'DELETE', {}); refreshFromSQLite(); }}]); }}><View style={[styles.boardThumb, { backgroundColor: theme.tint + '10' }]}><LayoutDashboard size={32} color={theme.tint} opacity={0.5} /></View><Text style={[styles.cardTitle, { color: theme.text, marginTop: 10 }]}>{board.title}</Text></TouchableOpacity>))}</View>
       </ScrollView>
 
-      {/* NEW MINIMALIST TIMER MODAL */}
-      <Modal visible={isTimerModalVisible} transparent animationType="slide">
-        <View style={styles.modalOverlay}><BlurView intensity={100} tint={colorScheme} style={styles.modalContent}>
-          <View style={styles.modalHeader}><Text style={[styles.modalTitle, { color: theme.text }]}>Focus Engine</Text><TouchableOpacity onPress={() => setIsTimerModalVisible(false)}><X size={24} color={theme.text} /></TouchableOpacity></View>
-          
-          <View style={styles.timerPickerMain}>
-            <View style={styles.timerValues}>
-              <View style={styles.adjustRow}>
-                <TouchableOpacity onPress={() => adjustTimer(-5)} style={styles.adjustBtn}><Minus size={24} color={theme.text} /></TouchableOpacity>
-                <Text style={styles.timerLabel}>SET MINUTES</Text>
-                <TouchableOpacity onPress={() => adjustTimer(5)} style={styles.adjustBtn}><Plus size={24} color={theme.text} /></TouchableOpacity>
-              </View>
-              <Text style={[styles.bigTimerValue, { color: theme.text }]}>{selectedDuration}:00</Text>
-            </View>
-          </View>
-
-          <View style={styles.presetRow}>
-            {[25, 45, 60, 90].map(p => (
-              <TouchableOpacity key={p} onPress={() => { setSelectedDuration(p); setTimeLeft(p * 60); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); }} style={[styles.presetBtn, selectedDuration === p && { backgroundColor: theme.tint }]}>
-                <Text style={[styles.presetText, { color: selectedDuration === p ? '#fff' : theme.tabIconDefault }]}>{p}m</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          <View style={{ flexDirection: 'row', gap: 15 }}>
-            <TouchableOpacity onPress={toggleTimer} style={[styles.saveBtn, { backgroundColor: theme.tint, flex: 2 }]}><Text style={styles.saveBtnText}>START FOCUSING</Text></TouchableOpacity>
-            <TouchableOpacity onPress={startNap} style={[styles.saveBtn, { backgroundColor: '#AF52DE', flex: 1 }]}><Moon size={24} color="#fff" /></TouchableOpacity>
-          </View>
-        </BlurView></View>
-      </Modal>
-
-      {/* BRAIN DUMP MODAL */}
-      <Modal visible={isDumpModalVisible} transparent animationType="fade">
-        <TouchableWithoutFeedback onPress={() => { Keyboard.dismiss(); setIsDumpModalVisible(false); }}><View style={styles.modalOverlay}><KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ width: '100%' }}><TouchableWithoutFeedback onPress={Keyboard.dismiss}><View style={[styles.modalContent, { backgroundColor: theme.card }]}><View style={styles.modalHeader}><Text style={[styles.modalTitle, { color: theme.text }]}>{editingDumpId ? 'Edit Thought' : 'Brain Dump'}</Text><TouchableOpacity onPress={() => setIsDumpModalVisible(false)}><X size={24} color={theme.text} /></TouchableOpacity></View><TextInput style={[styles.input, { backgroundColor: theme.background, color: theme.text, height: 120, textAlignVertical: 'top' }]} placeholder="MNEMONICS, THOUGHTS..." multiline autoFocus value={dumpContent} onChangeText={setDumpContent} /><TouchableOpacity onPress={addBrainDump} style={[styles.saveBtn, { backgroundColor: theme.secondary }]}><Text style={styles.saveBtnText}>{editingDumpId ? 'SAVE CHANGES' : 'DUMP IT'}</Text></TouchableOpacity></View></TouchableWithoutFeedback></KeyboardAvoidingView></View></TouchableWithoutFeedback>
-      </Modal>
-
-      {/* EXAM MODAL */}
-      <Modal visible={isExamModalVisible} transparent animationType="fade">
-        <View style={styles.modalOverlay}><BlurView intensity={100} tint={colorScheme} style={styles.modalContent}><Text style={[styles.modalTitle, { color: theme.text }]}>Add Exam</Text><TextInput style={[styles.input, { backgroundColor: theme.background, color: theme.text }]} placeholder="Exam Title" value={examTitle} onChangeText={setExamTitle} /><TouchableOpacity onPress={() => setShowDatePicker(true)} style={[styles.dateInput, { backgroundColor: theme.background }]}><Calendar size={20} color={theme.tint} /><Text style={{ color: theme.text, fontWeight: '600', marginLeft: 10 }}>{format(examDate, 'PPP')}</Text></TouchableOpacity>
-          {showDatePicker && (<DateTimePicker value={examDate} mode="date" display={Platform.OS === 'ios' ? 'inline' : 'default'} onChange={onDateChange} minimumDate={new Date()} />)}
-          <TouchableOpacity onPress={addExam} style={[styles.saveBtn, { backgroundColor: theme.tint, marginTop: 10 }]}><Text style={styles.saveBtnText}>Add countdown</Text></TouchableOpacity><TouchableOpacity onPress={() => setIsExamModalVisible(false)}><Text style={{ textAlign: 'center', color: '#888', marginTop: 10 }}>Cancel</Text></TouchableOpacity></BlurView></View>
-      </Modal>
-
+      <Modal visible={isTimerModalVisible} transparent animationType="slide"><View style={styles.modalOverlay}><BlurView intensity={100} tint={colorScheme} style={styles.modalContent}><View style={styles.modalHeader}><Text style={[styles.modalTitle, { color: theme.text }]}>Focus Engine</Text><TouchableOpacity onPress={() => setIsTimerModalVisible(false)}><X size={24} color={theme.text} /></TouchableOpacity></View><View style={styles.timerPickerMain}><View style={styles.timerValues}><View style={styles.adjustRow}><TouchableOpacity onPress={() => adjustTimer(-5)} style={styles.adjustBtn}><Minus size={24} color={theme.text} /></TouchableOpacity><Text style={styles.timerLabel}>SET MINUTES</Text><TouchableOpacity onPress={() => adjustTimer(5)} style={styles.adjustBtn}><Plus size={24} color={theme.text} /></TouchableOpacity></View><Text style={[styles.bigTimerValue, { color: theme.text }]}>{selectedDuration}:00</Text></View></View><View style={styles.presetRow}>{[25, 45, 60, 90].map(p => (<TouchableOpacity key={p} onPress={() => { setSelectedDuration(p); setTimeLeft(p * 60); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); }} style={[styles.presetBtn, selectedDuration === p && { backgroundColor: theme.tint }]}><Text style={[styles.presetText, { color: selectedDuration === p ? '#fff' : theme.tabIconDefault }]}>{p}m</Text></TouchableOpacity>))}</View><View style={{ flexDirection: 'row', gap: 15 }}><TouchableOpacity onPress={toggleTimer} style={[styles.saveBtn, { backgroundColor: theme.tint, flex: 2 }]}><Text style={styles.saveBtnText}>START FOCUSING</Text></TouchableOpacity><TouchableOpacity onPress={startNap} style={[styles.saveBtn, { backgroundColor: '#AF52DE', flex: 1 }]}><Moon size={24} color="#fff" /></TouchableOpacity></View></BlurView></View></Modal>
+      <Modal visible={isDumpModalVisible} transparent animationType="fade"><TouchableWithoutFeedback onPress={() => { Keyboard.dismiss(); setIsDumpModalVisible(false); }}><View style={styles.modalOverlay}><KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ width: '100%' }}><TouchableWithoutFeedback onPress={Keyboard.dismiss}><View style={[styles.modalContent, { backgroundColor: theme.card }]}><View style={styles.modalHeader}><Text style={[styles.modalTitle, { color: theme.text }]}>{editingDumpId ? 'Edit Thought' : 'Brain Dump'}</Text><TouchableOpacity onPress={() => setIsDumpModalVisible(false)}><X size={24} color={theme.text} /></TouchableOpacity></View><TextInput style={[styles.input, { backgroundColor: theme.background, color: theme.text, height: 120, textAlignVertical: 'top' }]} placeholder="MNEMONICS, THOUGHTS..." multiline autoFocus value={dumpContent} onChangeText={setDumpContent} /><TouchableOpacity onPress={addBrainDump} style={[styles.saveBtn, { backgroundColor: theme.secondary }]}><Text style={styles.saveBtnText}>{editingDumpId ? 'SAVE CHANGES' : 'DUMP IT'}</Text></TouchableOpacity></View></TouchableWithoutFeedback></KeyboardAvoidingView></View></TouchableWithoutFeedback></Modal>
+      <Modal visible={isDeckModalVisible} transparent animationType="fade"><TouchableWithoutFeedback onPress={Keyboard.dismiss}><View style={styles.modalOverlay}><KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ width: '100%' }}><BlurView intensity={100} tint={colorScheme} style={styles.modalContent}><View style={styles.modalHeader}><Text style={[styles.modalTitle, { color: theme.text }]}>New Study Deck</Text><TouchableOpacity onPress={() => setIsDeckModalVisible(false)}><X size={24} color={theme.text} /></TouchableOpacity></View><TextInput style={[styles.input, { backgroundColor: theme.background, color: theme.text }]} placeholder="Subject" placeholderTextColor={theme.tabIconDefault} value={newDeckTitle} onChangeText={setNewDeckTitle} /><TextInput style={[styles.input, { backgroundColor: theme.background, color: theme.text, height: 100, textAlignVertical: 'top' }]} placeholder="Description" placeholderTextColor={theme.tabIconDefault} multiline value={newDeckDesc} onChangeText={setNewDeckDesc} /><TouchableOpacity onPress={createDeck} style={[styles.saveBtn, { backgroundColor: theme.tint }]}><Text style={styles.saveBtnText}>Create Deck</Text></TouchableOpacity></BlurView></KeyboardAvoidingView></View></TouchableWithoutFeedback></Modal>
+      <Modal visible={isWhiteboardModalVisible} transparent animationType="fade"><TouchableWithoutFeedback onPress={Keyboard.dismiss}><View style={styles.modalOverlay}><KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ width: '100%' }}><BlurView intensity={100} tint={colorScheme} style={styles.modalContent}><View style={styles.modalHeader}><Text style={[styles.modalTitle, { color: theme.text }]}>New Med-Board</Text><TouchableOpacity onPress={() => setIsWhiteboardModalVisible(false)}><X size={24} color={theme.text} /></TouchableOpacity></View><TextInput style={[styles.input, { backgroundColor: theme.background, color: theme.text }]} placeholder="Board Name" placeholderTextColor={theme.tabIconDefault} value={newWhiteboardTitle} onChangeText={setNewWhiteboardTitle} /><TouchableOpacity onPress={createWhiteboard} style={[styles.saveBtn, { backgroundColor: theme.tint }]}><Text style={styles.saveBtnText}>Create Board</Text></TouchableOpacity></BlurView></KeyboardAvoidingView></View></TouchableWithoutFeedback></Modal>
+      <Modal visible={isExamModalVisible} transparent animationType="fade"><View style={styles.modalOverlay}><BlurView intensity={100} tint={colorScheme} style={styles.modalContent}><Text style={[styles.modalTitle, { color: theme.text }]}>Add Exam</Text><TextInput style={[styles.input, { backgroundColor: theme.background, color: theme.text }]} placeholder="Exam Title" value={examTitle} onChangeText={setExamTitle} /><TouchableOpacity onPress={() => setShowDatePicker(true)} style={[styles.dateInput, { backgroundColor: theme.background }]}><Calendar size={20} color={theme.tint} /><Text style={{ color: theme.text, fontWeight: '600', marginLeft: 10 }}>{format(examDate, 'PPP')}</Text></TouchableOpacity>{showDatePicker && (<DateTimePicker value={examDate} mode="date" display={Platform.OS === 'ios' ? 'inline' : 'default'} onChange={onDateChange} minimumDate={new Date()} />)}<TouchableOpacity onPress={addExam} style={[styles.saveBtn, { backgroundColor: theme.tint, marginTop: 10 }]}><Text style={styles.saveBtnText}>Add countdown</Text></TouchableOpacity><TouchableOpacity onPress={() => setIsExamModalVisible(false)}><Text style={{ textAlign: 'center', color: '#888', marginTop: 10 }}>Cancel</Text></TouchableOpacity></BlurView></View></Modal>
       <RadialNavigator />
     </ThemedView>
   );
@@ -475,17 +375,12 @@ const styles = StyleSheet.create({
   progressText: { fontSize: 12, fontWeight: '900' },
   syllabusProgressBar: { height: 6, backgroundColor: 'rgba(0,0,0,0.05)', borderRadius: 3, overflow: 'hidden' },
   syllabusProgressFill: { height: '100%', borderRadius: 3 },
-  
-  // ACTIVE TIMER STYLES (Floating card when started)
   activeTimerCard: { padding: 20, borderRadius: 30, marginBottom: 25, elevation: 10 },
   activeTimerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   activeTimerLabel: { color: 'white', fontSize: 10, fontWeight: '900', letterSpacing: 2 },
   activeTimerValue: { color: 'white', fontSize: 28, fontWeight: '900' },
   activeTimerActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 15, marginTop: 15 },
   activeBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
-  activeBtnText: { color: 'white', fontWeight: '900', fontSize: 14 },
-
-  // MODAL TIMER STYLES
   timerPickerMain: { alignItems: 'center', marginVertical: 30 },
   timerValues: { alignItems: 'center' },
   bigTimerValue: { fontSize: 64, fontWeight: '900', letterSpacing: -2 },
@@ -495,10 +390,16 @@ const styles = StyleSheet.create({
   presetRow: { flexDirection: 'row', justifyContent: 'center', gap: 12, marginBottom: 30 },
   presetBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 15, backgroundColor: 'rgba(0,0,0,0.03)' },
   presetText: { fontSize: 14, fontWeight: '800' },
-
+  buddyCard: { padding: 20, borderRadius: 30, marginBottom: 25, elevation: 4 },
+  buddyHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 15 },
+  buddyAvatar: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
+  buddyStatus: { fontSize: 11, fontWeight: '700', color: '#888' },
+  boostContainer: { backgroundColor: 'rgba(0,0,0,0.02)', padding: 15, borderRadius: 20, marginBottom: 15 },
+  boostText: { fontSize: 14, fontWeight: '600', color: '#555', fontStyle: 'italic', lineHeight: 20 },
+  buddyFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 5 },
+  buddyAction: { fontSize: 10, fontWeight: '900', color: '#AF52DE', letterSpacing: 1 },
   partnerCard: { padding: 15, borderRadius: 20, marginBottom: 20 },
   partnerText: { color: 'white', fontWeight: '900', fontSize: 14 },
-  liveIndicator: { width: 8, height: 8, borderRadius: 4, backgroundColor: 'white' },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
   sectionTitle: { fontSize: 20, fontWeight: '800' },
   addBtn: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },

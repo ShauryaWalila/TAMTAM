@@ -248,12 +248,21 @@ export const initDB = () => {
         id TEXT PRIMARY KEY,
         parent_id TEXT, -- Self-reference for nesting
         title TEXT NOT NULL,
-        status TEXT DEFAULT 'none', -- 'none', 'touched', 'done', 'revised'
+        theory_status TEXT DEFAULT 'none', -- 'none', 'touched', 'done', 'revised'
+        practical_status TEXT DEFAULT 'none', -- 'none', 'touched', 'done', 'revised'
+        theory_last_reviewed DATETIME,
+        practical_last_reviewed DATETIME,
         user_id TEXT NOT NULL,
         order_index INTEGER DEFAULT 0,
         created_at DATETIME
       );
     `);
+
+    `-- Local Migration: Add missing columns if they don't exist`
+    try { db.execSync('ALTER TABLE study_syllabus ADD COLUMN theory_status TEXT DEFAULT "none";'); } catch(e) {}
+    try { db.execSync('ALTER TABLE study_syllabus ADD COLUMN practical_status TEXT DEFAULT "none";'); } catch(e) {}
+    try { db.execSync('ALTER TABLE study_syllabus ADD COLUMN theory_last_reviewed DATETIME;'); } catch(e) {}
+    try { db.execSync('ALTER TABLE study_syllabus ADD COLUMN practical_last_reviewed DATETIME;'); } catch(e) {}
 
     // Local Migration: Add missing columns to study_cards if they don't exist
     try { db.execSync('ALTER TABLE study_cards ADD COLUMN front_image_url TEXT;'); } catch(e) {}

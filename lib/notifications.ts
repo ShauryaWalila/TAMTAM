@@ -146,3 +146,20 @@ export async function syncAllNotifications() {
 
   console.log(`Sync complete. Scheduled ${scheduledCount} smart notification windows.`);
 }
+
+export async function sendStudyNotification(userName: string, message: string) {
+  try {
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "Study Alert! 🧠",
+        body: `${userName} ${message}`,
+        data: { type: 'study_session' },
+        sound: true,
+        priority: Notifications.AndroidImportance.MAX,
+      },
+      trigger: null, // Send immediately
+    });
+  } catch (e) {
+    console.warn('Failed to send study notification', e);
+  }
+}
