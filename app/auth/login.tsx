@@ -33,7 +33,7 @@ export default function LoginScreen() {
         await SecureStore.setItemAsync('user_name', userId);
         
         // Trigger initial sync and clear old data
-        initialFullSync(true);
+        await initialFullSync(true);
         
         router.replace('/(tabs)');
       } catch (e) {

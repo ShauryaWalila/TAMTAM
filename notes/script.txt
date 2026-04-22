@@ -1207,4 +1207,182 @@ CREATE TABLE study_decks (
 
 
 
- 
+ ALTER TABLE study_cards
+ ADD COLUMN IF NOT EXISTS correct_count INTEGER DEFAULT 0,
+ ADD COLUMN IF NOT EXISTS incorrect_count INTEGER DEFAULT 0,
+ ADD COLUMN IF NOT EXISTS skip_count INTEGER DEFAULT 0;
+
+ -- Refresh the schema cache (optional, Supabase usually does this automatically)
+
+
+
+
+
+ALTER TABLE study_cards ADD COLUMN IF NOT EXISTS last_result TEXT;
+
+
+
+
+
+
+ALTER TABLE study_cards
+   ADD COLUMN IF NOT EXISTS correct_count INTEGER DEFAULT 0,
+   ADD COLUMN IF NOT EXISTS incorrect_count INTEGER DEFAULT 0,
+   ADD COLUMN IF NOT EXISTS skip_count INTEGER DEFAULT 0,
+   ADD COLUMN IF NOT EXISTS last_result TEXT;
+  
+   ALTER TABLE study_whiteboards
+   ADD COLUMN IF NOT EXISTS last_editor TEXT;
+   
+    -- 2. Create Phase 4: Exam Countdown Table
+    CREATE TABLE IF NOT EXISTS study_exams (
+      id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+      title TEXT NOT NULL,
+      exam_date DATE NOT NULL,
+      start_date DATE NOT NULL DEFAULT CURRENT_DATE,
+      user_id TEXT NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+   
+    -- 3. Create Phase 4: Habit Log (Heatmap)
+    CREATE TABLE IF NOT EXISTS study_habit_log (
+      id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+      date DATE UNIQUE NOT NULL DEFAULT CURRENT_DATE,
+      completed_tasks INTEGER DEFAULT 0,
+      focus_minutes INTEGER DEFAULT 0,
+      cards_reviewed INTEGER DEFAULT 0,
+      user_id TEXT NOT NULL
+    );
+   
+    -- 4. Create Phase 4: Brain Dump Table
+    CREATE TABLE IF NOT EXISTS study_brain_dump (
+      id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+      content TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      is_processed BOOLEAN DEFAULT FALSE,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+   
+    -- 5. Enable Realtime for new tables
+    ALTER PUBLICATION supabase_realtime ADD TABLE study_exams, study_brain_dump, study_habit_log;
+   
+    
+    
+
+
+
+ALTER TABLE study_cards
+     ADD COLUMN IF NOT EXISTS correct_count INTEGER DEFAULT 0,
+     ADD COLUMN IF NOT EXISTS incorrect_count INTEGER DEFAULT 0,
+     ADD COLUMN IF NOT EXISTS skip_count INTEGER DEFAULT 0,
+     ADD COLUMN IF NOT EXISTS last_result TEXT;
+    
+     -- 2. Update Whiteboards for Realtime Session Locking
+     ALTER TABLE study_whiteboards
+    ADD COLUMN IF NOT EXISTS last_editor TEXT;
+   
+    -- 3. Create Syllabus Tracker (Hierarchical Checklist)
+    CREATE TABLE IF NOT EXISTS study_syllabus (
+      id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+      parent_id UUID REFERENCES study_syllabus(id) ON DELETE CASCADE,
+      title TEXT NOT NULL,
+      status TEXT DEFAULT 'none', -- 'none', 'touched', 'done', 'revised'
+      user_id TEXT NOT NULL,
+      order_index INTEGER DEFAULT 0,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+   
+    -- 4. Create Exam Countdown Table
+    CREATE TABLE IF NOT EXISTS study_exams (
+      id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+      title TEXT NOT NULL,
+      exam_date DATE NOT NULL,
+      start_date DATE NOT NULL DEFAULT CURRENT_DATE,
+      user_id TEXT NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+   
+    -- 5. Create Habit Log (For Consistency Heatmap)
+    CREATE TABLE IF NOT EXISTS study_habit_log (
+      id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+      date DATE UNIQUE NOT NULL DEFAULT CURRENT_DATE,
+      completed_tasks INTEGER DEFAULT 0,
+      focus_minutes INTEGER DEFAULT 0,
+      cards_reviewed INTEGER DEFAULT 0,
+      user_id TEXT NOT NULL
+    );
+   
+    -- 6. Create Brain Dump Inbox
+    CREATE TABLE IF NOT EXISTS study_brain_dump (
+      id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+      content TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      is_processed BOOLEAN DEFAULT FALSE,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+   
+    -- 7. Enable Realtime for all new tables
+    ALTER PUBLICATION supabase_realtime ADD TABLE    study_syllabus;
+   
+    -- 8. Enable Row Level Security (RLS) and allow access
+    ALTER TABLE study_syllabus ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE study_exams ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE study_habit_log ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE study_brain_dump ENABLE ROW LEVEL SECURITY;
+   
+    CREATE POLICY "Allow all syllabus access" ON study_syllabus FOR ALL USING (true) WITH CHECK (true);
+    CREATE POLICY "Allow all exams access" ON study_exams FOR ALL USING (true) WITH CHECK (true);
+    CREATE POLICY "Allow all habit log access" ON study_habit_log FOR ALL USING (true) WITH CHECK (true);
+    CREATE POLICY "Allow all brain dump access" ON study_brain_dump FOR ALL USING (true) WITH CHECK (true);
+   
+    -- 9. Refresh Schema Cache
+    NOTIFY pgrst, 'reload schema';
+
+
+
+
+
+
+
+
+    ALTER TABLE active_study_sessions
+     ADD COLUMN IF NOT EXISTS is_paused BOOLEAN DEFAULT FALSE,
+     ADD COLUMN IF NOT EXISTS time_left INTEGER;
+    
+     -- 2. Create the Nap Tracker Table
+     CREATE TABLE IF NOT EXISTS study_naps (
+       id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+       user_id TEXT NOT NULL,
+      start_time TIMESTAMP WITH TIME ZONE NOT NULL,
+      end_time TIMESTAMP WITH TIME ZONE,
+      duration_minutes INTEGER,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+   
+    -- 3. Enable Realtime for the Nap Tracker
+    ALTER PUBLICATION supabase_realtime ADD TABLE study_naps;
+   
+    -- 4. Enable RLS and allow access
+    ALTER TABLE study_naps ENABLE ROW LEVEL SECURITY;
+    CREATE POLICY "Allow all naps access" ON study_naps FOR ALL USING (true) WITH CHECK (true);
+   
+
+
+
+
+
+
+   ALTER TABLE study_syllabus
+     ADD COLUMN IF NOT EXISTS theory_status TEXT DEFAULT 'none',
+     ADD COLUMN IF NOT EXISTS practical_status TEXT DEFAULT 'none',
+     ADD COLUMN IF NOT EXISTS theory_last_reviewed TIMESTAMP WITH TIME ZONE,
+     ADD COLUMN IF NOT EXISTS practical_last_reviewed TIMESTAMP WITH TIME ZONE;
+    
+    
+
+
+
+
+
+
+

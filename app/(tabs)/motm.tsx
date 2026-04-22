@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Pressable, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, View, TouchableOpacity } from 'react-native';
+import { StyleSheet, Pressable, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, View, TouchableOpacity, DeviceEventEmitter } from 'react-native';
 import { Text, View as ThemedView } from '@/components/Themed';
 import { MotiView } from 'moti';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -7,6 +7,7 @@ import Colors from '@/constants/Colors';
 import { MessageSquarePlus, Heart, Sparkles, Send, X } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { db, queueSyncOperation, generateUUID } from '@/lib/db';
+import { processSyncQueue } from '@/lib/syncEngine';
 import { useRouter } from 'expo-router';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import * as SecureStore from 'expo-secure-store';
@@ -34,9 +35,12 @@ export default function MOTMScreen() {
   }, []);
 
   const fetchCurrentMoment = async (name: string) => {
+    const userId = name.toLowerCase();
+    const momentId = userId === 'pratishth' ? 'de305d54-75b4-431b-adb2-eb6b9e546013' : 'ce305d54-75b4-431b-adb2-eb6b9e546014';
+    
     try {
       // 1. Load from local first
-      const data = db.getFirstSync(`SELECT message FROM moments WHERE user_id = ?`, [name.toLowerCase()]) as any;
+      const data = db.getFirstSync(`SELECT message FROM moments WHERE id = ?`, [momentId]) as any;
       if (data) {
         setMessage(data.message);
       }
@@ -45,13 +49,13 @@ export default function MOTMScreen() {
       const { data: remoteData } = await supabase
         .from('moments')
         .select('message')
-        .eq('user_id', name.toLowerCase())
-        .single();
+        .eq('id', momentId)
+        .maybeSingle();
       
       if (remoteData) {
         setMessage(remoteData.message);
-        db.runSync(`INSERT OR REPLACE INTO moments (id, message, user_id, created_at) VALUES (?, ?, ?, ?)`, 
-          [name.toLowerCase(), remoteData.message, name.toLowerCase(), new Date().toISOString()]);
+        db.runSync(`INSERT OR REPLACE INTO moments (id, created_at, message, user_id) VALUES (?, ?, ?, ?)`, 
+          [momentId, new Date().toISOString(), remoteData.message, userId]);
       }
     } catch (e) {}
   };
@@ -61,7 +65,8 @@ export default function MOTMScreen() {
 
     setLoading(true);
     const userId = currentUserName.toLowerCase();
-    const id = generateUUID();
+    const id = userId === 'pratishth' ? 'de305d54-75b4-431b-adb2-eb6b9e546013' : 'ce305d54-75b4-431b-adb2-eb6b9e546014';
+    
     const payload = { 
       id,
       message: message.trim(), 
@@ -70,17 +75,21 @@ export default function MOTMScreen() {
     };
 
     try {
-      // 1. Save to local SQLite
-      db.runSync(`INSERT OR REPLACE INTO moments (id, message, user_id, created_at) VALUES (?, ?, ?, ?)`, 
-        [payload.id, payload.message, payload.user_id, payload.created_at]);
+      // 1. Save to local SQLite (Replace existing)
+      db.runSync(`INSERT OR REPLACE INTO moments (id, created_at, message, user_id) VALUES (?, ?, ?, ?)`, 
+        [payload.id, payload.created_at, payload.message, payload.user_id]);
       
       // 2. Queue for Sync Engine
-      queueSyncOperation('moments', payload.id, 'UPDATE', payload);
+      queueSyncOperation('moments', payload.id, 'INSERT', payload);
+      processSyncQueue();
+
+      // 3. Emit refresh
+      DeviceEventEmitter.emit('refresh-dashboard');
 
       setShowConfetti(true);
       setTimeout(() => {
         setShowConfetti(false);
-        router.push('/(tabs)');
+        router.replace('/(tabs)/settings');
       }, 3000);
       
     } catch (error: any) {
@@ -93,8 +102,8 @@ export default function MOTMScreen() {
   return (
     <ThemedView style={{ flex: 1, paddingTop: insets.top }}>
       <TouchableOpacity 
-        onPress={() => router.back()} 
-        style={[styles.closeButton, { backgroundColor: theme.card }]}
+        onPress={() => router.replace('/(tabs)/settings')} 
+        style={[styles.closeButton, { backgroundColor: theme.card, top: insets.top + 10 }]}
       >
         <X color={theme.text} size={24} />
       </TouchableOpacity>

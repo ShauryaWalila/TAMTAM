@@ -62,7 +62,7 @@ export default function DashboardScreen() {
   const theme = Colors[colorScheme];
   const insets = useSafeAreaInsets();
   const [currentUserName, setCurrentUserName] = useState<string | null>(null);
-  const [partnerName, setPartnerName] = useState<string>('Love');
+  const [partnerName, setPartnerName] = useState<string>('');
   
   // Data States
   const [motm, setMotm] = useState<string>('Thinking of you soon...');
@@ -105,21 +105,27 @@ export default function DashboardScreen() {
 
   useEffect(() => {
     init();
-    
+  }, []);
+
+  useEffect(() => {
+    if (!partnerName) return;
+
     // Setup Realtime Channels that also update local SQLite
     const motmSub = supabase.channel('db_motm').on('postgres_changes', { event: '*', schema: 'public', table: 'moments' }, (p) => {
       if (p.eventType === 'UPDATE' || p.eventType === 'INSERT') {
-        db.runSync(`INSERT OR REPLACE INTO moments (id, message, user_id, created_at) VALUES (?, ?, ?, ?)`, [p.new.id, p.new.message, p.new.user_id, p.new.created_at]);
+        const n = p.new;
+        db.runSync(`INSERT OR REPLACE INTO moments (id, created_at, message, user_id) VALUES (?, ?, ?, ?)`, 
+          [n.id, n.created_at, n.message, n.user_id]);
       }
-      fetchMOTM();
+      fetchMOTM(partnerName);
     }).subscribe();
 
     const meetSub = supabase.channel('db_meet').on('postgres_changes', { event: '*', schema: 'public', table: 'meetings' }, (p) => {
-      if (p.eventType !== 'DELETE') {
+      if (p.eventType === 'INSERT' || p.eventType === 'UPDATE') {
         const n = p.new;
         db.runSync(`INSERT OR REPLACE INTO meetings (id, created_at, type, date, recurring_type, occasion_name, user_id, weekday, day_of_month, time, is_recurring, frequency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
           [n.id, n.created_at, n.type, n.date, n.recurring_type, n.occasion_name, n.user_id, n.weekday, n.day_of_month, n.time, n.is_recurring ? 1 : 0, n.frequency]);
-      } else {
+      } else if (p.eventType === 'DELETE') {
         db.runSync(`DELETE FROM meetings WHERE id = ?`, [p.old.id]);
       }
       fetchNextMeet();
@@ -149,12 +155,21 @@ export default function DashboardScreen() {
 
     const postsSub = supabase.channel('db_posts').on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => fetchStats()).subscribe();
 
+    const refreshSub = DeviceEventEmitter.addListener('refresh-dashboard', () => {
+      fetchNextMeet();
+      fetchMOTM(partnerName);
+      fetchTimetable();
+      fetchCalendarEvents();
+      fetchStats();
+    });
+
     return () => {
       supabase.removeChannel(motmSub);
       supabase.removeChannel(meetSub);
       supabase.removeChannel(timeSub);
       supabase.removeChannel(calSub);
       supabase.removeChannel(postsSub);
+      refreshSub.remove();
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [partnerName]);
@@ -209,8 +224,9 @@ export default function DashboardScreen() {
 
   const fetchMOTM = async (pName?: string) => {
     const target = pName || partnerName;
+    if (!target) return;
     try {
-      const data = db.getFirstSync(`SELECT message FROM moments WHERE user_id = ?`, [target?.toLowerCase()]) as any;
+      const data = db.getFirstSync(`SELECT message FROM moments WHERE LOWER(user_id) = LOWER(?) ORDER BY created_at DESC LIMIT 1`, [target]) as any;
       if (data) setMotm(data.message);
     } catch (e) {}
   };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, ScrollView, Pressable, View, Dimensions, ActivityIndicator, Alert, TouchableOpacity, TextInput } from 'react-native';
+import { StyleSheet, ScrollView, Pressable, View, Dimensions, ActivityIndicator, Alert, TouchableOpacity, TextInput, DeviceEventEmitter } from 'react-native';
 import { Text, View as ThemedView } from '@/components/Themed';
 import { MotiView, AnimatePresence } from 'moti';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -7,6 +7,7 @@ import Colors from '@/constants/Colors';
 import { Calendar, Clock, ChevronDown, Save, Repeat, Star, X, CalendarDays, CalendarRange } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { db, queueSyncOperation, generateUUID } from '@/lib/db';
+import { processSyncQueue } from '@/lib/syncEngine';
 import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { BlurView } from 'expo-blur';
@@ -115,7 +116,8 @@ export default function NextMeetScreen() {
   const handleSave = async () => {
     if (!currentUserName) return;
     setLoading(true);
-    const id = meetingId || generateUUID();
+    // Use a fixed ID for the shared meeting record
+    const id = '00000000-0000-0000-0000-000000000001'; 
     const payload: any = {
       id,
       type,
@@ -125,6 +127,7 @@ export default function NextMeetScreen() {
       time: meetingTime,
       occasion_name: occasionName,
       frequency,
+      recurring_type: type,
       is_recurring: frequency !== 'once',
       user_id: currentUserName.toLowerCase(),
       created_at: new Date().toISOString()
@@ -132,13 +135,17 @@ export default function NextMeetScreen() {
 
     try {
       // 1. Save local
-      db.runSync(`INSERT OR REPLACE INTO meetings (id, created_at, type, date, occasion_name, user_id, weekday, day_of_month, time, is_recurring, frequency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
-        [payload.id, payload.created_at, payload.type, payload.date, payload.occasion_name, payload.user_id, payload.weekday, payload.day_of_month, payload.time, payload.is_recurring ? 1 : 0, payload.frequency]);
+      db.runSync(`INSERT OR REPLACE INTO meetings (id, created_at, type, date, recurring_type, occasion_name, user_id, weekday, day_of_month, time, is_recurring, frequency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+        [payload.id, payload.created_at, payload.type, payload.date, payload.recurring_type, payload.occasion_name, payload.user_id, payload.weekday, payload.day_of_month, payload.time, payload.is_recurring ? 1 : 0, payload.frequency]);
       
       // 2. Queue sync
-      queueSyncOperation('meetings', payload.id, 'UPDATE', payload);
+      queueSyncOperation('meetings', payload.id, 'INSERT', payload);
+      processSyncQueue();
 
-      Alert.alert('Success ❤️', 'Your next meeting is set!', [{ text: 'Awesome', onPress: () => router.back() }]);
+      // 3. Emit refresh
+      DeviceEventEmitter.emit('refresh-dashboard');
+
+      Alert.alert('Success ❤️', 'Your next meeting is set!', [{ text: 'Awesome', onPress: () => router.replace('/(tabs)/settings') }]);
     } catch (error: any) {
       console.warn('Meeting save error', error);
     } finally {
@@ -165,8 +172,8 @@ export default function NextMeetScreen() {
   return (
     <ThemedView style={{ flex: 1, paddingTop: insets.top }}>
       <TouchableOpacity 
-        onPress={() => router.back()} 
-        style={[styles.closeButton, { backgroundColor: theme.card }]}
+        onPress={() => router.replace('/(tabs)/settings')} 
+        style={[styles.closeButton, { backgroundColor: theme.card, top: insets.top + 10 }]}
       >
         <X color={theme.text} size={24} />
       </TouchableOpacity>
