@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { StyleSheet, ScrollView, Pressable, Switch, View, Image, ActivityIndicator, Alert, Modal, TextInput, FlatList, TouchableOpacity, DeviceEventEmitter } from 'react-native';
+import { StyleSheet, ScrollView, Pressable, Switch, View, Image, ActivityIndicator, Alert, Modal, TextInput, FlatList, TouchableOpacity, DeviceEventEmitter, Platform } from 'react-native';
 import { Text, View as ThemedView } from '@/components/Themed';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
@@ -264,13 +264,11 @@ export default function SettingsScreen() {
               <Camera size={14} color={theme.text} />
             </View>
           </Pressable>
-          <Text style={[styles.userName, { color: theme.text }]}>{userName}</Text>
-          <Text style={[styles.userEmail, { color: theme.tabIconDefault }]}>{userName?.toLowerCase()}@tamtam.app</Text>
+          <Text style={[styles.userName, { color: theme.text }]}>{userName === 'love' ? 'Supriya' : 'Pratishth'}</Text>
         </View>
 
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.tint }]}>Account</Text>
-          <SettingsItem icon={<User color={theme.text} size={22} />} label="Personal Information" theme={theme} />
           <SettingsItem 
             icon={<MessageSquareHeart color={theme.text} size={22} />} 
             label="Message of the Moment" 
@@ -283,7 +281,6 @@ export default function SettingsScreen() {
             theme={theme} 
             onPress={() => router.push('/next-meet')}
           />
-          <SettingsItem icon={<Bell color={theme.tint} size={22} />} label="Test Proximity Alert" theme={theme} onPress={triggerTestNotification} />
           <SettingsItem icon={<Bell color={theme.text} size={22} />} label="Notifications" theme={theme} right={<Switch value={isNotificationsEnabled} onValueChange={toggleNotifications} trackColor={{ true: theme.tint }} />} showChevron={false} />
         </View>
 
@@ -352,19 +349,82 @@ export default function SettingsScreen() {
                   <TouchableOpacity onPress={openWhatsApp} style={[styles.waGoBtn, { backgroundColor: '#25D366' }]}><Text style={{ color: 'white', fontWeight: 'bold' }}>GO</Text></TouchableOpacity>
                 </View>
               </View>
+              
               <View style={styles.toolSection}>
-                <Text style={[styles.sectionLabel, { color: theme.tint }]}>Time Calculator</Text>
-                {timeEntries.map((t, i) => (
-                  <TouchableOpacity key={i} onPress={() => setPickerIndex(i)} style={[styles.modalInput, { backgroundColor: theme.background, justifyContent: 'center', marginBottom: 5 }]}>
-                    <Text style={{ color: theme.text }}>{i%2===0?'Start':'End'}: {format(t, 'HH:mm')}</Text>
+                <View style={[styles.row, { justifyContent: 'space-between', marginBottom: 10 }]}>
+                  <Text style={[styles.sectionLabel, { color: theme.tint, marginBottom: 0 }]}>Time Calculator</Text>
+                  <TouchableOpacity onPress={() => { setTimeEntries([new Date(), new Date()]); setTotalCalculatedTime(null); }}>
+                    <Text style={{ color: '#FF3B30', fontWeight: '900', fontSize: 11 }}>RESET ALL</Text>
                   </TouchableOpacity>
-                ))}
-                {pickerIndex !== null && <DateTimePicker value={timeEntries[pickerIndex]} mode="time" is24Hour onChange={(e, d) => { setPickerIndex(null); if(d) { const n = [...timeEntries]; n[pickerIndex] = d; setTimeEntries(n); }}} />}
-                <View style={styles.row}>
-                  <TouchableOpacity onPress={() => setTimeEntries([...timeEntries, new Date(), new Date()])} style={[styles.toolActionBtn, { backgroundColor: theme.background }]}><Text style={{ color: theme.text }}>+ ADD</Text></TouchableOpacity>
-                  <TouchableOpacity onPress={calculateTotalTime} style={[styles.toolActionBtn, { backgroundColor: theme.tint }]}><Text style={{ color: 'white' }}>CALC</Text></TouchableOpacity>
                 </View>
-                {totalCalculatedTime && <View style={styles.resultCard}><Text style={{ color: theme.tint, fontSize: 24, fontWeight: '900' }}>{totalCalculatedTime}</Text></View>}
+                
+                {Array.from({ length: Math.ceil(timeEntries.length / 2) }).map((_, groupIdx) => (
+                  <View key={groupIdx} style={styles.timeGroup}>
+                    <View style={{ flex: 1, gap: 5 }}>
+                      <TouchableOpacity onPress={() => setPickerIndex(groupIdx * 2)} style={[styles.modalInput, { backgroundColor: theme.background, justifyContent: 'center', height: 44 }]}>
+                        <Text style={{ color: theme.text, fontSize: 13 }}>Start: {format(timeEntries[groupIdx * 2], 'HH:mm')}</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => setPickerIndex(groupIdx * 2 + 1)} style={[styles.modalInput, { backgroundColor: theme.background, justifyContent: 'center', height: 44 }]}>
+                        <Text style={{ color: theme.text, fontSize: 13 }}>End: {format(timeEntries[groupIdx * 2 + 1], 'HH:mm')}</Text>
+                      </TouchableOpacity>
+                    </View>
+                    {timeEntries.length > 2 && (
+                      <TouchableOpacity 
+                        onPress={() => {
+                          const n = [...timeEntries];
+                          n.splice(groupIdx * 2, 2);
+                          setTimeEntries(n);
+                        }} 
+                        style={styles.deleteTimeBtn}
+                      >
+                        <Trash2 size={18} color="#FF3B30" opacity={0.6} />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ))}
+
+                <Modal visible={pickerIndex !== null} transparent animationType="fade">
+                  <View style={styles.pickerOverlayCenter}>
+                    <MotiView from={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={[styles.pickerCard, { backgroundColor: theme.card }]}>
+                      <Text style={[styles.pickerTitle, { color: theme.text }]}>Select Time</Text>
+                      {pickerIndex !== null && (
+                        <DateTimePicker 
+                          value={timeEntries[pickerIndex]} 
+                          mode="time" 
+                          is24Hour={true}
+                          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                          themeVariant={colorScheme}
+                          onChange={(e, d) => { 
+                            if (Platform.OS === 'android') { setPickerIndex(null); if(d) { const n = [...timeEntries]; n[pickerIndex!] = d; setTimeEntries(n); } }
+                            else if(d) { const n = [...timeEntries]; n[pickerIndex!] = d; setTimeEntries(n); }
+                          }} 
+                          style={{ height: 200 }} 
+                        />
+                      )}
+                      <TouchableOpacity 
+                        style={[styles.doneBtn, { backgroundColor: theme.tint }]} 
+                        onPress={() => setPickerIndex(null)}
+                      >
+                        <Text style={styles.doneBtnText}>Confirm Time</Text>
+                      </TouchableOpacity>
+                    </MotiView>
+                  </View>
+                </Modal>
+
+                <View style={[styles.row, { marginTop: 15 }]}>
+                  <TouchableOpacity onPress={() => setTimeEntries([...timeEntries, new Date(), new Date()])} style={[styles.toolActionBtn, { backgroundColor: theme.background }]}>
+                    <Text style={{ color: theme.text, fontWeight: '800' }}>+ ADD PAIR</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={calculateTotalTime} style={[styles.toolActionBtn, { backgroundColor: theme.tint }]}>
+                    <Text style={{ color: 'white', fontWeight: '800' }}>CALCULATE</Text>
+                  </TouchableOpacity>
+                </View>
+                {totalCalculatedTime && (
+                  <MotiView from={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} style={styles.resultCard}>
+                    <Text style={{ color: theme.tabIconDefault, fontSize: 10, fontWeight: '900', marginBottom: 5 }}>TOTAL DURATION</Text>
+                    <Text style={{ color: theme.tint, fontSize: 32, fontWeight: '900' }}>{totalCalculatedTime}</Text>
+                  </MotiView>
+                )}
               </View>
             </ScrollView>
           </BlurView>
@@ -448,5 +508,12 @@ const styles = StyleSheet.create({
   toolSection: { marginBottom: 30 },
   waGoBtn: { width: 56, height: 56, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
   toolActionBtn: { flex: 1, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  resultCard: { marginTop: 15, padding: 20, borderRadius: 20, backgroundColor: 'rgba(150,150,150,0.1)', alignItems: 'center' }
+  resultCard: { marginTop: 15, padding: 20, borderRadius: 20, backgroundColor: 'rgba(150,150,150,0.1)', alignItems: 'center' },
+  timeGroup: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 15, backgroundColor: 'rgba(150,150,150,0.05)', padding: 10, borderRadius: 15 },
+  deleteTimeBtn: { padding: 10 },
+  pickerOverlayCenter: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  pickerCard: { width: '100%', backgroundColor: 'white', borderRadius: 32, padding: 25, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 20 },
+  pickerTitle: { fontSize: 20, fontWeight: '900', marginBottom: 20, textAlign: 'center' },
+  doneBtn: { height: 56, borderRadius: 18, justifyContent: 'center', alignItems: 'center', marginTop: 20 },
+  doneBtnText: { color: 'white', fontSize: 16, fontWeight: '800' }
 });
