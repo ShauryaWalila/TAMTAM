@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Modal, FlatList, Dimensions, TextInput, KeyboardAvoidingView, Platform, Pressable, Image, Easing } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Modal, FlatList, Dimensions, TextInput, KeyboardAvoidingView, Platform, Pressable, Image } from 'react-native';
 import { MapPin, X, Utensils, Camera, Building2, Landmark, Plus, Map as MapIcon, Globe, Search, Tag, Sparkles, Save, Trash2, Edit3, RefreshCw } from 'lucide-react-native';
 import { BlurView } from 'expo-blur';
 import { MotiView, AnimatePresence } from 'moti';
 import { WebView } from 'react-native-webview';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Easing } from 'react-native-reanimated';
 
 import { supabase } from '@/lib/supabase';
 import Colors from '@/constants/Colors';
@@ -37,12 +38,12 @@ export default function Bucket({ tripId, userId, onSelectItem, tripLocation, tri
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
   const insets = useSafeAreaInsets();
-
+  
   const [items, setItems] = useState<any[]>([]);
   const [dbCategories, setDbCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('');
-
+  
   const [showWebView, setShowWebView] = useState(false);
   const [isWebLoading, setIsWebLoading] = useState(true);
   const [lastResolvedUrl, setLastResolvedUrl] = useState('');
@@ -50,9 +51,16 @@ export default function Bucket({ tripId, userId, onSelectItem, tripLocation, tri
   // Modals State
   const [showPicker, setShowPicker] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
   const [pendingLocation, setPendingLocation] = useState<any>(null);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingNew, setIsSavingNew] = useState(false);
+
+  // Roulette State
+  const [showRoulette, setShowRoulette] = useState(false);
+  const [rouletteWinner, setRouletteWinner] = useState<any>(null);
+  const [isSpinning, setIsSpinning] = useState(false);
 
   useEffect(() => {
     if (tripId) {
@@ -86,6 +94,23 @@ export default function Bucket({ tripId, userId, onSelectItem, tripLocation, tri
     setLoading(false);
   };
 
+  const spinRoulette = () => {
+    const pool = items.filter(i => i.category === activeTab);
+    if (pool.length < 2) return Alert.alert("Need more ideas!", "Add at least 2 places to spin the wheel. ✨");
+    
+    setIsSpinning(true);
+    setRouletteWinner(null);
+    setShowRoulette(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    
+    setTimeout(() => {
+      const winner = pool[Math.floor(Math.random() * pool.length)];
+      setRouletteWinner(winner);
+      setIsSpinning(false);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }, 2500);
+  };
+
   const reverseGeocodeAndCategorize = async (lat: number, lng: number, rawName: string) => {
     try {
       const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`;
@@ -97,7 +122,7 @@ export default function Bucket({ tripId, userId, onSelectItem, tripLocation, tri
       else if (['hotel', 'resort', 'stay', 'inn', 'hostel'].some(k => searchStr.includes(k))) resolvedCategory = 'Hotels';
       else if (['park', 'fun', 'adventure', 'zoo', 'beach', 'museum'].some(k => searchStr.includes(k))) resolvedCategory = 'Activities';
       return { name: rawName.split(',')[0].trim(), category: resolvedCategory, lat, lng, address: data.display_name };
-    } catch (e) { return { name: rawName.split(',')[0].trim(), category: 'Visiting', lat, lng, address: '' }; } 
+    } catch (e) { return { name: rawName.split(',')[0].trim(), category: 'Visiting', lat, lng, address: '' }; }
   };
 
   const handleWebViewStateChange = async (navState: any) => {
@@ -116,20 +141,25 @@ export default function Bucket({ tripId, userId, onSelectItem, tripLocation, tri
   };
 
   const saveNewItem = async (categoryName: string) => {
-    if (!pendingLocation || !tripId) return;
-    const { error } = await supabase.from('bucket_items').insert([{
-      trip_id: tripId,
-      name: pendingLocation.name,
-      category: categoryName,
-      latitude: pendingLocation.lat,
-      longitude: pendingLocation.lng,
-      type: 'place'
-    }]);
-    if (!error) {
-      setActiveTab(categoryName);
-      setShowPicker(false);
-      setShowWebView(false);
-      fetchBucket();
+    if (!pendingLocation || !tripId || isSavingNew) return;
+    setIsSavingNew(true);
+    try {
+      const { error } = await supabase.from('bucket_items').insert([{
+        trip_id: tripId,
+        name: pendingLocation.name,
+        category: categoryName,
+        latitude: pendingLocation.lat,
+        longitude: pendingLocation.lng,
+        type: 'place'
+      }]);
+      if (!error) {
+        setActiveTab(categoryName);
+        setShowPicker(false);
+        setShowWebView(false);
+        fetchBucket();
+      }
+    } finally {
+      setIsSavingNew(false);
     }
   };
 
@@ -139,7 +169,7 @@ export default function Bucket({ tripId, userId, onSelectItem, tripLocation, tri
     try {
       const { error } = await supabase.from('bucket_items').update({ name: editingItem.name, notes: editingItem.notes, category: editingItem.category }).eq('id', editingItem.id);
       if (!error) { setShowEdit(false); fetchBucket(); }
-    } catch (e) { Alert.alert("Error", "Update failed."); }
+    } catch (e) { Alert.alert("Error", "Update failed."); } 
     finally { setIsSaving(false); }
   };
 
@@ -150,10 +180,13 @@ export default function Bucket({ tripId, userId, onSelectItem, tripLocation, tri
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: '#000000' }]}>
       <View style={styles.header}>
         <View>
-          <Text style={[styles.headerSubtitle, { color: 'rgba(255,255,255,0.5)' }]}>CURRENT TRIP STAGING</Text> 
+          <Text style={[styles.headerSubtitle, { color: 'rgba(255,255,255,0.5)' }]}>CURRENT TRIP STAGING</Text>
           <Text style={[styles.headerTitle, { color: '#FFF' }]}>Trip Bucket</Text>
         </View>
         <View style={styles.headerActions}>
+          <TouchableOpacity style={[styles.actionCircle, { backgroundColor: 'rgba(255,255,255,0.1)' }]} onPress={spinRoulette}>
+            <RefreshCw size={20} color="#FFF" />
+          </TouchableOpacity>
           <TouchableOpacity style={[styles.bucketCircle, { backgroundColor: theme.tint }]} onPress={() => setShowWebView(true)}>
             <Globe size={20} color="white" />
           </TouchableOpacity>
@@ -215,7 +248,23 @@ export default function Bucket({ tripId, userId, onSelectItem, tripLocation, tri
         <View style={{ flex: 1, backgroundColor: '#000' }}>
           <BlurView intensity={90} tint="dark" style={[styles.webHeader, { paddingTop: insets.top + 10 }]}><TouchableOpacity onPress={() => setShowWebView(false)} style={styles.webCloseBtn}><X size={24} color="#FFF" /></TouchableOpacity><Text style={styles.webTitle}>Google Maps Discovery</Text><View style={{ width: 40 }} /></BlurView>
           <WebView source={{ uri: `https://www.google.com/maps/search/${encodeURIComponent(activeTab + ' in hotels')}` }} onNavigationStateChange={handleWebViewStateChange} onLoadStart={() => setIsWebLoading(true)} onLoadEnd={() => setIsWebLoading(false)} style={{ flex: 1 }} userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 14_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.3 Mobile/15E148 Safari/604.1" />
-          {isWebLoading && <View style={[StyleSheet.absoluteFill, { justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.7)' }]}><ActivityIndicator size="large" color={theme.tint} /></View>}        
+          {isWebLoading && <View style={[StyleSheet.absoluteFill, { justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.7)' }]}><ActivityIndicator size="large" color={theme.tint} /></View>}
+        </View>
+      </Modal>
+
+      {/* ROULETTE MODAL */}
+      <Modal visible={showRoulette} transparent animationType="fade">
+        <View style={styles.rouletteOverlay}>
+          <BlurView intensity={100} tint="dark" style={styles.rouletteContent}>
+            <View style={styles.rouletteHeader}><Text style={styles.rouletteTitle}>Decision Roulette 🎡</Text>{!isSpinning && <TouchableOpacity onPress={() => setShowRoulette(false)}><X size={24} color="#FFF" /></TouchableOpacity>}</View>
+            <View style={styles.rouletteDisplay}>
+              {isSpinning ? (
+                <MotiView from={{ rotate: '0deg' }} animate={{ rotate: '360deg' }} transition={{ loop: true, duration: 500, type: 'timing', easing: Easing.linear }}><RefreshCw size={80} color={theme.tint} /></MotiView>
+              ) : rouletteWinner ? (
+                <MotiView from={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={styles.winnerCard}><Sparkles size={40} color="#FFD700" style={{ marginBottom: 15 }} /><Text style={styles.winnerLabel}>IT IS DECIDED!</Text><Text style={styles.winnerName}>{rouletteWinner.name}</Text><TouchableOpacity style={[styles.winnerAction, { backgroundColor: theme.tint }]} onPress={() => { onSelectItem(rouletteWinner); setShowRoulette(false); }}><Plus size={20} color="white" /><Text style={styles.winnerActionText}>Add to Plan</Text></TouchableOpacity></MotiView>
+              ) : null}
+            </View>
+          </BlurView>
         </View>
       </Modal>
 
@@ -235,7 +284,7 @@ export default function Bucket({ tripId, userId, onSelectItem, tripLocation, tri
       <Modal visible={showEdit} transparent animationType="fade">
         <View style={styles.modalOverlayCenter}>
           <BlurView intensity={100} tint="dark" style={styles.editContent}>
-            <View style={styles.modalHeader}><Text style={[styles.sheetTitle, { color: '#FFF' }]}>Edit Place</Text><TouchableOpacity onPress={() => setShowEdit(false)}><X size={24} color="#FFF" /></TouchableOpacity></View>  
+            <View style={styles.modalHeader}><Text style={[styles.sheetTitle, { color: '#FFF' }]}>Edit Place</Text><TouchableOpacity onPress={() => setShowEdit(false)}><X size={24} color="#FFF" /></TouchableOpacity></View>
             <ScrollView showsVerticalScrollIndicator={false}>
               <Text style={styles.sectionLabel}>NAME</Text>
               <TextInput style={styles.editInput} value={editingItem?.name} onChangeText={(t) => setEditingItem({...editingItem, name: t})} />
@@ -258,8 +307,8 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 24, fontWeight: '900' },
   headerActions: { flexDirection: 'row', gap: 10 },
   bucketCircle: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', elevation: 5 },
-  actionCircle: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },    
-  closeCircle: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },     
+  actionCircle: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  closeCircle: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
   tabsWrapper: { maxHeight: 60, marginBottom: 15 },
   tabsContainer: { paddingHorizontal: 20, gap: 10, alignItems: 'center' },
   tab: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, height: 44, borderRadius: 22, gap: 8, borderWidth: 1, borderColor: 'transparent' },
@@ -287,10 +336,20 @@ const styles = StyleSheet.create({
   catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' },
   catChip: { backgroundColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 18, paddingVertical: 12, borderRadius: 15 },
   catChipText: { fontSize: 14, fontWeight: '800', color: '#FFF' },
-  modalOverlayCenter: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', padding: 25 },   
+  modalOverlayCenter: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', padding: 25 },
   editContent: { borderRadius: 40, padding: 30, overflow: 'hidden', backgroundColor: '#1a1a1a' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 30 },
   editInput: { height: 60, borderRadius: 18, paddingHorizontal: 20, fontWeight: '700', backgroundColor: 'rgba(255,255,255,0.05)', color: '#FFF', fontSize: 16, marginBottom: 5 },
   actionBtn: { height: 64, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
-  actionBtnText: { color: 'white', fontSize: 18, fontWeight: '900' }
+  actionBtnText: { color: 'white', fontSize: 18, fontWeight: '900' },
+  rouletteOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center', padding: 25 },
+  rouletteContent: { width: '100%', borderRadius: 40, padding: 30, overflow: 'hidden', backgroundColor: '#1a1a1a' },
+  rouletteHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 40 },
+  rouletteTitle: { fontSize: 22, fontWeight: '900', color: '#FFF' },
+  rouletteDisplay: { height: 300, justifyContent: 'center', alignItems: 'center' },
+  winnerCard: { alignItems: 'center', width: '100%' },
+  winnerLabel: { fontSize: 12, fontWeight: '900', color: '#888', letterSpacing: 2, marginBottom: 10 },
+  winnerName: { fontSize: 28, fontWeight: '900', color: '#FFF', textAlign: 'center', marginBottom: 30 },
+  winnerAction: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 25, paddingVertical: 15, borderRadius: 20 },
+  winnerActionText: { color: 'white', fontWeight: '900', fontSize: 16 }
 });

@@ -72,7 +72,7 @@ const CategoryTick = ({ index, scrollX, itemIndex }: { index: number, scrollX: A
   return <Animated.View style={[styles.tickMark, animatedStyle]} />;
 };
 
-const CategoryDialItem = ({ cat, index, isSelected, theme, scrollX, activeDayItems, onRemoveItem, isDark }: any) => {
+const CategoryDialItem = ({ cat, index, isSelected, theme, scrollX, categoryBucketItems, dayAssignedIds, onAddItem, onRemoveItem, isDark }: any) => {
   return (
     <View style={{ width: ITEM_WIDTH, height: '100%', alignItems: 'center' }}>
       <View style={styles.dialContentWrapper}>
@@ -85,9 +85,9 @@ const CategoryDialItem = ({ cat, index, isSelected, theme, scrollX, activeDayIte
               transition={{ type: 'timing', duration: 250 }}
               style={styles.itineraryListContainer}
             >
-              {activeDayItems.length === 0 ? (
+              {(categoryBucketItems || []).length === 0 ? (
                 <View style={styles.emptyItinerary}>
-                  <Text style={[styles.emptyItineraryText, { color: '#aaa' }]}>Tap a map pin to add to your plan</Text>
+                  <Text style={[styles.emptyItineraryText, { color: '#aaa' }]}>No items in {cat.name} bucket</Text>
                 </View>
               ) : (
                 <ScrollView 
@@ -95,28 +95,39 @@ const CategoryDialItem = ({ cat, index, isSelected, theme, scrollX, activeDayIte
                   contentContainerStyle={styles.itineraryScroll}
                   style={{ flex: 1 }}
                 >
-                  {activeDayItems.map((item: any, idx: number) => (
-                    <MotiView 
-                      key={item.id}
-                      from={{ opacity: 0, translateX: -15 }}
-                      animate={{ opacity: 1, translateX: 0 }}
-                      transition={{ delay: idx * 40 }}
-                      style={[styles.plannedItem, { borderLeftColor: cat.color, backgroundColor: '#FFFFFF' }]}
-                    >
-                      <View style={styles.plannedItemMain}>
-                        <Text style={[styles.plannedItemText, { color: '#1A1A1A' }]} numberOfLines={1}>
-                          {item.bucket_items?.name || item.name}
-                        </Text>
-                      </View>
-                      <TouchableOpacity 
-                        onPress={() => onRemoveItem(item.id)}
-                        style={styles.removeItemBtn}
-                        activeOpacity={0.6}
+                  {(categoryBucketItems || []).map((item: any, idx: number) => {
+                    const assignedItem = dayAssignedIds.find((a: any) => a.bucket_item_id === item.id);
+                    const isHanged = !!assignedItem;
+                    
+                    return (
+                      <MotiView 
+                        key={item.id}
+                        from={{ opacity: 0, translateX: -15 }}
+                        animate={{ opacity: 1, translateX: 0 }}
+                        transition={{ delay: idx * 40 }}
+                        style={[styles.plannedItem, { borderLeftColor: cat.color, backgroundColor: isHanged ? '#F0FFF4' : '#FFFFFF' }]}
                       >
-                        <Trash2 size={18} color="#FF3B30" />
-                      </TouchableOpacity>
-                    </MotiView>
-                  ))}
+                        <View style={styles.plannedItemMain}>
+                          <Text style={[styles.plannedItemText, { color: '#1A1A1A' }]} numberOfLines={1}>
+                            {item.name}
+                          </Text>
+                          {isHanged && <Text style={{ fontSize: 10, color: '#34C759', fontWeight: '800' }}>IN PLAN</Text>}
+                        </View>
+                        
+                        <TouchableOpacity 
+                          onPress={() => isHanged ? onRemoveItem(assignedItem.id) : onAddItem(item)}
+                          style={styles.removeItemBtn}
+                          activeOpacity={0.6}
+                        >
+                          {isHanged ? (
+                            <Trash2 size={18} color="#FF3B30" />
+                          ) : (
+                            <Plus size={18} color={theme.tint} />
+                          )}
+                        </TouchableOpacity>
+                      </MotiView>
+                    );
+                  })}
                 </ScrollView>
               )}
             </MotiView>
@@ -586,20 +597,30 @@ export default function TripWorkspace({ tripId, onBack, userId, mapRef, onMarker
           userId={userId} 
           onClose={() => setActiveModal(null)} 
           onSelectItem={(item) => {
-            // Re-use logic to add from bucket
-            const addItinerary = async (bucketItem: any) => {
-              const { data: currentItems } = await supabase.from('itinerary_items').select('sequence').eq('trip_id', tripId).eq('day_number', activeDayIndex + 1).order('sequence', { ascending: false }).limit(1);
-              const nextSeq = (currentItems?.[0]?.sequence || 0) + 1;
-              await supabase.from('itinerary_items').upsert({
-                trip_id: tripId,
-                bucket_item_id: bucketItem.id,
-                day_number: activeDayIndex + 1,
-                sequence: nextSeq
-              }, { onConflict: 'trip_id, day_number, bucket_item_id' });
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            };
-            addItinerary(item);
+            // 1. Close Bucket
             setActiveModal(null);
+            
+            // 2. Snap to Mid
+            bottomSheetRef.current?.snapToIndex(1);
+            
+            // 3. Select Category & Scroll Dial
+            const catIndex = dbCategories.findIndex(c => c.name === item.category);
+            if (catIndex !== -1) {
+              setActiveCategoryFilter(item.category);
+              dialRef.current?.scrollTo({ x: catIndex * ITEM_WIDTH, animated: true });
+            }
+
+            // 4. Focus on Map
+            if (mapRef?.current && item.latitude && item.longitude) {
+              mapRef.current.animateToRegion({
+                latitude: item.latitude - 0.015, // Offset for bottom sheet
+                longitude: item.longitude,
+                latitudeDelta: 0.05,
+                longitudeDelta: 0.05
+              }, 1000);
+            }
+            
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
           }}
           mapRef={mapRef}
         />
@@ -634,9 +655,9 @@ const styles = StyleSheet.create({
   countBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10, marginTop: 5 },
   countText: { fontSize: 10, fontWeight: 'bold', marginLeft: 4 },
   dialWrapper: { flex: 1, paddingBottom: 20 },
-  dialContentWrapper: { height: 200, width: '100%', justifyContent: 'center', alignItems: 'center' },
+  dialContentWrapper: { height: 300, width: '100%', justifyContent: 'center', alignItems: 'center' },
   itineraryListContainer: { width: width * 0.85, height: 180, borderRadius: 25, overflow: 'hidden' },
-  itineraryScroll: { padding: 15 },
+  itineraryScroll: { padding: 15, paddingBottom: 20 },
   emptyItinerary: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
   emptyItineraryText: { fontSize: 13, fontWeight: '600', textAlign: 'center', lineHeight: 18 },
   plannedItem: { padding: 16, borderRadius: 20, marginBottom: 12, borderLeftWidth: 6, flexDirection: 'row', alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10, elevation: 3 },
