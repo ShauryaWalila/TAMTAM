@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Alert, Image, Dimensions, Pressable, ActivityIndicator, TextInput } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Alert, Image, Dimensions, Pressable, ActivityIndicator, TextInput, Platform, findNodeHandle, UIManager } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { X, MapPin, Plus, Shirt, Check, ChevronRight, Menu, Search, Filter, Tags, Package, Eye, Layers, User, Clock, Sparkles, CheckCircle2 } from 'lucide-react-native';
+import { X, MapPin, Plus, Shirt, Check, ChevronRight, Menu, Search, Filter, Tags, Package, Eye, Layers, User, Clock, Sparkles, CheckCircle2, Trash2 } from 'lucide-react-native';
 import { MotiView, AnimatePresence } from 'moti';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming, runOnJS, interpolate, Extrapolate } from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming, runOnJS } from 'react-native-reanimated';
 import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
 import * as SecureStore from 'expo-secure-store';
@@ -13,7 +13,7 @@ import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import AddPinModal from '@/components/Map/AddPinModal';
 
-const { width, height } = Dimensions.get('window');
+const { width, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const DRAWER_WIDTH = width * 0.8;
 const HangerIcon = require('@/assets/images/clothes-hanger.png');
 
@@ -37,6 +37,7 @@ export default function DayDetails({ tripId, day, onClose, isReadOnly }: DayDeta
   const [selectedOutfitIds, setSelectedOutfitIds] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentUser, setCurrentUser] = useState<string | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Memories State
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
@@ -44,60 +45,37 @@ export default function DayDetails({ tripId, day, onClose, isReadOnly }: DayDeta
   const [targetName, setTargetName] = useState('');
   const [finishDayQueue, setFinishDayQueue] = useState<any[]>([]);
 
-  // Animation values for the drawer visibility
-  const drawerTranslateX = useSharedValue(-DRAWER_WIDTH);
-  const isDrawerAutoClosed = useSharedValue(false);
-
   // Drag and Drop state
+  const drawerTranslateX = useSharedValue(-DRAWER_WIDTH);
   const dragX = useSharedValue(0);
   const dragY = useSharedValue(0);
   const dragScale = useSharedValue(1);
   const isDragging = useSharedValue(false);
+  const shouldCloseDrawerAfterDrop = useSharedValue(false);
   const [activeDragItem, setActiveDragItem] = useState<any>(null);
+
+  // Refs for live measurement of drop targets at drop time
+  const itemRefs = useRef<Record<string, View | null>>({});
 
   useEffect(() => {
     if (drawerOpen) {
       drawerTranslateX.value = withTiming(0, { duration: 300 });
-      isDrawerAutoClosed.value = false;
     } else {
       drawerTranslateX.value = withTiming(-DRAWER_WIDTH, { duration: 300 });
     }
   }, [drawerOpen]);
 
-  // Track layout of itinerary items for drop zones
-  const itemLayouts = useRef<Record<string, { x: number, y: number, w: number, h: number }>>({});
-
   useEffect(() => {
     init();
-    
-    // Real-time subscriptions
-    const tripWardrobeSub = supabase
-      .channel('trip_wardrobe_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'trip_wardrobe', filter: `trip_id=eq.${tripId}` }, () => fetchWardrobe())
-      .subscribe();
-
-    const outfitsSub = supabase
-      .channel('outfit_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'itinerary_outfits' }, () => fetchItinerary())
-      .subscribe();
-
-    const itSub = supabase
-      .channel('itinerary_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'itinerary_items' }, () => fetchItinerary())
-      .subscribe();
-
-    const wardrobeSub = supabase
-      .channel('wardrobe_global_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'wardrobe' }, () => fetchWardrobe())
-      .subscribe();
-
+    const tripWardrobeSub = supabase.channel('trip_wardrobe_changes').on('postgres_changes', { event: '*', schema: 'public', table: 'trip_wardrobe', filter: `trip_id=eq.${tripId}` }, () => fetchWardrobe()).subscribe();
+    const outfitsSub = supabase.channel('outfit_changes').on('postgres_changes', { event: '*', schema: 'public', table: 'itinerary_outfits' }, () => fetchItinerary()).subscribe();
+    const itSub = supabase.channel('itinerary_changes').on('postgres_changes', { event: '*', schema: 'public', table: 'itinerary_items' }, () => fetchItinerary()).subscribe();
     return () => {
       supabase.removeChannel(tripWardrobeSub);
       supabase.removeChannel(outfitsSub);
       supabase.removeChannel(itSub);
-      supabase.removeChannel(wardrobeSub);
     };
-  }, [tripId, day]);
+  }, [tripId, day, refreshTrigger]);
 
   const init = async () => {
     const user = await SecureStore.getItemAsync('user_name');
@@ -126,7 +104,6 @@ export default function DayDetails({ tripId, day, onClose, isReadOnly }: DayDeta
       .from('trip_wardrobe')
       .select('wardrobe_item_id, wardrobe(*)')
       .eq('trip_id', tripId);
-    
     if (data) {
       const wardrobeItems = data.map(d => d.wardrobe).filter(Boolean);
       setWardrobe(wardrobeItems);
@@ -137,15 +114,10 @@ export default function DayDetails({ tripId, day, onClose, isReadOnly }: DayDeta
   };
 
   const filteredWardrobe = useMemo(() => {
-    if (!searchTerm) return wardrobe;
     const term = searchTerm.toLowerCase();
-    return wardrobe.filter(item => 
-      item.name?.toLowerCase().includes(term) || 
-      item.category?.toLowerCase().includes(term)
-    );
+    return wardrobe.filter(item => !term || item.name?.toLowerCase().includes(term) || item.category?.toLowerCase().includes(term));
   }, [wardrobe, searchTerm]);
 
-  // Auto-expand categories during search
   useEffect(() => {
     if (searchTerm.length > 0) {
       const allCats = [...new Set(filteredWardrobe.map(i => i.category || 'Uncategorized'))];
@@ -168,24 +140,34 @@ export default function DayDetails({ tripId, day, onClose, isReadOnly }: DayDeta
 
   const linkOutfits = async (itineraryItemId: string, wardrobeItemIds: string[]) => {
     if (isReadOnly || wardrobeItemIds.length === 0) return;
-    const payload = wardrobeItemIds.map(wId => ({
-      itinerary_item_id: itineraryItemId,
-      wardrobe_item_id: wId
-    }));
-    const { error } = await supabase.from('itinerary_outfits').upsert(payload);
-    if (!error) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setSelectedOutfitIds([]);
-    } else {
-      Alert.alert('Error', 'Failed to link outfits');
+    try {
+      const payload = wardrobeItemIds.map(wId => ({ itinerary_item_id: itineraryItemId, wardrobe_item_id: wId }));
+      const { error } = await supabase.from('itinerary_outfits').upsert(payload, { onConflict: 'itinerary_item_id, wardrobe_item_id' });
+      
+      if (!error) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setSelectedOutfitIds([]);
+        setRefreshTrigger(prev => prev + 1);
+        fetchItinerary(); 
+        // Triple-stage refresh for maximum reliability
+        setTimeout(fetchItinerary, 400);
+        setTimeout(fetchItinerary, 1000);
+      } else {
+        console.error('[Wardrobe] Error:', error.message);
+        Alert.alert('Link Error', error.message);
+      }
+    } catch (e) {
+      console.error('[Wardrobe] linkOutfits Exception:', e);
     }
   };
 
-  const removeOutfit = async (itineraryItemId: string, wardrobeItemId: string) => {
+  const removeOutfit = async (itItemId: string, wId: string) => {
     if (isReadOnly) return;
-    await supabase.from('itinerary_outfits').delete()
-      .eq('itinerary_item_id', itineraryItemId)
-      .eq('wardrobe_item_id', wardrobeItemId);
+    const { error } = await supabase.from('itinerary_outfits').delete().eq('itinerary_item_id', itItemId).eq('wardrobe_item_id', wId);
+    if (!error) {
+      setRefreshTrigger(prev => prev + 1);
+      fetchItinerary();
+    }
   };
 
   const toggleTargetUser = async (item: any) => {
@@ -193,6 +175,7 @@ export default function DayDetails({ tripId, day, onClose, isReadOnly }: DayDeta
     const newTarget = item.target_user === 'pratishth' ? 'love' : 'pratishth';
     await supabase.from('wardrobe').update({ target_user: newTarget }).eq('id', item.id);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    fetchWardrobe();
   };
 
   const getOwnershipLabel = (item: any) => item.target_user === 'pratishth' ? 'His' : 'Her';
@@ -205,17 +188,12 @@ export default function DayDetails({ tripId, day, onClose, isReadOnly }: DayDeta
       setTargetCoordinate({ latitude: lat, longitude: lng });
       setTargetName(item.is_custom ? item.custom_label : item.bucket_items?.name);
       setIsAddModalVisible(true);
-    } else {
-      Alert.alert("No Location", "This activity has no coordinates to pin on the map.");
     }
   };
 
   const handleFinishDay = () => {
     const validItems = itinerary.filter(it => it.bucket_items?.latitude && it.bucket_items?.longitude);
-    if (validItems.length === 0) {
-      Alert.alert("No Stops", "You haven't visited any specific locations today to add memories.");
-      return;
-    }
+    if (validItems.length === 0) return;
     setFinishDayQueue(validItems);
     const first = validItems[0];
     setTargetCoordinate({ latitude: first.bucket_items.latitude, longitude: first.bucket_items.longitude });
@@ -231,7 +209,6 @@ export default function DayDetails({ tripId, day, onClose, isReadOnly }: DayDeta
       const nextItem = nextQueue[0];
       setTargetCoordinate({ latitude: nextItem.bucket_items.latitude, longitude: nextItem.bucket_items.longitude });
       setTargetName(nextItem.is_custom ? nextItem.custom_label : nextItem.bucket_items.name);
-      // Modal stays open, content updates
     } else {
       setFinishDayQueue([]);
       setIsAddModalVisible(false);
@@ -239,57 +216,85 @@ export default function DayDetails({ tripId, day, onClose, isReadOnly }: DayDeta
     }
   };
 
-  // --- DRAG AND DROP LOGIC ---
-
-  const handleDrop = (x: number, y: number, draggedItem: any) => {
-    const targetItem = Object.entries(itemLayouts.current).find(([id, layout]) => {
-      return x >= layout.x && x <= layout.x + layout.w &&
-             y >= layout.y && y <= layout.y + layout.h;
+  const measureRef = (ref: any): Promise<{ x: number; y: number; w: number; h: number } | null> => {
+    return new Promise((resolve) => {
+      if (!ref) return resolve(null);
+      const handle = findNodeHandle(ref);
+      if (!handle) return resolve(null);
+      UIManager.measureInWindow(handle, (x: number, y: number, w: number, h: number) => {
+        if (x == null || isNaN(x) || (w === 0 && h === 0)) return resolve(null);
+        resolve({ x, y, w, h });
+      });
     });
+  };
 
-    if (targetItem) {
-      const [itineraryItemId] = targetItem;
-      const idsToLink = selectedOutfitIds.includes(draggedItem.id) ? selectedOutfitIds : [draggedItem.id];
-      linkOutfits(itineraryItemId, idsToLink);
+  const handleDrop = async (absX: number, absY: number, draggedItem: any) => {
+    try {
+      const entries = Object.entries(itemRefs.current).filter(([, r]) => r);
+      const rects = await Promise.all(
+        entries.map(async ([id, ref]) => [id, await measureRef(ref)] as const)
+      );
+      const found = rects.find(([, rect]) => {
+        if (!rect) return false;
+        return absX >= rect.x && absX <= rect.x + rect.w &&
+               absY >= rect.y - 10 && absY <= rect.y + rect.h + 10;
+      });
+      if (found && found[1]) {
+        const itId = found[0];
+        const ids = selectedOutfitIds.includes(draggedItem.id) ? selectedOutfitIds : [draggedItem.id];
+        linkOutfits(itId, ids);
+      }
+    } catch (err: any) {
+      console.error('[Drop] Error:', err?.message || err);
+    } finally {
+      isDragging.value = false;
+      setActiveDragItem(null);
     }
-    isDragging.value = false;
-    setActiveDragItem(null);
   };
 
   const createPanGesture = (item: any) => Gesture.Pan()
+    .minDistance(8)
     .onBegin(() => {
       if (isReadOnly) return;
+      shouldCloseDrawerAfterDrop.value = false;
       runOnJS(setActiveDragItem)(item);
-      runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Medium);
+      runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Heavy);
     })
     .onUpdate((e) => {
       dragX.value = e.absoluteX;
       dragY.value = e.absoluteY;
       isDragging.value = true;
-      dragScale.value = withSpring(1.1);
-      if (e.absoluteX > DRAWER_WIDTH + 20 && !isDrawerAutoClosed.value) {
-        isDrawerAutoClosed.value = true;
+      dragScale.value = withSpring(1.15);
+      // Slide drawer out of the way visually only - do NOT unmount it,
+      // or the GestureDetector inside gets removed mid-drag.
+      if (e.absoluteX > DRAWER_WIDTH * 0.5) {
         drawerTranslateX.value = withSpring(-DRAWER_WIDTH);
+        shouldCloseDrawerAfterDrop.value = true;
       }
     })
     .onFinalize((e) => {
       runOnJS(handleDrop)(e.absoluteX, e.absoluteY, item);
       dragScale.value = withSpring(1);
-      if (isDrawerAutoClosed.value) runOnJS(setDrawerOpen)(false);
+      if (shouldCloseDrawerAfterDrop.value) {
+        runOnJS(setDrawerOpen)(false);
+        shouldCloseDrawerAfterDrop.value = false;
+      }
     });
 
   const animatedDragStyle = useAnimatedStyle(() => ({
-    position: 'absolute',
-    top: -40, left: -40, width: 80, height: 80, borderRadius: 40,
+    position: 'absolute', top: -40, left: -40, width: 80, height: 80, borderRadius: 40,
     backgroundColor: theme.tint, justifyContent: 'center', alignItems: 'center',
     zIndex: 9999, opacity: isDragging.value ? 1 : 0,
     transform: [{ translateX: dragX.value }, { translateY: dragY.value }, { scale: dragScale.value }],
-    elevation: 20, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 10,
+    elevation: 25, shadowColor: '#000', shadowOpacity: 0.4, shadowRadius: 12,
   }));
 
-  const animatedDrawerStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: drawerTranslateX.value }],
-  }));
+  const animatedDrawerStyle = useAnimatedStyle(() => ({ transform: [{ translateX: drawerTranslateX.value }] }));
+
+  const animatedBackdropStyle = useAnimatedStyle(() => {
+    const progress = 1 - Math.min(1, Math.max(0, -drawerTranslateX.value / DRAWER_WIDTH));
+    return { opacity: progress };
+  });
 
   const toggleOutfitSelection = (id: string) => {
     setSelectedOutfitIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
@@ -304,140 +309,93 @@ export default function DayDetails({ tripId, day, onClose, isReadOnly }: DayDeta
               <TouchableOpacity onPress={() => setDrawerOpen(true)} style={[styles.menuBtn, { backgroundColor: theme.background }]}>
                 <Image source={HangerIcon} style={{ width: 24, height: 24, tintColor: theme.text }} resizeMode="contain" />
               </TouchableOpacity>
-              <View>
-                <Text style={[styles.weekday, { color: theme.text, opacity: 0.6 }]}>{day.weekday}</Text>
-                <Text style={[styles.title, { color: theme.text }]}>Day {day.dayNumber}</Text>
-              </View>
+              <View><Text style={[styles.weekday, { color: theme.text, opacity: 0.6 }]}>{day.weekday}</Text><Text style={[styles.title, { color: theme.text }]}>Day {day.dayNumber}</Text></View>
             </View>
-            <TouchableOpacity onPress={onClose} style={[styles.closeBtn, { backgroundColor: theme.background }]}>
-              <X size={24} color={theme.text} />
-            </TouchableOpacity>
+            <TouchableOpacity onPress={onClose} style={styles.closeBtn}><X size={24} color={theme.text} /></TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.stopsList} showsVerticalScrollIndicator={false}>
-            {loading ? (
-              <ActivityIndicator style={{ marginTop: 50 }} color={theme.tint} />
-            ) : itinerary.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Package size={48} color={theme.text} opacity={0.2} />
-                <Text style={[styles.emptyText, { color: theme.text }]}>No stops planned for today.</Text>
-                <Text style={[styles.emptySubText, { color: theme.text, opacity: 0.5 }]}>Add locations from the map to see them here.</Text>
-              </View>
+          <Animated.ScrollView
+            style={styles.stopsList}
+            showsVerticalScrollIndicator={false}
+          >
+            {loading ? <ActivityIndicator style={{ marginTop: 50 }} color={theme.tint} /> : itinerary.length === 0 ? (
+              <View style={styles.emptyState}><Package size={48} color={theme.text} opacity={0.2} /><Text style={[styles.emptyText, { color: theme.text }]}>No stops planned for today.</Text></View>
             ) : (
               <>
                 {itinerary.map((item, index) => (
-                  <View 
-                    key={item.id} 
+                  <View
+                    key={item.id}
+                    ref={(r) => { itemRefs.current[item.id] = r; }}
+                    collapsable={false}
                     style={[styles.stopCard, { backgroundColor: theme.card }]}
-                    onLayout={(e) => {
-                      e.target.measure((x, y, w, h, pageX, pageY) => {
-                        itemLayouts.current[item.id] = { x: pageX, y: pageY, w, h };
-                      });
-                    }}
                   >
                     <View style={styles.stopHeader}>
-                      <View style={[styles.sequenceBadge, { backgroundColor: theme.tint }]}>
-                        <Text style={styles.sequenceText}>{index + 1}</Text>
-                      </View>
+                      <View style={[styles.sequenceBadge, { backgroundColor: theme.tint }]}><Text style={styles.sequenceText}>{index + 1}</Text></View>
                       <View style={{ flex: 1 }}>
-                        <Text style={[styles.stopName, { color: theme.text }]}>
-                          {item.is_custom ? item.custom_label : item.bucket_items?.name}
-                        </Text>
-                        {!item.is_custom && (
-                          <View style={styles.typeBadge}>
-                            <MapPin size={10} color={theme.text} opacity={0.5} />
-                            <Text style={[styles.typeText, { color: theme.text, opacity: 0.5 }]}>{item.bucket_items?.category?.toUpperCase() || 'STOP'}</Text>
-                          </View>
-                        )}
-                        {item.target_time && (
-                          <View style={styles.timeBadge}>
-                            <Clock size={12} color={theme.tint} />
-                            <Text style={[styles.timeText, { color: theme.tint }]}>{item.target_time}</Text>
-                          </View>
-                        )}
+                        <Text style={[styles.stopName, { color: theme.text }]}>{item.is_custom ? item.custom_label : item.bucket_items?.name}</Text>
+                        {!item.is_custom && <View style={styles.typeBadge}><MapPin size={10} color={theme.text} opacity={0.5} /><Text style={[styles.typeText, { color: theme.text, opacity: 0.5 }]}>{item.bucket_items?.category?.toUpperCase() || 'STOP'}</Text></View>}
                       </View>
-                      <TouchableOpacity onPress={() => handleAddMemory(item)} style={styles.memoryBtn}>
-                        <Sparkles size={18} color={theme.tint} />
-                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => handleAddMemory(item)}><Sparkles size={18} color={theme.tint} /></TouchableOpacity>
                     </View>
-
-                    {item.notes && (
-                      <View style={styles.notesContainer}>
-                        <Text style={[styles.notesText, { color: theme.text, opacity: 0.7 }]}>{item.notes}</Text>
-                      </View>
-                    )}
-
                     <View style={[styles.attachedOutfits, { borderTopColor: theme.background }]}>
                       {item.itinerary_outfits?.length > 0 ? (
-                        <View style={styles.outfitGrid}>
-                          {item.itinerary_outfits.map((io: any) => {
-                            const wItem = io.wardrobe;
-                            if (!wItem) return null;
-                            return (
-                              <View key={wItem.id} style={styles.outfitItem}>
-                                <View style={[styles.outfitThumbWrapper, { backgroundColor: theme.background }]}>
-                                  {wItem.image_url ? (
-                                    <Image source={{ uri: wItem.image_url }} style={styles.outfitThumb} />
-                                  ) : (
-                                    <View style={[styles.outfitPlaceholder, { backgroundColor: theme.card }]}>
-                                      <Shirt size={14} color={theme.tint} />
-                                    </View>
-                                  )}
-                                  {!isReadOnly && (
-                                    <TouchableOpacity style={styles.removeOutfitBtn} onPress={() => removeOutfit(item.id, wItem.id)}><X size={10} color="white" /></TouchableOpacity>
-                                  )}
-                                  <View style={styles.itemTargetMiniBadge}><Text style={styles.itemTargetMiniText}>{getMiniLabel(wItem)}</Text></View>
-                                </View>
-                                <Text style={[styles.outfitName, { color: theme.text }]} numberOfLines={1}>{wItem.name}</Text>
-                              </View>
-                            );
-                          })}
-                        </View>
-                      ) : (
-                        <View style={styles.noOutfits}><Shirt size={16} color={theme.text} opacity={0.3} /><Text style={[styles.noOutfitsText, { color: theme.text, opacity: 0.4 }]}>Drag outfits here to plan</Text></View>
-                      )}
+                        <View style={styles.outfitGrid}>{item.itinerary_outfits.map((io: any) => (
+                          <View key={io.wardrobe_item_id} style={styles.outfitItem}>
+                            <View style={[styles.outfitThumbWrapper, { backgroundColor: theme.background }]}>
+                              {io.wardrobe?.image_url ? <Image source={{ uri: io.wardrobe.image_url }} style={styles.outfitThumb} /> : <Shirt size={14} color={theme.tint} />}
+                              <TouchableOpacity style={styles.removeOutfitBtn} onPress={() => removeOutfit(item.id, io.wardrobe_item_id)}><X size={10} color="white" /></TouchableOpacity>
+                              <View style={styles.itemTargetMiniBadge}><Text style={styles.itemTargetMiniText}>{io.wardrobe?.target_user === 'pratishth' ? 'P' : 'S'}</Text></View>
+                            </View>
+                            <Text style={[styles.outfitName, { color: theme.text }]} numberOfLines={1}>{io.wardrobe?.name || '...'}</Text>
+                          </View>
+                        ))}</View>
+                      ) : <Text style={{ color: theme.text, opacity: 0.3, fontSize: 12 }}>Drag clothes here</Text>}
                     </View>
                   </View>
                 ))}
-                
-                <TouchableOpacity style={[styles.finishDayBtn, { backgroundColor: theme.tint }]} onPress={handleFinishDay}>
-                  <CheckCircle2 size={20} color="white" />
-                  <Text style={styles.finishDayText}>Finish Day & Add Memories</Text>
-                </TouchableOpacity>
+                <TouchableOpacity style={[styles.finishDayBtn, { backgroundColor: theme.tint }]} onPress={handleFinishDay}><CheckCircle2 size={20} color="white" /><Text style={styles.finishDayText}>Finish Day & Add Memories</Text></TouchableOpacity>
               </>
             )}
             <View style={{ height: 100 }} />
-          </ScrollView>
+          </Animated.ScrollView>
         </View>
 
         <AnimatePresence>
           {drawerOpen && (
-            <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={styles.drawerBackdrop}>
+            <Animated.View style={[styles.drawerBackdrop, animatedBackdropStyle]}>
               <Pressable style={StyleSheet.absoluteFill} onPress={() => setDrawerOpen(false)} />
               <Animated.View style={[styles.drawer, { backgroundColor: theme.card }, animatedDrawerStyle]}>
                 <View style={styles.drawerHeader}><Text style={[styles.drawerTitle, { color: theme.text }]}>Wardrobe</Text><TouchableOpacity onPress={() => setDrawerOpen(false)} style={[styles.closeBtn, { backgroundColor: theme.background }]}><X size={24} color={theme.text} /></TouchableOpacity></View>
                 <View style={styles.drawerActions}><View style={[styles.searchBar, { backgroundColor: theme.background }]}><Search size={16} color={theme.text} opacity={0.5} /><TextInput style={[styles.searchText, { color: theme.text, flex: 1, padding: 0 }]} placeholder="Search clothes..." placeholderTextColor={theme.text + '50'} value={searchTerm} onChangeText={setSearchTerm} autoCorrect={false} />{searchTerm.length > 0 && (<TouchableOpacity onPress={() => setSearchTerm('')}><X size={14} color={theme.text} opacity={0.5} /></TouchableOpacity>)}</View></View>
-                <ScrollView showsVerticalScrollIndicator={false} style={styles.drawerContent}>
-                  {Object.keys(groupedWardrobe).length === 0 ? (<View style={styles.centeredContent}><Search size={40} color={theme.text} opacity={0.1} /><Text style={[styles.emptySubText, { color: theme.text, opacity: 0.5 }]}>No matches found</Text></View>) : (
-                    Object.keys(groupedWardrobe).map((cat) => (
-                      <View key={cat} style={styles.drawerCatSection}><TouchableOpacity style={styles.drawerCatHeader} onPress={() => toggleCategory(cat)}><Text style={[styles.drawerCatTitle, { color: theme.text, opacity: 0.6 }]}>{cat.toUpperCase()}</Text><View style={[styles.catCount, { backgroundColor: theme.tint + '20' }]}><Text style={[styles.catCountText, { color: theme.tint }]}>{groupedWardrobe[cat].length}</Text></View></TouchableOpacity>
-                        <AnimatePresence>{expandedCategories.includes(cat) && (<MotiView from={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ type: 'timing', duration: 300 }} style={{ overflow: 'hidden' }}><View style={styles.drawerItemsGrid}>
-                                {groupedWardrobe[cat].map((item: any) => {
-                                  const isSelected = selectedOutfitIds.includes(item.id);
-                                  return (
-                                    <GestureDetector key={item.id} gesture={createPanGesture(item)}><Pressable onPress={() => toggleOutfitSelection(item.id)} style={[styles.drawerItemCard, { backgroundColor: theme.background, borderColor: isSelected ? theme.tint : 'transparent', borderWidth: 2 }]}><View style={[styles.itemThumbContainer, { backgroundColor: theme.card }]}>{item.image_url ? (<Image source={{ uri: item.image_url }} style={styles.itemThumb} />) : (<View style={[styles.itemThumbPlaceholder, { backgroundColor: theme.background }]}><Shirt size={24} color={theme.tint} /></View>)}<View style={[styles.selectionBox, { borderColor: isSelected ? theme.tint : theme.text + '20', backgroundColor: isSelected ? theme.tint : 'transparent' }]}>{isSelected && <Check size={10} color="white" />}</View><TouchableOpacity style={[styles.targetToggle, { backgroundColor: item.target_user === 'pratishth' ? '#007AFF' : '#FF2D55' }]} onPress={() => toggleTargetUser(item)}><Text style={styles.targetToggleText}>{getOwnershipLabel(item)}</Text></TouchableOpacity></View><Text style={[styles.drawerItemName, { color: theme.text }]} numberOfLines={1}>{item.name}</Text></Pressable></GestureDetector>
-                                  );
-                                })}</View></MotiView>)}
-                        </AnimatePresence></View>
-                    ))
-                  )}
-                </ScrollView>
+                <ScrollView showsVerticalScrollIndicator={false} style={styles.drawerContent}>{Object.keys(groupedWardrobe).map(cat => (
+                  <View key={cat} style={styles.drawerCatSection}>
+                    <TouchableOpacity style={styles.drawerCatHeader} onPress={() => toggleCategory(cat)}><Text style={[styles.drawerCatTitle, { color: theme.text, opacity: 0.6 }]}>{cat.toUpperCase()}</Text><View style={[styles.catCount, { backgroundColor: theme.tint + '20' }]}><Text style={[styles.catCountText, { color: theme.tint }]}>{groupedWardrobe[cat].length}</Text></View></TouchableOpacity>
+                    <AnimatePresence>{expandedCategories.includes(cat) && (<MotiView from={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ type: 'timing', duration: 300 }} style={{ overflow: 'hidden' }}><View style={styles.drawerItemsGrid}>
+                      {groupedWardrobe[cat].map((item: any) => {
+                        const isSelected = selectedOutfitIds.includes(item.id);
+                        return (
+                          <GestureDetector key={item.id} gesture={createPanGesture(item)}>
+                            <Pressable onPress={() => setSelectedOutfitIds(prev => prev.includes(item.id) ? prev.filter(i => i !== item.id) : [...prev, item.id])} style={[styles.drawerItemCard, { backgroundColor: theme.background, borderColor: isSelected ? theme.tint : 'transparent', borderWidth: 2 }]}>
+                              <View style={[styles.itemThumbContainer, { backgroundColor: theme.card }]}>
+                                {item.image_url ? <Image source={{ uri: item.image_url }} style={item.itemThumb} /> : <Shirt size={24} color={theme.tint} />}
+                                <View style={[styles.selectionBox, { borderColor: isSelected ? theme.tint : theme.text + '20', backgroundColor: isSelected ? theme.tint : 'transparent' }]}>{isSelected && <Check size={10} color="white" />}</View>
+                                <TouchableOpacity style={[styles.targetToggle, { backgroundColor: item.target_user === 'pratishth' ? '#007AFF' : '#FF2D55' }]} onPress={() => toggleTargetUser(item)}><Text style={styles.targetToggleText}>{getOwnershipLabel(item)}</Text></TouchableOpacity>
+                              </View>
+                              <Text style={[styles.drawerItemName, { color: theme.text }]} numberOfLines={1}>{item.name}</Text>
+                            </Pressable>
+                          </GestureDetector>
+                        );
+                      })}</View></MotiView>)}
+                    </AnimatePresence>
+                  </View>
+                ))}</ScrollView>
               </Animated.View>
-            </MotiView>
+            </Animated.View>
           )}
         </AnimatePresence>
+
         <Animated.View style={[animatedDragStyle, { pointerEvents: 'none' }]}>
-          {activeDragItem && (<View style={styles.dragGhost}><Layers size={32} color="white" /><Text style={styles.dragGhostCount}>{selectedOutfitIds.includes(activeDragItem.id) && selectedOutfitIds.length > 1 ? selectedOutfitIds.length : 1}</Text></View>)}
+          {activeDragItem && (<View style={{ alignItems: 'center' }}><Layers size={32} color="white" /><Text style={{ color: 'white', fontWeight: '900', marginTop: 4 }}>{selectedOutfitIds.length || 1}</Text></View>)}
         </Animated.View>
 
         <AddPinModal isVisible={isAddModalVisible} onClose={() => { setIsAddModalVisible(false); setFinishDayQueue([]); }} coordinate={targetCoordinate} isPlanMode={false} onSuccess={onMemorySuccess} />
@@ -461,32 +419,17 @@ const styles = StyleSheet.create({
   sequenceBadge: { width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginRight: 12, marginTop: 2 },
   sequenceText: { color: 'white', fontSize: 12, fontWeight: '900' },
   stopName: { fontSize: 18, fontWeight: '800', marginBottom: 4 },
-  typeBadge: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  typeText: { fontSize: 10, fontWeight: '700' },
   attachedOutfits: { borderTopWidth: 1, paddingTop: 15 },
   outfitGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   outfitItem: { alignItems: 'center', width: 60 },
-  outfitThumbWrapper: { width: 50, height: 50, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginBottom: 6 },
+  outfitThumbWrapper: { width: 50, height: 50, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
   outfitThumb: { width: '100%', height: '100%', borderRadius: 12 },
-  outfitPlaceholder: { width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center' },
   removeOutfitBtn: { position: 'absolute', top: -5, right: -5, width: 18, height: 18, borderRadius: 9, backgroundColor: '#FF3B30', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: 'white', zIndex: 10 },
   itemTargetMiniBadge: { position: 'absolute', bottom: -2, left: -2, width: 14, height: 14, borderRadius: 7, backgroundColor: '#333', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'white' },
   itemTargetMiniText: { color: 'white', fontSize: 8, fontWeight: '900' },
   outfitName: { fontSize: 10, fontWeight: '600', textAlign: 'center' },
-  noOutfits: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 5 },
-  noOutfitsText: { fontSize: 12, fontWeight: '500' },
-  timeBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
-  timeText: { fontSize: 11, fontWeight: '800' },
-  notesContainer: { padding: 12, borderRadius: 15, backgroundColor: 'rgba(0,0,0,0.03)', marginBottom: 15 },
-  notesText: { fontSize: 12, fontWeight: '500', lineHeight: 18 },
-  memoryBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(175, 82, 222, 0.1)', justifyContent: 'center', alignItems: 'center' },
-  finishDayBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, padding: 20, borderRadius: 24, marginTop: 10, marginBottom: 30, elevation: 4 },
-  finishDayText: { color: 'white', fontSize: 16, fontWeight: '900' },
-  emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 100 },
-  emptyText: { fontSize: 18, fontWeight: '800', marginTop: 15 },
-  emptySubText: { fontSize: 14, marginTop: 5, textAlign: 'center' },
   drawerBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 2000 },
-  drawer: { width: DRAWER_WIDTH, height: '100%', paddingHorizontal: 20, paddingTop: 60, elevation: 16, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 20 },
+  drawer: { width: DRAWER_WIDTH, height: '100%', paddingHorizontal: 20, paddingTop: 60, elevation: 16 },
   drawerHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 },
   drawerTitle: { fontSize: 24, fontWeight: '900' },
   drawerActions: { marginBottom: 20 },
@@ -499,15 +442,21 @@ const styles = StyleSheet.create({
   catCount: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 },
   catCountText: { fontSize: 10, fontWeight: 'bold' },
   drawerItemsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, paddingTop: 10 },
-  drawerItemCard: { width: (DRAWER_WIDTH - 52) / 2, borderRadius: 16, padding: 10, elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8 },
+  drawerItemCard: { width: (DRAWER_WIDTH - 52) / 2, borderRadius: 16, padding: 10 },
   itemThumbContainer: { width: '100%', height: 80, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
   itemThumb: { width: '100%', height: '100%', borderRadius: 12 },
-  itemThumbPlaceholder: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
   selectionBox: { position: 'absolute', top: 5, right: 5, width: 18, height: 18, borderRadius: 6, borderWidth: 2, justifyContent: 'center', alignItems: 'center' },
   targetToggle: { position: 'absolute', bottom: 5, left: 5, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
   targetToggleText: { color: 'white', fontSize: 8, fontWeight: '900' },
-  drawerItemName: { fontSize: 12, fontWeight: '700' },
-  dragGhost: { alignItems: 'center', justifyContent: 'center' },
-  dragGhostCount: { color: 'white', fontSize: 14, fontWeight: '900', marginTop: 4 },
+  drawerItemName: { fontSize: 10, fontWeight: '700' },
+  finishDayBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, padding: 20, borderRadius: 24, marginTop: 10, marginBottom: 30, elevation: 4 },
+  finishDayText: { color: 'white', fontSize: 16, fontWeight: '900' },
+  emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 100 },
+  emptyText: { fontSize: 18, fontWeight: '800', marginTop: 15 },
+  typeBadge: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  typeText: { fontSize: 10, fontWeight: '700' },
+  notesContainer: { padding: 12, borderRadius: 15, backgroundColor: 'rgba(0,0,0,0.03)', marginBottom: 15 },
+  notesText: { fontSize: 12, fontWeight: '500', lineHeight: 18 },
+  memoryBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(175, 82, 222, 0.1)', justifyContent: 'center', alignItems: 'center' },
   centeredContent: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 50 },
 });
