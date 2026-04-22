@@ -55,7 +55,7 @@ export default function RootLayout() {
     // 0. INITIALIZE OFFLINE DB & SYNC ENGINE
     initDB();
     startSyncEngine();
-    initialFullSync(false);
+    initialFullSync(true);
 
     // 1. REQUEST PERMISSIONS
     const { status: existingStatus } = await Notifications.getPermissionsAsync();

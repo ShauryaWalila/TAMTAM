@@ -46,6 +46,7 @@ interface Post {
   type: "text" | "image" | "draw";
   content: string;
   created_at: string;
+  updated_at?: string;
   user_id: string;
   reactions?: Record<string, string>;
   seen_by?: string[];
@@ -68,19 +69,34 @@ const REACTION_LOTTIES: Record<string, any> = {
   "😮": require("../../assets/lottie/shock.lottie"),
 };
 
+const REACTION_SCALES: Record<string, number> = {
+  "❤️": 0.6,
+  "🔥": 0.7,
+  "✨": 0.8,
+  "😂": 1.2,
+  "🥺": 0.8,
+  "😮": 0.7,
+};
+
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
-function AnimatedReaction({ source, size, infinite = false }: { source: any; size: number; infinite?: boolean }) {
+function AnimatedReaction({ source, scale = 1.0, infinite = false }: { source: any; scale?: number; infinite?: boolean }) {
   const [loopCount, setLoopCount] = useState(0);
   
   return (
-    <LottieView
-      source={source}
-      autoPlay
-      loop={infinite ? true : loopCount < 2}
-      onAnimationLoop={() => !infinite && setLoopCount(prev => prev + 1)}
-      style={{ width: size, height: size }}
-    />
+    <View style={{ width: 32, height: 32, justifyContent: 'center', alignItems: 'center' }}>
+      <LottieView
+        source={source}
+        autoPlay
+        loop={infinite ? true : loopCount < 2}
+        onAnimationLoop={() => !infinite && setLoopCount(prev => prev + 1)}
+        style={{ 
+          width: 50, 
+          height: 50, 
+          transform: [{ scale }] 
+        }}
+      />
+    </View>
   );
 }
 
@@ -135,14 +151,17 @@ export default function JournalScreen() {
         "postgres_changes",
         { event: "*", schema: "public", table: "posts" },
         (payload) => {
-          if (payload.eventType === "INSERT") {
+          if (payload.eventType === "INSERT" || payload.eventType === "UPDATE") {
             const n = payload.new as Post;
-            db.runSync(`INSERT OR REPLACE INTO posts (id, created_at, type, content, user_id, reactions, seen_by) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
-              [n.id, n.created_at, n.type, n.content, n.user_id, JSON.stringify(n.reactions), n.seen_by ? n.seen_by.join(',') : '']);
-          } else if (payload.eventType === "UPDATE") {
-            const n = payload.new as Post;
-            db.runSync(`INSERT OR REPLACE INTO posts (id, created_at, type, content, user_id, reactions, seen_by) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
-              [n.id, n.created_at, n.type, n.content, n.user_id, JSON.stringify(n.reactions), n.seen_by ? n.seen_by.join(',') : '']);
+            // Only update local if incoming is newer or doesn't exist
+            const local = db.getFirstSync(`SELECT updated_at FROM posts WHERE id = ?`, [n.id]) as any;
+            const incomingTime = new Date(n.updated_at || n.created_at).getTime();
+            const localTime = local?.updated_at ? new Date(local.updated_at).getTime() : 0;
+
+            if (incomingTime >= localTime) {
+              db.runSync(`INSERT OR REPLACE INTO posts (id, created_at, updated_at, type, content, user_id, reactions, seen_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, 
+                [n.id, n.created_at, n.updated_at || n.created_at, n.type, n.content, n.user_id, JSON.stringify(n.reactions), n.seen_by ? n.seen_by.join(',') : '']);
+            }
           } else if (payload.eventType === "DELETE") {
             db.runSync(`DELETE FROM posts WHERE id = ?`, [payload.old.id]);
           }
@@ -190,8 +209,14 @@ export default function JournalScreen() {
 
     if (!error && data) {
       data.forEach(n => {
-        db.runSync(`INSERT OR REPLACE INTO posts (id, created_at, type, content, user_id, reactions, seen_by) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
-          [n.id, n.created_at, n.type, n.content, n.user_id, JSON.stringify(n.reactions), n.seen_by ? n.seen_by.join(',') : '']);
+        const local = db.getFirstSync(`SELECT updated_at FROM posts WHERE id = ?`, [n.id]) as any;
+        const incomingTime = new Date(n.updated_at || n.created_at).getTime();
+        const localTime = local?.updated_at ? new Date(local.updated_at).getTime() : 0;
+
+        if (incomingTime >= localTime) {
+          db.runSync(`INSERT OR REPLACE INTO posts (id, created_at, updated_at, type, content, user_id, reactions, seen_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, 
+            [n.id, n.created_at, n.updated_at || n.created_at, n.type, n.content, n.user_id, JSON.stringify(n.reactions), n.seen_by ? n.seen_by.join(',') : '']);
+        }
       });
 
       if (reset) {
@@ -291,20 +316,22 @@ export default function JournalScreen() {
     if (!inputText.trim() && !selectedImage) return;
     setLoading(true);
     const id = generateUUID();
+    const now = new Date().toISOString();
     const payload: any = {
       id,
       type: selectedImage ? "image" : "text",
       content: selectedImage || inputText,
       user_id: currentUserName || "user_1",
-      created_at: new Date().toISOString(),
+      created_at: now,
+      updated_at: now,
       reactions: {},
       seen_by: []
     };
 
     try {
       // 1. Save to SQLite for immediate UI
-      db.runSync(`INSERT INTO posts (id, created_at, type, content, user_id, reactions, seen_by) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
-        [payload.id, payload.created_at, payload.type, payload.content, payload.user_id, JSON.stringify(payload.reactions), '']);
+      db.runSync(`INSERT INTO posts (id, created_at, updated_at, type, content, user_id, reactions, seen_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, 
+        [payload.id, payload.created_at, payload.updated_at, payload.type, payload.content, payload.user_id, JSON.stringify(payload.reactions), '']);
       
       // 2. Queue for Sync Engine
       queueSyncOperation('posts', payload.id, 'INSERT', payload);
@@ -341,13 +368,14 @@ export default function JournalScreen() {
   const handleAddReaction = async (emoji: string) => {
     if (!selectedPost || !currentUserName) return;
     const newReactions = { ...(selectedPost.reactions || {}), [currentUserName]: emoji };
+    const now = new Date().toISOString();
     setIsMenuVisible(false);
 
-    // Update locally
-    db.runSync(`UPDATE posts SET reactions = ? WHERE id = ?`, [JSON.stringify(newReactions), selectedPost.id]);
+    // Update locally with updated_at
+    db.runSync(`UPDATE posts SET reactions = ?, updated_at = ? WHERE id = ?`, [JSON.stringify(newReactions), now, selectedPost.id]);
     
     // Queue sync
-    queueSyncOperation('posts', selectedPost.id, 'UPDATE', { reactions: newReactions });
+    queueSyncOperation('posts', selectedPost.id, 'UPDATE', { reactions: newReactions, updated_at: now });
     
     refreshFromSQLite();
   };
@@ -371,10 +399,10 @@ export default function JournalScreen() {
           <>
             <View style={styles.header}>
               <View>
-                <Text style={[styles.title, { color: theme.text }]}>Memories</Text>
-                <Text style={[styles.subtitle, { color: theme.tabIconDefault }]}>Capturing our moments</Text>
+                <Text style={[styles.title, { color: theme.text }]}>Our Journal</Text>
+                {/* <Text style={[styles.subtitle, { color: theme.tabIconDefault }]}>Capturing our moments</Text> */}
               </View>
-              <TouchableOpacity onPress={() => setIsDetailsVisible(true)} style={[styles.infoBtn, { backgroundColor: theme.card }]}><Info size={20} color={theme.text} /></TouchableOpacity>
+              {/* <TouchableOpacity onPress={() => setIsDetailsVisible(true)} style={[styles.infoBtn, { backgroundColor: theme.card }]}><Info size={20} color={theme.text} /></TouchableOpacity> */}
             </View>
 
             {posts.map((post, idx) => (
@@ -397,8 +425,11 @@ export default function JournalScreen() {
 
                   <View style={styles.reactionsContainer}>
                     {post.reactions && Object.entries(post.reactions).map(([uid, emoji]) => (
-                      <View key={uid} style={[styles.reactionBadge, { backgroundColor: theme.background, borderColor: theme.tint + "20" }]}>
-                        <AnimatedReaction source={REACTION_LOTTIES[emoji]} size={24} />
+                      <View key={uid} style={[styles.reactionBadge, { backgroundColor: theme.background, borderColor: theme.tint + "20", width: 32, height: 32, overflow: 'hidden', padding: 0, justifyContent: 'center', alignItems: 'center' }]}>
+                        <AnimatedReaction 
+                          source={REACTION_LOTTIES[emoji]} 
+                          scale={REACTION_SCALES[emoji] || 1.0} 
+                        />
                       </View>
                     ))}
                   </View>

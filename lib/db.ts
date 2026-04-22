@@ -42,6 +42,7 @@ export const initDB = () => {
       CREATE TABLE IF NOT EXISTS posts (
         id TEXT PRIMARY KEY,
         created_at DATETIME,
+        updated_at DATETIME,
         type TEXT,
         content TEXT,
         user_id TEXT,
@@ -274,6 +275,9 @@ export const initDB = () => {
     try { db.execSync('ALTER TABLE study_cards ADD COLUMN incorrect_count INTEGER DEFAULT 0;'); } catch(e) {}
     try { db.execSync('ALTER TABLE study_cards ADD COLUMN skip_count INTEGER DEFAULT 0;'); } catch(e) {}
     try { db.execSync('ALTER TABLE study_cards ADD COLUMN last_result TEXT;'); } catch(e) {}
+
+    // Migration for Journal Posts
+    try { db.execSync('ALTER TABLE posts ADD COLUMN updated_at DATETIME;'); } catch(e) {}
 
     console.log('Local SQLite DB initialized.');
   } catch (error) {
