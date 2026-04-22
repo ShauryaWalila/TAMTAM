@@ -163,6 +163,7 @@ export default function DayReorderList({ tripId, days, onReorder, dayCounts, onS
                       value={time}
                       mode="time"
                       is24Hour={true}
+                      themeVariant={colorScheme}
                       onChange={(e, d) => {
                         setShowTimePicker(false);
                         if (d) handleUpdateItem(item.id, { target_time: format(d, 'HH:mm') });

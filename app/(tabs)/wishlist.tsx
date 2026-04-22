@@ -120,11 +120,21 @@ export default function WishlistScreen() {
   };
 
   const navigateToPlace = (item: WishlistItem) => {
-    const url = Platform.select({
-      ios: `maps:0,0?q=${item.latitude},${item.longitude}(${item.name})`,
-      android: `geo:0,0?q=${item.latitude},${item.longitude}(${item.name})`
-    }) || `https://www.google.com/maps/dir/?api=1&destination=${item.latitude},${item.longitude}`;
-    Linking.openURL(url);
+    // Explicitly target Google Maps App if possible, otherwise use web link
+    const scheme = Platform.OS === 'ios' ? 'comgooglemaps://?q=' : 'google.navigation:q=';
+    const coords = `${item.latitude},${item.longitude}`;
+    const url = `${scheme}${coords}`;
+    const webUrl = `https://www.google.com/maps/search/?api=1&query=${coords}`;
+
+    Linking.canOpenURL(url).then(supported => {
+      if (supported) {
+        Linking.openURL(url);
+      } else {
+        Linking.openURL(webUrl);
+      }
+    }).catch(() => {
+      Linking.openURL(webUrl);
+    });
   };
 
   const sharePlace = async (item: WishlistItem) => {
@@ -180,7 +190,7 @@ export default function WishlistScreen() {
       </MapView>
 
       <View style={[styles.topOverlay, { top: insets.top + 10 }]}>
-        <View style={styles.statusRow}>
+        {/* <View style={styles.statusRow}>
           <BlurView intensity={60} tint={colorScheme} style={styles.syncBadge}>
             <Users size={12} color={theme.tint} />
             <Text style={[styles.syncText, { color: theme.text }]}>Shared with {partnerName}</Text>
@@ -191,7 +201,7 @@ export default function WishlistScreen() {
               </MotiView>
             )}
           </BlurView>
-        </View>
+        </View> */}
 
         <BlurView intensity={80} tint={colorScheme} style={styles.searchBlur}>
           <Search size={20} color={theme.tabIconDefault} style={styles.searchIcon} />
@@ -222,10 +232,10 @@ export default function WishlistScreen() {
               <View style={styles.detailsHeader}>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.placeName, { color: theme.text }]}>{selectedPin.name}</Text>
-                  <View style={styles.addedByRow}>
+                  {/* <View style={styles.addedByRow}>
                     <MapPinned size={12} color={theme.tint} />
                     <Text style={[styles.addedBy, { color: theme.tabIconDefault }]}>Wishlisted by {selectedPin.user_id.toUpperCase()}</Text>
-                  </View>
+                  </View> */}
                 </View>
                 <TouchableOpacity onPress={() => setSelectedPin(null)} style={styles.closeDetails}><ChevronDown size={28} color={theme.text} /></TouchableOpacity>
               </View>
