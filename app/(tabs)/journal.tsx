@@ -170,8 +170,13 @@ export default function JournalScreen() {
       )
       .subscribe();
 
+    const refreshSub = DeviceEventEmitter.addListener('refresh-dashboard', () => {
+      refreshFromSQLite();
+    });
+
     return () => {
       supabase.removeChannel(subscription);
+      refreshSub.remove();
     };
   }, []);
 
@@ -359,6 +364,10 @@ export default function JournalScreen() {
           setIsMenuVisible(false);
           db.runSync(`DELETE FROM posts WHERE id = ?`, [selectedPost.id]);
           queueSyncOperation('posts', selectedPost.id, 'DELETE', {});
+          
+          // Notify other screens (like Sketchbook)
+          DeviceEventEmitter.emit('refresh-dashboard');
+          
           refreshFromSQLite();
         }
       }

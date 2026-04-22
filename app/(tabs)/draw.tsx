@@ -78,7 +78,15 @@ export default function DrawScreen() {
     };
     init();
     DeviceEventEmitter.emit('hide-navigator');
-    return () => DeviceEventEmitter.emit('show-navigator');
+
+    const refreshSub = DeviceEventEmitter.addListener('refresh-dashboard', () => {
+      refreshFromSQLite();
+    });
+
+    return () => {
+      DeviceEventEmitter.emit('show-navigator');
+      refreshSub.remove();
+    };
   }, []);
 
   const refreshFromSQLite = () => {
@@ -131,11 +139,65 @@ export default function DrawScreen() {
   }, [currentLocalPath]);
 
   // 🖐️ Gestures
-  const pan = Gesture.Pan().minPointers(1).maxPointers(1).enabled(activeTool !== 'pan').onBegin((e) => runOnJS(onStart)(e.x, e.y)).onUpdate((e) => runOnJS(onUpdate)(e.x, e.y)).onEnd(() => runOnJS(onEnd)());
-  const oneFingerPanGesture = Gesture.Pan().minPointers(1).maxPointers(1).enabled(activeTool === 'pan').onUpdate((e) => { translateX.value = savedTranslateX.value + e.translationX; translateY.value = savedTranslateY.value + e.translationY; }).onEnd(() => { savedTranslateX.value = translateX.value; savedTranslateY.value = translateY.value; });
-  const pinchGesture = Gesture.Pinch().onStart((e) => { savedScale.value = scale.value; savedTranslateX.value = translateX.value; savedTranslateY.value = translateY.value; focalX.value = e.focalX; focalY.value = e.focalY; }).onUpdate((e) => { const newScale = Math.max(0.1, Math.min(savedScale.value * e.scale, 15)); const s = newScale / savedScale.value; translateX.value = focalX.value - (focalX.value - savedTranslateX.value) * s; translateY.value = focalY.value - (focalY.value - savedTranslateY.value) * s; scale.value = newScale; runOnJS(setZoomText)(`${Math.round(newScale * 100)}%`); }).onEnd(() => { savedScale.value = scale.value; savedTranslateX.value = translateX.value; savedTranslateY.value = translateY.value; });
+  const pan = Gesture.Pan()
+    .minPointers(1)
+    .maxPointers(1)
+    .enabled(activeTool !== 'pan')
+    .onBegin((e) => runOnJS(onStart)(e.x, e.y))
+    .onUpdate((e) => runOnJS(onUpdate)(e.x, e.y))
+    .onEnd(() => runOnJS(onEnd)());
+
+  const oneFingerPanGesture = Gesture.Pan()
+    .minPointers(1)
+    .maxPointers(1)
+    .enabled(activeTool === 'pan')
+    .onUpdate((e) => { 
+      translateX.value = savedTranslateX.value + e.translationX; 
+      translateY.value = savedTranslateY.value + e.translationY; 
+    })
+    .onEnd(() => { 
+      savedTranslateX.value = translateX.value; 
+      savedTranslateY.value = translateY.value; 
+    });
+
+  const twoFingerPanGesture = Gesture.Pan()
+    .minPointers(2)
+    .onUpdate((e) => {
+      translateX.value = savedTranslateX.value + e.translationX;
+      translateY.value = savedTranslateY.value + e.translationY;
+    })
+    .onEnd(() => {
+      savedTranslateX.value = translateX.value;
+      savedTranslateY.value = translateY.value;
+    });
+
+  const pinchGesture = Gesture.Pinch()
+    .onStart((e) => { 
+      savedScale.value = scale.value; 
+      savedTranslateX.value = translateX.value; 
+      savedTranslateY.value = translateY.value; 
+      focalX.value = e.focalX; 
+      focalY.value = e.focalY; 
+    })
+    .onUpdate((e) => { 
+      const newScale = Math.max(0.1, Math.min(savedScale.value * e.scale, 15)); 
+      const s = newScale / savedScale.value; 
+      translateX.value = focalX.value - (focalX.value - savedTranslateX.value) * s; 
+      translateY.value = focalY.value - (focalY.value - savedTranslateY.value) * s; 
+      scale.value = newScale; 
+      runOnJS(setZoomText)(`${Math.round(newScale * 100)}%`); 
+    })
+    .onEnd(() => { 
+      savedScale.value = scale.value; 
+      savedTranslateX.value = translateX.value; 
+      savedTranslateY.value = translateY.value; 
+    });
   
-  const composedGesture = Gesture.Simultaneous(Gesture.Exclusive(pan, oneFingerPanGesture), pinchGesture);
+  const composedGesture = Gesture.Simultaneous(
+    Gesture.Exclusive(pan, oneFingerPanGesture), 
+    twoFingerPanGesture,
+    pinchGesture
+  );
   const animatedTransform = useDerivedValue(() => [{ translateX: translateX.value }, { translateY: translateY.value }, { scale: scale.value }]);
 
   // 🌈 Spectrum Color Logic
@@ -164,15 +226,21 @@ export default function DrawScreen() {
     try {
       const image = canvasRef.current?.makeImageSnapshot();
       if (image) {
-        const base64 = image.encodeToBase64();
-        // 1. Save locally immediately (with base64 as content for now)
-        db.runSync(`INSERT INTO posts (id, created_at, type, content, user_id, reactions, seen_by) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
-          [id, createdAt, 'draw', base64, currentUserName || "user_1", JSON.stringify({ board_bg: boardBg }), '']);
+        const rawBase64 = image.encodeToBase64();
+        const base64 = `data:image/png;base64,${rawBase64}`;
+        
+        // 1. Save locally immediately
+        db.runSync(`INSERT INTO posts (id, created_at, updated_at, type, content, user_id, reactions, seen_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, 
+          [id, createdAt, createdAt, 'draw', base64, currentUserName || "user_1", JSON.stringify({ board_bg: boardBg }), '']);
         
         // 2. Queue for Sync
         queueSyncOperation('posts', id, 'INSERT', { 
-          id, type: 'draw', content: base64, user_id: currentUserName || "user_1", created_at: createdAt, reactions: { board_bg: boardBg } 
+          id, type: 'draw', content: base64, user_id: currentUserName || "user_1", created_at: createdAt, updated_at: createdAt, reactions: { board_bg: boardBg } 
         });
+        processSyncQueue();
+
+        // 3. Notify other screens to refresh
+        DeviceEventEmitter.emit('refresh-dashboard');
 
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setPaths([]); 
@@ -219,6 +287,7 @@ export default function DrawScreen() {
           <BlurView intensity={90} tint="dark" style={styles.dockBlur}>
             <TouchableOpacity onPress={() => setActiveTool('pen')} style={[styles.tool, activeTool === 'pen' && styles.activeTool]}><Pencil size={22} color={activeTool === 'pen' ? theme.tint : "#AAA"} /></TouchableOpacity>
             <TouchableOpacity onPress={() => setActiveTool('eraser')} style={[styles.tool, activeTool === 'eraser' && styles.activeTool]}><Eraser size={22} color={activeTool === 'eraser' ? theme.tint : "#AAA"} /></TouchableOpacity>
+            <TouchableOpacity onPress={() => setActiveTool('pan')} style={[styles.tool, activeTool === 'pan' && styles.activeTool]}><Hand size={22} color={activeTool === 'pan' ? theme.tint : "#AAA"} /></TouchableOpacity>
             <TouchableOpacity onPress={() => setShowPicker('stroke')} style={styles.tool}><View style={[styles.colorPreview, { backgroundColor: color }]} /><Palette size={12} color="#FFF" style={{position:'absolute'}} /></TouchableOpacity>
             <TouchableOpacity onPress={() => setShowPicker('board')} style={styles.tool}><View style={[styles.colorPreview, { backgroundColor: boardBg, borderRadius: 4 }]} /><Layers size={14} color={boardBg === '#FFFFFF' ? '#000' : '#FFF'} style={{position:'absolute'}} /></TouchableOpacity>
             <View style={styles.divider} />
