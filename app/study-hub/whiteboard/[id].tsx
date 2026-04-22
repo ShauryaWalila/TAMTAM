@@ -264,6 +264,7 @@ export default function WhiteboardScreen() {
     const sw = (activeTool === 'high' ? highSize : (activeTool === 'eraser' ? eraserSize : penSize)) / s;
     const nP = Skia.Path.Make();
     nP.moveTo(wX, wY);
+    nP.lineTo(wX + 0.1, wY + 0.1);
     const newPath = { id: generateUUID(), path: nP, color: activeTool === 'eraser' ? '#fff' : color, strokeWidth: sw, isEraser: activeTool === 'eraser', opacity: activeTool === 'high' ? highOpacity : (activeTool === 'eraser' ? 1 : penOpacity), startX: wX, startY: wY, swOrig: sw };
     currentPathRef.current = newPath;
     setCurrentPath(newPath);
@@ -424,7 +425,7 @@ export default function WhiteboardScreen() {
   const resizeCorner = useRef(0);
 
   const dotTapGesture = Gesture.Tap().enabled(activeTool !== 'pan').onEnd((e) => runOnJS(onDrawTap)(e.x, e.y));
-  const drawGesture = Gesture.Pan().minPointers(1).maxPointers(1).enabled(activeTool !== 'pan').onBegin((e) => runOnJS(onDrawStart)(e.x, e.y)).onUpdate((e) => runOnJS(onDrawUpdate)(e.x, e.y)).onFinalize(() => runOnJS(onDrawFinalize)());
+  const drawGesture = Gesture.Pan().minPointers(1).maxPointers(1).enabled(activeTool !== 'pan').onStart((e) => runOnJS(onDrawStart)(e.x, e.y)).onUpdate((e) => runOnJS(onDrawUpdate)(e.x, e.y)).onFinalize(() => runOnJS(onDrawFinalize)());
   const lastTX = useSharedValue(0); const lastTY = useSharedValue(0);
   const handGesture = Gesture.Pan().minPointers(1).maxPointers(1).enabled(activeTool === 'pan').onBegin((e) => runOnJS(onPanStart)(e.x, e.y)).onUpdate((e) => {
     const dx = e.translationX - lastTX.value; const dy = e.translationY - lastTY.value;
