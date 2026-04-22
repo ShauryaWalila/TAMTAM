@@ -34,6 +34,16 @@ const PRESET_PALETTE = [
   '#E5E5EA', '#000000', '#FFFFFF', '#FFD700', '#FF69B4'
 ];
 
+const isLightColor = (hexColor: string) => {
+  if (!hexColor || hexColor.length < 7) return false;
+  const hex = hexColor.replace('#', '');
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+  return brightness > 186;
+};
+
 export default function SettingsScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
@@ -308,7 +318,10 @@ export default function SettingsScreen() {
               <View style={styles.colorGrid}>
                 {PRESET_PALETTE.map(c => <TouchableOpacity key={c} onPress={() => setCatForm({...catForm, color: c})} style={[styles.colorChip, { backgroundColor: c }, catForm.color === c && { borderWidth: 2, borderColor: theme.text }]} />)}
               </View>
-              <TouchableOpacity onPress={saveChillCategory} style={[styles.addBtnFull, { backgroundColor: catForm.color }]}><Save size={20} color="white" /><Text style={styles.addBtnText}>Save Space</Text></TouchableOpacity>
+              <TouchableOpacity onPress={saveChillCategory} style={[styles.addBtnFull, { backgroundColor: catForm.color }]}>
+                <Save size={20} color={isLightColor(catForm.color) ? '#000' : 'white'} />
+                <Text style={[styles.addBtnText, { color: isLightColor(catForm.color) ? '#000' : 'white' }]}>Save Space</Text>
+              </TouchableOpacity>
             </View>
             <FlatList data={chillCats} renderItem={({item}) => (
               <View style={[styles.catItem, { backgroundColor: theme.card }]}>
