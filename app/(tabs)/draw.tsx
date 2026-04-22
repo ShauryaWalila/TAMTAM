@@ -62,6 +62,8 @@ export default function DrawScreen() {
   const translateY = useSharedValue(0);
   const savedTranslateX = useSharedValue(0);
   const savedTranslateY = useSharedValue(0);
+  const focalX = useSharedValue(0);
+  const focalY = useSharedValue(0);
 
   useEffect(() => {
     const init = async () => {
@@ -103,7 +105,7 @@ export default function DrawScreen() {
     const adjY = (y - translateY.value) / scale.value;
     
     newPath.moveTo(adjX, adjY);
-    newPath.lineTo(adjX + 0.1, adjY + 0.1); // DOT PROTECTION
+    newPath.lineTo(adjX + 0.1, adjY + 0.1); 
 
     const pathData = { 
       id, path: newPath, 
@@ -127,10 +129,11 @@ export default function DrawScreen() {
 
   const onEnd = () => {
     if (activePathRef.current) {
-      const finished = { ...activePathRef.current, path: activePathRef.current.path.copy() };
+      const pathCopy = activePathRef.current.path.copy();
+      const finished = { ...activePathRef.current, path: pathCopy };
       setPaths(prev => [...prev, finished]);
       activePathRef.current = null;
-      setCurrentLocalPath(null);
+      setTimeout(() => setCurrentLocalPath(null), 16);
     }
   };
 
@@ -161,19 +164,21 @@ export default function DrawScreen() {
       savedTranslateY.value = translateY.value;
     });
 
-  const multiTouchGesture = Gesture.Pinch()
+  const pinchGesture = Gesture.Pinch()
     .onStart((e) => {
       savedScale.value = scale.value;
       savedTranslateX.value = translateX.value;
       savedTranslateY.value = translateY.value;
+      focalX.value = e.focalX;
+      focalY.value = e.focalY;
     })
     .onUpdate((e) => {
       const newScale = Math.max(0.1, Math.min(savedScale.value * e.scale, 15));
       const s = newScale / savedScale.value;
       
-      // Pro Focal Math: Zooms relative to the center of your fingers
-      translateX.value = e.focalX - (e.focalX - savedTranslateX.value) * s;
-      translateY.value = e.focalY - (e.focalY - savedTranslateY.value) * s;
+      // Pro Focal Math: Stable zoom into center of fingers
+      translateX.value = focalX.value - (focalX.value - savedTranslateX.value) * s;
+      translateY.value = focalY.value - (focalY.value - savedTranslateY.value) * s;
       
       scale.value = newScale;
       runOnJS(setZoomText)(`${Math.round(newScale * 100)}%`);
@@ -184,8 +189,9 @@ export default function DrawScreen() {
       savedTranslateY.value = translateY.value;
     });
 
-  const twoFingerPan = Gesture.Pan()
-    .minPointers(2)
+  const threeFingerPan = Gesture.Pan()
+    .minPointers(3)
+    .maxPointers(3)
     .onUpdate((e) => {
       translateX.value = savedTranslateX.value + e.translationX;
       translateY.value = savedTranslateY.value + e.translationY;
@@ -193,16 +199,23 @@ export default function DrawScreen() {
     .onEnd(() => {
       savedTranslateX.value = translateX.value;
       savedTranslateY.value = translateY.value;
+    })
+    .onFinalize(() => {
+      translateX.value = withSpring(translateX.value, { damping: 20, stiffness: 90 });
+      translateY.value = withSpring(translateY.value, { damping: 20, stiffness: 90 });
+      savedTranslateX.value = translateX.value;
+      savedTranslateY.value = translateY.value;
     });
 
   const composedGesture = Gesture.Simultaneous(
     Gesture.Exclusive(drawGesture, tapGesture, panGesture),
-    Gesture.Simultaneous(multiTouchGesture, twoFingerPan)
+    pinchGesture,
+    threeFingerPan
   );
 
   const animatedTransform = useDerivedValue(() => [{ translateX: translateX.value }, { translateY: translateY.value }, { scale: scale.value }]);
 
-  // 🌈 Color Spectrum
+  // 🌈 Color Spectrum Logic stays same...
   const pointerX = useSharedValue(PICKER_WIDTH * 0.8);
   const onHueSelect = (x: number) => {
     const progress = Math.max(0, Math.min(x / PICKER_WIDTH, 1));
@@ -236,7 +249,6 @@ export default function DrawScreen() {
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#000' }}>
       <View style={{ flex: 1, paddingTop: insets.top }}>
-        {/* Header */}
         <View style={styles.header}>
           <View><Text style={[styles.title, { color: '#FFF' }]}>Sketchbook</Text><View style={styles.statusRow}><ZoomIn size={12} color="#888" /><Text style={styles.zoomLabel}>{zoomText}</Text></View></View>
           <View style={styles.headerActions}>
@@ -245,7 +257,6 @@ export default function DrawScreen() {
           </View>
         </View>
 
-        {/* Infinite Canvas */}
         <View style={styles.canvasContainer}>
           <GestureDetector gesture={composedGesture}>
             <Canvas ref={canvasRef} style={StyleSheet.absoluteFill}>
@@ -260,7 +271,6 @@ export default function DrawScreen() {
           </GestureDetector>
         </View>
 
-        {/* Toolbar */}
         <View style={[styles.mainDock, { bottom: insets.bottom + 20 }]}>
           <BlurView intensity={90} tint="dark" style={styles.dockBlur}>
             <TouchableOpacity onPress={() => setActiveTool('pen')} style={[styles.tool, activeTool === 'pen' && styles.activeTool]}><Pencil size={22} color={activeTool === 'pen' ? theme.tint : "#AAA"} /></TouchableOpacity>
@@ -275,7 +285,6 @@ export default function DrawScreen() {
           </BlurView>
         </View>
 
-        {/* Modals (Color Picker, Settings, History) - Logic stays same */}
         <Modal visible={showPicker !== 'none'} transparent animationType="fade">
           <Pressable style={styles.modalOverlay} onPress={() => setShowPicker('none')}>
             <MotiView from={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={styles.spectrumCard}>
