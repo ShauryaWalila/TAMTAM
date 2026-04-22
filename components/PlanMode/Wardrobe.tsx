@@ -12,7 +12,7 @@ import { supabase } from '@/lib/supabase';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const HORIZONTAL_PADDING = 20;
 const GRID_GAP = 12;
 const CARD_WIDTH = (SCREEN_WIDTH - (HORIZONTAL_PADDING * 2) - GRID_GAP) / 2;
@@ -60,7 +60,6 @@ export default function Wardrobe({ userId, tripId, isSettingsMode, onClose, onDr
   const bunchScale = useSharedValue(1);
   const isArmed = useSharedValue(0);
   const isDragging = useSharedValue(0);
-  const [isDraggingBunch, setIsDraggingBunch] = useState(false);
 
   useEffect(() => {
     fetchWardrobe();
@@ -165,13 +164,12 @@ export default function Wardrobe({ userId, tripId, isSettingsMode, onClose, onDr
     .onBegin(() => {
       isDragging.value = withSpring(1);
       bunchScale.value = withSpring(1.15);
-      runOnJS(setIsDraggingBunch)(true);
       if (onDragStart) runOnJS(onDragStart)();
     })
     .onUpdate((event) => {
       dragX.value = event.translationX;
       dragY.value = event.translationY;
-      const threshold = SCREEN_WIDTH * 0.25;
+      const threshold = SCREEN_WIDTH * 0.2;
       if (event.translationX > threshold) {
         if (isArmed.value === 0) {
           isArmed.value = withSpring(1);
@@ -185,27 +183,27 @@ export default function Wardrobe({ userId, tripId, isSettingsMode, onClose, onDr
       }
     })
     .onEnd((event) => {
-      const threshold = SCREEN_WIDTH * 0.25;
+      const threshold = SCREEN_WIDTH * 0.2;
       if (event.translationX > threshold) runOnJS(handleHangSelected)();
       dragX.value = withSpring(0);
       dragY.value = withSpring(0);
       bunchScale.value = withSpring(1);
       isArmed.value = withSpring(0);
       isDragging.value = withSpring(0);
-      runOnJS(setIsDraggingBunch)(false);
       if (onDragEnd) runOnJS(onDragEnd)();
     });
 
   const animatedBunchStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: dragX.value }, { translateY: dragY.value }, { scale: bunchScale.value }, { rotate: `${dragX.value * 0.05}deg` }],
+    transform: [{ translateX: dragX.value }, { translateY: dragY.value }, { scale: bunchScale.value }],
     backgroundColor: isArmed.value ? '#34C759' : theme.tint,
-    opacity: (selectedIds.length > 0 && !isSettingsMode) ? 1 : 0,
     elevation: isDragging.value ? 25 : 15,
   }));
 
-  const dropZoneStyle = useAnimatedStyle(() => ({
-    opacity: withSpring(isDragging.value ? 0.6 : 0),
-    transform: [{ scale: withSpring(isArmed.value ? 1.1 : 1) }],
+  const sidebarStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: withSpring(isDragging.value ? 0 : 100) }],
+    opacity: withSpring(isDragging.value ? 1 : 0),
+    backgroundColor: isArmed.value ? 'rgba(52, 199, 89, 0.2)' : 'rgba(0,0,0,0.05)',
+    borderColor: isArmed.value ? '#34C759' : 'rgba(0,0,0,0.1)',
   }));
 
   return (
@@ -230,26 +228,6 @@ export default function Wardrobe({ userId, tripId, isSettingsMode, onClose, onDr
             )}
           </View>
         </View>
-
-        {/* BUNCH DRAG OVERLAY */}
-        {!isSettingsMode && (
-          <AnimatePresence>
-            {selectedIds.length > 0 && (
-              <View style={styles.bunchWrapper} pointerEvents="none">
-                <Animated.View style={[styles.dropZone, dropZoneStyle]}>
-                  <ChevronRight size={32} color="#34C759" />
-                  <Shirt size={48} color="#34C759" opacity={0.3} />
-                </Animated.View>
-                <GestureDetector gesture={panGesture}>
-                  <Animated.View style={[styles.bunchContainer, animatedBunchStyle]} pointerEvents="auto">
-                    <Layers size={24} color="white" />
-                    <Text style={styles.bunchCount}>{selectedIds.length}</Text>
-                  </Animated.View>
-                </GestureDetector>
-              </View>
-            )}
-          </AnimatePresence>
-        )}
 
         {loading && items.length === 0 ? (
           <View style={styles.centered}><ActivityIndicator color={theme.tint} /></View>
@@ -308,7 +286,27 @@ export default function Wardrobe({ userId, tripId, isSettingsMode, onClose, onDr
           </ScrollView>
         )}
 
-        {/* MODALS REMAIN UNCHANGED */}
+        {/* 📥 DRAG & DROP UI */}
+        {!isSettingsMode && selectedIds.length > 0 && (
+          <View style={styles.dragOverlay} pointerEvents="box-none">
+            {/* Sidebar that appears on drag */}
+            <Animated.View style={[styles.rightSidebar, sidebarStyle]}>
+              <ChevronRight size={32} color={theme.tint} />
+              <Image source={HANGER_ICON} style={styles.sidebarIcon} />
+              <Text style={styles.sidebarLabel}>HANG</Text>
+            </Animated.View>
+
+            {/* Draggable Bunch Button */}
+            <GestureDetector gesture={panGesture}>
+              <Animated.View style={[styles.bunchButton, animatedBunchStyle]}>
+                <Layers size={24} color="white" />
+                <Text style={styles.bunchText}>{selectedIds.length}</Text>
+              </Animated.View>
+            </GestureDetector>
+          </View>
+        )}
+
+        {/* MODALS */}
         <Modal visible={!!viewingItem} animationType="fade" transparent>
           <View style={styles.modalOverlay}>
             <View style={styles.viewModalContent}>
@@ -355,7 +353,7 @@ const styles = StyleSheet.create({
   addCircle: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', elevation: 4 },
   closeBtnCircle: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  listPadding: { paddingHorizontal: HORIZONTAL_PADDING, paddingBottom: 100 },
+  listPadding: { paddingHorizontal: HORIZONTAL_PADDING, paddingBottom: 120 },
   categorySection: { marginBottom: 10 },
   categoryHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
   catLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -389,8 +387,10 @@ const styles = StyleSheet.create({
   saveBtnText: { color: 'white', fontSize: 18, fontWeight: '900' },
   deleteBtnFull: { height: 50, borderRadius: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: '#FFF', borderWidth: 1, borderColor: '#FF3B30' },
   deleteText: { color: '#FF3B30', fontSize: 14, fontWeight: '800' },
-  bunchWrapper: { position: 'absolute', bottom: 40, left: 0, right: 0, height: 150, alignItems: 'center', zIndex: 1000 },    
-  bunchContainer: { width: 80, height: 80, borderRadius: 40, justifyContent: 'center', alignItems: 'center', elevation: 20, shadowColor: '#000', shadowOpacity: 0.4, shadowRadius: 20 },
-  bunchCount: { color: 'white', fontSize: 18, fontWeight: '900', marginTop: 2 },
-  dropZone: { position: 'absolute', right: 30, width: 100, height: 100, borderRadius: 50, borderStyle: 'dashed', borderWidth: 3, borderColor: '#34C759', justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(52, 199, 89, 0.05)' },
+  dragOverlay: { position: 'absolute', bottom: 40, left: 0, right: 0, height: 120, alignItems: 'center', zIndex: 5000 },
+  bunchButton: { width: 80, height: 80, borderRadius: 40, justifyContent: 'center', alignItems: 'center', elevation: 20, shadowColor: '#000', shadowOpacity: 0.4, shadowRadius: 20 },
+  bunchText: { color: 'white', fontSize: 18, fontWeight: '900', marginTop: 2 },
+  rightSidebar: { position: 'absolute', right: 0, top: -200, width: 90, height: 400, borderTopLeftRadius: 45, borderBottomLeftRadius: 45, borderLeftWidth: 4, justifyContent: 'center', alignItems: 'center' },
+  sidebarIcon: { width: 35, height: 35, tintColor: '#34C759', resizeMode: 'contain', marginVertical: 10 },
+  sidebarLabel: { fontSize: 10, fontWeight: '900', color: '#34C759', letterSpacing: 1 }
 });
