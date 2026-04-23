@@ -20,6 +20,8 @@ import Wardrobe from '@/components/PlanMode/Wardrobe';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
 
+import * as Haptics from 'expo-haptics';
+
 const CHILL_COLORS = [
   { label: 'Sky', main: '#5AC8FA', bg: 'rgba(90, 200, 250, 0.15)' },
   { label: 'Rose', main: '#FF2D55', bg: 'rgba(255, 45, 85, 0.15)' },
@@ -247,6 +249,35 @@ export default function SettingsScreen() {
     });
   };
 
+  // Hidden Diary State
+  const [secretTapCount, setSecretTapCount] = useState(0);
+  const [isPasscodeVisible, setIsPasscodeVisible] = useState(false);
+  const [passcode, setPasscode] = useState('');
+
+  const handleSecretTap = () => {
+    const newCount = secretTapCount + 1;
+    if (newCount >= 5) {
+      setSecretTapCount(0);
+      setIsPasscodeVisible(true);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    } else {
+      setSecretTapCount(newCount);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  };
+
+  const checkPasscode = (code: string) => {
+    setPasscode(code);
+    if (code === '102611') {
+      setIsPasscodeVisible(false);
+      setPasscode('');
+      router.push('/diary');
+    } else if (code.length >= 6) {
+      Alert.alert('Incorrect PIN', 'The vault remains locked.');
+      setPasscode('');
+    }
+  };
+
   return (
     <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 120 }]} showsVerticalScrollIndicator={false}>
@@ -285,7 +316,9 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.tint }]}>App Settings</Text>
+          <TouchableOpacity activeOpacity={1} onPress={handleSecretTap}>
+            <Text style={[styles.sectionTitle, { color: theme.tint }]}>App Settings</Text>
+          </TouchableOpacity>
           <SettingsItem icon={<Coffee color={theme.text} size={22} />} label="Chill Zone Categories" theme={theme} onPress={() => setIsChillSettingsVisible(true)} />
           <SettingsItem icon={<Tags color={theme.text} size={22} />} label="Wardrobe Categories" theme={theme} onPress={() => setIsWardrobeSettingsVisible(true)} />
           <SettingsItem icon={<Briefcase color={theme.text} size={22} />} label="Master Wardrobe" theme={theme} onPress={() => setIsWardrobeVisible(true)} />
@@ -293,6 +326,42 @@ export default function SettingsScreen() {
           <SettingsItem icon={<LogOut color="#FF3B30" size={22} />} label="Logout" theme={theme} onPress={() => router.replace('/auth/login')} labelStyle={{ color: "#FF3B30" }} showChevron={false} />
         </View>
       </ScrollView>
+
+      {/* 🔐 PASSCODE MODAL */}
+      <Modal visible={isPasscodeVisible} transparent animationType="fade">
+        <BlurView intensity={80} tint="dark" style={styles.pickerOverlayCenter}>
+          <MotiView from={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={[styles.pickerCard, { backgroundColor: '#1A1A1A' }]}>
+            <Text style={{ color: 'white', fontSize: 20, fontWeight: '900', textAlign: 'center', marginBottom: 10 }}>Private Vault</Text>
+            <Text style={{ color: '#888', fontSize: 12, textAlign: 'center', marginBottom: 25 }}>Enter 6-digit PIN to access Diary</Text>
+            
+            <TextInput
+              style={{ 
+                backgroundColor: '#333', 
+                color: 'white', 
+                height: 60, 
+                borderRadius: 15, 
+                textAlign: 'center', 
+                fontSize: 32, 
+                fontWeight: '900',
+                letterSpacing: 10
+              }}
+              keyboardType="number-pad"
+              maxLength={6}
+              secureTextEntry
+              autoFocus
+              value={passcode}
+              onChangeText={checkPasscode}
+            />
+
+            <TouchableOpacity 
+              style={[styles.doneBtn, { backgroundColor: '#444', marginTop: 20 }]} 
+              onPress={() => { setIsPasscodeVisible(false); setPasscode(''); }}
+            >
+              <Text style={styles.doneBtnText}>Cancel</Text>
+            </TouchableOpacity>
+          </MotiView>
+        </BlurView>
+      </Modal>
 
       {/* ❄️ CHILL ZONE MODAL */}
       <Modal visible={isChillSettingsVisible} animationType="slide" transparent>

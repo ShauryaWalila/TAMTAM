@@ -184,6 +184,7 @@ function RootLayoutNav() {
         <Stack.Screen name="auth/login" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="study-hub" options={{ headerShown: false }} />
+        <Stack.Screen name="diary" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
     </ThemeProvider>
