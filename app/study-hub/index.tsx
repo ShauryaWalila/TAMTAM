@@ -107,6 +107,19 @@ export default function StudyHubDashboard() {
 
   const refreshFromSQLite = () => {
     try {
+      // 🧠 SMART CLEANUP: Auto-delete exams that have already passed
+      const today = startOfToday();
+      const allExams = db.getAllSync(`SELECT id, exam_date FROM study_exams`) as any[];
+      allExams.forEach(e => {
+        const examDate = startOfDay(new Date(e.exam_date));
+        if (isAfter(today, examDate)) {
+          db.runSync(`DELETE FROM study_exams WHERE id = ?`, [e.id]);
+          db.runSync(`DELETE FROM calendar_events WHERE id = ?`, [e.id]);
+          queueSyncOperation('study_exams', e.id, 'DELETE', {});
+          queueSyncOperation('calendar_events', e.id, 'DELETE', {});
+        }
+      });
+
       setDecks(db.getAllSync(`SELECT * FROM study_decks ORDER BY created_at DESC`) || []);
       setWhiteboards(db.getAllSync(`SELECT * FROM study_whiteboards ORDER BY updated_at DESC`) || []);
       setExams(db.getAllSync(`SELECT * FROM study_exams ORDER BY exam_date ASC`) || []);
