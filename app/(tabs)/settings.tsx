@@ -3,7 +3,7 @@ import { StyleSheet, ScrollView, Pressable, Switch, View, Image, ActivityIndicat
 import { Text, View as ThemedView } from '@/components/Themed';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
-import { User, Bell, Shield, CircleHelp, LogOut, ChevronRight, Camera, MessageSquareHeart, HeartHandshake, Tags, Plus, X, Trash2, Briefcase, Wrench, MessageCircle, Clock, TrendingUp, Coffee, Palette, Image as ImageIcon, Edit3, Save, Check, Brain } from 'lucide-react-native';
+import { User, Bell, Shield, CircleHelp, LogOut, ChevronRight, Camera, MessageSquareHeart, HeartHandshake, Tags, Plus, X, Trash2, Briefcase, Wrench, MessageCircle, Clock, TrendingUp, Coffee, Palette, Image as ImageIcon, Edit3, Save, Check, Brain, Layout } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '@/lib/supabase';
 import * as SecureStore from 'expo-secure-store';
@@ -84,6 +84,22 @@ export default function SettingsScreen() {
     fetchChillCategories();
     fetchWardrobeCategories();
   }, []);
+
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  useEffect(() => {
+    // Reset navigation lock when screen focuses
+    const sub = DeviceEventEmitter.addListener('focus-settings', () => setIsNavigating(false));
+    return () => sub.remove();
+  }, []);
+
+  const safePush = (path: any) => {
+    if (isNavigating) return;
+    setIsNavigating(true);
+    router.push(path);
+    // Safety timeout in case navigation fails
+    setTimeout(() => setIsNavigating(false), 2000);
+  };
 
   const fetchProfile = async () => {
     const name = await SecureStore.getItemAsync('user_name');
@@ -304,13 +320,25 @@ export default function SettingsScreen() {
             icon={<MessageSquareHeart color={theme.text} size={22} />} 
             label="Message of the Moment" 
             theme={theme} 
-            onPress={() => router.push('/motm')}
+            onPress={() => safePush('/motm')}
           />
           <SettingsItem 
             icon={<HeartHandshake color={theme.text} size={22} />} 
             label="Next Meet" 
             theme={theme} 
-            onPress={() => router.push('/next-meet')}
+            onPress={() => safePush('/next-meet')}
+          />
+          <SettingsItem 
+            icon={<MessageCircle color={theme.text} size={22} />} 
+            label="Touch Partner" 
+            theme={theme} 
+            onPress={() => safePush('/touch-partner')}
+          />
+          <SettingsItem 
+            icon={<Layout color={theme.text} size={22} />} 
+            label="Widget Previews" 
+            theme={theme} 
+            onPress={() => safePush('/widget-preview')}
           />
           <SettingsItem icon={<Bell color={theme.text} size={22} />} label="Notifications" theme={theme} right={<Switch value={isNotificationsEnabled} onValueChange={toggleNotifications} trackColor={{ true: theme.tint }} />} showChevron={false} />
         </View>

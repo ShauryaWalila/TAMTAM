@@ -20,6 +20,9 @@ import { syncAllNotifications } from '@/lib/notifications';
 import { initLocationSystem } from '@/lib/location';
 import { initDB } from '@/lib/db';
 import { startSyncEngine, initialFullSync } from '@/lib/syncEngine';
+import { updateDrawingWidget, updateTouchWidget } from '@/lib/widget';
+import { syncDistanceWidget, syncMeetingWidget, syncRoutineWidget } from '@/lib/widgetSync';
+import * as SecureStore from 'expo-secure-store';
 
 const { width } = Dimensions.get('window');
 
@@ -84,7 +87,77 @@ export default function RootLayout() {
 
     // 4. SYNC ALL NOTIFICATIONS (Reminders, Routines, Calendar)
     await syncAllNotifications();
+
+    // 5. INITIAL WIDGET SYNC
+    syncMeetingWidget();
+    syncRoutineWidget();
+    syncDistanceWidget();
   };
+
+  useEffect(() => {
+    let diaryChannel: any;
+    let momentsChannel: any;
+    let postsChannel: any;
+
+    const setupWidgetSubscription = async () => {
+      const user = await SecureStore.getItemAsync('user_name');
+      if (!user) return;
+
+      const partnerId = user.toLowerCase() === 'love' ? 'pratishth' : 'love';
+
+      // 1. Diary Updates
+      diaryChannel = supabase
+        .channel('diary_widget_updates')
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'user_diary', filter: `user_id=eq.${partnerId}` },
+          (payload) => {
+            const entry = payload.new;
+            // updateTamtamWidget(`Partner: ${entry.mood} - ${entry.content.substring(0, 20)}...`);
+          }
+        )
+        .subscribe();
+
+      // 2. Moments (Touches)
+      momentsChannel = supabase
+        .channel('moments_widget_updates')
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'moments', filter: `user_id=eq.${partnerId}` },
+          (payload) => {
+            const moment = payload.new;
+            if (moment.message === 'sent a touch') {
+              updateTouchWidget(`${partnerId === 'love' ? 'Supriya' : 'Pratishth'} touched you! ❤️`);
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            }
+          }
+        )
+        .subscribe();
+
+      // 3. Posts (Drawings)
+      postsChannel = supabase
+        .channel('posts_widget_updates')
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'posts', filter: `user_id=eq.${partnerId}` },
+          (payload) => {
+            const post = payload.new;
+            if (post.type === 'draw') {
+              updateDrawingWidget(post.content);
+            }
+          }
+        )
+        .subscribe();
+    };
+
+    setupWidgetSubscription();
+
+    return () => {
+      if (diaryChannel) supabase.removeChannel(diaryChannel);
+      if (momentsChannel) supabase.removeChannel(momentsChannel);
+      if (postsChannel) supabase.removeChannel(postsChannel);
+    };
+  }, []);
 
   useEffect(() => {
     const receivedSub = Notifications.addNotificationReceivedListener(notification => {
@@ -118,13 +191,11 @@ export default function RootLayout() {
     };
   }, []);
 
-  if (!loaded) return null;
-
   const getAlarmIcon = () => {
     if (!activeAlarm) return <Bell size={40} color="white" fill="white" />;
     switch (activeAlarm.type) {
       case 'routine': return <Clock size={40} color="white" />;
-      case 'calendar': return <MapPin size={40} color="white" />; // Calendar usually has places
+      case 'calendar': return <MapPin size={40} color="white" />;
       case 'memory':
       case 'wishlist': return <MapPin size={40} color="white" fill="white" />;
       default: return <Bell size={40} color="white" fill="white" />;
@@ -141,6 +212,8 @@ export default function RootLayout() {
       default: return '#5856D6';
     }
   };
+
+  if (!loaded) return null;
 
   return (
     <SafeAreaProvider>
@@ -185,6 +258,8 @@ function RootLayoutNav() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="study-hub" options={{ headerShown: false }} />
         <Stack.Screen name="diary" options={{ headerShown: false }} />
+        <Stack.Screen name="touch-partner" options={{ presentation: 'modal', headerShown: false }} />
+        <Stack.Screen name="widget-preview" options={{ presentation: 'modal', headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
     </ThemeProvider>

@@ -10,6 +10,7 @@ import * as Haptics from 'expo-haptics';
 import * as SecureStore from 'expo-secure-store';
 import { format } from 'date-fns';
 import { supabase } from '@/lib/supabase';
+import { updateTamtamWidget } from '@/lib/widget';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
 
@@ -83,6 +84,7 @@ export default function DiaryScreen() {
 
     if (!error) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      updateTamtamWidget(`Mood: ${selectedMood} - ${content.substring(0, 20)}...`);
       setIsEditing(false);
       setContent('');
       setCurrentEntry(null);

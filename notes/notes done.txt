@@ -17,3 +17,10 @@ goal
 games asking way
 suggestions
 tasks & reminders(location, time and ddate based reminders)
+exam mode(
+    all topics checklist with options of done, not done, touched, revised. sub categories of practcal and theory.
+    nap time
+    speech to text
+    speech to text confirmation for revision
+    something else for revision
+)

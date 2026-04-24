@@ -1386,3 +1386,76 @@ ALTER TABLE study_cards
 
 
 
+CREATE TABLE IF NOT EXISTS public.user_diary (
+         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+         user_id TEXT NOT NULL,          -- Stores 'pratishth' or 'love'
+         content TEXT NOT NULL,         -- The diary entry
+         mood TEXT,                     -- Mood tag (happy, loved, etc.)
+         created_at TIMESTAMPTZ DEFAULT now(),
+         updated_at TIMESTAMPTZ DEFAULT now()
+     );
+   
+    -- 2. Enable Row Level Security (RLS)
+    ALTER TABLE public.user_diary ENABLE ROW LEVEL SECURITY;
+   
+    -- 3. Create a policy to allow users to see and manage only their own entries
+    -- We use the 'user_id' column which matches the local 'username' in your app
+    CREATE POLICY "Users can manage their own secret diary"
+    ON public.user_diary
+    FOR ALL
+    USING (true)
+    WITH CHECK (true);
+   
+    -- 4. (Optional) Add an index for faster searching if you write many entries
+    CREATE INDEX IF NOT EXISTS idx_user_diary_user_id ON public.user_diary(user_id);
+
+
+
+
+
+
+
+
+    create extension if not exists vector;
+   
+       alter table study_cards
+    add column embedding vector(384);
+
+
+
+
+
+create or replace function match_study_cards (
+     query_embedding vector(384),
+     match_threshold float,
+     match_count int
+   )
+   returns table (
+     id text,
+     front_content text,
+     back_content text,
+      similarity float
+    )
+    language plpgsql
+    as $$
+    begin
+      return query
+      select
+        study_cards.id,
+        study_cards.front_content,
+        study_cards.back_content,
+        1 - (study_cards.embedding <=> query_embedding) as similarity
+      from study_cards
+      where 1 - (study_cards.embedding <=> query_embedding) > match_threshold
+      order by similarity desc
+      limit match_count;
+    end;
+    $$;
+
+
+
+
+
+
+
+    

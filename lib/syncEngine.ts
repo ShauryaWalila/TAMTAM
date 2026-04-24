@@ -1,26 +1,30 @@
 import NetInfo from '@react-native-community/netinfo';
 import { supabase } from './supabase';
 import { db, getPendingSyncs, removeSyncOperation, clearAllData } from './db';
+import { processPendingAIQueries } from './aiEngine';
+import * as SecureStore from 'expo-secure-store';
 
 let isSyncing = false;
 
+/**
+ * HYBRID SYNC ENGINE
+ * Automatically detects internet connection and flushes the SQLite queue to Supabase.
+ */
 export const startSyncEngine = () => {
-  console.log('Starting Sync Engine...');
+  console.log('🔄 Sync Engine Started...');
   
-  // Listen for network changes
+  // Watch for connection changes
   NetInfo.addEventListener(state => {
-    console.log('Network State Changed:', state.isConnected ? 'Online' : 'Offline');
     if (state.isConnected && state.isInternetReachable) {
+      console.log('🌐 Internet Restored! Flushing Queue...');
       processSyncQueue();
     }
   });
 
-  // Attempt initial sync on startup if online
-  NetInfo.fetch().then(state => {
-    if (state.isConnected) {
-      processSyncQueue();
-    }
-  });
+  // Periodic check every 60 seconds just in case
+  setInterval(() => {
+    processSyncQueue();
+  }, 60000);
 };
 
 export const initialFullSync = async (shouldClear = false) => {
@@ -133,63 +137,45 @@ export const initialFullSync = async (shouldClear = false) => {
 
 export const processSyncQueue = async () => {
   if (isSyncing) return;
+  
+  const state = await NetInfo.fetch();
+  if (!state.isConnected) return;
+
+  // 🤖 Process Pending AI Questions first
+  const user = await SecureStore.getItemAsync('user_name');
+  if (user) await processPendingAIQueries(user.toLowerCase());
+
+  const pending = getPendingSyncs();
+  if (pending.length === 0) return;
+
   isSyncing = true;
+  console.log(`📤 Syncing ${pending.length} operations...`);
 
-  try {
-    const pendingOps: any[] = getPendingSyncs();
-    if (pendingOps.length === 0) {
-      isSyncing = false;
-      return;
-    }
-
-    console.log(`Processing ${pendingOps.length} pending sync operations...`);
-
-    for (const op of pendingOps) {
+  for (const op of pending) {
+    try {
       const payload = JSON.parse(op.payload);
-      
-      try {
-        let error;
+      let error;
 
-        if (op.operation === 'UPDATE') {
-          const { error: err } = await supabase.from(op.table_name).update(payload).eq('id', op.record_id);
-          error = err;
-        } else if (op.operation === 'INSERT') {
-          // Use upsert to handle existing records and unique constraints
-          // For moments, we prefer to conflict on user_id to ensure only one record exists per user
-          const options = op.table_name === 'moments' ? { onConflict: 'user_id' } : { onConflict: 'id' };
-          const { error: err } = await supabase.from(op.table_name).upsert(payload, options);
-          error = err;
-        } else if (op.operation === 'DELETE') {
-          const { error: err } = await supabase.from(op.table_name).delete().eq('id', op.record_id);
-          error = err;
-        }
-
-        if (!error) {
-          removeSyncOperation(op.id);
-          console.log(`Synced ${op.operation} on ${op.table_name} (${op.record_id})`);
-        } else {
-          console.error(`Failed to sync ${op.id} [${op.table_name}]:`, error.message);
-          
-          const isUnfixable = 
-            error.code === '23505' || // Duplicate key
-            error.code === 'PGRST116' || // Not found
-            error.code === '22P02' || // Invalid UUID syntax
-            error.message?.toLowerCase().includes('invalid input syntax for type uuid') ||
-            error.message?.toLowerCase().includes('not found');
-
-          if (isUnfixable) {
-            console.log(`Removing unfixable record ${op.id} from queue.`);
-            removeSyncOperation(op.id);
-          }
-        }
-      } catch (err) {
-        console.error('Network error during sync operation:', err);
-        break; 
+      if (op.operation === 'INSERT') {
+        const options = op.table_name === 'moments' ? { onConflict: 'user_id' } : { onConflict: 'id' };
+        ({ error } = await supabase.from(op.table_name).upsert(payload, options));
+      } else if (op.operation === 'UPDATE') {
+        ({ error } = await supabase.from(op.table_name).update(payload).eq('id', op.record_id));
+      } else if (op.operation === 'DELETE') {
+        ({ error } = await supabase.from(op.table_name).delete().eq('id', op.record_id));
       }
+
+      if (!error) {
+        removeSyncOperation(op.id);
+      } else {
+        console.error(`❌ Sync failed for ${op.table_name}:`, error.message);
+        // If it's a permanent error (like 404), we remove it to unblock queue
+        if (error.code === '23505' || error.code === 'PGRST116') removeSyncOperation(op.id);
+      }
+    } catch (err) {
+      console.error('Network error during sync:', err);
+      break; 
     }
-  } catch (error) {
-    console.error('Error processing sync queue:', error);
-  } finally {
-    isSyncing = false;
   }
+  isSyncing = false;
 };

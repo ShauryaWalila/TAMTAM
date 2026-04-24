@@ -10,6 +10,7 @@ import { MotiView, AnimatePresence } from 'moti';
 import { supabase } from '@/lib/supabase';
 import { db, queueSyncOperation, generateUUID } from '@/lib/db';
 import { processSyncQueue } from '@/lib/syncEngine';
+import { updateDrawingWidget } from '@/lib/widget';
 import * as SecureStore from 'expo-secure-store';
 import { formatDistanceToNow } from 'date-fns';
 import { BlurView } from 'expo-blur';
@@ -239,6 +240,7 @@ export default function DrawScreen() {
           [id, now, now, 'draw', base64, currentUserName || "user_1", JSON.stringify({ board_bg: boardBg }), '']);
         queueSyncOperation('posts', id, 'INSERT', { id, type: 'draw', content: base64, user_id: currentUserName || "user_1", created_at: now, updated_at: now, reactions: { board_bg: boardBg } });
         processSyncQueue();
+        updateDrawingWidget(base64);
         DeviceEventEmitter.emit('refresh-dashboard');
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setPaths([]); refreshFromSQLite(); setShowHistory(true);

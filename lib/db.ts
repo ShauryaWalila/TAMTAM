@@ -216,6 +216,18 @@ export const initDB = () => {
         created_at DATETIME
       );
 
+      -- ==========================================
+      -- AI OFFLINE QUEUE
+      -- ==========================================
+      CREATE TABLE IF NOT EXISTS study_ai_queries (
+        id TEXT PRIMARY KEY,
+        question TEXT NOT NULL,
+        answer TEXT,
+        status TEXT DEFAULT 'pending', -- 'pending', 'processing', 'completed'
+        user_id TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+
       -- Phase 4: Focus Sessions
       CREATE TABLE IF NOT EXISTS focus_sessions (
         id TEXT PRIMARY KEY,
@@ -257,6 +269,49 @@ export const initDB = () => {
         order_index INTEGER DEFAULT 0,
         created_at DATETIME
       );
+
+      -- ==========================================
+      -- FTS5: ULTRA-FAST LOCAL SEARCH ENGINE
+      -- ==========================================
+      CREATE VIRTUAL TABLE IF NOT EXISTS study_cards_fts USING fts5(
+        id UNINDEXED,
+        front_content,
+        back_content,
+        deck_id UNINDEXED
+      );
+
+      CREATE VIRTUAL TABLE IF NOT EXISTS study_brain_dump_fts USING fts5(
+        id UNINDEXED,
+        content
+      );
+
+      -- Triggers to auto-sync FTS tables (study_cards)
+      CREATE TRIGGER IF NOT EXISTS study_cards_ai AFTER INSERT ON study_cards BEGIN
+        INSERT INTO study_cards_fts(rowid, id, front_content, back_content, deck_id) 
+        VALUES (new.rowid, new.id, new.front_content, new.back_content, new.deck_id);
+      END;
+      
+      CREATE TRIGGER IF NOT EXISTS study_cards_au AFTER UPDATE ON study_cards BEGIN
+        UPDATE study_cards_fts SET front_content = new.front_content, back_content = new.back_content 
+        WHERE id = new.id;
+      END;
+
+      CREATE TRIGGER IF NOT EXISTS study_cards_ad AFTER DELETE ON study_cards BEGIN
+        DELETE FROM study_cards_fts WHERE id = old.id;
+      END;
+
+      -- Triggers to auto-sync FTS tables (study_brain_dump)
+      CREATE TRIGGER IF NOT EXISTS study_brain_dump_ai AFTER INSERT ON study_brain_dump BEGIN
+        INSERT INTO study_brain_dump_fts(rowid, id, content) VALUES (new.rowid, new.id, new.content);
+      END;
+
+      CREATE TRIGGER IF NOT EXISTS study_brain_dump_au AFTER UPDATE ON study_brain_dump BEGIN
+        UPDATE study_brain_dump_fts SET content = new.content WHERE id = new.id;
+      END;
+
+      CREATE TRIGGER IF NOT EXISTS study_brain_dump_ad AFTER DELETE ON study_brain_dump BEGIN
+        DELETE FROM study_brain_dump_fts WHERE id = old.id;
+      END;
     `);
 
     `-- Local Migration: Add missing columns if they don't exist`

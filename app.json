@@ -54,7 +54,18 @@
       "@react-native-community/datetimepicker",
       "expo-location",
       "expo-notifications",
-      "expo-task-manager"
+      "expo-task-manager",
+      [
+        "@bittingz/expo-widgets",
+        {
+          "widgetsFolder": "widgets",
+          "ios": {
+            "appGroupIdentifier": "group.com.pratishth.ourlink",
+            "targetName": "TAMTAMWidget",
+            "bundleIdentifier": "com.pratishth.ourlink.widget"
+          }
+        }
+      ]
     ],
     "extra": {
       "eas": {
