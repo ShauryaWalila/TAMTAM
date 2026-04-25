@@ -1,14 +1,15 @@
 // components/Draw/DrawReplay.tsx
 // Replay-view of a recorded drawing. Reads the playback object stored on a
-// post's `reactions` JSON and animates strokes back in chronological order.
+// post's `reactions` JSON and animates strokes back as they were drawn —
+// each stroke grows from its first point to its last across the original
+// time window, so the receiver watches the drawing being made instead of
+// seeing each stroke pop in as a complete shape.
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Dimensions, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Text } from '@/components/Themed';
-import { Heart, RotateCcw } from 'lucide-react-native';
+import { Play, RotateCcw } from 'lucide-react-native';
 import { Canvas, Path, Skia, Group, Rect } from '@shopify/react-native-skia';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export type RecordedStroke = {
   id: string;
@@ -30,59 +31,40 @@ export type DrawPlayback = {
 type Props = {
   playback: DrawPlayback;
   boardBg: string;
-  // Width of the rendering surface; height is computed from the sender's
-  // aspect ratio so the replay looks the same as the sender drew it.
-  surfaceWidth: number;
+  surfaceWidth: number;   // square; height = surfaceWidth
   themeTint: string;
 };
 
 export default function DrawReplay({ playback, boardBg, surfaceWidth, themeTint }: Props) {
-  const aspect = playback.screen.h / Math.max(1, playback.screen.w);
-  const surfaceHeight = surfaceWidth * aspect;
-  const sx = surfaceWidth / playback.screen.w;
-  const sy = surfaceHeight / playback.screen.h;
+  // Square surface — matches the existing image-viewer layout. Fit the
+  // sender's drawing inside with a uniform scale + center offset so the
+  // aspect ratio is preserved without overflowing.
+  const surfaceSize = surfaceWidth;
+  const fit = Math.min(surfaceSize / playback.screen.w, surfaceSize / playback.screen.h);
+  const offsetX = (surfaceSize - playback.screen.w * fit) / 2;
+  const offsetY = (surfaceSize - playback.screen.h * fit) / 2;
 
-  // Pre-build full Skia paths (the static end state) so finished strokes don't
-  // need to be reconstructed every frame.
+  // Pre-build complete Skia paths so finished strokes render without
+  // being reconstructed every frame.
   const fullPaths = useMemo(() => {
-    return playback.strokes.map((s) => {
-      const p = Skia.Path.Make();
-      const pts = s.points;
-      if (pts.length > 0) {
-        p.moveTo(pts[0][0] * sx, pts[0][1] * sy);
-        for (let i = 1; i < pts.length; i++) {
-          p.lineTo(pts[i][0] * sx, pts[i][1] * sy);
-        }
-        if (pts.length === 1) {
-          p.lineTo(pts[0][0] * sx + 0.1, pts[0][1] * sy + 0.1);
-        }
-      }
-      return p;
-    });
-  }, [playback, sx, sy]);
+    return playback.strokes.map((s) => buildPath(s.points, fit, offsetX, offsetY, s.points.length));
+  }, [playback, fit, offsetX, offsetY]);
 
+  const [elapsed, setElapsed] = useState<number>(playback.duration_ms); // default = end state
   const [isPlaying, setIsPlaying] = useState(false);
-  const [shownStrokes, setShownStrokes] = useState<number[]>(
-    () => playback.strokes.map((_, i) => i) // default: show everything
-  );
   const playStartRef = useRef<number>(0);
 
   useEffect(() => {
     if (!isPlaying) return;
     let raf: number;
     const tick = () => {
-      const elapsed = Date.now() - playStartRef.current;
-      // Include any stroke whose start time has passed.
-      const visible: number[] = [];
-      for (let i = 0; i < playback.strokes.length; i++) {
-        if (playback.strokes[i].t_start <= elapsed) visible.push(i);
-      }
-      setShownStrokes(visible);
-      if (elapsed >= playback.duration_ms) {
-        setShownStrokes(playback.strokes.map((_, i) => i));
+      const e = Date.now() - playStartRef.current;
+      if (e >= playback.duration_ms) {
+        setElapsed(playback.duration_ms);
         setIsPlaying(false);
         return;
       }
+      setElapsed(e);
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
@@ -91,43 +73,87 @@ export default function DrawReplay({ playback, boardBg, surfaceWidth, themeTint 
 
   const startReplay = () => {
     playStartRef.current = Date.now();
-    setShownStrokes([]);
+    setElapsed(0);
     setIsPlaying(true);
   };
 
+  // Determine which strokes are visible right now and at what completion.
+  // Finished strokes use their pre-built path; the at-most-one in-progress
+  // stroke gets a fresh partial path each frame.
+  const rendered = useMemo(() => {
+    const out: { id: string; color: string; strokeWidth: number; isEraser: boolean; path: ReturnType<typeof Skia.Path.Make> }[] = [];
+    for (let i = 0; i < playback.strokes.length; i++) {
+      const s = playback.strokes[i];
+      if (elapsed < s.t_start) continue;
+      let p;
+      if (elapsed >= s.t_end) {
+        p = fullPaths[i];
+      } else {
+        const dur = Math.max(1, s.t_end - s.t_start);
+        const frac = (elapsed - s.t_start) / dur;
+        const n = Math.max(1, Math.floor(frac * s.points.length));
+        p = buildPath(s.points, fit, offsetX, offsetY, n);
+      }
+      out.push({
+        id: s.id,
+        color: s.color,
+        strokeWidth: Math.max(0.5, s.strokeWidth * fit),
+        isEraser: s.isEraser,
+        path: p,
+      });
+    }
+    return out;
+  }, [elapsed, playback, fullPaths, fit, offsetX, offsetY]);
+
   return (
     <View>
-      <Canvas style={{ width: surfaceWidth, height: surfaceHeight, backgroundColor: boardBg }}>
-        <Rect x={0} y={0} width={surfaceWidth} height={surfaceHeight} color={boardBg} />
+      <Canvas style={{ width: surfaceSize, height: surfaceSize, backgroundColor: boardBg }}>
+        <Rect x={0} y={0} width={surfaceSize} height={surfaceSize} color={boardBg} />
         <Group layer>
-          {shownStrokes.map((i) => {
-            const s = playback.strokes[i];
-            const p = fullPaths[i];
-            if (!p) return null;
-            return (
-              <Path
-                key={s.id}
-                path={p}
-                color={s.color}
-                style="stroke"
-                strokeWidth={s.strokeWidth * sx}
-                strokeCap="round"
-                strokeJoin="round"
-                blendMode={s.isEraser ? 'clear' : 'srcOver'}
-              />
-            );
-          })}
+          {rendered.map((r) => (
+            <Path
+              key={r.id}
+              path={r.path}
+              color={r.color}
+              style="stroke"
+              strokeWidth={r.strokeWidth}
+              strokeCap="round"
+              strokeJoin="round"
+              blendMode={r.isEraser ? 'clear' : 'srcOver'}
+            />
+          ))}
         </Group>
       </Canvas>
 
       <View style={styles.controls}>
-        <TouchableOpacity onPress={startReplay} disabled={isPlaying} style={[styles.btn, { backgroundColor: themeTint }]}>
-          {isPlaying ? <Heart size={20} color="white" fill="white" /> : <RotateCcw size={20} color="white" />}
+        <TouchableOpacity onPress={startReplay} disabled={isPlaying} style={[styles.btn, { backgroundColor: themeTint, opacity: isPlaying ? 0.7 : 1 }]}>
+          {isPlaying ? <Play size={20} color="white" fill="white" /> : <RotateCcw size={20} color="white" />}
           <Text style={styles.btnLabel}>{isPlaying ? 'Playing…' : 'Replay'}</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
+}
+
+function buildPath(
+  points: [number, number][],
+  fit: number,
+  offsetX: number,
+  offsetY: number,
+  numPoints: number
+) {
+  const p = Skia.Path.Make();
+  if (points.length === 0 || numPoints <= 0) return p;
+  const limit = Math.min(numPoints, points.length);
+  p.moveTo(points[0][0] * fit + offsetX, points[0][1] * fit + offsetY);
+  for (let i = 1; i < limit; i++) {
+    p.lineTo(points[i][0] * fit + offsetX, points[i][1] * fit + offsetY);
+  }
+  if (limit === 1) {
+    // Make a tap render as a tiny dot so it doesn't disappear.
+    p.lineTo(points[0][0] * fit + offsetX + 0.1, points[0][1] * fit + offsetY + 0.1);
+  }
+  return p;
 }
 
 const styles = StyleSheet.create({

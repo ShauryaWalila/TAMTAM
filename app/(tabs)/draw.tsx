@@ -579,7 +579,7 @@ const styles = StyleSheet.create({
   thumbLabel: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingVertical: 6, paddingHorizontal: 10, backgroundColor: 'rgba(0,0,0,0.6)' },
   thumbUser: { fontSize: 10, fontWeight: '900', color: '#FFF', textAlign: 'center' },
   viewerOverlay: { flex: 1, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' },
-  viewerClose: { position: 'absolute', top: 60, right: 30, zIndex: 10 },
+  viewerClose: { position: 'absolute', top: 50, right: 20, zIndex: 10, width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
   viewerContent: { alignItems: 'center' },
   viewerCard: { width: SCREEN_WIDTH * 0.9, borderRadius: 32, overflow: 'hidden', elevation: 20 },
   fullImage: { width: '100%', height: SCREEN_WIDTH * 0.9, backgroundColor: 'transparent' },
