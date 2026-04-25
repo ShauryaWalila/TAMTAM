@@ -183,7 +183,11 @@ export default function JournalScreen() {
 
   const refreshFromSQLite = () => {
     try {
-      const data = db.getAllSync(`SELECT * FROM posts ORDER BY created_at DESC LIMIT 50`) as any[];
+      // Journal feed only renders text + image posts; draw/grid posts live in
+      // the Sketchbook gallery and shouldn't appear here.
+      const data = db.getAllSync(
+        `SELECT * FROM posts WHERE type IN ('text', 'image') ORDER BY created_at DESC LIMIT 50`
+      ) as any[];
       if (data) {
         setPosts(data.map(p => ({
           ...p,
@@ -210,6 +214,7 @@ export default function JournalScreen() {
     const { data, error } = await supabase
       .from("posts")
       .select("*")
+      .in('type', ['text', 'image'])
       .order("created_at", { ascending: false })
       .range(start, end);
 
