@@ -113,12 +113,6 @@ export default function TouchPartnerScreen() {
   const handleTouchUpdate = (event: any) => {
     const touches = extractTouches(event);
 
-    // New touch session: each fresh touch overwrites the previous imprint.
-    if (previousCountRef.current === 0 && touches.length > 0) {
-      heldImprint.value = new Float32Array(pinCount);
-      recorderRef.current.reset();
-    }
-
     if (touches.length > previousCountRef.current) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
