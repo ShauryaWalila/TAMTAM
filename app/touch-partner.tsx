@@ -1,42 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Dimensions, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Text } from '@/components/Themed';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { X, Heart, Sparkles } from 'lucide-react-native';
-import { useRouter, Stack } from 'expo-router';
+import { Heart, Sparkles, X } from 'lucide-react-native';
+import { Stack, useRouter } from 'expo-router';
 import { MotiView } from 'moti';
 import * as Haptics from 'expo-haptics';
 import * as SecureStore from 'expo-secure-store';
+import { useSharedValue, withTiming } from 'react-native-reanimated';
 import { supabase } from '@/lib/supabase';
 import { updateTouchWidget } from '@/lib/widget';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
-import { Canvas, Skia, Points, vec, Group, Path, Shadow, Rect, BlurMask } from '@shopify/react-native-skia';
-import Animated, { useSharedValue, useDerivedValue, withTiming } from 'react-native-reanimated';
+import PinGrid from '@/components/PinGrid/PinGrid';
+import { Touch } from '@/components/PinGrid/types';
+import { buildHexGrid } from '@/components/PinGrid/geometry';
+import {
+  DEFAULT_TOUCH_RADIUS,
+} from '@/components/PinGrid/constants';
+import { createRecorder, float32ToBase64 } from '@/lib/touchRecording';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-// ⚙️ ULTRA-HIGH DENSITY ENGINE
-const SPACING = 14; // Massive density (4x original)
-const COLS = Math.floor(SCREEN_WIDTH / SPACING) + 1;
-const ROWS = Math.floor(SCREEN_HEIGHT / SPACING) + 1;
-const PIN_COUNT = ROWS * COLS;
-const MAX_DIST = 55; // Smaller, more accurate radius
-const MAX_DIST_SQ = MAX_DIST * MAX_DIST;
-
-// Static grid coordinates (Typed Arrays for speed)
-const STATIC_X = new Float32Array(PIN_COUNT);
-const STATIC_Y = new Float32Array(PIN_COUNT);
-const OFFSET_X = (SCREEN_WIDTH - (COLS - 1) * SPACING) / 2;
-const OFFSET_Y = (SCREEN_HEIGHT - (ROWS - 1) * SPACING) / 2;
-
-for (let r = 0; r < ROWS; r++) {
-  for (let c = 0; c < COLS; c++) {
-    const i = r * COLS + c;
-    STATIC_X[i] = c * SPACING + OFFSET_X;
-    STATIC_Y[i] = r * SPACING + OFFSET_Y;
-  }
-}
 
 export default function TouchPartnerScreen() {
   const insets = useSafeAreaInsets();
@@ -47,10 +31,18 @@ export default function TouchPartnerScreen() {
   const [userName, setUserName] = useState('');
   const [partnerName, setPartnerName] = useState('');
   const [isSending, setIsSending] = useState(false);
-  
-  // 🖐️ RAW TOUCH CAPTURE
-  const touchPoints = useSharedValue<{x: number, y: number, id: number}[]>([]);
-  const intensity = useSharedValue(0);
+
+  // Allocate held imprint sized to this device's pin count.
+  const pinCount = React.useMemo(
+    () => buildHexGrid(SCREEN_WIDTH, SCREEN_HEIGHT).pinCount,
+    []
+  );
+  const heldImprint = useSharedValue<Float32Array>(new Float32Array(pinCount));
+  const activeTouches = useSharedValue<Touch[]>([]);
+  const isClearing = useSharedValue(0);
+
+  // Recorder lives on JS thread.
+  const recorderRef = useRef(createRecorder());
 
   useEffect(() => {
     loadUsers();
@@ -64,167 +56,90 @@ export default function TouchPartnerScreen() {
     }
   };
 
-  const handleTouchUpdate = (event: any) => {
-    const nativeTouches = event.nativeEvent.touches;
-    const pts = [];
-    for (let i = 0; i < nativeTouches.length; i++) {
-      pts.push({
-        x: nativeTouches[i].locationX,
-        y: nativeTouches[i].locationY,
-        id: nativeTouches[i].identifier
+  const extractTouches = (event: any): Touch[] => {
+    const native = event.nativeEvent.touches;
+    const out: Touch[] = [];
+    for (let i = 0; i < native.length; i++) {
+      const t = native[i];
+      const force = typeof t.force === 'number' ? t.force : 0;
+      const radius =
+        typeof t.radiusX === 'number' && t.radiusX > 0
+          ? Math.max(t.radiusX, t.radiusY ?? t.radiusX)
+          : typeof t.touchMajor === 'number' && t.touchMajor > 0
+          ? t.touchMajor / 2
+          : DEFAULT_TOUCH_RADIUS + force * 6; // iOS force boost
+      out.push({
+        id: t.identifier,
+        x: t.locationX,
+        y: t.locationY,
+        r: radius,
       });
     }
-    if (pts.length > touchPoints.value.length) {
+    return out;
+  };
+
+  const previousCountRef = useRef(0);
+
+  const handleTouchUpdate = (event: any) => {
+    const touches = extractTouches(event);
+    if (touches.length > previousCountRef.current) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      intensity.value = withTiming(1, { duration: 150 });
     }
-    touchPoints.value = pts;
+    previousCountRef.current = touches.length;
+    activeTouches.value = touches;
+    recorderRef.current.tick(touches, Date.now());
   };
 
   const handleTouchEnd = (event: any) => {
-    const nativeTouches = event.nativeEvent.touches;
-    if (nativeTouches.length === 0) {
-      touchPoints.value = [];
-      intensity.value = withTiming(0, { duration: 400 });
-    } else {
-      handleTouchUpdate(event);
-    }
+    const touches = extractTouches(event);
+    previousCountRef.current = touches.length;
+    activeTouches.value = touches;
+    recorderRef.current.tick(touches, Date.now());
   };
-
-  // 🌈 VISUAL THEME
-  const bgColor = '#000000';
-  const activeColor = theme.tint; // High-visibility Pink/Purple
-  const inactivePin = '#111111';
-
-  // 🧊 TACTILE RENDERING ENGINE
-  const gridVisuals = useDerivedValue(() => {
-    const pts = touchPoints.value;
-    const curInt = intensity.value;
-    const numPts = pts.length;
-    
-    const capPoints = [];
-    const capColors = [];
-    const stemPoints = [];
-    const heatmapPoints = [];
-
-    // Perspective focal center
-    const cx_mid = SCREEN_WIDTH / 2;
-    const cy_mid = SCREEN_HEIGHT / 2;
-
-    // 1. Map heatmap glows (under fingers)
-    for (let j = 0; j < numPts; j++) {
-      heatmapPoints.push(vec(pts[j].x, pts[j].y));
-    }
-
-    // 2. Map high-density pins
-    for (let i = 0; i < PIN_COUNT; i++) {
-      const bx = STATIC_X[i];
-      const by = STATIC_Y[i];
-      
-      let dep = 0;
-      let ratio = 0;
-      
-      if (curInt > 0 && numPts > 0) {
-        for (let j = 0; j < numPts; j++) {
-          const t = pts[j];
-          const dx = bx - t.x;
-          const dy = by - t.y;
-          const d2 = dx * dx + dy * dy;
-          if (d2 < MAX_DIST_SQ) {
-            // TACTILE MATH: Accurate pressure falloff
-            const dist = Math.sqrt(d2);
-            const r = (1 - dist / MAX_DIST);
-            const currentRatio = Math.pow(r, 1.2); // Smooth but focused
-            if (currentRatio > ratio) ratio = currentRatio;
-            
-            // Higher depression for more accuracy
-            const currentDep = currentRatio * 55 * curInt;
-            if (currentDep > dep) dep = currentDep;
-          }
-        }
-      }
-
-      // Parallax shifts pins slightly towards edges
-      const px = (bx - cx_mid) * 0.12;
-      const py = (by - cy_mid) * 0.12;
-      
-      const topX = bx + px;
-      const topY = by + py - (45 - dep);
-
-      // Lines for cylinder bodies
-      stemPoints.push(vec(bx, by), vec(topX, topY));
-      // Point for tactile cap
-      capPoints.push(vec(topX, topY));
-      
-      // COLOR: Only highlight exactly where the touch is
-      const color = Skia.Color(ratio > 0.1 ? activeColor : inactivePin);
-      capColors.push(color);
-    }
-
-    return { capPoints, capColors, stemPoints, heatmapPoints };
-  });
 
   const sendTouch = async () => {
     if (isSending) return;
     setIsSending(true);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     try {
-      updateTouchWidget("Touch sent!");
+      const recording = recorderRef.current.finalize(
+        heldImprint.value,
+        { w: SCREEN_WIDTH, h: SCREEN_HEIGHT }
+      );
+      updateTouchWidget('Touch sent!');
       await supabase.from('moments').insert([{
-        user_id: userName, message: 'sent a touch', created_at: new Date().toISOString()
+        user_id: userName,
+        message: 'sent a touch',
+        created_at: new Date().toISOString(),
+        touch_payload: recording,
       }]);
+      // Clear locally
+      heldImprint.value = new Float32Array(pinCount);
+      activeTouches.value = [];
+      recorderRef.current.reset();
       setTimeout(() => setIsSending(false), 1000);
     } catch (error) {
+      console.warn('sendTouch failed', error);
       setIsSending(false);
     }
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: bgColor }]}>
+    <View style={[styles.container, { backgroundColor: '#000' }]}>
       <Stack.Screen options={{ presentation: 'fullScreenModal', headerShown: false, gestureEnabled: false }} />
-      
-      <View 
+
+      <View
         style={StyleSheet.absoluteFill}
         onTouchStart={handleTouchUpdate}
         onTouchMove={handleTouchUpdate}
         onTouchEnd={handleTouchEnd}
-        onTouchCancel={() => { touchPoints.value = []; intensity.value = 0; }}
+        onTouchCancel={() => { activeTouches.value = []; previousCountRef.current = 0; }}
       >
-        <Canvas style={StyleSheet.absoluteFill} pointerEvents="none">
-          <Rect x={0} y={0} width={SCREEN_WIDTH} height={SCREEN_HEIGHT} color="#000000" />
-
-          {/* Layer 1: Tactile Heatmap Glow */}
-          <Points
-            points={useDerivedValue(() => gridVisuals.value.heatmapPoints)}
-            mode="points"
-            color={activeColor}
-            strokeWidth={120}
-            strokeCap="round"
-          >
-            <BlurMask blur={40} style="normal" />
-          </Points>
-
-          {/* Layer 2: High-Density Stems */}
-          <Points
-            points={useDerivedValue(() => gridVisuals.value.stemPoints)}
-            mode="lines"
-            color="#080808"
-            strokeWidth={1}
-          />
-
-          {/* Layer 3: Physical Tactile Pins */}
-          <Group>
-            <Points
-              points={useDerivedValue(() => gridVisuals.value.capPoints)}
-              colors={useDerivedValue(() => gridVisuals.value.capColors)}
-              mode="points"
-              strokeWidth={7} // Smaller, sharper pins for density
-              strokeCap="round"
-            />
-            {/* Glossy area glow */}
-            <Shadow dx={0} dy={0} blur={10} color={activeColor} />
-          </Group>
-        </Canvas>
+        <PinGrid
+          activeTouches={activeTouches}
+          heldImprint={heldImprint}
+          isClearing={isClearing}
+        />
       </View>
 
       <View style={[styles.header, { paddingTop: insets.top + 10 }]} pointerEvents="box-none">
@@ -236,11 +151,11 @@ export default function TouchPartnerScreen() {
       </View>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + 20 }]} pointerEvents="box-none">
-        <TouchableOpacity 
-          activeOpacity={0.8} 
-          onPress={sendTouch} 
-          disabled={isSending} 
-          style={[styles.sendButton, { backgroundColor: activeColor }]}
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={sendTouch}
+          disabled={isSending}
+          style={[styles.sendButton, { backgroundColor: theme.tint }]}
         >
           <MotiView animate={{ scale: isSending ? 0.95 : 1 }}>
             <View style={styles.sendButtonContent}>
@@ -262,5 +177,5 @@ const styles = StyleSheet.create({
   footer: { position: 'absolute', bottom: 0, left: 0, right: 0, alignItems: 'center', zIndex: 10 },
   sendButton: { width: SCREEN_WIDTH * 0.85, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center', elevation: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.5, shadowRadius: 20 },
   sendButtonContent: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  sendButtonText: { color: 'white', fontSize: 16, fontWeight: '900' }
+  sendButtonText: { color: 'white', fontSize: 16, fontWeight: '900' },
 });
