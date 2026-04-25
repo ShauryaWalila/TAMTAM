@@ -16,15 +16,15 @@ import Animated, { useSharedValue, useDerivedValue, withTiming } from 'react-nat
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// ⚙️ HIGH-STABILITY PERFORMANCE CONFIG
-const SPACING = 28; // Balanced density to prevent memory crashes
+// ⚙️ ULTRA-HIGH DENSITY ENGINE
+const SPACING = 14; // Massive density (4x original)
 const COLS = Math.floor(SCREEN_WIDTH / SPACING) + 1;
 const ROWS = Math.floor(SCREEN_HEIGHT / SPACING) + 1;
 const PIN_COUNT = ROWS * COLS;
-const MAX_DIST = 100;
+const MAX_DIST = 55; // Smaller, more accurate radius
 const MAX_DIST_SQ = MAX_DIST * MAX_DIST;
 
-// Static grid coordinates stored in Typed Arrays for zero GC pressure
+// Static grid coordinates (Typed Arrays for speed)
 const STATIC_X = new Float32Array(PIN_COUNT);
 const STATIC_Y = new Float32Array(PIN_COUNT);
 const OFFSET_X = (SCREEN_WIDTH - (COLS - 1) * SPACING) / 2;
@@ -48,7 +48,7 @@ export default function TouchPartnerScreen() {
   const [partnerName, setPartnerName] = useState('');
   const [isSending, setIsSending] = useState(false);
   
-  // 🖐️ RAW TOUCH STATE
+  // 🖐️ RAW TOUCH CAPTURE
   const touchPoints = useSharedValue<{x: number, y: number, id: number}[]>([]);
   const intensity = useSharedValue(0);
 
@@ -91,12 +91,12 @@ export default function TouchPartnerScreen() {
     }
   };
 
-  // 🌈 COLOR CONFIG
-  const isDark = colorScheme === 'dark';
+  // 🌈 VISUAL THEME
   const bgColor = '#000000';
-  const glowColor = theme.tint;
+  const activeColor = theme.tint; // High-visibility Pink/Purple
+  const inactivePin = '#111111';
 
-  // 🧊 RENDER ENGINE (OPTIMIZED TO PREVENT CRASHES)
+  // 🧊 TACTILE RENDERING ENGINE
   const gridVisuals = useDerivedValue(() => {
     const pts = touchPoints.value;
     const curInt = intensity.value;
@@ -104,18 +104,19 @@ export default function TouchPartnerScreen() {
     
     const capPoints = [];
     const capColors = [];
+    const stemPoints = [];
     const heatmapPoints = [];
-    const stemPath = Skia.Path.Make();
 
-    const centerX = SCREEN_WIDTH / 2;
-    const centerY = SCREEN_HEIGHT / 2;
+    // Perspective focal center
+    const cx_mid = SCREEN_WIDTH / 2;
+    const cy_mid = SCREEN_HEIGHT / 2;
 
-    // 1. Generate Heatmap data (Glow points)
+    // 1. Map heatmap glows (under fingers)
     for (let j = 0; j < numPts; j++) {
       heatmapPoints.push(vec(pts[j].x, pts[j].y));
     }
 
-    // 2. Generate Grid data
+    // 2. Map high-density pins
     for (let i = 0; i < PIN_COUNT; i++) {
       const bx = STATIC_X[i];
       const by = STATIC_Y[i];
@@ -130,27 +131,37 @@ export default function TouchPartnerScreen() {
           const dy = by - t.y;
           const d2 = dx * dx + dy * dy;
           if (d2 < MAX_DIST_SQ) {
-            const currentRatio = (1 - Math.sqrt(d2) / MAX_DIST);
+            // TACTILE MATH: Accurate pressure falloff
+            const dist = Math.sqrt(d2);
+            const r = (1 - dist / MAX_DIST);
+            const currentRatio = Math.pow(r, 1.2); // Smooth but focused
             if (currentRatio > ratio) ratio = currentRatio;
-            const currentDep = currentRatio * 45 * curInt;
+            
+            // Higher depression for more accuracy
+            const currentDep = currentRatio * 55 * curInt;
             if (currentDep > dep) dep = currentDep;
           }
         }
       }
 
-      const topX = bx + (bx - centerX) * 0.12;
-      const topY = by + (by - centerY) * 0.12 - (35 - dep);
+      // Parallax shifts pins slightly towards edges
+      const px = (bx - cx_mid) * 0.12;
+      const py = (by - cy_mid) * 0.12;
+      
+      const topX = bx + px;
+      const topY = by + py - (45 - dep);
 
-      stemPath.moveTo(bx, by);
-      stemPath.lineTo(topX, topY);
+      // Lines for cylinder bodies
+      stemPoints.push(vec(bx, by), vec(topX, topY));
+      // Point for tactile cap
       capPoints.push(vec(topX, topY));
       
-      // Fast color mapping
-      const color = Skia.Color(ratio > 0.05 ? glowColor : '#1A1A1A');
+      // COLOR: Only highlight exactly where the touch is
+      const color = Skia.Color(ratio > 0.1 ? activeColor : inactivePin);
       capColors.push(color);
     }
 
-    return { capPoints, capColors, stemPath, heatmapPoints };
+    return { capPoints, capColors, stemPoints, heatmapPoints };
   });
 
   const sendTouch = async () => {
@@ -180,38 +191,38 @@ export default function TouchPartnerScreen() {
         onTouchCancel={() => { touchPoints.value = []; intensity.value = 0; }}
       >
         <Canvas style={StyleSheet.absoluteFill} pointerEvents="none">
-          {/* Layer 0: Background */}
           <Rect x={0} y={0} width={SCREEN_WIDTH} height={SCREEN_HEIGHT} color="#000000" />
 
-          {/* Layer 1: Optimized Heatmap Glow */}
+          {/* Layer 1: Tactile Heatmap Glow */}
           <Points
             points={useDerivedValue(() => gridVisuals.value.heatmapPoints)}
             mode="points"
-            color={glowColor}
-            strokeWidth={140}
+            color={activeColor}
+            strokeWidth={120}
             strokeCap="round"
           >
             <BlurMask blur={40} style="normal" />
           </Points>
 
-          {/* Layer 2: Stems */}
-          <Path
-            path={useDerivedValue(() => gridVisuals.value.stemPath)}
-            style="stroke"
-            strokeWidth={2}
-            color="#0A0A0A"
+          {/* Layer 2: High-Density Stems */}
+          <Points
+            points={useDerivedValue(() => gridVisuals.value.stemPoints)}
+            mode="lines"
+            color="#080808"
+            strokeWidth={1}
           />
 
-          {/* Layer 3: Vibrant Pins */}
+          {/* Layer 3: Physical Tactile Pins */}
           <Group>
             <Points
               points={useDerivedValue(() => gridVisuals.value.capPoints)}
               colors={useDerivedValue(() => gridVisuals.value.capColors)}
               mode="points"
-              strokeWidth={12} 
+              strokeWidth={7} // Smaller, sharper pins for density
               strokeCap="round"
             />
-            <Shadow dx={0} dy={0} blur={10} color={glowColor} />
+            {/* Glossy area glow */}
+            <Shadow dx={0} dy={0} blur={10} color={activeColor} />
           </Group>
         </Canvas>
       </View>
@@ -220,7 +231,7 @@ export default function TouchPartnerScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
           <X size={24} color="#FFF" />
         </TouchableOpacity>
-        <Text style={styles.titleText}>Touch Partner</Text>
+        <Text style={styles.title}>Touch Partner</Text>
         <View style={{ width: 44 }} />
       </View>
 
@@ -229,7 +240,7 @@ export default function TouchPartnerScreen() {
           activeOpacity={0.8} 
           onPress={sendTouch} 
           disabled={isSending} 
-          style={[styles.sendButton, { backgroundColor: glowColor }]}
+          style={[styles.sendButton, { backgroundColor: activeColor }]}
         >
           <MotiView animate={{ scale: isSending ? 0.95 : 1 }}>
             <View style={styles.sendButtonContent}>
@@ -247,9 +258,9 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, zIndex: 10 },
   closeBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center' },
-  titleText: { fontSize: 18, fontWeight: '900', color: '#FFF', textTransform: 'uppercase', letterSpacing: 1 },
+  title: { fontSize: 18, fontWeight: '900', color: '#FFF', textTransform: 'uppercase', letterSpacing: 2 },
   footer: { position: 'absolute', bottom: 0, left: 0, right: 0, alignItems: 'center', zIndex: 10 },
   sendButton: { width: SCREEN_WIDTH * 0.85, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center', elevation: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.5, shadowRadius: 20 },
   sendButtonContent: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  sendButtonText: { color: 'white', fontSize: 18, fontWeight: '900' }
+  sendButtonText: { color: 'white', fontSize: 16, fontWeight: '900' }
 });
