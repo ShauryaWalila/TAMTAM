@@ -48,14 +48,28 @@ export const initialFullSync = async (shouldClear = false) => {
     }
   };
 
-  // 1. URGENT DATA (Home screen essentials)
+  // 1. URGENT DATA (Home / index dashboard reads from these tables, so we
+  //    block until they're populated. Anything the index doesn't render goes
+  //    into the background bucket below.)
   try {
-    await syncTable('moments', supabase.from('moments').select('*'), 
+    await syncTable('moments', supabase.from('moments').select('*'),
       m => db.runSync(`INSERT OR REPLACE INTO moments (id, created_at, message, user_id) VALUES (?, ?, ?, ?)`, [m.id, m.created_at, m.message, m.user_id]));
 
-    await syncTable('meetings', supabase.from('meetings').select('*'), 
-      n => db.runSync(`INSERT OR REPLACE INTO meetings (id, created_at, type, date, occasion_name, user_id, weekday, day_of_month, time, is_recurring, frequency, recurring_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+    await syncTable('meetings', supabase.from('meetings').select('*'),
+      n => db.runSync(`INSERT OR REPLACE INTO meetings (id, created_at, type, date, occasion_name, user_id, weekday, day_of_month, time, is_recurring, frequency, recurring_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [n.id, n.created_at, n.type, n.date, n.occasion_name, n.user_id, n.weekday, n.day_of_month, n.time, n.is_recurring ? 1 : 0, n.frequency, n.recurring_type]));
+
+    await syncTable('timetable', supabase.from('timetable').select('*'),
+      n => db.runSync(`INSERT OR REPLACE INTO timetable (id, created_at, day, time, end_time, activity, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [n.id, n.created_at, n.day, n.time, n.end_time, n.activity, n.user_id]));
+
+    await syncTable('calendar_events', supabase.from('calendar_events').select('*'),
+      n => db.runSync(`INSERT OR REPLACE INTO calendar_events (id, created_at, event_date, title, user_id, frequency) VALUES (?, ?, ?, ?, ?, ?)`,
+        [n.id, n.created_at, n.event_date, n.title, n.user_id, n.frequency]));
+
+    await syncTable('posts', supabase.from('posts').select('*').order('created_at', { ascending: false }).limit(50),
+      p => db.runSync(`INSERT OR REPLACE INTO posts (id, created_at, updated_at, type, content, user_id, reactions, seen_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [p.id, p.created_at, p.updated_at || p.created_at, p.type, p.content, p.user_id, JSON.stringify(p.reactions), p.seen_by ? p.seen_by.join(',') : '']));
   } catch (e) {
     console.warn('Urgent sync failed:', e);
   }
@@ -63,18 +77,7 @@ export const initialFullSync = async (shouldClear = false) => {
   // 2. BACKGROUND DATA (The rest, non-blocking)
   const backgroundSync = async () => {
     try {
-      await syncTable('timetable', supabase.from('timetable').select('*'), 
-        n => db.runSync(`INSERT OR REPLACE INTO timetable (id, created_at, day, time, end_time, activity, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
-          [n.id, n.created_at, n.day, n.time, n.end_time, n.activity, n.user_id]));
-
-      await syncTable('calendar_events', supabase.from('calendar_events').select('*'), 
-        n => db.runSync(`INSERT OR REPLACE INTO calendar_events (id, created_at, event_date, title, user_id, frequency) VALUES (?, ?, ?, ?, ?, ?)`, 
-          [n.id, n.created_at, n.event_date, n.title, n.user_id, n.frequency]));
-
-      await syncTable('posts', supabase.from('posts').select('*').order('created_at', { ascending: false }).limit(50), 
-        p => db.runSync(`INSERT OR REPLACE INTO posts (id, created_at, updated_at, type, content, user_id, reactions, seen_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, 
-          [p.id, p.created_at, p.updated_at || p.created_at, p.type, p.content, p.user_id, JSON.stringify(p.reactions), p.seen_by ? p.seen_by.join(',') : '']));
-      await syncTable('finances', supabase.from('finances').select('*').order('created_at', { ascending: false }).limit(50), 
+      await syncTable('finances', supabase.from('finances').select('*').order('created_at', { ascending: false }).limit(50),
         n => db.runSync(`INSERT OR REPLACE INTO finances (id, created_at, amount, category, description, user_id, type) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
           [n.id, n.created_at, n.amount, n.category, n.description, n.user_id, n.type]));
 
