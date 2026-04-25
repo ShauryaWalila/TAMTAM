@@ -126,21 +126,14 @@ const GridMode = forwardRef<GridModeHandle, Props>(function GridMode(
     setIsSending(true);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     try {
-      // Use the recorder's frames as the source of truth for "did the user
-      // draw anything" — Float32Arrays inside SharedValues don't reliably
-      // round-trip mutations from the UI thread back to JS read access, so
-      // the prior heldImprint bail-out kept failing silently.
-      // The viewer reconstructs the imprint from frames if needed.
+      // Always send. If the user really tapped Send with no recorded
+      // touches, the payload will just have an empty frames array — better
+      // to send the empty post than silently swallow the action.
       const recording = recorderRef.current.finalize(
         new Float32Array(0),
         { w: SCREEN_WIDTH, h: SCREEN_HEIGHT }
       );
-      if ((recording.frames?.length ?? 0) === 0) {
-        console.warn('grid send: no frames recorded');
-        setIsSending(false);
-        if (onSendEnd) onSendEnd();
-        return;
-      }
+      console.log('[grid send] frames=', recording.frames.length, 'duration=', recording.duration_ms);
       const payload = { ...recording, type: 'pattern' as const };
       const id = generateUUID();
       const now = new Date().toISOString();
@@ -149,6 +142,7 @@ const GridMode = forwardRef<GridModeHandle, Props>(function GridMode(
         `INSERT INTO posts (id, created_at, updated_at, type, content, user_id, reactions, seen_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [id, now, now, 'grid', content, currentUserName || 'user_1', JSON.stringify({}), '']
       );
+      console.log('[grid send] sqlite insert ok', id);
       queueSyncOperation('posts', id, 'INSERT', {
         id,
         type: 'grid',

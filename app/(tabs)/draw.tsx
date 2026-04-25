@@ -19,6 +19,7 @@ import base64js from 'base64-js';
 import * as Haptics from 'expo-haptics';
 import GridMode, { GridModeHandle } from '@/components/Draw/GridMode';
 import DrawReplay, { RecordedStroke, DrawPlayback } from '@/components/Draw/DrawReplay';
+import GridReplay from '@/components/Draw/GridReplay';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const PICKER_WIDTH = SCREEN_WIDTH * 0.75;
@@ -507,15 +508,24 @@ export default function DrawScreen() {
                         themeTint={theme.tint}
                       />
                     )}
-                    {viewingPost.type === 'grid' && (
-                      <View style={[styles.fullImage, { justifyContent: 'center', alignItems: 'center' }]}>
-                        <Grid3x3 size={96} color={theme.tint} />
-                        <Text style={[styles.thumbType, { fontSize: 16, marginTop: 16 }]}>GRID</Text>
-                        <Text style={{ color: '#888', fontSize: 13, marginTop: 8, textAlign: 'center', paddingHorizontal: 30 }}>
-                          Replay viewer coming next.{"\n"}Tap close to dismiss.
-                        </Text>
-                      </View>
-                    )}
+                    {viewingPost.type === 'grid' && (() => {
+                      let payload: any = null;
+                      try { payload = JSON.parse(viewingPost.content); } catch (e) {}
+                      if (!payload) {
+                        return (
+                          <View style={[styles.fullImage, { justifyContent: 'center', alignItems: 'center' }]}>
+                            <Text style={{ color: '#888' }}>Couldn't parse this grid post.</Text>
+                          </View>
+                        );
+                      }
+                      return (
+                        <GridReplay
+                          payload={payload}
+                          surfaceWidth={SCREEN_WIDTH * 0.9}
+                          themeTint={theme.tint}
+                        />
+                      );
+                    })()}
                     <View style={[styles.viewerInfo, { backgroundColor: viewingPost.type === 'draw' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)', borderTopWidth: 0 }]}>
                       <View style={styles.creatorRow}>
                         <View style={[styles.avatarCircle, { backgroundColor: theme.tint }]}><Text style={styles.avatarInitial}>{viewingPost.user_id.charAt(0).toUpperCase()}</Text></View>

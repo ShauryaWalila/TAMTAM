@@ -21,10 +21,17 @@ type Props = {
   // settings sliders can adjust how big each contact patch is. Reads inside
   // worklets so changes take effect without component remount.
   maxDist?: SharedValue<number>;
+  // Override the rendering surface size. Defaults to the device window so
+  // the in-app live canvas behaves as before. Replay views in the gallery
+  // pass a smaller bounded size.
+  width?: number;
+  height?: number;
 };
 
-export default function PinGrid({ activeTouches, heldImprint, isClearing, maxDist }: Props) {
-  const { width: W, height: H } = Dimensions.get('window');
+export default function PinGrid({ activeTouches, heldImprint, isClearing, maxDist, width, height }: Props) {
+  const winDims = Dimensions.get('window');
+  const W = width ?? winDims.width;
+  const H = height ?? winDims.height;
   const grid = useMemo(() => buildHexGrid(W, H), [W, H]);
   const cx_mid = W / 2;
   const cy_mid = H / 2;
@@ -111,7 +118,7 @@ export default function PinGrid({ activeTouches, heldImprint, isClearing, maxDis
   const pressedCapPoints = useDerivedValue(() => visuals.value.pressedCaps);
 
   return (
-    <Canvas style={StyleSheet.absoluteFill} pointerEvents="none">
+    <Canvas style={width ? { width: W, height: H } : StyleSheet.absoluteFill} pointerEvents="none">
       <Rect x={0} y={0} width={W} height={H}>
         <LinearGradient
           start={vec(0, 0)}
