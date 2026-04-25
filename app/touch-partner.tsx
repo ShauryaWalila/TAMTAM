@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, TouchableOpacity, Dimensions } from 'react-native';
 import { Text } from '@/components/Themed';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { X, Send, Sparkles } from 'lucide-react-native';
+import { X, Heart, Sparkles } from 'lucide-react-native';
 import { useRouter, Stack } from 'expo-router';
 import { MotiView } from 'moti';
 import * as Haptics from 'expo-haptics';
@@ -11,20 +11,20 @@ import { supabase } from '@/lib/supabase';
 import { updateTouchWidget } from '@/lib/widget';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
-import { Canvas, Skia, Points, vec } from '@shopify/react-native-skia';
-import Animated, { useSharedValue, useDerivedValue, withTiming, runOnJS } from 'react-native-reanimated';
+import { Canvas, Skia, Points, vec, Group, Path, Shadow, Rect, BlurMask } from '@shopify/react-native-skia';
+import Animated, { useSharedValue, useDerivedValue, withTiming } from 'react-native-reanimated';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// ⚙️ ENGINE CONSTANTS
-const SPACING = 40; 
+// ⚙️ HIGH-STABILITY PERFORMANCE CONFIG
+const SPACING = 28; // Balanced density to prevent memory crashes
 const COLS = Math.floor(SCREEN_WIDTH / SPACING) + 1;
 const ROWS = Math.floor(SCREEN_HEIGHT / SPACING) + 1;
 const PIN_COUNT = ROWS * COLS;
 const MAX_DIST = 100;
 const MAX_DIST_SQ = MAX_DIST * MAX_DIST;
 
-// 🧊 STATIC GRID CACHE
+// Static grid coordinates stored in Typed Arrays for zero GC pressure
 const STATIC_X = new Float32Array(PIN_COUNT);
 const STATIC_Y = new Float32Array(PIN_COUNT);
 const OFFSET_X = (SCREEN_WIDTH - (COLS - 1) * SPACING) / 2;
@@ -48,7 +48,7 @@ export default function TouchPartnerScreen() {
   const [partnerName, setPartnerName] = useState('');
   const [isSending, setIsSending] = useState(false);
   
-  // 🖐️ LAYER 1: THE TOUCH LOGIC (Verified Stable)
+  // 🖐️ RAW TOUCH STATE
   const touchPoints = useSharedValue<{x: number, y: number, id: number}[]>([]);
   const intensity = useSharedValue(0);
 
@@ -74,7 +74,6 @@ export default function TouchPartnerScreen() {
         id: nativeTouches[i].identifier
       });
     }
-    
     if (pts.length > touchPoints.value.length) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       intensity.value = withTiming(1, { duration: 150 });
@@ -86,57 +85,82 @@ export default function TouchPartnerScreen() {
     const nativeTouches = event.nativeEvent.touches;
     if (nativeTouches.length === 0) {
       touchPoints.value = [];
-      intensity.value = withTiming(0, { duration: 300 });
+      intensity.value = withTiming(0, { duration: 400 });
     } else {
       handleTouchUpdate(event);
     }
   };
 
-  // 🧊 LAYER 2: THE RENDERING GRID (Unpolished but Working)
-  const gridData = useDerivedValue(() => {
+  // 🌈 COLOR CONFIG
+  const isDark = colorScheme === 'dark';
+  const bgColor = '#000000';
+  const glowColor = theme.tint;
+
+  // 🧊 RENDER ENGINE (OPTIMIZED TO PREVENT CRASHES)
+  const gridVisuals = useDerivedValue(() => {
     const pts = touchPoints.value;
     const curInt = intensity.value;
     const numPts = pts.length;
     
-    const stems = [];
-    const caps = [];
+    const capPoints = [];
+    const capColors = [];
+    const heatmapPoints = [];
+    const stemPath = Skia.Path.Make();
+
     const centerX = SCREEN_WIDTH / 2;
     const centerY = SCREEN_HEIGHT / 2;
 
+    // 1. Generate Heatmap data (Glow points)
+    for (let j = 0; j < numPts; j++) {
+      heatmapPoints.push(vec(pts[j].x, pts[j].y));
+    }
+
+    // 2. Generate Grid data
     for (let i = 0; i < PIN_COUNT; i++) {
       const bx = STATIC_X[i];
       const by = STATIC_Y[i];
       
       let dep = 0;
+      let ratio = 0;
+      
       if (curInt > 0 && numPts > 0) {
         for (let j = 0; j < numPts; j++) {
           const t = pts[j];
-          const d2 = (bx - t.x)**2 + (by - t.y)**2;
+          const dx = bx - t.x;
+          const dy = by - t.y;
+          const d2 = dx * dx + dy * dy;
           if (d2 < MAX_DIST_SQ) {
-            const d = (1 - Math.sqrt(d2) / MAX_DIST) * 35 * curInt;
-            if (d > dep) dep = d;
+            const currentRatio = (1 - Math.sqrt(d2) / MAX_DIST);
+            if (currentRatio > ratio) ratio = currentRatio;
+            const currentDep = currentRatio * 45 * curInt;
+            if (currentDep > dep) dep = currentDep;
           }
         }
       }
 
-      const tx = bx + (bx - centerX) * 0.08;
-      const ty = by + (by - centerY) * 0.08 - (40 - dep);
+      const topX = bx + (bx - centerX) * 0.12;
+      const topY = by + (by - centerY) * 0.12 - (35 - dep);
 
-      stems.push(vec(bx, by), vec(tx, ty));
-      caps.push(vec(tx, ty));
+      stemPath.moveTo(bx, by);
+      stemPath.lineTo(topX, topY);
+      capPoints.push(vec(topX, topY));
+      
+      // Fast color mapping
+      const color = Skia.Color(ratio > 0.05 ? glowColor : '#1A1A1A');
+      capColors.push(color);
     }
-    return { stems, caps };
+
+    return { capPoints, capColors, stemPath, heatmapPoints };
   });
 
   const sendTouch = async () => {
     if (isSending) return;
     setIsSending(true);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     try {
       updateTouchWidget("Touch sent!");
       await supabase.from('moments').insert([{
-        user_id: userName,
-        message: 'sent a touch',
-        created_at: new Date().toISOString()
+        user_id: userName, message: 'sent a touch', created_at: new Date().toISOString()
       }]);
       setTimeout(() => setIsSending(false), 1000);
     } catch (error) {
@@ -144,16 +168,10 @@ export default function TouchPartnerScreen() {
     }
   };
 
-  const isDark = colorScheme === 'dark';
-  const bgColor = isDark ? '#000' : '#FFF';
-  const stemColor = isDark ? '#333' : '#CCC';
-  const capColor = isDark ? '#AAA' : '#888';
-
   return (
     <View style={[styles.container, { backgroundColor: bgColor }]}>
       <Stack.Screen options={{ presentation: 'fullScreenModal', headerShown: false, gestureEnabled: false }} />
       
-      {/* TOUCH CAPTURE LAYER */}
       <View 
         style={StyleSheet.absoluteFill}
         onTouchStart={handleTouchUpdate}
@@ -161,30 +179,48 @@ export default function TouchPartnerScreen() {
         onTouchEnd={handleTouchEnd}
         onTouchCancel={() => { touchPoints.value = []; intensity.value = 0; }}
       >
-        {/* RENDERING LAYER */}
         <Canvas style={StyleSheet.absoluteFill} pointerEvents="none">
+          {/* Layer 0: Background */}
+          <Rect x={0} y={0} width={SCREEN_WIDTH} height={SCREEN_HEIGHT} color="#000000" />
+
+          {/* Layer 1: Optimized Heatmap Glow */}
           <Points
-            points={useDerivedValue(() => gridData.value.stems)}
-            mode="lines"
-            color={stemColor}
-            strokeWidth={2}
-          />
-          <Points
-            points={useDerivedValue(() => gridData.value.caps)}
+            points={useDerivedValue(() => gridVisuals.value.heatmapPoints)}
             mode="points"
-            color={capColor}
-            strokeWidth={8}
+            color={glowColor}
+            strokeWidth={140}
             strokeCap="round"
+          >
+            <BlurMask blur={40} style="normal" />
+          </Points>
+
+          {/* Layer 2: Stems */}
+          <Path
+            path={useDerivedValue(() => gridVisuals.value.stemPath)}
+            style="stroke"
+            strokeWidth={2}
+            color="#0A0A0A"
           />
+
+          {/* Layer 3: Vibrant Pins */}
+          <Group>
+            <Points
+              points={useDerivedValue(() => gridVisuals.value.capPoints)}
+              colors={useDerivedValue(() => gridVisuals.value.capColors)}
+              mode="points"
+              strokeWidth={12} 
+              strokeCap="round"
+            />
+            <Shadow dx={0} dy={0} blur={10} color={glowColor} />
+          </Group>
         </Canvas>
       </View>
 
-      {/* HEADER / FOOTER OVERLAYS */}
       <View style={[styles.header, { paddingTop: insets.top + 10 }]} pointerEvents="box-none">
-        <TouchableOpacity onPress={() => router.back()} style={styles.closeHeaderBtn}>
-          <X size={24} color={theme.text} />
+        <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
+          <X size={24} color="#FFF" />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: theme.text }]}>Touch Partner</Text>
+        <Text style={styles.titleText}>Touch Partner</Text>
         <View style={{ width: 44 }} />
       </View>
 
@@ -193,12 +229,12 @@ export default function TouchPartnerScreen() {
           activeOpacity={0.8} 
           onPress={sendTouch} 
           disabled={isSending} 
-          style={[styles.sendButton, { backgroundColor: theme.tint, shadowColor: theme.tint }]}
+          style={[styles.sendButton, { backgroundColor: glowColor }]}
         >
           <MotiView animate={{ scale: isSending ? 0.95 : 1 }}>
             <View style={styles.sendButtonContent}>
-              {isSending ? <Sparkles size={24} color="white" /> : <Send size={24} color="white" />}
-              <Text style={styles.sendButtonText}>{isSending ? 'Sending...' : `Send Touch`}</Text>
+              {isSending ? <Sparkles size={24} color="white" /> : <Heart size={24} color="white" fill="white" />}
+              <Text style={styles.sendButtonText}>Send Touch</Text>
             </View>
           </MotiView>
         </TouchableOpacity>
@@ -210,10 +246,10 @@ export default function TouchPartnerScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, zIndex: 10 },
-  closeHeaderBtn: { width: 44, height: 44, justifyContent: 'center', backgroundColor: 'rgba(150,150,150,0.1)', borderRadius: 22, alignItems: 'center' },
-  title: { fontSize: 18, fontWeight: '800' },
+  closeBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center' },
+  titleText: { fontSize: 18, fontWeight: '900', color: '#FFF', textTransform: 'uppercase', letterSpacing: 1 },
   footer: { position: 'absolute', bottom: 0, left: 0, right: 0, alignItems: 'center', zIndex: 10 },
-  sendButton: { width: SCREEN_WIDTH * 0.85, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', elevation: 15, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 15 },
+  sendButton: { width: SCREEN_WIDTH * 0.85, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center', elevation: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.5, shadowRadius: 20 },
   sendButtonContent: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  sendButtonText: { color: 'white', fontSize: 16, fontWeight: '800' }
+  sendButtonText: { color: 'white', fontSize: 18, fontWeight: '900' }
 });
