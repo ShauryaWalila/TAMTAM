@@ -10,7 +10,7 @@ import * as Haptics from 'expo-haptics';
 import { supabase } from '@/lib/supabase';
 import PinGrid from '@/components/PinGrid/PinGrid';
 import { Touch, TouchRecording } from '@/components/PinGrid/types';
-import { buildHexGrid } from '@/components/PinGrid/geometry';
+import { buildHexGrid, imprintFromTouches } from '@/components/PinGrid/geometry';
 import { base64ToFloat32, createPlayer, Player } from '@/lib/touchRecording';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -105,8 +105,17 @@ export default function TouchViewScreen() {
         if (decoded.length === pinCount) {
           heldImprint.value = decoded;
         } else {
-          // Sender's pin count differs — Task 13 fills this from frames.
-          heldImprint.value = new Float32Array(pinCount);
+          // Sender's pin count differs — synthesize from frames using receiver's grid.
+          const grid = buildHexGrid(SCREEN_WIDTH, SCREEN_HEIGHT);
+          const sx = SCREEN_WIDTH / payload.screen.w;
+          const sy = SCREEN_HEIGHT / payload.screen.h;
+          const acc = new Float32Array(pinCount);
+          for (const f of payload.frames) {
+            const sc = f.points.map((p) => ({ x: p.x * sx, y: p.y * sy, r: p.r }));
+            const im = imprintFromTouches(grid.X, grid.Y, pinCount, sc);
+            for (let i = 0; i < pinCount; i++) if (im[i] > acc[i]) acc[i] = im[i];
+          }
+          heldImprint.value = acc;
         }
       } catch (e: any) {
         if (!cancelled) setError(e?.message ?? 'load failed');
