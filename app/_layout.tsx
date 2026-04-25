@@ -258,14 +258,6 @@ function RootLayoutNav() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="study-hub" options={{ headerShown: false }} />
         <Stack.Screen name="diary" options={{ headerShown: false }} />
-        <Stack.Screen 
-          name="touch-partner" 
-          options={{ 
-            presentation: 'fullScreenModal', 
-            headerShown: false,
-            gestureEnabled: false 
-          }} 
-        />
         <Stack.Screen name="widget-preview" options={{ presentation: 'modal', headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>

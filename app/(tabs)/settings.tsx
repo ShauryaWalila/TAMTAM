@@ -328,14 +328,8 @@ export default function SettingsScreen() {
             theme={theme} 
             onPress={() => safePush('/next-meet')}
           />
-          <SettingsItem 
-            icon={<MessageCircle color={theme.text} size={22} />} 
-            label="Touch Partner" 
-            theme={theme} 
-            onPress={() => safePush('/touch-partner')}
-          />
-          <SettingsItem 
-            icon={<Layout color={theme.text} size={22} />} 
+          <SettingsItem
+            icon={<Layout color={theme.text} size={22} />}
             label="Widget Previews" 
             theme={theme} 
             onPress={() => safePush('/widget-preview')}
