@@ -7,7 +7,7 @@ import { Stack, useRouter } from 'expo-router';
 import { MotiView } from 'moti';
 import * as Haptics from 'expo-haptics';
 import * as SecureStore from 'expo-secure-store';
-import { useSharedValue, withTiming } from 'react-native-reanimated';
+import { runOnJS, useSharedValue, withTiming } from 'react-native-reanimated';
 import { supabase } from '@/lib/supabase';
 import { updateTouchWidget } from '@/lib/widget';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -79,11 +79,42 @@ export default function TouchPartnerScreen() {
   };
 
   const previousCountRef = useRef(0);
+  const clearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const resetRecorderJS = () => {
+    recorderRef.current.reset();
+  };
+
+  const startClearTimer = () => {
+    if (clearTimerRef.current) clearTimeout(clearTimerRef.current);
+    clearTimerRef.current = setTimeout(() => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      isClearing.value = withTiming(1, { duration: 600 }, (finished) => {
+        'worklet';
+        if (!finished) return;
+        heldImprint.value = new Float32Array(pinCount);
+        isClearing.value = 0;
+        runOnJS(resetRecorderJS)();
+      });
+    }, 1000);
+  };
+
+  const cancelClearTimer = () => {
+    if (clearTimerRef.current) {
+      clearTimeout(clearTimerRef.current);
+      clearTimerRef.current = null;
+    }
+  };
 
   const handleTouchUpdate = (event: any) => {
     const touches = extractTouches(event);
     if (touches.length > previousCountRef.current) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    if (touches.length === 2 && previousCountRef.current !== 2) {
+      startClearTimer();
+    } else if (touches.length !== 2) {
+      cancelClearTimer();
     }
     previousCountRef.current = touches.length;
     activeTouches.value = touches;
@@ -92,6 +123,7 @@ export default function TouchPartnerScreen() {
 
   const handleTouchEnd = (event: any) => {
     const touches = extractTouches(event);
+    if (touches.length !== 2) cancelClearTimer();
     previousCountRef.current = touches.length;
     activeTouches.value = touches;
     recorderRef.current.tick(touches, Date.now());
@@ -133,7 +165,11 @@ export default function TouchPartnerScreen() {
         onTouchStart={handleTouchUpdate}
         onTouchMove={handleTouchUpdate}
         onTouchEnd={handleTouchEnd}
-        onTouchCancel={() => { activeTouches.value = []; previousCountRef.current = 0; }}
+        onTouchCancel={() => {
+          activeTouches.value = [];
+          previousCountRef.current = 0;
+          cancelClearTimer();
+        }}
       >
         <PinGrid
           activeTouches={activeTouches}
