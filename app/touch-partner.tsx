@@ -46,6 +46,7 @@ export default function TouchPartnerScreen() {
 
   useEffect(() => {
     loadUsers();
+    return () => { cancelClearTimer(); };
   }, []);
 
   const loadUsers = async () => {
@@ -91,7 +92,10 @@ export default function TouchPartnerScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       isClearing.value = withTiming(1, { duration: 600 }, (finished) => {
         'worklet';
-        if (!finished) return;
+        if (!finished) {
+          isClearing.value = 0;
+          return;
+        }
         heldImprint.value = new Float32Array(pinCount);
         isClearing.value = 0;
         runOnJS(resetRecorderJS)();
