@@ -22,10 +22,10 @@ export function createRecorder(): Recorder {
 
   const samePoints = (a: Touch[], b: Touch[]) => {
     if (a.length !== b.length) return false;
-    const idsA = new Set(a.map((t) => t.id));
-    for (const t of b) if (!idsA.has(t.id)) return false;
+    const aById = new Map<number, Touch>();
+    for (const t of a) aById.set(t.id, t);
     for (const t of b) {
-      const m = a.find((x) => x.id === t.id);
+      const m = aById.get(t.id);
       if (!m) return false;
       if (Math.abs(m.x - t.x) >= 1) return false;
       if (Math.abs(m.y - t.y) >= 1) return false;
