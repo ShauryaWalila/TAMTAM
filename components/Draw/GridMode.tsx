@@ -126,20 +126,21 @@ const GridMode = forwardRef<GridModeHandle, Props>(function GridMode(
     setIsSending(true);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     try {
-      const finalImprint = heldImprint.value;
-      let any = false;
-      for (let i = 0; i < finalImprint.length; i++) {
-        if (finalImprint[i] > 0) { any = true; break; }
-      }
-      if (!any) {
+      // Use the recorder's frames as the source of truth for "did the user
+      // draw anything" — Float32Arrays inside SharedValues don't reliably
+      // round-trip mutations from the UI thread back to JS read access, so
+      // the prior heldImprint bail-out kept failing silently.
+      // The viewer reconstructs the imprint from frames if needed.
+      const recording = recorderRef.current.finalize(
+        new Float32Array(0),
+        { w: SCREEN_WIDTH, h: SCREEN_HEIGHT }
+      );
+      if ((recording.frames?.length ?? 0) === 0) {
+        console.warn('grid send: no frames recorded');
         setIsSending(false);
         if (onSendEnd) onSendEnd();
         return;
       }
-      const recording = recorderRef.current.finalize(
-        finalImprint,
-        { w: SCREEN_WIDTH, h: SCREEN_HEIGHT }
-      );
       const payload = { ...recording, type: 'pattern' as const };
       const id = generateUUID();
       const now = new Date().toISOString();
