@@ -154,6 +154,7 @@ const GridMode = forwardRef<GridModeHandle, Props>(function GridMode(
         content,
         user_id: currentUserName || 'user_1',
         created_at: now,
+        updated_at: now,
         reactions: {},
       });
       processSyncQueue();
