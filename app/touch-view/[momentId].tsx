@@ -6,11 +6,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Heart, X } from 'lucide-react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSharedValue } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
 import { supabase } from '@/lib/supabase';
 import PinGrid from '@/components/PinGrid/PinGrid';
 import { Touch, TouchRecording } from '@/components/PinGrid/types';
 import { buildHexGrid } from '@/components/PinGrid/geometry';
-import { base64ToFloat32 } from '@/lib/touchRecording';
+import { base64ToFloat32, createPlayer, Player } from '@/lib/touchRecording';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -31,6 +32,53 @@ export default function TouchViewScreen() {
   const heldImprint = useSharedValue<Float32Array>(new Float32Array(pinCount));
   const activeTouches = useSharedValue<Touch[]>([]);
   const isClearing = useSharedValue(0);
+
+  const [isPlaying, setIsPlaying] = useState(false);
+  const playerRef = React.useRef<Player | null>(null);
+  const playStartRef = React.useRef<number>(0);
+  const lastFrameIdsRef = React.useRef<Set<number>>(new Set());
+
+  const scaleX = recording ? SCREEN_WIDTH / recording.screen.w : 1;
+  const scaleY = recording ? SCREEN_HEIGHT / recording.screen.h : 1;
+
+  React.useEffect(() => {
+    if (!isPlaying || !playerRef.current) return;
+    let raf: number;
+    const tick = () => {
+      const elapsed = Date.now() - playStartRef.current;
+      const player = playerRef.current!;
+      if (elapsed >= player.totalDurationMs) {
+        activeTouches.value = [];
+        lastFrameIdsRef.current = new Set();
+        setIsPlaying(false);
+        return;
+      }
+      const points = player.frameAt(elapsed);
+      const scaled: Touch[] = points.map((p) => ({
+        id: p.id,
+        x: p.x * scaleX,
+        y: p.y * scaleY,
+        r: p.r,
+      }));
+      const ids = new Set(scaled.map((p) => p.id));
+      let newFinger = false;
+      for (const id of ids) if (!lastFrameIdsRef.current.has(id)) { newFinger = true; break; }
+      if (newFinger) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      lastFrameIdsRef.current = ids;
+      activeTouches.value = scaled;
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [isPlaying, scaleX, scaleY]);
+
+  const startReplay = () => {
+    if (!recording) return;
+    if (!playerRef.current) playerRef.current = createPlayer(recording);
+    lastFrameIdsRef.current = new Set();
+    playStartRef.current = Date.now();
+    setIsPlaying(true);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -108,12 +156,18 @@ export default function TouchViewScreen() {
       <View style={[styles.footer, { paddingBottom: insets.bottom + 20 }]} pointerEvents="box-none">
         <TouchableOpacity
           activeOpacity={0.8}
-          onPress={() => { /* TODO Task 12 */ }}
-          style={[styles.replayButton, { backgroundColor: '#E91E63' }]}
+          onPress={startReplay}
+          disabled={isPlaying || (recording.frames?.length ?? 0) === 0}
+          style={[
+            styles.replayButton,
+            { backgroundColor: (recording.frames?.length ?? 0) === 0 ? '#444' : '#E91E63' },
+          ]}
         >
           <View style={styles.replayContent}>
             <Heart size={24} color="white" fill="white" />
-            <Text style={styles.replayText}>Feel it</Text>
+            <Text style={styles.replayText}>
+              {isPlaying ? 'Feeling…' : (recording.frames?.length ?? 0) === 0 ? 'No replay' : 'Feel it'}
+            </Text>
           </View>
         </TouchableOpacity>
       </View>
