@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dimensions, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Text } from '@/components/Themed';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,7 +7,8 @@ import { Stack, useRouter } from 'expo-router';
 import { MotiView } from 'moti';
 import * as Haptics from 'expo-haptics';
 import * as SecureStore from 'expo-secure-store';
-import { useSharedValue, useDerivedValue, SharedValue } from 'react-native-reanimated';
+import { useSharedValue, useDerivedValue, runOnJS, SharedValue } from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { Canvas, Circle, Group, BlurMask, Rect } from '@shopify/react-native-skia';
 import { supabase } from '@/lib/supabase';
 import { updateTouchWidget } from '@/lib/widget';
@@ -18,18 +19,16 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 type HeatTouch = { id: number; x: number; y: number; r: number };
 
-// Maximum simultaneous heat blobs we draw. Real palms register up to ~10
-// distinct touches on most devices; 20 is comfortably above that.
-const MAX_HEAT_POINTS = 20;
+// Maximum simultaneous heat blobs we draw. A whole-hand contact rarely
+// surfaces more than ~10 touches; 30 leaves room for two hands plus
+// transient artifacts.
+const MAX_HEAT_POINTS = 30;
 
-// Visual scale: contact radius from the OS is much smaller than the finger
-// pad we want to show. 3.5x maps a typical 14px contact radius to a ~50px
-// visual circle, which the BlurMask softens into a fingertip-sized glow.
-const HEAT_VISUAL_SCALE = 3.5;
-const HEAT_BLUR_PX = 36;
-
-// Default radius when the device doesn't expose contact size.
-const DEFAULT_TOUCH_RADIUS = 18;
+// Radius gesture-handler doesn't expose, so each touch is given the same
+// nominal contact size; the BlurMask softens it into a fingerpad glow.
+const TOUCH_RADIUS = 30;
+const HEAT_VISUAL_SCALE = 4;
+const HEAT_BLUR_PX = 50;
 
 export default function TouchPartnerScreen() {
   const insets = useSafeAreaInsets();
@@ -43,7 +42,8 @@ export default function TouchPartnerScreen() {
 
   // Last visible heatmap state — kept after lift, replaced on next fresh touch.
   const displayTouches = useSharedValue<HeatTouch[]>([]);
-  const previousCountRef = useRef(0);
+  // Read & written from the worklet so we can fire haptics on new finger landings.
+  const previousCount = useSharedValue(0);
 
   useEffect(() => {
     loadUsers();
@@ -57,52 +57,53 @@ export default function TouchPartnerScreen() {
     }
   };
 
-  const extractTouches = (event: any): HeatTouch[] => {
-    const native = event.nativeEvent.touches;
-    const out: HeatTouch[] = [];
-    for (let i = 0; i < native.length; i++) {
-      const t = native[i];
-      const force = typeof t.force === 'number' ? t.force : 0;
-      const radius =
-        typeof t.radiusX === 'number' && t.radiusX > 0
-          ? Math.max(t.radiusX, t.radiusY ?? t.radiusX)
-          : typeof t.touchMajor === 'number' && t.touchMajor > 0
-          ? t.touchMajor / 2
-          : DEFAULT_TOUCH_RADIUS + force * 12;
-      out.push({
-        id: t.identifier,
-        x: t.locationX,
-        y: t.locationY,
-        r: radius,
-      });
-    }
-    return out;
+  const fireLandingHaptic = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
-  const handleTouchUpdate = (event: any) => {
-    const touches = extractTouches(event);
-    if (touches.length > previousCountRef.current) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
-    previousCountRef.current = touches.length;
-    if (touches.length > 0) {
-      // Live: drive the heatmap from current contact points.
-      displayTouches.value = touches;
-    }
-    // touches.length === 0 path is handled in handleTouchEnd so we keep
-    // the last frame as the persistent snapshot.
-  };
-
-  const handleTouchEnd = (event: any) => {
-    const touches = extractTouches(event);
-    previousCountRef.current = touches.length;
-    if (touches.length === 0) {
-      // All fingers lifted: leave displayTouches at its last value so the
-      // heatmap stays on screen until a new touch begins or we send.
-      return;
-    }
-    displayTouches.value = touches;
-  };
+  const gesture = Gesture.Manual()
+    .onTouchesDown((e) => {
+      'worklet';
+      const all = e.allTouches;
+      const out: HeatTouch[] = [];
+      for (let i = 0; i < all.length; i++) {
+        out.push({ id: all[i].id, x: all[i].x, y: all[i].y, r: TOUCH_RADIUS });
+      }
+      if (out.length > previousCount.value) runOnJS(fireLandingHaptic)();
+      previousCount.value = out.length;
+      displayTouches.value = out;
+    })
+    .onTouchesMove((e) => {
+      'worklet';
+      const all = e.allTouches;
+      const out: HeatTouch[] = [];
+      for (let i = 0; i < all.length; i++) {
+        out.push({ id: all[i].id, x: all[i].x, y: all[i].y, r: TOUCH_RADIUS });
+      }
+      previousCount.value = out.length;
+      displayTouches.value = out;
+    })
+    .onTouchesUp((e) => {
+      'worklet';
+      const all = e.allTouches;
+      if (all.length === 0) {
+        // Last finger lifted: leave displayTouches at its last value so the
+        // heatmap stays on screen until a new touch begins or we send.
+        previousCount.value = 0;
+        return;
+      }
+      const out: HeatTouch[] = [];
+      for (let i = 0; i < all.length; i++) {
+        out.push({ id: all[i].id, x: all[i].x, y: all[i].y, r: TOUCH_RADIUS });
+      }
+      previousCount.value = out.length;
+      displayTouches.value = out;
+    })
+    .onTouchesCancelled(() => {
+      'worklet';
+      previousCount.value = 0;
+      // Don't wipe displayTouches so the user keeps their last imprint visible.
+    });
 
   const sendTouch = async () => {
     if (isSending) return;
@@ -137,15 +138,11 @@ export default function TouchPartnerScreen() {
     <View style={[styles.container, { backgroundColor: '#000' }]}>
       <Stack.Screen options={{ presentation: 'fullScreenModal', headerShown: false, gestureEnabled: false }} />
 
-      <View
-        style={StyleSheet.absoluteFill}
-        onTouchStart={handleTouchUpdate}
-        onTouchMove={handleTouchUpdate}
-        onTouchEnd={handleTouchEnd}
-        onTouchCancel={() => { displayTouches.value = []; previousCountRef.current = 0; }}
-      >
-        <HeatmapCanvas touches={displayTouches} color={theme.tint} />
-      </View>
+      <GestureDetector gesture={gesture}>
+        <View style={StyleSheet.absoluteFill}>
+          <HeatmapCanvas touches={displayTouches} color={theme.tint} />
+        </View>
+      </GestureDetector>
 
       <View style={[styles.header, { paddingTop: insets.top + 10 }]} pointerEvents="box-none">
         <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
