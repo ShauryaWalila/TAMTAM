@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import base64js from 'base64-js';
 import * as Haptics from 'expo-haptics';
 import GridMode, { GridModeHandle } from '@/components/Draw/GridMode';
+import DrawReplay, { RecordedStroke, DrawPlayback } from '@/components/Draw/DrawReplay';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const PICKER_WIDTH = SCREEN_WIDTH * 0.75;
@@ -63,6 +64,13 @@ export default function DrawScreen() {
   const gridRadiusSV = useSharedValue(22);
   const gridRef = useRef<GridModeHandle>(null);
   const [gridIsSending, setGridIsSending] = useState(false);
+
+  // Drawing playback recording. Captures each stroke's points + timing so the
+  // partner can watch the drawing being made. Reset on send/trash.
+  const recordingPointsRef = useRef<[number, number][]>([]);
+  const recordingStrokeStartRef = useRef<number>(0);
+  const recordedStrokesRef = useRef<RecordedStroke[]>([]);
+  const recordingSessionStartRef = useRef<number>(0);
 
   // 🚀 Infinite Canvas Transforms
   const scale = useSharedValue(1);
@@ -134,19 +142,26 @@ export default function DrawScreen() {
     const newPath = Skia.Path.Make();
     const adjX = (x - translateX.value) / scale.value;
     const adjY = (y - translateY.value) / scale.value;
-    
-    newPath.moveTo(adjX, adjY);
-    newPath.lineTo(adjX + 0.1, adjY + 0.1); 
 
-    const pathData = { 
-      id, path: newPath, 
-      color: activeTool === 'eraser' ? boardBg : color, 
-      strokeWidth: (activeTool === 'eraser' ? eraserWidth : strokeWidth) / scale.value, 
-      isEraser: activeTool === 'eraser' 
+    newPath.moveTo(adjX, adjY);
+    newPath.lineTo(adjX + 0.1, adjY + 0.1);
+
+    const pathData = {
+      id, path: newPath,
+      color: activeTool === 'eraser' ? boardBg : color,
+      strokeWidth: (activeTool === 'eraser' ? eraserWidth : strokeWidth) / scale.value,
+      isEraser: activeTool === 'eraser'
     };
 
     activePathRef.current = pathData;
     setCurrentLocalPath(pathData);
+
+    // Recording: open a new stroke buffer, anchor session start on first stroke.
+    if (recordedStrokesRef.current.length === 0 && recordingSessionStartRef.current === 0) {
+      recordingSessionStartRef.current = Date.now();
+    }
+    recordingStrokeStartRef.current = Date.now();
+    recordingPointsRef.current = [[adjX, adjY]];
   };
 
   const onUpdate = (x: number, y: number) => {
@@ -155,6 +170,7 @@ export default function DrawScreen() {
       const adjY = (y - translateY.value) / scale.value;
       activePathRef.current.path.lineTo(adjX, adjY);
       setCurrentLocalPath({ ...activePathRef.current });
+      recordingPointsRef.current.push([adjX, adjY]);
     }
   };
 
@@ -163,9 +179,35 @@ export default function DrawScreen() {
       const pathCopy = activePathRef.current.path.copy();
       const finished = { ...activePathRef.current, path: pathCopy };
       setPaths(prev => [...prev, finished]);
+
+      // Recording: close out the stroke buffer.
+      const sessionStart = recordingSessionStartRef.current;
+      recordedStrokesRef.current.push({
+        id: activePathRef.current.id,
+        color: activePathRef.current.color,
+        strokeWidth: activePathRef.current.strokeWidth,
+        isEraser: activePathRef.current.isEraser,
+        points: recordingPointsRef.current,
+        t_start: recordingStrokeStartRef.current - sessionStart,
+        t_end: Date.now() - sessionStart,
+      });
+      recordingPointsRef.current = [];
+
       activePathRef.current = null;
       setTimeout(() => setCurrentLocalPath(null), 16);
     }
+  };
+
+  const undoLastStroke = () => {
+    setPaths(prev => prev.slice(0, -1));
+    recordedStrokesRef.current = recordedStrokesRef.current.slice(0, -1);
+    if (recordedStrokesRef.current.length === 0) recordingSessionStartRef.current = 0;
+  };
+
+  const clearAllStrokes = () => {
+    setPaths([]);
+    recordedStrokesRef.current = [];
+    recordingSessionStartRef.current = 0;
   };
 
   // 🖐️ Unified Gesture System
@@ -266,14 +308,29 @@ export default function DrawScreen() {
       const image = canvasRef.current?.makeImageSnapshot();
       if (image) {
         const base64 = `data:image/png;base64,${image.encodeToBase64()}`;
-        db.runSync(`INSERT INTO posts (id, created_at, updated_at, type, content, user_id, reactions, seen_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, 
-          [id, now, now, 'draw', base64, currentUserName || "user_1", JSON.stringify({ board_bg: boardBg }), '']);
-        queueSyncOperation('posts', id, 'INSERT', { id, type: 'draw', content: base64, user_id: currentUserName || "user_1", created_at: now, updated_at: now, reactions: { board_bg: boardBg } });
+        // Build playback timeline so the partner can replay the strokes
+        // animating in. Stored under reactions.playback so the existing
+        // content column stays an image URI (preserves prior viewers).
+        const playback: DrawPlayback | undefined = recordedStrokesRef.current.length > 0 ? {
+          v: 1,
+          duration_ms: Math.max(0, Date.now() - recordingSessionStartRef.current),
+          screen: { w: SCREEN_WIDTH, h: SCREEN_HEIGHT },
+          strokes: recordedStrokesRef.current,
+        } : undefined;
+        const reactions: any = { board_bg: boardBg };
+        if (playback) reactions.playback = playback;
+
+        db.runSync(`INSERT INTO posts (id, created_at, updated_at, type, content, user_id, reactions, seen_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [id, now, now, 'draw', base64, currentUserName || "user_1", JSON.stringify(reactions), '']);
+        queueSyncOperation('posts', id, 'INSERT', { id, type: 'draw', content: base64, user_id: currentUserName || "user_1", created_at: now, updated_at: now, reactions });
         processSyncQueue();
         updateDrawingWidget(base64);
         DeviceEventEmitter.emit('refresh-dashboard');
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        setPaths([]); refreshFromSQLite(); setShowHistory(true);
+        setPaths([]);
+        recordedStrokesRef.current = [];
+        recordingSessionStartRef.current = 0;
+        refreshFromSQLite(); setShowHistory(true);
       }
     } catch (e) { console.warn(e); } finally { setLoading(false); }
   };
@@ -354,8 +411,8 @@ export default function DrawScreen() {
             <TouchableOpacity onPress={() => setShowPicker('board')} style={styles.tool}><View style={[styles.colorPreview, { backgroundColor: boardBg, borderRadius: 4 }]} /><Layers size={14} color={boardBg === '#FFFFFF' ? '#000' : '#FFF'} style={{position:'absolute'}} /></TouchableOpacity>
             <View style={styles.divider} />
             <TouchableOpacity onPress={() => setShowStrokeSettings(true)} style={styles.tool}><Settings2 size={22} color="#FFF" /></TouchableOpacity>
-            <TouchableOpacity onPress={() => setPaths(prev => prev.slice(0, -1))} style={styles.tool}><Undo2 size={22} color="#FFF" /></TouchableOpacity>
-            <TouchableOpacity onPress={() => setPaths([])} style={styles.tool}><Trash2 size={22} color="#FF3B30" /></TouchableOpacity>
+            <TouchableOpacity onPress={undoLastStroke} style={styles.tool}><Undo2 size={22} color="#FFF" /></TouchableOpacity>
+            <TouchableOpacity onPress={clearAllStrokes} style={styles.tool}><Trash2 size={22} color="#FF3B30" /></TouchableOpacity>
           </BlurView>
         </View>
         )}
@@ -439,7 +496,17 @@ export default function DrawScreen() {
                 <TouchableOpacity style={styles.viewerClose} onPress={() => setViewingPost(null)}><X size={30} color="#FFF" /></TouchableOpacity>
                 <MotiView from={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={styles.viewerContent}>
                   <View style={[styles.viewerCard, { backgroundColor: viewingPost.type === 'draw' ? (viewingPost.reactions?.board_bg || '#FFF') : '#0a0a0a' }]}>
-                    {viewingPost.type === 'draw' && <Image source={{ uri: viewingPost.content }} style={styles.fullImage} resizeMode="contain" />}
+                    {viewingPost.type === 'draw' && !viewingPost.reactions?.playback && (
+                      <Image source={{ uri: viewingPost.content }} style={styles.fullImage} resizeMode="contain" />
+                    )}
+                    {viewingPost.type === 'draw' && viewingPost.reactions?.playback && (
+                      <DrawReplay
+                        playback={viewingPost.reactions.playback}
+                        boardBg={viewingPost.reactions?.board_bg || '#FFF'}
+                        surfaceWidth={SCREEN_WIDTH * 0.9}
+                        themeTint={theme.tint}
+                      />
+                    )}
                     {viewingPost.type === 'grid' && (
                       <View style={[styles.fullImage, { justifyContent: 'center', alignItems: 'center' }]}>
                         <Grid3x3 size={96} color={theme.tint} />
