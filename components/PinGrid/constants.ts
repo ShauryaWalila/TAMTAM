@@ -3,8 +3,8 @@ export const SPACING = 14;            // px between pins (hex grid step)
 export const MAX_DIST = 22;           // px — beyond this no pin movement
 export const MAX_DIST_SQ = MAX_DIST * MAX_DIST;
 export const PIN_CAP_RADIUS = 5;      // resting cap radius
-export const MAX_DEPRESSION_PX = 30;  // how far a fully-pressed pin sinks
-export const PARALLAX_FACTOR = 0.12;  // perspective shift toward edges
+export const MAX_DEPRESSION_PX = 8;   // how far a fully-pressed pin sinks (kept under SPACING/2 to avoid row overlap)
+export const PARALLAX_FACTOR = 0.04;  // perspective shift toward edges
 export const PRESS_THRESHOLD = 0.05;  // below this, pin is considered untouched
 export const DEFAULT_TOUCH_RADIUS = 14;
 
