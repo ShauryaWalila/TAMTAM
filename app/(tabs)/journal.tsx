@@ -21,6 +21,7 @@ import {
   Info,
   Smile,
   CheckCheck,
+  Grid3x3,
 } from "lucide-react-native";
 import { AnimatePresence, MotiView } from "moti";
 import React, { useEffect, useState, useRef } from "react";
@@ -430,14 +431,25 @@ export default function JournalScreen() {
                     {post.user_id !== currentUserName && !post.seen_by?.includes(currentUserName || "") && <View style={[styles.unreadDot, { backgroundColor: theme.tint }]} />}
                   </View>
 
-                  {post.type === "text" ? <Text style={[styles.postText, { color: theme.text }]}>{post.content}</Text> : <Image source={{ uri: post.content }} style={styles.postImage} resizeMode="cover" />}
+                  {post.type === "text" ? (
+                    <Text style={[styles.postText, { color: theme.text }]}>{post.content}</Text>
+                  ) : post.type === "grid" ? (
+                    <View style={[styles.postImage, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#0a0a0a' }]}>
+                      <Grid3x3 size={48} color={theme.tint} />
+                      <Text style={{ color: '#FFF', fontSize: 11, fontWeight: '900', letterSpacing: 2, marginTop: 8 }}>GRID</Text>
+                    </View>
+                  ) : (
+                    <Image source={{ uri: post.content }} style={styles.postImage} resizeMode="cover" />
+                  )}
 
                   <View style={styles.reactionsContainer}>
-                    {post.reactions && Object.entries(post.reactions).map(([uid, emoji]) => (
+                    {post.reactions && Object.entries(post.reactions)
+                      .filter(([key, val]) => key !== 'board_bg' && key !== 'playback' && typeof val === 'string' && val.length > 0)
+                      .map(([uid, emoji]) => (
                       <View key={uid} style={[styles.reactionBadge, { backgroundColor: theme.background, borderColor: theme.tint + "20", width: 32, height: 32, overflow: 'hidden', padding: 0, justifyContent: 'center', alignItems: 'center' }]}>
-                        <AnimatedReaction 
-                          source={REACTION_LOTTIES[emoji]} 
-                          scale={REACTION_SCALES[emoji] || 1.0} 
+                        <AnimatedReaction
+                          source={REACTION_LOTTIES[emoji as string]}
+                          scale={REACTION_SCALES[emoji as string] || 1.0}
                         />
                       </View>
                     ))}
