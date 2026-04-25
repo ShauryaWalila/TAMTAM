@@ -5,7 +5,7 @@ import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-g
 import Animated, { useSharedValue, useAnimatedStyle, runOnJS, withSpring, withTiming, useDerivedValue } from 'react-native-reanimated';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
-import { Eraser, Pencil, Send, Trash2, History, X, Palette, Undo2, Check, Settings2, ZoomIn, Hand, Move, Layers, Grid3x3, Flame } from 'lucide-react-native';
+import { Eraser, Pencil, Send, Trash2, History, X, Palette, Undo2, Check, Settings2, ZoomIn, Hand, Move, Layers, Grid3x3, RotateCcw } from 'lucide-react-native';
 import { MotiView, AnimatePresence } from 'moti';
 import { supabase } from '@/lib/supabase';
 import { db, queueSyncOperation, generateUUID } from '@/lib/db';
@@ -17,8 +17,7 @@ import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import base64js from 'base64-js';
 import * as Haptics from 'expo-haptics';
-import GridMode from '@/components/Draw/GridMode';
-import HeatmapMode from '@/components/Draw/HeatmapMode';
+import GridMode, { GridModeHandle } from '@/components/Draw/GridMode';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const PICKER_WIDTH = SCREEN_WIDTH * 0.75;
@@ -58,15 +57,12 @@ export default function DrawScreen() {
   const [showStrokeSettings, setShowStrokeSettings] = useState(false);
   const [viewingPost, setViewingPost] = useState<any | null>(null);
 
-  // Mode + per-mode radius settings (persisted in SecureStore).
-  const [mode, setMode] = useState<'draw' | 'grid' | 'heatmap'>('draw');
+  // Mode + grid radius (persisted in SecureStore).
+  const [mode, setMode] = useState<'draw' | 'grid'>('draw');
   const [gridRadius, setGridRadius] = useState(22);
-  const [heatmapRadius, setHeatmapRadius] = useState(30);
-  const [heatmapVisualScale, setHeatmapVisualScale] = useState(2.5);
-
   const gridRadiusSV = useSharedValue(22);
-  const heatmapRadiusSV = useSharedValue(30);
-  const heatmapVisualScaleSV = useSharedValue(2.5);
+  const gridRef = useRef<GridModeHandle>(null);
+  const [gridIsSending, setGridIsSending] = useState(false);
 
   // 🚀 Infinite Canvas Transforms
   const scale = useSharedValue(1);
@@ -95,46 +91,24 @@ export default function DrawScreen() {
         if (!Number.isNaN(n)) setGridRadius(n);
       }
     });
-    SecureStore.getItemAsync('heatmap_radius').then((v) => {
-      if (v) {
-        const n = parseFloat(v);
-        if (!Number.isNaN(n)) setHeatmapRadius(n);
-      }
-    });
-    SecureStore.getItemAsync('heatmap_visual_scale').then((v) => {
-      if (v) {
-        const n = parseFloat(v);
-        if (!Number.isNaN(n)) setHeatmapVisualScale(n);
-      }
-    });
     return () => {
       DeviceEventEmitter.emit('show-navigator');
       sub.remove();
     };
   }, []);
 
-  // Mirror radius state into SharedValues so the live canvas worklets see updates.
+  // Mirror grid radius state into the SharedValue so the live worklet sees updates.
   useEffect(() => { gridRadiusSV.value = gridRadius; }, [gridRadius]);
-  useEffect(() => { heatmapRadiusSV.value = heatmapRadius; }, [heatmapRadius]);
-  useEffect(() => { heatmapVisualScaleSV.value = heatmapVisualScale; }, [heatmapVisualScale]);
 
   const updateGridRadius = (v: number) => {
     setGridRadius(v);
     SecureStore.setItemAsync('grid_radius', String(v)).catch(() => {});
   };
-  const updateHeatmapRadius = (v: number) => {
-    setHeatmapRadius(v);
-    SecureStore.setItemAsync('heatmap_radius', String(v)).catch(() => {});
-  };
-  const updateHeatmapVisualScale = (v: number) => {
-    setHeatmapVisualScale(v);
-    SecureStore.setItemAsync('heatmap_visual_scale', String(v)).catch(() => {});
-  };
 
   const refreshFromSQLite = () => {
     try {
       const data = db.getAllSync(
-        `SELECT * FROM posts WHERE type IN ('draw', 'grid', 'heatmap') ORDER BY created_at DESC LIMIT 50`
+        `SELECT * FROM posts WHERE type IN ('draw', 'grid') ORDER BY created_at DESC LIMIT 50`
       ) as any[];
       if (data) setPosts(data.map(p => ({ ...p, reactions: p.reactions ? JSON.parse(p.reactions) : {} })));
     } catch (e) {}
@@ -144,7 +118,7 @@ export default function DrawScreen() {
     const { data } = await supabase
       .from("posts")
       .select("*")
-      .in('type', ['draw', 'grid', 'heatmap'])
+      .in('type', ['draw', 'grid'])
       .order("created_at", { ascending: false })
       .limit(50);
     if (data) {
@@ -308,28 +282,36 @@ export default function DrawScreen() {
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#000' }}>
       <View style={{ flex: 1, paddingTop: insets.top }}>
         <View style={styles.header}>
-          <View><Text style={[styles.title, { color: '#FFF' }]}>Sketchbook</Text><View style={styles.statusRow}><ZoomIn size={12} color="#888" /><Text style={styles.zoomLabel}>{zoomText}</Text></View></View>
+          <View>
+            <Text style={[styles.title, { color: '#FFF' }]}>{mode === 'grid' ? 'Grid' : 'Sketchbook'}</Text>
+            {mode === 'draw' && (
+              <View style={styles.statusRow}><ZoomIn size={12} color="#888" /><Text style={styles.zoomLabel}>{zoomText}</Text></View>
+            )}
+          </View>
           <View style={styles.headerActions}>
+            {/* Mode switch — clicking flips between Draw and Grid; the icon shows
+                the OTHER mode you'll switch into so the action is unambiguous. */}
+            <TouchableOpacity
+              onPress={() => setMode(mode === 'draw' ? 'grid' : 'draw')}
+              style={[styles.circleBtn, { backgroundColor: 'rgba(255,255,255,0.1)' }]}
+            >
+              {mode === 'draw' ? <Grid3x3 size={22} color="#FFF" /> : <Pencil size={22} color="#FFF" />}
+            </TouchableOpacity>
             <TouchableOpacity onPress={() => setShowHistory(true)} style={[styles.circleBtn, { backgroundColor: 'rgba(255,255,255,0.1)' }]}><History size={22} color="#FFF" /></TouchableOpacity>
+            {mode === 'grid' && (
+              <TouchableOpacity onPress={() => gridRef.current?.clear()} style={[styles.circleBtn, { backgroundColor: 'rgba(255,255,255,0.1)' }]}>
+                <RotateCcw size={22} color="#FFF" />
+              </TouchableOpacity>
+            )}
             {mode === 'draw' && (
               <TouchableOpacity onPress={handleSend} disabled={loading || paths.length === 0} style={[styles.sendBtn, { backgroundColor: theme.tint }]}><Send size={20} color="#FFF" /></TouchableOpacity>
             )}
+            {mode === 'grid' && (
+              <TouchableOpacity onPress={() => gridRef.current?.send()} disabled={gridIsSending} style={[styles.sendBtn, { backgroundColor: theme.tint }]}>
+                <Send size={20} color="#FFF" />
+              </TouchableOpacity>
+            )}
           </View>
-        </View>
-
-        <View style={styles.modeRow}>
-          <TouchableOpacity onPress={() => setMode('draw')} style={[styles.modeBtn, mode === 'draw' && { backgroundColor: theme.tint }]}>
-            <Pencil size={14} color="#FFF" />
-            <Text style={styles.modeLabel}>Draw</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setMode('grid')} style={[styles.modeBtn, mode === 'grid' && { backgroundColor: theme.tint }]}>
-            <Grid3x3 size={14} color="#FFF" />
-            <Text style={styles.modeLabel}>Grid</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setMode('heatmap')} style={[styles.modeBtn, mode === 'heatmap' && { backgroundColor: theme.tint }]}>
-            <Flame size={14} color="#FFF" />
-            <Text style={styles.modeLabel}>Heat</Text>
-          </TouchableOpacity>
         </View>
 
         {mode === 'draw' && (
@@ -351,22 +333,13 @@ export default function DrawScreen() {
         {mode === 'grid' && (
           <View style={styles.canvasContainer}>
             <GridMode
+              ref={gridRef}
               radius={gridRadiusSV}
               themeTint={theme.tint}
               currentUserName={currentUserName ?? ''}
               onSent={() => { refreshFromSQLite(); setShowHistory(true); DeviceEventEmitter.emit('refresh-dashboard'); }}
-            />
-          </View>
-        )}
-
-        {mode === 'heatmap' && (
-          <View style={styles.canvasContainer}>
-            <HeatmapMode
-              radius={heatmapRadiusSV}
-              visualScale={heatmapVisualScaleSV}
-              themeTint={theme.tint}
-              currentUserName={currentUserName ?? ''}
-              onSent={() => { refreshFromSQLite(); setShowHistory(true); DeviceEventEmitter.emit('refresh-dashboard'); }}
+              onSendStart={() => setGridIsSending(true)}
+              onSendEnd={() => setGridIsSending(false)}
             />
           </View>
         )}
@@ -387,7 +360,7 @@ export default function DrawScreen() {
         </View>
         )}
 
-        {mode !== 'draw' && (
+        {mode === 'grid' && (
           <View style={[styles.minimalDock, { bottom: insets.bottom + 20 }]}>
             <BlurView intensity={90} tint="dark" style={styles.dockBlur}>
               <TouchableOpacity onPress={() => setShowStrokeSettings(true)} style={styles.tool}>
@@ -420,7 +393,7 @@ export default function DrawScreen() {
           <Pressable style={styles.modalOverlay} onPress={() => setShowStrokeSettings(false)}>
             <View style={[styles.settingsCard, { backgroundColor: '#1A1A1A' }]}>
               <Text style={[styles.modalTitle, { color: '#FFF' }]}>
-                {mode === 'draw' ? 'Brush Settings' : mode === 'grid' ? 'Grid Settings' : 'Heatmap Settings'}
+                {mode === 'draw' ? 'Brush Settings' : 'Grid Settings'}
               </Text>
               {mode === 'draw' && (<>
                 <Text style={styles.label}>PEN SIZE</Text>
@@ -433,20 +406,6 @@ export default function DrawScreen() {
                 <View style={styles.sizeRow}>{[14, 22, 30, 40, 55].map(r => (
                   <TouchableOpacity key={r} onPress={() => updateGridRadius(r)} style={[styles.sizeBtn, gridRadius === r && { backgroundColor: theme.tint }]}>
                     <View style={{ width: Math.min(r/2, 22), height: Math.min(r/2, 22), borderRadius: Math.min(r/4, 11), backgroundColor: gridRadius === r ? '#FFF' : '#AAA' }} />
-                  </TouchableOpacity>
-                ))}</View>
-              </>)}
-              {mode === 'heatmap' && (<>
-                <Text style={styles.label}>TOUCH RADIUS ({heatmapRadius}px)</Text>
-                <View style={styles.sizeRow}>{[15, 25, 35, 50, 70].map(r => (
-                  <TouchableOpacity key={r} onPress={() => updateHeatmapRadius(r)} style={[styles.sizeBtn, heatmapRadius === r && { backgroundColor: theme.tint }]}>
-                    <View style={{ width: Math.min(r/2.5, 22), height: Math.min(r/2.5, 22), borderRadius: Math.min(r/5, 11), backgroundColor: heatmapRadius === r ? '#FFF' : '#AAA' }} />
-                  </TouchableOpacity>
-                ))}</View>
-                <Text style={[styles.label, { marginTop: 25 }]}>GLOW SCALE ({heatmapVisualScale.toFixed(1)}x)</Text>
-                <View style={styles.sizeRow}>{[1.5, 2.0, 2.5, 3.0, 4.0].map(s => (
-                  <TouchableOpacity key={s} onPress={() => updateHeatmapVisualScale(s)} style={[styles.sizeBtn, heatmapVisualScale === s && { backgroundColor: theme.tint }]}>
-                    <Text style={{ color: heatmapVisualScale === s ? '#FFF' : '#AAA', fontWeight: '900', fontSize: 11 }}>{s.toFixed(1)}x</Text>
                   </TouchableOpacity>
                 ))}</View>
               </>)}
@@ -471,12 +430,6 @@ export default function DrawScreen() {
                         <Text style={styles.thumbType}>GRID</Text>
                       </View>
                     )}
-                    {item.type === 'heatmap' && (
-                      <View style={[styles.galleryThumb, styles.placeholderThumb]}>
-                        <Flame size={48} color={theme.tint} />
-                        <Text style={styles.thumbType}>HEAT</Text>
-                      </View>
-                    )}
                     <View style={styles.thumbLabel}><Text style={styles.thumbUser} numberOfLines={1}>{item.user_id === currentUserName ? 'Me' : item.user_id}</Text></View>
                   </TouchableOpacity>
                 )}/>
@@ -487,10 +440,10 @@ export default function DrawScreen() {
                 <MotiView from={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={styles.viewerContent}>
                   <View style={[styles.viewerCard, { backgroundColor: viewingPost.type === 'draw' ? (viewingPost.reactions?.board_bg || '#FFF') : '#0a0a0a' }]}>
                     {viewingPost.type === 'draw' && <Image source={{ uri: viewingPost.content }} style={styles.fullImage} resizeMode="contain" />}
-                    {viewingPost.type !== 'draw' && (
+                    {viewingPost.type === 'grid' && (
                       <View style={[styles.fullImage, { justifyContent: 'center', alignItems: 'center' }]}>
-                        {viewingPost.type === 'grid' ? <Grid3x3 size={96} color={theme.tint} /> : <Flame size={96} color={theme.tint} />}
-                        <Text style={[styles.thumbType, { fontSize: 16, marginTop: 16 }]}>{viewingPost.type.toUpperCase()}</Text>
+                        <Grid3x3 size={96} color={theme.tint} />
+                        <Text style={[styles.thumbType, { fontSize: 16, marginTop: 16 }]}>GRID</Text>
                         <Text style={{ color: '#888', fontSize: 13, marginTop: 8, textAlign: 'center', paddingHorizontal: 30 }}>
                           Replay viewer coming next.{"\n"}Tap close to dismiss.
                         </Text>

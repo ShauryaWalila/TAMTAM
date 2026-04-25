@@ -1,11 +1,16 @@
 // components/Draw/GridMode.tsx
 // Grid mode for the Draw screen: pin-art canvas with multi-pattern accumulating
-// imprint and recording. Send writes a `posts` row with type='grid'.
+// imprint and recording. Exposes imperative send/clear via a ref so the parent
+// header can drive both, leaving the canvas itself free of overlay buttons.
 
-import React, { useEffect, useRef, useState } from 'react';
-import { Dimensions, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
-import { Heart, RotateCcw, Send, Sparkles } from 'lucide-react-native';
-import { useSharedValue, withTiming, runOnJS, SharedValue } from 'react-native-reanimated';
+import React, {
+  forwardRef,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react';
+import { Dimensions, StyleSheet, View } from 'react-native';
+import { useSharedValue, runOnJS, SharedValue } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
 import { db, queueSyncOperation, generateUUID } from '@/lib/db';
@@ -13,19 +18,29 @@ import { processSyncQueue } from '@/lib/syncEngine';
 import PinGrid from '@/components/PinGrid/PinGrid';
 import { Touch } from '@/components/PinGrid/types';
 import { buildHexGrid } from '@/components/PinGrid/geometry';
-import { createRecorder, float32ToBase64 } from '@/lib/touchRecording';
+import { createRecorder } from '@/lib/touchRecording';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-type Props = {
-  radius: SharedValue<number>;        // user-adjustable touch radius (px)
-  themeTint: string;
-  currentUserName: string;
-  // Called after a successful send so the parent can refresh its history.
-  onSent?: () => void;
+export type GridModeHandle = {
+  send: () => Promise<void>;
+  clear: () => void;
+  isSending: () => boolean;
 };
 
-export default function GridMode({ radius, themeTint, currentUserName, onSent }: Props) {
+type Props = {
+  radius: SharedValue<number>;
+  themeTint: string;
+  currentUserName: string;
+  onSent?: () => void;
+  onSendStart?: () => void;
+  onSendEnd?: () => void;
+};
+
+const GridMode = forwardRef<GridModeHandle, Props>(function GridMode(
+  { radius, currentUserName, onSent, onSendStart, onSendEnd },
+  ref
+) {
   const [isSending, setIsSending] = useState(false);
 
   const pinCount = React.useMemo(
@@ -92,40 +107,35 @@ export default function GridMode({ radius, themeTint, currentUserName, onSent }:
       previousCount.value = 0;
     });
 
+  // Synchronous clear — replaces the prior animated path that left a residual
+  // mark when the worklet callback's heldImprint reassignment raced with the
+  // next frame's merge. Doing the reset on the JS thread guarantees the new
+  // empty Float32Array is in place before the next useFrameCallback fires.
   const handleClear = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    isClearing.value = withTiming(1, { duration: 600 }, (finished) => {
-      'worklet';
-      if (!finished) {
-        isClearing.value = 0;
-        return;
-      }
-      heldImprint.value = new Float32Array(pinCount);
-      isClearing.value = 0;
-      runOnJS(resetRecorderJS)();
-    });
-  };
-
-  const resetRecorderJS = () => {
+    heldImprint.value = new Float32Array(pinCount);
+    activeTouches.value = [];
+    isClearing.value = 0;
+    previousCount.value = 0;
     recorderRef.current.reset();
   };
 
   const handleSend = async () => {
     if (isSending) return;
+    if (onSendStart) onSendStart();
     setIsSending(true);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     try {
       const finalImprint = heldImprint.value;
-      // Bail if nothing has been drawn this session.
       let any = false;
       for (let i = 0; i < finalImprint.length; i++) {
         if (finalImprint[i] > 0) { any = true; break; }
       }
       if (!any) {
         setIsSending(false);
+        if (onSendEnd) onSendEnd();
         return;
       }
-
       const recording = recorderRef.current.finalize(
         finalImprint,
         { w: SCREEN_WIDTH, h: SCREEN_HEIGHT }
@@ -148,24 +158,30 @@ export default function GridMode({ radius, themeTint, currentUserName, onSent }:
         reactions: {},
       });
       processSyncQueue();
-      // Reset local state.
       heldImprint.value = new Float32Array(pinCount);
       activeTouches.value = [];
       recorderRef.current.reset();
       if (onSent) onSent();
-      setTimeout(() => setIsSending(false), 1000);
+      setTimeout(() => {
+        setIsSending(false);
+        if (onSendEnd) onSendEnd();
+      }, 1000);
     } catch (e) {
       console.warn('grid send failed', e);
       setIsSending(false);
+      if (onSendEnd) onSendEnd();
     }
   };
 
-  // Bail-out cleanup if component unmounts mid-clear.
-  useEffect(() => {
-    return () => {
-      isClearing.value = 0;
-    };
-  }, [isClearing]);
+  useImperativeHandle(
+    ref,
+    () => ({
+      send: handleSend,
+      clear: handleClear,
+      isSending: () => isSending,
+    }),
+    [isSending]
+  );
 
   return (
     <View style={StyleSheet.absoluteFill}>
@@ -179,30 +195,8 @@ export default function GridMode({ radius, themeTint, currentUserName, onSent }:
           />
         </View>
       </GestureDetector>
-
-      <View style={styles.actionsRow} pointerEvents="box-none">
-        <TouchableOpacity onPress={handleClear} style={styles.actionBtn}>
-          <RotateCcw size={20} color="#FFF" />
-          <Text style={styles.actionLabel}>Clear</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          activeOpacity={0.85}
-          onPress={handleSend}
-          disabled={isSending}
-          style={[styles.sendBtn, { backgroundColor: themeTint }]}
-        >
-          {isSending ? <Sparkles size={22} color="#FFF" /> : <Send size={22} color="#FFF" />}
-          <Text style={styles.sendLabel}>{isSending ? 'Sending…' : 'Send'}</Text>
-        </TouchableOpacity>
-      </View>
     </View>
   );
-}
-
-const styles = StyleSheet.create({
-  actionsRow: { position: 'absolute', bottom: 100, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 16 },
-  actionBtn: { paddingHorizontal: 20, height: 56, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.12)', flexDirection: 'row', alignItems: 'center', gap: 8 },
-  actionLabel: { color: '#FFF', fontSize: 14, fontWeight: '700' },
-  sendBtn: { paddingHorizontal: 30, height: 56, borderRadius: 28, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  sendLabel: { color: '#FFF', fontSize: 16, fontWeight: '900' },
 });
+
+export default GridMode;
