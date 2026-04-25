@@ -1,5 +1,5 @@
 // components/PinGrid/geometry.ts
-import { SPACING, MAX_DIST, MAX_DIST_SQ } from './constants';
+import { SPACING, MAX_DIST } from './constants';
 
 /**
  * Builds a hex-packed grid covering the given screen dims.
@@ -26,15 +26,20 @@ export function buildHexGrid(screenW: number, screenH: number) {
 }
 
 /**
- * Smoothstep falloff: 1 at distance=0, 0 at distance>=MAX_DIST, with a Hermite curve in between.
+ * Smoothstep falloff: 1 at distance=0, 0 at distance>=maxDist, with a Hermite curve in between.
  * Sharper boundary than pow(r, k) — full pressure under the contact patch, zero outside.
+ *
+ * `maxDist` defaults to the constants-file value so existing call sites keep working;
+ * the touch-radius setting in the Draw screen passes a runtime value to make the contact
+ * radius user-adjustable.
  */
-export function pressureAt(distSq: number): number {
+export function pressureAt(distSq: number, maxDist: number = MAX_DIST): number {
   'worklet';
-  if (distSq >= MAX_DIST * MAX_DIST) return 0;
+  const maxSq = maxDist * maxDist;
+  if (distSq >= maxSq) return 0;
   const dist = Math.sqrt(distSq);
-  const t = 1 - dist / MAX_DIST;     // 1 at center → 0 at edge
-  return t * t * (3 - 2 * t);        // smoothstep(t)
+  const t = 1 - dist / maxDist;       // 1 at center → 0 at edge
+  return t * t * (3 - 2 * t);          // smoothstep(t)
 }
 
 /**
@@ -45,8 +50,10 @@ export function imprintFromTouches(
   X: Float32Array,
   Y: Float32Array,
   pinCount: number,
-  touches: { x: number; y: number; r: number }[]
+  touches: { x: number; y: number; r: number }[],
+  maxDist: number = MAX_DIST
 ): Float32Array {
+  const maxSq = maxDist * maxDist;
   const out = new Float32Array(pinCount);
   for (let i = 0; i < pinCount; i++) {
     const bx = X[i];
@@ -57,8 +64,8 @@ export function imprintFromTouches(
       const dx = bx - t.x;
       const dy = by - t.y;
       const d2 = dx * dx + dy * dy;
-      if (d2 < MAX_DIST_SQ) {
-        const p = pressureAt(d2);
+      if (d2 < maxSq) {
+        const p = pressureAt(d2, maxDist);
         if (p > live) live = p;
       }
     }

@@ -10,16 +10,20 @@ import { buildHexGrid, pressureAt } from './geometry';
 import {
   COLOR_BG_TOP, COLOR_BG_BOTTOM, COLOR_STEM,
   COLOR_CAP_RESTING, COLOR_CAP_PRESSED, COLOR_PIN_SHADOW,
-  PIN_CAP_RADIUS, MAX_DEPRESSION_PX, PARALLAX_FACTOR, PRESS_THRESHOLD, MAX_DIST_SQ,
+  PIN_CAP_RADIUS, MAX_DEPRESSION_PX, PARALLAX_FACTOR, PRESS_THRESHOLD, MAX_DIST,
 } from './constants';
 
 type Props = {
   activeTouches: SharedValue<Touch[]>;
   heldImprint: SharedValue<Float32Array>;
   isClearing: SharedValue<number>;
+  // Optional runtime touch radius (px). When provided, overrides MAX_DIST so
+  // settings sliders can adjust how big each contact patch is. Reads inside
+  // worklets so changes take effect without component remount.
+  maxDist?: SharedValue<number>;
 };
 
-export default function PinGrid({ activeTouches, heldImprint, isClearing }: Props) {
+export default function PinGrid({ activeTouches, heldImprint, isClearing, maxDist }: Props) {
   const { width: W, height: H } = Dimensions.get('window');
   const grid = useMemo(() => buildHexGrid(W, H), [W, H]);
   const cx_mid = W / 2;
@@ -39,6 +43,8 @@ export default function PinGrid({ activeTouches, heldImprint, isClearing }: Prop
     const touches = activeTouches.value;
     const numT = touches.length;
     const clearing = isClearing.value;
+    const md = maxDist ? maxDist.value : MAX_DIST;
+    const maxSq = md * md;
 
     // While clearing animates from 0→1 we suppress merging and the visuals layer fades held → 0.
     if (clearing > 0.01) return;
@@ -54,8 +60,8 @@ export default function PinGrid({ activeTouches, heldImprint, isClearing }: Prop
         const dx = bx - t.x;
         const dy = by - t.y;
         const d2 = dx * dx + dy * dy;
-        if (d2 < MAX_DIST_SQ) {
-          const p = pressureAt(d2);
+        if (d2 < maxSq) {
+          const p = pressureAt(d2, md);
           if (p > live) live = p;
         }
       }
