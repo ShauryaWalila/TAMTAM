@@ -18,7 +18,7 @@ import { buildHexGrid } from '@/components/PinGrid/geometry';
 import {
   DEFAULT_TOUCH_RADIUS,
 } from '@/components/PinGrid/constants';
-import { createRecorder, float32ToBase64 } from '@/lib/touchRecording';
+import { createRecorder } from '@/lib/touchRecording';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
