@@ -1,11 +1,13 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { StyleSheet, Pressable, ScrollView, Dimensions, Alert, ActivityIndicator, Image, TouchableOpacity, View, Text, DeviceEventEmitter, Modal, Platform, FlatList } from 'react-native';
-import { Canvas, Path, Skia, useCanvasRef, Group, Rect, LinearGradient, vec, Points } from '@shopify/react-native-skia';
+import { Canvas, Path, Skia, useCanvasRef, Group, Rect, LinearGradient, vec, Points, PaintStyle, StrokeCap, StrokeJoin, BlendMode } from '@shopify/react-native-skia';
 import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, { useSharedValue, useAnimatedStyle, runOnJS, withSpring, withTiming, useDerivedValue } from 'react-native-reanimated';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
-import { Eraser, Pencil, Send, Trash2, History, X, Palette, Undo2, Check, Settings2, ZoomIn, Hand, Move, Layers, Grid3x3, RotateCcw } from 'lucide-react-native';
+import { Eraser, Pencil, Send, Trash2, History, X, Palette, Undo2, Check, Settings2, ZoomIn, Hand, Move, Layers, Grid3x3, RotateCcw, Download } from 'lucide-react-native';
+import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system/legacy';
 import { MotiView, AnimatePresence } from 'moti';
 import { supabase } from '@/lib/supabase';
 import { db, queueSyncOperation, generateUUID } from '@/lib/db';
@@ -209,6 +211,87 @@ export default function DrawScreen() {
     setPaths([]);
     recordedStrokesRef.current = [];
     recordingSessionStartRef.current = 0;
+  };
+
+  const exportDrawing = async () => {
+    if (paths.length === 0) {
+      Alert.alert("Empty Drawing", "There's nothing to export!");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // Calculate bounding box of all paths
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      paths.forEach(p => {
+        const b = p.path.getBounds();
+        minX = Math.min(minX, b.x);
+        minY = Math.min(minY, b.y);
+        maxX = Math.max(maxX, b.x + b.width);
+        maxY = Math.max(maxY, b.y + b.height);
+      });
+
+      // Add some padding
+      const padding = 40;
+      // High-resolution multiplier for "Retina" quality export
+      const qualityMultiplier = 3.0;
+      const exportWidth = ((maxX - minX) + padding * 2) * qualityMultiplier;
+      const exportHeight = ((maxY - minY) + padding * 2) * qualityMultiplier;
+      const offsetX = minX - padding;
+      const offsetY = minY - padding;
+
+      // Create an offscreen surface with higher density
+      const surface = Skia.Surface.Make(exportWidth, exportHeight);
+      if (!surface) throw new Error("Could not create Skia surface");
+
+      const canvas = surface.getCanvas();
+      
+      // Scale everything up for high resolution
+      canvas.scale(qualityMultiplier, qualityMultiplier);
+      
+      // 1. Draw Background
+      const bgPaint = Skia.Paint();
+      bgPaint.setColor(Skia.Color(boardBg));
+      canvas.drawRect(Skia.XYWHRect(0, 0, (maxX - minX) + padding * 2, (maxY - minY) + padding * 2), bgPaint);
+
+      // 2. Draw Paths in a Layer to support Eraser (Clear blend mode)
+      canvas.saveLayer();
+      canvas.translate(-offsetX, -offsetY);
+      
+      paths.forEach(p => {
+        const paint = Skia.Paint();
+        paint.setColor(Skia.Color(p.color));
+        paint.setStrokeWidth(p.strokeWidth);
+        paint.setStyle(PaintStyle.Stroke);
+        paint.setStrokeCap(StrokeCap.Round);
+        paint.setStrokeJoin(StrokeJoin.Round);
+        if (p.isEraser) {
+          paint.setBlendMode(BlendMode.Clear);
+        }
+        canvas.drawPath(p.path, paint);
+      });
+      canvas.restore();
+
+      const image = surface.makeImageSnapshot();
+      const base64 = image.encodeToBase64();
+      const uri = `${FileSystem.cacheDirectory}drawing_${Date.now()}.png`;
+      
+      await FileSystem.writeAsStringAsync(uri, base64, {
+        encoding: 'base64',
+      });
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri);
+      } else {
+        Alert.alert("Export Successful", "Drawing saved to cache, but sharing is not available.");
+      }
+    } catch (e) {
+      console.error(e);
+      Alert.alert("Export Failed", "An error occurred while exporting your drawing.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // 🖐️ Unified Gesture System
@@ -457,7 +540,20 @@ export default function DrawScreen() {
                 <Text style={styles.label}>PEN SIZE</Text>
                 <View style={styles.sizeRow}>{[2, 4, 8, 16, 24].map(s => (<TouchableOpacity key={s} onPress={() => setStrokeWidth(s)} style={[styles.sizeBtn, strokeWidth === s && { backgroundColor: theme.tint }]}><View style={{ width: s, height: s, borderRadius: s/2, backgroundColor: strokeWidth === s ? '#FFF' : '#AAA' }} /></TouchableOpacity>))}</View>
                 <Text style={[styles.label, { marginTop: 25 }]}>ERASER SIZE</Text>
-                <View style={styles.sizeRow}>{[20, 40, 60, 80, 100].map(s => (<TouchableOpacity key={s} onPress={() => setEraserWidth(s)} style={[styles.sizeBtn, eraserWidth === s && { backgroundColor: theme.tint }]}> <View style={{ width: s/4, height: s/4, borderRadius: s/8, backgroundColor: eraserWidth === s ? '#FFF' : '#AAA' }} /></TouchableOpacity>))}</View>
+                <View style={styles.sizeRow}>
+                  {[20, 40, 60, 80, 100].map(s => (
+                    <TouchableOpacity key={s} onPress={() => setEraserWidth(s)} style={[styles.sizeBtn, eraserWidth === s && { backgroundColor: theme.tint }]}>
+                      <View style={{ width: s / 4, height: s / 4, borderRadius: s / 8, backgroundColor: eraserWidth === s ? '#FFF' : '#AAA' }} />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <TouchableOpacity 
+                  onPress={exportDrawing} 
+                  style={[styles.exportBtn, { marginTop: 30, borderColor: theme.tint }]}
+                >
+                  <Download size={20} color={theme.tint} />
+                  <Text style={[styles.exportBtnText, { color: theme.tint }]}>Export as PNG</Text>
+                </TouchableOpacity>
               </>)}
               {mode === 'grid' && (<>
                 <Text style={styles.label}>TOUCH RADIUS ({gridRadius}px)</Text>
@@ -579,6 +675,8 @@ const styles = StyleSheet.create({
   sizeBtn: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
   paletteGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center', marginTop: 30 },
   paletteDot: { width: 34, height: 34, borderRadius: 17, elevation: 2 },
+  exportBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 12, borderRadius: 16, borderWidth: 2, width: '100%' },
+  exportBtnText: { fontSize: 16, fontWeight: '800' },
   doneBtn: { width: '100%', height: 60, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginTop: 30 },
   doneBtnText: { color: 'white', fontSize: 18, fontWeight: '900' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 25 },

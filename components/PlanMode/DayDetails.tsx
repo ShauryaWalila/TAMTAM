@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Alert, Image, Dimensions, Pressable, ActivityIndicator, TextInput, Platform, findNodeHandle, UIManager } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { X, MapPin, Plus, Shirt, Check, ChevronRight, Menu, Search, Filter, Tags, Package, Eye, Layers, User, Clock, Sparkles, CheckCircle2, Trash2 } from 'lucide-react-native';
+import { X, MapPin, Plus, Shirt, Check, ChevronRight, Menu, Search, Filter, Tags, Package, Eye, Layers, User, Clock, Sparkles, CheckCircle2, Trash2, Download } from 'lucide-react-native';
 import { MotiView, AnimatePresence } from 'moti';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming, runOnJS } from 'react-native-reanimated';
 import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
 import * as SecureStore from 'expo-secure-store';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 
 import { supabase } from '@/lib/supabase';
 import Colors from '@/constants/Colors';

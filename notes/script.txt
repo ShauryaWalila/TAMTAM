@@ -1458,4 +1458,16 @@ create or replace function match_study_cards (
 
 
 
+    alter table moments add column if not exists touch_payload jsonb;
     
+
+
+
+
+    alter table posts add column if not exists updated_at timestamptz;
+update posts set updated_at = created_at where updated_at is null;
+alter table posts alter column updated_at set default now();
+
+
+
+

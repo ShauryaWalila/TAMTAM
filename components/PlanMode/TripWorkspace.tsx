@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Dimensions, FlatList, Modal, TextInput, Platform, Alert, ActivityIndicator, ScrollView } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { Palette, Briefcase, List, ChevronLeft, Plus, Menu, X, Globe, Settings, Save, Trash2, MapPin, Utensils, Camera, Landmark, Building2, MinusCircle, Wallet, CheckCircle2 } from 'lucide-react-native';
+import { Palette, Briefcase, List, ChevronLeft, Plus, Menu, X, Globe, Settings, Save, Trash2, MapPin, Utensils, Camera, Landmark, Building2, MinusCircle, Wallet, CheckCircle2, Download } from 'lucide-react-native';
 import { MotiView, AnimatePresence } from 'moti';
 import LottieView from 'lottie-react-native';
 import BottomSheet, { BottomSheetView, BottomSheetBackgroundProps } from '@gorhom/bottom-sheet';
@@ -10,6 +10,8 @@ import Animated, { useSharedValue, useAnimatedStyle, useAnimatedScrollHandler, r
 import { format, eachDayOfInterval, isAfter } from 'date-fns';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
@@ -160,8 +162,134 @@ export default function TripWorkspace({ tripId, onBack, userId, mapRef, onMarker
   };
 
   const fetchItinerary = async () => {
-    const { data } = await supabase.from('itinerary_items').select('*, bucket_items(*)').eq('trip_id', tripId).order('sequence', { ascending: true });
-    if (data) { setItineraryItems(data); const counts: Record<number, number> = {}; data.forEach(item => { counts[item.day_number] = (counts[item.day_number] || 0) + 1; }); setDayCounts(counts); }
+    const { data } = await supabase.from('itinerary_items')
+      .select('*, bucket_items(*), itinerary_outfits(wardrobe_item_id, wardrobe(*))')
+      .eq('trip_id', tripId)
+      .order('day_number', { ascending: true })
+      .order('sequence', { ascending: true });
+    if (data) { 
+      setItineraryItems(data); 
+      const counts: Record<number, number> = {}; 
+      data.forEach(item => { counts[item.day_number] = (counts[item.day_number] || 0) + 1; }); 
+      setDayCounts(counts); 
+    }
+  };
+
+  const handleExportFullItinerary = async () => {
+    if (itineraryItems.length === 0) {
+      Alert.alert("Empty Itinerary", "No items to export yet!");
+      return;
+    }
+    
+    try {
+      // Group items by day
+      const itemsByDay: Record<number, any[]> = {};
+      itineraryItems.forEach(item => {
+        if (!itemsByDay[item.day_number]) itemsByDay[item.day_number] = [];
+        itemsByDay[item.day_number].push(item);
+      });
+
+      const sortedDays = Object.keys(itemsByDay).map(Number).sort((a, b) => a - b);
+
+      const html = `
+        <html>
+          <head>
+            <style>
+              body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; color: #1a1a1a; }
+              .header { border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
+              h1 { font-size: 34px; font-weight: 900; margin-bottom: 8px; color: #000; }
+              .location { font-size: 20px; color: ${theme.tint}; font-weight: 800; margin-bottom: 5px; }
+              .dates { font-size: 15px; color: #444; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; }
+              
+              .day-section { margin-top: 50px; page-break-before: auto; }
+              .day-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 25px; border-left: 6px solid ${theme.tint}; padding-left: 18px; }
+              .day-title { font-size: 28px; font-weight: 900; color: #000; }
+              .day-date { font-size: 18px; color: #222; font-weight: 700; }
+
+              .stop { margin-bottom: 35px; padding-bottom: 20px; border-bottom: 1px solid #eee; page-break-inside: avoid; }
+              .stop-row { display: flex; align-items: flex-start; }
+              .sequence { width: 32px; height: 32px; border-radius: 16px; background-color: #333; color: #fff; display: flex; justify-content: center; align-items: center; font-weight: 900; margin-right: 15px; font-size: 14px; flex-shrink: 0; }
+              .stop-info { flex: 1; }
+              .stop-name { font-size: 22px; font-weight: 900; color: #000; margin: 0; }
+              .stop-meta { font-size: 12px; font-weight: 800; color: #555; text-transform: uppercase; margin-top: 4px; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px; }
+              .time-badge { background: #f0f0f0; color: ${theme.tint}; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 900; }
+              
+              .clothes-section { margin-top: 18px; padding-left: 47px; }
+              .outfit-grid { display: flex; flex-wrap: wrap; gap: 20px; }
+              .outfit-item { text-align: center; width: 75px; position: relative; }
+              .outfit-thumb { width: 70px; height: 70px; border-radius: 14px; object-fit: cover; background-color: #fff; margin-bottom: 6px; }
+              .outfit-name { font-size: 10px; font-weight: 700; color: #333; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+              
+              .owner-badge { position: absolute; top: -5px; left: -5px; background: #333; color: #fff; font-size: 8px; font-weight: 900; padding: 3px 6px; border-radius: 6px; border: 1.5px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+              .owner-p { background: #007AFF; }
+              .owner-s { background: #FF2D55; }
+
+              footer { margin-top: 60px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; font-size: 12px; color: #888; font-weight: 600; }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h1>${trip?.title || 'Our Adventure'}</h1>
+              <div class="location">${trip?.location_name || ''}</div>
+              <div class="dates">${trip?.start_date ? format(new Date(trip.start_date), 'dd MMM') : ''} - ${trip?.end_date ? format(new Date(trip.end_date), 'dd MMM yyyy') : ''}</div>
+            </div>
+
+            ${sortedDays.map(dayNum => {
+              const dayItems = itemsByDay[dayNum];
+              const dayData = days.find(d => d.dayNumber === dayNum);
+              return `
+                <div class="day-section">
+                  <div class="day-header">
+                    <span class="day-title">Day ${dayNum}</span>
+                    <span class="day-date">${dayData?.weekday || ''}${dayData?.date ? ', ' + format(dayData.date, 'dd MMM') : ''}</span>
+                  </div>
+                  ${dayItems.map((item, idx) => `
+                    <div class="stop">
+                      <div class="stop-row">
+                        <div class="sequence">${idx + 1}</div>
+                        <div class="stop-info">
+                          <h3 class="stop-name">${item.is_custom ? item.custom_label : (item.bucket_items?.name || 'Unnamed Stop')}</h3>
+                          <div class="stop-meta">
+                            ${item.bucket_items?.category || 'Planned Stop'}
+                            ${item.target_time ? `<span class="time-badge">${item.target_time}</span>` : ''}
+                          </div>
+                        </div>
+                      </div>
+                      ${item.itinerary_outfits?.length > 0 ? `
+                        <div class="clothes-section">
+                          <div class="outfit-grid">
+                            ${item.itinerary_outfits.map((io: any) => {
+                              const isP = io.wardrobe?.target_user === 'pratishth';
+                              const label = isP ? 'P' : 'S';
+                              const badgeClass = isP ? 'owner-p' : 'owner-s';
+                              return `
+                                <div class="outfit-item">
+                                  <div class="owner-badge ${badgeClass}">${label}</div>
+                                  ${io.wardrobe?.image_url ? `<img src="${io.wardrobe.image_url}" class="outfit-thumb" />` : `<div style="height:20px;"></div>`}
+                                  <span class="outfit-name">${io.wardrobe?.name || 'Item'}</span>
+                                </div>
+                              `;
+                            }).join('')}
+                          </div>
+                        </div>
+                      ` : ''}
+                    </div>
+                  `).join('')}
+                </div>
+              `;
+            }).join('')}
+            
+            <footer>Generated by TAMTAM • Our Life together</footer>
+          </body>
+        </html>
+      `;
+
+      const { uri } = await Print.printToFileAsync({ html, width: 612, height: 792 });
+      await Sharing.shareAsync(uri);
+    } catch (e) {
+      console.error(e);
+      Alert.alert("Export Error", "Could not generate full itinerary PDF");
+    }
   };
 
   const fetchBucketItems = async () => {
@@ -217,6 +345,7 @@ export default function TripWorkspace({ tripId, onBack, userId, mapRef, onMarker
               <TouchableOpacity style={styles.subFab} onPress={() => { setIsWorkspaceMenuOpen(false); setActiveModal('finance'); }}><Wallet size={20} color="#FF9500" /></TouchableOpacity>
               <TouchableOpacity style={styles.subFab} onPress={() => { setIsWorkspaceMenuOpen(false); setActiveModal('wardrobe'); }}><Briefcase size={20} color="#5856D6" /></TouchableOpacity>
               <TouchableOpacity style={styles.subFab} onPress={() => { setIsWorkspaceMenuOpen(false); setActiveModal('bucket'); }}><LottieView source={require('@/assets/lottie/activity.lottie')} autoPlay loop style={{ width: 82, height: 82 }} /></TouchableOpacity>
+              <TouchableOpacity style={[styles.subFab, { backgroundColor: theme.tint }]} onPress={() => { setIsWorkspaceMenuOpen(false); handleExportFullItinerary(); }}><Download size={20} color="white" /></TouchableOpacity>
             </MotiView>
           )}</AnimatePresence>
           <TouchableOpacity activeOpacity={0.9} onPress={() => { Haptics.selectionAsync(); setIsWorkspaceMenuOpen(!isWorkspaceMenuOpen); }} style={[styles.mainFab, { backgroundColor: theme.tint }]}><MotiView animate={{ rotate: isWorkspaceMenuOpen ? '45deg' : '0deg' }}><Plus size={28} color="white" /></MotiView></TouchableOpacity>
