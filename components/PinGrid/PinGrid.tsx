@@ -4,7 +4,7 @@ import { Dimensions, StyleSheet } from 'react-native';
 import {
   Canvas, Group, LinearGradient, Points, Rect, Shadow, vec,
 } from '@shopify/react-native-skia';
-import { SharedValue, useDerivedValue, useFrameCallback } from 'react-native-reanimated';
+import { SharedValue, useDerivedValue, useFrameCallback, useSharedValue } from 'react-native-reanimated';
 import { Touch } from './types';
 import { buildHexGrid, pressureAt } from './geometry';
 import {
@@ -25,6 +25,10 @@ export default function PinGrid({ activeTouches, heldImprint, isClearing }: Prop
   const cx_mid = W / 2;
   const cy_mid = H / 2;
 
+  // Bumped each frame the held imprint actually changes; visuals derived value reads it
+  // so Reanimated re-derives even though we mutate the Float32Array in place.
+  const imprintTick = useSharedValue(0);
+
   // Per-frame: merge live pressures into the monotonic heldImprint on UI thread.
   useFrameCallback(() => {
     'worklet';
@@ -40,6 +44,7 @@ export default function PinGrid({ activeTouches, heldImprint, isClearing }: Prop
     if (clearing > 0.01) return;
     if (numT === 0) return;
 
+    let changed = false;
     for (let i = 0; i < N; i++) {
       const bx = X[i];
       const by = Y[i];
@@ -54,14 +59,18 @@ export default function PinGrid({ activeTouches, heldImprint, isClearing }: Prop
           if (p > live) live = p;
         }
       }
-      if (live > held[i]) held[i] = live;
+      if (live > held[i]) {
+        held[i] = live;
+        changed = true;
+      }
     }
-    // Trigger re-render of the derived value
-    heldImprint.value = held;
+    if (changed) imprintTick.value = imprintTick.value + 1;
   });
 
   // Split caps into two arrays so resting layer can have a drop shadow and pressed layer doesn't.
   const visuals = useDerivedValue(() => {
+    // Read the tick so this derives whenever the in-place imprint mutates.
+    imprintTick.value;
     const X = grid.X;
     const Y = grid.Y;
     const N = grid.pinCount;
