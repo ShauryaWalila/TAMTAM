@@ -129,6 +129,7 @@ export default function TouchViewScreen() {
   if (loading) {
     return (
       <View style={[styles.container, styles.center, { backgroundColor: '#000' }]}>
+        <Stack.Screen options={{ presentation: 'fullScreenModal', headerShown: false }} />
         <ActivityIndicator color="#FFF" />
       </View>
     );

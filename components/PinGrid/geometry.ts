@@ -58,9 +58,7 @@ export function imprintFromTouches(
       const dy = by - t.y;
       const d2 = dx * dx + dy * dy;
       if (d2 < MAX_DIST_SQ) {
-        const dist = Math.sqrt(d2);
-        const u = 1 - dist / MAX_DIST;
-        const p = u * u * (3 - 2 * u);
+        const p = pressureAt(d2);
         if (p > live) live = p;
       }
     }
