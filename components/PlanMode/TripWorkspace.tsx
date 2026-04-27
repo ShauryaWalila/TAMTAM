@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Dimensions, FlatList, Modal, TextInput, Platform, Alert, ActivityIndicator, ScrollView } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { Palette, Briefcase, List, ChevronLeft, Plus, Menu, X, Globe, Settings, Save, Trash2, MapPin, Utensils, Camera, Landmark, Building2, MinusCircle, Wallet, CheckCircle2, Download, Music } from 'lucide-react-native';
+import { Palette, Briefcase, List, ChevronLeft, Plus, Menu, X, Globe, Settings, Save, Trash2, MapPin, Utensils, Camera, Landmark, Building2, MinusCircle, Wallet, CheckCircle2, Download, Music, Library } from 'lucide-react-native';
 import { MotiView, AnimatePresence } from 'moti';
 import LottieView from 'lottie-react-native';
 import BottomSheet, { BottomSheetView, BottomSheetBackgroundProps } from '@gorhom/bottom-sheet';
@@ -124,7 +124,7 @@ export default function TripWorkspace({ tripId, onBack, userId, mapRef, onMarker
   const lastHapticProgress = useSharedValue(0);
 
   const [isWorkspaceMenuOpen, setIsWorkspaceMenuOpen] = useState(false);
-  const [activeModal, setActiveModal] = useState<'settings' | 'finance' | 'wardrobe' | 'bucket' | 'canvas' | 'rack' | 'soundtrack' | null>(null);
+  const [activeModal, setActiveModal] = useState<'settings' | 'finance' | 'wardrobe' | 'bucket' | 'canvas' | 'rack' | 'soundtrack' | 'masterSoundtrack' | null>(null);
 
   const [editTitle, setEditTitle] = useState('');
   const [editLocation, setEditLocation] = useState('');
@@ -371,7 +371,16 @@ export default function TripWorkspace({ tripId, onBack, userId, mapRef, onMarker
         <View style={styles.modalOverlay}>
           <BlurView intensity={100} tint={colorScheme} style={styles.modalContent}>
             <View style={styles.modalHeader}><Text style={[styles.modalTitle, { color: theme.text }]}>Plan Settings</Text><TouchableOpacity onPress={() => setActiveModal(null)}><X size={24} color={theme.text} /></TouchableOpacity></View>
-            <ScrollView><Text style={styles.label}>TRIP NAME</Text><TextInput style={[styles.input, { color: theme.text, backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }]} value={editTitle} onChangeText={setEditTitle} /><Text style={[styles.label, { marginTop: 20 }]}>DESTINATION</Text><TouchableOpacity onPress={() => setShowLocationPicker(true)} style={[styles.input, styles.locationBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }]}><Globe size={20} color={theme.tint} /><Text style={{ color: theme.text, fontWeight: '700', marginLeft: 10 }}>{editLocation || 'Change Location'}</Text></TouchableOpacity><View style={styles.dateRow}><TouchableOpacity onPress={() => setShowStartPicker(true)} style={[styles.dateBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }]}><Text style={styles.label}>START</Text><Text style={[styles.dateVal, { color: theme.text }]}>{format(startDate, 'dd MMM')}</Text></TouchableOpacity><TouchableOpacity onPress={() => setShowEndPicker(true)} style={[styles.dateBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }]}><Text style={styles.label}>END</Text><Text style={[styles.dateVal, { color: theme.text }]}>{format(endDate, 'dd MMM')}</Text></TouchableOpacity></View><TouchableOpacity onPress={handleUpdateSettings} style={[styles.saveBtnFull, { backgroundColor: theme.tint }]}>{isUpdating ? <ActivityIndicator color="white" /> : <><Save size={20} color="white" /><Text style={styles.saveBtnText}>Save Changes</Text></>}</TouchableOpacity></ScrollView>
+            <ScrollView>
+              <TouchableOpacity 
+                style={[styles.saveBtnFull, { backgroundColor: '#1DB954', marginTop: 0, marginBottom: 25 }]} 
+                onPress={() => setActiveModal('masterSoundtrack')}
+              >
+                <Music size={20} color="white" />
+                <Text style={styles.saveBtnText}>Our Songs (Master List)</Text>
+              </TouchableOpacity>
+
+              <Text style={styles.label}>TRIP NAME</Text><TextInput style={[styles.input, { color: theme.text, backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }]} value={editTitle} onChangeText={setEditTitle} /><Text style={[styles.label, { marginTop: 20 }]}>DESTINATION</Text><TouchableOpacity onPress={() => setShowLocationPicker(true)} style={[styles.input, styles.locationBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }]}><Globe size={20} color={theme.tint} /><Text style={{ color: theme.text, fontWeight: '700', marginLeft: 10 }}>{editLocation || 'Change Location'}</Text></TouchableOpacity><View style={styles.dateRow}><TouchableOpacity onPress={() => setShowStartPicker(true)} style={[styles.dateBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }]}><Text style={styles.label}>START</Text><Text style={[styles.dateVal, { color: theme.text }]}>{format(startDate, 'dd MMM')}</Text></TouchableOpacity><TouchableOpacity onPress={() => setShowEndPicker(true)} style={[styles.dateBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }]}><Text style={styles.label}>END</Text><Text style={[styles.dateVal, { color: theme.text }]}>{format(endDate, 'dd MMM')}</Text></TouchableOpacity></View><TouchableOpacity onPress={handleUpdateSettings} style={[styles.saveBtnFull, { backgroundColor: theme.tint }]}>{isUpdating ? <ActivityIndicator color="white" /> : <><Save size={20} color="white" /><Text style={styles.saveBtnText}>Save Changes</Text></>}</TouchableOpacity></ScrollView>
           </BlurView>
         </View>
         <Modal visible={showStartPicker || showEndPicker} transparent animationType="fade">
@@ -403,6 +412,7 @@ export default function TripWorkspace({ tripId, onBack, userId, mapRef, onMarker
 
       <Modal visible={activeModal === 'finance'} animationType="slide"><TripFinance tripId={tripId} trip={trip} onClose={() => setActiveModal(null)} /></Modal>
       <Modal visible={activeModal === 'soundtrack'} animationType="slide"><TripSoundtrack tripId={tripId} tripName={trip?.title} onClose={() => setActiveModal(null)} /></Modal>
+      <Modal visible={activeModal === 'masterSoundtrack'} animationType="slide"><TripSoundtrack tripId="MASTER" tripName="Master Collection" isMaster onClose={() => setActiveModal(null)} /></Modal>
       <Modal visible={activeModal === 'wardrobe'} animationType="slide"><Wardrobe userId={userId} tripId={tripId} onClose={() => setActiveModal(null)} /></Modal>
       <Modal visible={activeModal === 'canvas'} animationType="slide"><SharedCanvas tripId={tripId} onClose={() => setActiveModal(null)} /></Modal>
       <Modal visible={activeModal === 'rack'} animationType="slide"><TripRack tripId={tripId} onClose={() => setActiveModal(null)} /></Modal>

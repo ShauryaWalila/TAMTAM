@@ -312,9 +312,117 @@ export const initDB = () => {
       CREATE TRIGGER IF NOT EXISTS study_brain_dump_ad AFTER DELETE ON study_brain_dump BEGIN
         DELETE FROM study_brain_dump_fts WHERE id = old.id;
       END;
-    `);
 
-    `-- Local Migration: Add missing columns if they don't exist`
+      -- ==========================================
+      -- DIET SYSTEM
+      -- ==========================================
+
+      -- Diet Metrics (Calories, Protein, etc.)
+      CREATE TABLE IF NOT EXISTS diet_metrics (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        unit TEXT,
+        is_active INTEGER DEFAULT 1,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+
+      -- Diet Units (g, ml, serving, etc.)
+      CREATE TABLE IF NOT EXISTS diet_units (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+
+      -- Ingredients
+      CREATE TABLE IF NOT EXISTS ingredients (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        category TEXT, -- 'Protein', 'Carb', etc.
+        nutrients TEXT, -- JSON string: {"metric_id": value}
+        base_quantity REAL DEFAULT 100,
+        base_unit TEXT DEFAULT 'g',
+        user_id TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+
+      -- Recipes
+      CREATE TABLE IF NOT EXISTS recipes (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT,
+        instructions TEXT,
+        user_id TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+
+      -- Recipe Ingredients
+      CREATE TABLE IF NOT EXISTS recipe_ingredients (
+        id TEXT PRIMARY KEY,
+        recipe_id TEXT NOT NULL,
+        ingredient_id TEXT NOT NULL,
+        quantity REAL NOT NULL,
+        unit TEXT,
+        FOREIGN KEY(recipe_id) REFERENCES recipes(id),
+        FOREIGN KEY(ingredient_id) REFERENCES ingredients(id)
+      );
+
+      -- Diet Plans (The Routine)
+      CREATE TABLE IF NOT EXISTS diet_plans (
+        id TEXT PRIMARY KEY,
+        date DATE NOT NULL,
+        meal_time TEXT, -- 'Breakfast', 'Lunch', 'Dinner', 'Snack'
+        type TEXT, -- 'recipe' or 'ingredient'
+        item_id TEXT NOT NULL, -- ID of recipe or ingredient
+        quantity REAL NOT NULL,
+        unit TEXT,
+        user_id TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+
+      -- Trip Songs (Vibe Board)
+      CREATE TABLE IF NOT EXISTS trip_songs (
+        id TEXT PRIMARY KEY,
+        trip_id TEXT NOT NULL,
+        spotify_id TEXT NOT NULL,
+        track_name TEXT,
+        artist_name TEXT,
+        album_art TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(trip_id, spotify_id)
+      );
+      `);
+
+      // Initialize default metrics if they don't exist
+      try {
+      const metrics = [
+        { id: 'm1', name: 'Calories', unit: 'kcal' },
+        { id: 'm2', name: 'Protein', unit: 'g' },
+        { id: 'm3', name: 'Carbs', unit: 'g' },
+        { id: 'm4', name: 'Fat', unit: 'g' },
+        { id: 'm5', name: 'Fiber', unit: 'g' }
+      ];
+      metrics.forEach(m => {
+        db.runSync(
+          'INSERT OR IGNORE INTO diet_metrics (id, name, unit) VALUES (?, ?, ?)',
+          [m.id, m.name, m.unit]
+        );
+      });
+      } catch (e) {}
+
+      // Initialize default units
+      try {
+        const units = ['g', 'ml', 'serving', 'cup', 'oz', 'piece', 'tbsp', 'tsp'];
+        units.forEach(u => {
+          db.runSync(
+            'INSERT OR IGNORE INTO diet_units (id, name) VALUES (?, ?)',
+            [u, u]
+          );
+        });
+      } catch (e) {}
+
+      `-- Local Migration: Add missing columns if they don't exist`
+
+    try { db.execSync('ALTER TABLE trip_songs ADD COLUMN album_art TEXT;'); } catch(e) {}
     try { db.execSync('ALTER TABLE study_syllabus ADD COLUMN theory_status TEXT DEFAULT "none";'); } catch(e) {}
     try { db.execSync('ALTER TABLE study_syllabus ADD COLUMN practical_status TEXT DEFAULT "none";'); } catch(e) {}
     try { db.execSync('ALTER TABLE study_syllabus ADD COLUMN theory_last_reviewed DATETIME;'); } catch(e) {}

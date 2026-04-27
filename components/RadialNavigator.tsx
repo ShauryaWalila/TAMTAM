@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Home, BookHeart, Map, Wallet, Heart, Settings, Coffee, PenTool,BrainCircuit } from 'lucide-react-native';
+import { Home, BookHeart, Map, Wallet, Heart, Settings, Coffee, PenTool, BrainCircuit, Utensils } from 'lucide-react-native';
 import { StyleSheet, View, Text, Dimensions, DeviceEventEmitter, TouchableOpacity } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import Animated, { 
@@ -23,6 +23,7 @@ const NAV_ITEMS = [
   { id: 'study-hub', path: '/study-hub', label: 'STUDY', icon: BrainCircuit, color: '#5856D6' },
   { id: 'draw', path: '/draw', label: 'DRAW', icon: PenTool, color: '#FF9500' },
   { id: 'our-life', path: '/our-life', label: 'LIFE', icon: Map, color: '#34C759' },
+  { id: 'diet', path: '/diet', label: 'DIET', icon: Utensils, color: '#FF2D55' },
   { id: 'finance', path: '/finance', label: 'FINANCE', icon: Wallet, color: '#FF9500' },
   { id: 'wishlist', path: '/wishlist', label: 'WISH', icon: Heart, color: '#5856D6' },
   { id: 'chill-zone', path: '/chill-zone', label: 'CHILL', icon: Coffee, color: '#5AC8FA' },

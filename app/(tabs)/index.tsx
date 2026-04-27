@@ -4,7 +4,7 @@ import { Text, View as ThemedView } from '@/components/Themed';
 import { MotiView, AnimatePresence } from 'moti';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
-import { Heart, Calendar, MessageCircle, MapPin, ChevronRight, ChevronLeft, Sparkles, MessageSquareHeart, Clock, Plus, X, Trash2, Settings2, ChevronDown, CalendarDays, CalendarRange } from 'lucide-react-native';
+import { Heart, Calendar, MessageCircle, MapPin, ChevronRight, ChevronLeft, Sparkles, MessageSquareHeart, Clock, Plus, X, Trash2, Settings2, ChevronDown, CalendarDays, CalendarRange,Utensils } from 'lucide-react-native';
 import { 
   differenceInSeconds, format, isAfter, isBefore, addWeeks, addMonths, subMonths, set, setDay, 
   startOfDay, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, 
@@ -517,6 +517,26 @@ export default function DashboardScreen() {
         <View style={styles.statsRow}>
           <SummaryCard title="Our Days" value={ourDaysText} icon={<Heart color={theme.tint} size={20} fill={theme.tint} />} theme={theme} />
           <SummaryCard title="Memories" value={stats.memories} icon={<MessageCircle color={theme.secondary} size={20} />} theme={theme} />
+        </View>
+
+        {/* --- DIET SECTION --- */}
+        <View style={styles.section}>
+          <TouchableOpacity 
+            onPress={() => DeviceEventEmitter.emit('show-navigator')} // Or direct navigation if preferred
+            activeOpacity={0.7} 
+            style={[styles.spaceButton, { backgroundColor: theme.card }]}
+          >
+            <View style={styles.spaceLeft}>
+              <View style={[styles.spaceIcon, { backgroundColor: 'rgba(255, 45, 85, 0.1)' }]}>
+                <Utensils color="#FF2D55" size={24} />
+              </View>
+              <View style={{ backgroundColor: 'transparent' }}>
+                <Text style={[styles.spaceTitle, { color: theme.text }]}>Diet Plan</Text>
+                <Text style={[styles.spaceSubtitle, { color: theme.tabIconDefault }]}>Track routine & nutrition</Text>
+              </View>
+            </View>
+            <ChevronRight color={theme.tabIconDefault} size={20} />
+          </TouchableOpacity>
         </View>
 
         {/* --- RESTORED ROUTINE SECTION --- */}

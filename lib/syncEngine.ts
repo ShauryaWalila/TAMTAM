@@ -125,12 +125,40 @@ export const initialFullSync = async (shouldClear = false) => {
         n => db.runSync(`INSERT OR REPLACE INTO active_study_sessions (user_id, start_time, duration_minutes) VALUES (?, ?, ?)`, 
           [n.user_id, n.start_time, n.duration_minutes]));
 
-      await syncTable('study_syllabus', supabase.from('study_syllabus').select('*'), 
-        n => db.runSync(`INSERT OR REPLACE INTO study_syllabus (id, parent_id, title, theory_status, practical_status, theory_last_reviewed, practical_last_reviewed, user_id, order_index, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+      await syncTable('study_syllabus', supabase.from('study_syllabus').select('*'),
+        n => db.runSync(`INSERT OR REPLACE INTO study_syllabus (id, parent_id, title, theory_status, practical_status, theory_last_reviewed, practical_last_reviewed, user_id, order_index, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [n.id, n.parent_id, n.title, n.theory_status, n.practical_status, n.theory_last_reviewed, n.practical_last_reviewed, n.user_id, n.order_index, n.created_at]));
 
-      console.log('Background lazy sync complete.');
-    } catch (e) {
+      await syncTable('trip_songs', supabase.from('trip_songs').select('*'),
+        n => db.runSync(`INSERT OR REPLACE INTO trip_songs (id, trip_id, spotify_id, track_name, artist_name, album_art, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [n.id, n.trip_id, n.spotify_id, n.track_name, n.artist_name, n.album_art, n.created_at]));
+
+      // DIET SYSTEM SYNC
+      await syncTable('diet_metrics', supabase.from('diet_metrics').select('*'),
+        n => db.runSync(`INSERT OR REPLACE INTO diet_metrics (id, name, unit, is_active, created_at) VALUES (?, ?, ?, ?, ?)`,
+          [n.id, n.name, n.unit, n.is_active ? 1 : 0, n.created_at]));
+
+      await syncTable('diet_units', supabase.from('diet_units').select('*'),
+        n => db.runSync(`INSERT OR REPLACE INTO diet_units (id, name, created_at) VALUES (?, ?, ?)`,
+          [n.id, n.name, n.created_at]));
+
+      await syncTable('ingredients', supabase.from('ingredients').select('*'),
+        n => db.runSync(`INSERT OR REPLACE INTO ingredients (id, name, category, nutrients, base_quantity, base_unit, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [n.id, n.name, n.category, typeof n.nutrients === 'string' ? n.nutrients : JSON.stringify(n.nutrients), n.base_quantity, n.base_unit, n.user_id, n.created_at]));
+
+      await syncTable('recipes', supabase.from('recipes').select('*'),
+        n => db.runSync(`INSERT OR REPLACE INTO recipes (id, name, description, instructions, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
+          [n.id, n.name, n.description, n.instructions, n.user_id, n.created_at]));
+
+      await syncTable('recipe_ingredients', supabase.from('recipe_ingredients').select('*'),
+        n => db.runSync(`INSERT OR REPLACE INTO recipe_ingredients (id, recipe_id, ingredient_id, quantity, unit) VALUES (?, ?, ?, ?, ?)`,
+          [n.id, n.recipe_id, n.ingredient_id, n.quantity, n.unit]));
+
+      await syncTable('diet_plans', supabase.from('diet_plans').select('*'),
+        n => db.runSync(`INSERT OR REPLACE INTO diet_plans (id, date, meal_time, type, item_id, quantity, unit, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [n.id, n.date, n.meal_time, n.type, n.item_id, n.quantity, n.unit, n.user_id, n.created_at]));
+
+      console.log('Background lazy sync complete.');    } catch (e) {
       console.warn('Background sync failed:', e);
     }
   };

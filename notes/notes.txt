@@ -4,6 +4,4 @@ focus mode
 
 widget
 a status thing for us on dashboard showing what we aree doing(likee pooping, studying, nothing, etc)
-
-songs and all in the plan mode
 eating

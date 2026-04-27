@@ -25,3 +25,4 @@ exam mode(
     something else for revision
 )
 exportable itinerary, drawing
+songs and all in the plan mode

@@ -3,9 +3,10 @@ import { StyleSheet, ScrollView, Pressable, Switch, View, Image, ActivityIndicat
 import { Text, View as ThemedView } from '@/components/Themed';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
-import { User, Bell, Shield, CircleHelp, LogOut, ChevronRight, Camera, MessageSquareHeart, HeartHandshake, Tags, Plus, X, Trash2, Briefcase, Wrench, MessageCircle, Clock, TrendingUp, Coffee, Palette, Image as ImageIcon, Edit3, Save, Check, Brain, Layout } from 'lucide-react-native';
+import { User, Bell, Shield, CircleHelp, LogOut, ChevronRight, Camera, MessageSquareHeart, HeartHandshake, Tags, Plus, X, Trash2, Briefcase, Wrench, MessageCircle, Clock, TrendingUp, Coffee, Palette, Image as ImageIcon, Edit3, Save, Check, Brain, Layout,Music,Utensils } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '@/lib/supabase';
+import { db } from '@/lib/db';
 import * as SecureStore from 'expo-secure-store';
 import * as base64js from 'base64-js';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -17,6 +18,7 @@ import * as Linking from 'expo-linking';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format } from 'date-fns';
 import Wardrobe from '@/components/PlanMode/Wardrobe';
+import { TripSoundtrack } from '@/components/PlanMode/TripSoundtrack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
 
@@ -62,6 +64,18 @@ export default function SettingsScreen() {
   const [isWardrobeSettingsVisible, setIsWardrobeSettingsVisible] = useState(false);
   const [isWardrobeVisible, setIsWardrobeVisible] = useState(false);
   const [isToolsVisible, setIsToolsVisible] = useState(false);
+  const [isOurSongsVisible, setIsOurSongsVisible] = useState(false);
+  const [isDietSettingsVisible, setIsDietSettingsVisible] = useState(false);
+  const [isDietUnitsVisible, setIsDietUnitsVisible] = useState(false);
+
+  // Diet Metrics State
+  const [dietMetrics, setDietMetrics] = useState<any[]>([]);
+  const [newMetricName, setNewMetricName] = useState('');
+  const [newMetricUnit, setNewMetricUnit] = useState('');
+
+  // Diet Units State
+  const [dietUnits, setDietUnits] = useState<any[]>([]);
+  const [newUnitName, setNewUnitName] = useState('');
 
   // Chill Categories State
   const [chillCats, setChillCats] = useState<any[]>([]);
@@ -83,7 +97,51 @@ export default function SettingsScreen() {
     fetchProfile();
     fetchChillCategories();
     fetchWardrobeCategories();
+    fetchDietMetrics();
+    fetchDietUnits();
   }, []);
+
+  const fetchDietMetrics = () => {
+    const data = db.getAllSync('SELECT * FROM diet_metrics ORDER BY created_at ASC');
+    setDietMetrics(data);
+  };
+
+  const fetchDietUnits = () => {
+    const data = db.getAllSync('SELECT * FROM diet_units ORDER BY name ASC');
+    setDietUnits(data);
+  };
+
+  const addDietUnit = () => {
+    if (!newUnitName) return;
+    const id = newUnitName.toLowerCase();
+    db.runSync('INSERT OR IGNORE INTO diet_units (id, name) VALUES (?, ?)', [id, newUnitName]);
+    setNewUnitName('');
+    fetchDietUnits();
+  };
+
+  const deleteDietUnit = (id: string) => {
+    db.runSync('DELETE FROM diet_units WHERE id = ?', [id]);
+    fetchDietUnits();
+  };
+
+  const addDietMetric = () => {
+    if (!newMetricName) return;
+    const id = 'm_' + Date.now();
+    db.runSync('INSERT INTO diet_metrics (id, name, unit) VALUES (?, ?, ?)', [id, newMetricName, newMetricUnit]);
+    setNewMetricName('');
+    setNewMetricUnit('');
+    fetchDietMetrics();
+  };
+
+  const deleteDietMetric = (id: string) => {
+    Alert.alert('Delete Metric?', 'This will not delete nutrients already stored in ingredients, but will hide this metric.', [
+      { text: 'Cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => {
+        db.runSync('DELETE FROM diet_metrics WHERE id = ?', [id]);
+        fetchDietMetrics();
+      }}
+    ]);
+  };
 
   const [isNavigating, setIsNavigating] = useState(false);
 
@@ -344,6 +402,9 @@ export default function SettingsScreen() {
           <SettingsItem icon={<Coffee color={theme.text} size={22} />} label="Chill Zone Categories" theme={theme} onPress={() => setIsChillSettingsVisible(true)} />
           <SettingsItem icon={<Tags color={theme.text} size={22} />} label="Wardrobe Categories" theme={theme} onPress={() => setIsWardrobeSettingsVisible(true)} />
           <SettingsItem icon={<Briefcase color={theme.text} size={22} />} label="Master Wardrobe" theme={theme} onPress={() => setIsWardrobeVisible(true)} />
+          <SettingsItem icon={<Music color="#1DB954" size={22} />} label="Our Songs" theme={theme} onPress={() => setIsOurSongsVisible(true)} />
+          <SettingsItem icon={<Utensils color="#FF2D55" size={22} />} label="Diet Metrics" theme={theme} onPress={() => setIsDietSettingsVisible(true)} />
+          <SettingsItem icon={<Briefcase color="#AF52DE" size={22} />} label="Diet Units" theme={theme} onPress={() => setIsDietUnitsVisible(true)} />
           <SettingsItem icon={<Wrench color={theme.text} size={22} />} label="Tools" theme={theme} onPress={() => setIsToolsVisible(true)} />
           <SettingsItem icon={<LogOut color="#FF3B30" size={22} />} label="Logout" theme={theme} onPress={() => router.replace('/auth/login')} labelStyle={{ color: "#FF3B30" }} showChevron={false} />
         </View>
@@ -549,6 +610,112 @@ export default function SettingsScreen() {
           onClose={() => setIsWardrobeVisible(false)} 
         />
       </Modal>
+
+      {/* 🎵 OUR SONGS MODAL */}
+      <Modal visible={isOurSongsVisible} animationType="slide">
+        <TripSoundtrack 
+          tripId="MASTER" 
+          tripName="Our Songs" 
+          isMaster={true} 
+          onClose={() => setIsOurSongsVisible(false)} 
+        />
+      </Modal>
+
+      {/* 🥦 DIET METRICS MODAL */}
+      <Modal visible={isDietSettingsVisible} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <BlurView intensity={100} tint={colorScheme} style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>Diet Metrics</Text>
+              <TouchableOpacity onPress={() => setIsDietSettingsVisible(false)}><X size={24} color={theme.text} /></TouchableOpacity>
+            </View>
+            
+            <View style={styles.formCard}>
+              <Text style={[styles.sectionLabel, { color: theme.tint }]}>Add New Metric</Text>
+              <TextInput 
+                style={[styles.modalInput, { backgroundColor: theme.background, color: theme.text, marginBottom: 10 }]} 
+                placeholder="Metric Name (e.g. Protein)" 
+                value={newMetricName} 
+                onChangeText={setNewMetricName} 
+              />
+              
+              <Text style={[styles.sectionLabel, { color: theme.tint, marginTop: 5 }]}>Select Unit</Text>
+              <View style={[styles.row, { flexWrap: 'wrap' }]}>
+                {dietUnits.map(u => (
+                  <TouchableOpacity 
+                    key={u.id} 
+                    onPress={() => setNewMetricUnit(u.id)}
+                    style={[
+                      styles.smallTab, 
+                      { backgroundColor: newMetricUnit === u.id ? '#FF2D55' : 'rgba(150,150,150,0.1)', marginBottom: 5 }
+                    ]}
+                  >
+                    <Text style={{ color: newMetricUnit === u.id ? 'white' : theme.text, fontSize: 12, fontWeight: '700' }}>{u.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <TouchableOpacity onPress={addDietMetric} style={[styles.addBtnFull, { backgroundColor: '#FF2D55', marginTop: 10 }]}>
+                <Plus size={20} color="white" />
+                <Text style={styles.addBtnText}>Add Metric</Text>
+              </TouchableOpacity>
+            </View>
+
+            <FlatList 
+              data={dietMetrics} 
+              keyExtractor={item => item.id}
+              renderItem={({item}) => (
+                <View style={[styles.catItem, { backgroundColor: theme.card }]}>
+                  <Text style={[styles.catName, { color: theme.text }]}>{item.name} ({item.unit})</Text>
+                  <TouchableOpacity onPress={() => deleteDietMetric(item.id)}>
+                    <Trash2 size={18} color="#FF3B30" />
+                  </TouchableOpacity>
+                </View>
+              )} 
+            />
+          </BlurView>
+        </View>
+      </Modal>
+
+      {/* 📏 DIET UNITS MODAL */}
+      <Modal visible={isDietUnitsVisible} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <BlurView intensity={100} tint={colorScheme} style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>Diet Units</Text>
+              <TouchableOpacity onPress={() => setIsDietUnitsVisible(false)}><X size={24} color={theme.text} /></TouchableOpacity>
+            </View>
+            
+            <View style={styles.formCard}>
+              <Text style={[styles.sectionLabel, { color: theme.tint }]}>Add New Unit</Text>
+              <View style={styles.row}>
+                <TextInput 
+                  style={[styles.modalInput, { flex: 1, backgroundColor: theme.background, color: theme.text }]} 
+                  placeholder="Unit Name (e.g. serving)" 
+                  value={newUnitName} 
+                  onChangeText={setNewUnitName} 
+                />
+                <TouchableOpacity onPress={addDietUnit} style={[styles.waGoBtn, { backgroundColor: '#AF52DE' }]}>
+                  <Plus size={20} color="white" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <FlatList 
+              data={dietUnits} 
+              keyExtractor={item => item.id}
+              renderItem={({item}) => (
+                <View style={[styles.catItem, { backgroundColor: theme.card }]}>
+                  <Text style={[styles.catName, { color: theme.text }]}>{item.name}</Text>
+                  <TouchableOpacity onPress={() => deleteDietUnit(item.id)}>
+                    <Trash2 size={18} color="#FF3B30" />
+                  </TouchableOpacity>
+                </View>
+              )} 
+            />
+          </BlurView>
+        </View>
+      </Modal>
     </ThemedView>
   );
 }
@@ -595,6 +762,7 @@ const styles = StyleSheet.create({
   addBtnText: { color: 'white', fontWeight: '900', fontSize: 16 },
   catItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 15, borderRadius: 20, marginBottom: 10 },
   catName: { fontSize: 16, fontWeight: '800' },
+  smallTab: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, backgroundColor: 'rgba(150,150,150,0.1)', marginRight: 8, minWidth: 45, alignItems: 'center', justifyContent: 'center' },
   iconAction: { padding: 10, borderRadius: 12 },
   toolSection: { marginBottom: 30 },
   waGoBtn: { width: 56, height: 56, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
