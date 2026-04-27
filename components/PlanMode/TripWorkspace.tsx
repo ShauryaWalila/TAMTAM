@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Dimensions, FlatList, Modal, TextInput, Platform, Alert, ActivityIndicator, ScrollView } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { Palette, Briefcase, List, ChevronLeft, Plus, Menu, X, Globe, Settings, Save, Trash2, MapPin, Utensils, Camera, Landmark, Building2, MinusCircle, Wallet, CheckCircle2, Download } from 'lucide-react-native';
+import { Palette, Briefcase, List, ChevronLeft, Plus, Menu, X, Globe, Settings, Save, Trash2, MapPin, Utensils, Camera, Landmark, Building2, MinusCircle, Wallet, CheckCircle2, Download, Music } from 'lucide-react-native';
 import { MotiView, AnimatePresence } from 'moti';
 import LottieView from 'lottie-react-native';
 import BottomSheet, { BottomSheetView, BottomSheetBackgroundProps } from '@gorhom/bottom-sheet';
@@ -25,6 +25,7 @@ import DayTimeline from './DayTimeline';
 import DayReorderList from './DayReorderList';
 import TripFinance from './TripFinance';
 import SmartLocationPicker from '@/components/Map/SmartLocationPicker';
+import { TripSoundtrack } from './TripSoundtrack';
 import * as Haptics from 'expo-haptics';
 
 const { width, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -123,7 +124,7 @@ export default function TripWorkspace({ tripId, onBack, userId, mapRef, onMarker
   const lastHapticProgress = useSharedValue(0);
 
   const [isWorkspaceMenuOpen, setIsWorkspaceMenuOpen] = useState(false);
-  const [activeModal, setActiveModal] = useState<'settings' | 'finance' | 'wardrobe' | 'bucket' | 'canvas' | 'rack' | null>(null);
+  const [activeModal, setActiveModal] = useState<'settings' | 'finance' | 'wardrobe' | 'bucket' | 'canvas' | 'rack' | 'soundtrack' | null>(null);
 
   const [editTitle, setEditTitle] = useState('');
   const [editLocation, setEditLocation] = useState('');
@@ -342,6 +343,7 @@ export default function TripWorkspace({ tripId, onBack, userId, mapRef, onMarker
             <MotiView style={styles.subFabMenu}>
               <TouchableOpacity style={styles.subFab} onPress={() => { setIsWorkspaceMenuOpen(false); setActiveModal('settings'); }}><Settings size={20} color="#8E8E93" /></TouchableOpacity>
               <TouchableOpacity style={styles.subFab} onPress={() => { setIsWorkspaceMenuOpen(false); setActiveModal('canvas'); }}><Palette size={20} color="#FF2D55" /></TouchableOpacity>
+              <TouchableOpacity style={styles.subFab} onPress={() => { setIsWorkspaceMenuOpen(false); setActiveModal('soundtrack'); }}><Music size={20} color="#1DB954" /></TouchableOpacity>
               <TouchableOpacity style={styles.subFab} onPress={() => { setIsWorkspaceMenuOpen(false); setActiveModal('finance'); }}><Wallet size={20} color="#FF9500" /></TouchableOpacity>
               <TouchableOpacity style={styles.subFab} onPress={() => { setIsWorkspaceMenuOpen(false); setActiveModal('wardrobe'); }}><Briefcase size={20} color="#5856D6" /></TouchableOpacity>
               <TouchableOpacity style={styles.subFab} onPress={() => { setIsWorkspaceMenuOpen(false); setActiveModal('bucket'); }}><LottieView source={require('@/assets/lottie/activity.lottie')} autoPlay loop style={{ width: 82, height: 82 }} /></TouchableOpacity>
@@ -400,6 +402,7 @@ export default function TripWorkspace({ tripId, onBack, userId, mapRef, onMarker
       </Modal>
 
       <Modal visible={activeModal === 'finance'} animationType="slide"><TripFinance tripId={tripId} trip={trip} onClose={() => setActiveModal(null)} /></Modal>
+      <Modal visible={activeModal === 'soundtrack'} animationType="slide"><TripSoundtrack tripId={tripId} tripName={trip?.title} onClose={() => setActiveModal(null)} /></Modal>
       <Modal visible={activeModal === 'wardrobe'} animationType="slide"><Wardrobe userId={userId} tripId={tripId} onClose={() => setActiveModal(null)} /></Modal>
       <Modal visible={activeModal === 'canvas'} animationType="slide"><SharedCanvas tripId={tripId} onClose={() => setActiveModal(null)} /></Modal>
       <Modal visible={activeModal === 'rack'} animationType="slide"><TripRack tripId={tripId} onClose={() => setActiveModal(null)} /></Modal>

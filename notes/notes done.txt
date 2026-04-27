@@ -24,3 +24,4 @@ exam mode(
     speech to text confirmation for revision
     something else for revision
 )
+exportable itinerary, drawing

@@ -1,0 +1,378 @@
+// BACKUP OF OLD SPOTIFY LOGIC - 2024-04-27
+
+// --- TAMTAM/lib/spotify.ts ---
+/**
+ * High-Performance Music Search & Spotify Bridging
+ */
+
+export const searchTracks = async (query: string) => {
+  if (!query || query.length < 2) return [];
+
+  const fetchiTunes = async () => {
+    try {
+      const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=25`);
+      const data = await res.json();
+      return (data.results || []).map((item: any) => ({
+        id: `it-${item.trackId}`,
+        track_id: item.trackId, // CRITICAL: This was missing
+        name: item.trackName,
+        artists: [{ name: item.artistName }],
+        album: { images: [{ url: item.artworkUrl100.replace('100x100bb', '600x600bb') }] },
+        source: 'itunes'
+      }));
+    } catch (e) { return []; }
+  };
+
+  const fetchDeezer = async () => {
+    try {
+      const res = await fetch(`https://api.deezer.com/search?q=${encodeURIComponent(query)}&limit=25`);
+      const data = await res.json();
+      return (data.data || []).map((item: any) => ({
+        id: `dz-${item.id}`,
+        track_id: item.id,
+        name: item.title,
+        artists: [{ name: item.artist.name }],
+        album: { images: [{ url: item.album.cover_xl || item.album.cover_big }] },
+        isrc: item.isrc,
+        source: 'deezer'
+      }));
+    } catch (e) { return []; }
+  };
+
+  try {
+    const [itunes, deezer] = await Promise.all([fetchiTunes(), fetchDeezer()]);
+    // Combine and deduplicate
+    const combined = [...deezer];
+    itunes.forEach((it: any) => {
+      const exists = combined.some(dz => dz.name.toLowerCase() === it.name.toLowerCase());
+      if (!exists) combined.push(it);
+    });
+    return combined;
+  } catch (e) { return []; }
+};
+
+/**
+ * The Bridge: Resolves any track to a REAL Spotify Track ID
+ */
+export const resolveSpotifyId = async (trackId: any, source: string) => {
+  if (!trackId) return null;
+  
+  try {
+    // Platform-specific Odesli mapping
+    const platform = source === 'itunes' ? 'itunes' : 'deezer';
+    const url = `https://api.song.link/v1-alpha.1/links?platform=${platform}&type=song&id=${trackId}`;
+    
+    const response = await fetch(url);
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    const spotifyData = data.linksByPlatform?.spotify;
+    
+    if (spotifyData) {
+       if (spotifyData.entityUniqueId && spotifyData.entityUniqueId.includes('::')) {
+         return spotifyData.entityUniqueId.split('::')[1];
+       }
+       const match = spotifyData.url.match(/track\/([a-zA-Z0-9]+)/);
+       return match ? match[1] : null;
+    }
+    return null;
+  } catch (e) { return null; }
+};
+
+/**
+ * Generates a high-reliability Spotify Link
+ */
+export const getSpotifyLink = (id: string | null, artist: string, track: string) => {
+  if (id && !id.startsWith('http') && !id.startsWith('query:')) {
+    return `spotify:track:${id}`;
+  }
+  return `spotify:search:${encodeURIComponent(artist + " " + track)}`;
+};
+
+
+// --- TAMTAM/components/PlanMode/TripSoundtrack.tsx ---
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, TextInput, FlatList, Image, ActivityIndicator, Alert, Linking, Dimensions } from 'react-native';
+import { Music, Search, Plus, X, Play, Trash2, ChevronLeft, Disc, Check } from 'lucide-react-native';
+import { MotiView, AnimatePresence } from 'moti';
+import * as Haptics from 'expo-haptics';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { supabase } from '@/lib/supabase';
+import Colors from '@/constants/Colors';
+import { useColorScheme } from '@/components/useColorScheme';
+import { searchTracks, resolveSpotifyId, getSpotifyLink } from '@/lib/spotify';
+
+const { width } = Dimensions.get('window');
+
+interface TripSoundtrackProps {
+  tripId: string;
+  onClose: () => void;
+}
+
+export function TripSoundtrack({ tripId, onClose }: TripSoundtrackProps) {
+  const colorScheme = useColorScheme() ?? 'light';
+  const theme = Colors[colorScheme];
+  const insets = useSafeAreaInsets();
+
+  const [playlist, setPlaylist] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [addingId, setAddingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchPlaylist();
+    const sub = supabase.channel(`soundtrack-${tripId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'trip_songs', filter: `trip_id=eq.${tripId}` }, fetchPlaylist)
+      .subscribe();
+    return () => { supabase.removeChannel(sub); };
+  }, [tripId]);
+
+  const fetchPlaylist = async () => {
+    const { data } = await supabase.from('trip_songs').select('*').eq('trip_id', tripId).order('created_at', { ascending: true });
+    if (data) setPlaylist(data);
+    setLoading(false);
+  };
+
+  const handleSearch = async (text: string) => {
+    console.log('[UI] ⌨️ User typed:', text);
+    setSearchQuery(text);
+    if (text.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    setIsSearching(true);
+    try {
+      const results = await searchTracks(text);
+      console.log('[UI] 📦 Search results received:', results.length);
+      setSearchResults(results);
+    } catch (e) {
+      console.error('[UI] 💥 Search error:', e);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const addTrack = async (track: any) => {
+    if (addingId) return;
+    setAddingId(track.id);
+    console.log('[UI] ➕ Adding track:', track.name);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    const artistName = track.artists[0].name;
+    const trackName = track.name;
+
+    // Bridge to REAL Spotify ID
+    const spotifyId = await resolveSpotifyId(track.track_id, track.source);
+    console.log('[UI] 🎯 Resolved Spotify ID:', spotifyId);
+
+    // Generate Direct Native Link
+    const spotifyUrl = getSpotifyLink(spotifyId, artistName, trackName);
+    console.log('[UI] 🔗 Final Spotify URI:', spotifyUrl);
+    
+    const payload = {
+      trip_id: tripId,
+      spotify_id: spotifyUrl,
+      track_name: trackName,
+      artist_name: artistName,
+      album_art: track.album.images[0]?.url,
+    };
+
+    const { error } = await supabase.from('trip_songs').upsert(payload, { onConflict: 'trip_id, spotify_id' });
+    if (error) {
+       console.error('[UI] ❌ Supabase Error:', error);
+       Alert.alert("Error", "Could not add song");
+    } else {
+       console.log('[UI] ✅ Song added to Supabase');
+       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+       fetchPlaylist();
+    }
+    setAddingId(null);
+  };
+
+  const removeTrack = async (id: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await supabase.from('trip_songs').delete().eq('id', id);
+    fetchPlaylist();
+  };
+
+  const playSong = async (uri: string) => {
+    if (!uri) return;
+    Haptics.selectionAsync();
+    console.log('🚀 [Play] Opening Native URI:', uri);
+    try {
+      // Direct open - OS will handle native routing
+      await Linking.openURL(uri);
+    } catch (e) {
+      // Last-ditch web fallback
+      const webUrl = uri.replace('spotify:track:', 'https://open.spotify.com/track/').replace('spotify:search:', 'https://open.spotify.com/search/');
+      Linking.openURL(webUrl);
+    }
+  };
+
+  const playTripSoundtrack = async () => {
+    if (playlist.length === 0) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    
+    // Extract real IDs from the stored URIs for queue support
+    const trackIds = playlist
+      .map(s => {
+        const val = s.spotify_id;
+        const match = val.match(/track:([a-zA-Z0-9]+)/);
+        return match ? match[1] : null;
+      })
+      .filter(id => id !== null);
+
+    console.log('📦 [Queue] IDs found:', trackIds);
+
+    if (trackIds.length > 0) {
+      const url = `spotify:trackset:OurTripPlaylist:${trackIds.join(',')}`;
+      console.log('🔥 [Queue] Launching trackset:', url);
+      try {
+        await Linking.openURL(url);
+      } catch (e) {
+        playSong(playlist[0].spotify_id);
+      }
+    } else {
+      playSong(playlist[0].spotify_id);
+    }
+  };
+
+  return (
+    <View style={[styles.container, { backgroundColor: '#000', paddingTop: insets.top }]}>
+      <View style={styles.header}>
+        <View style={styles.headerTitleRow}>
+          <TouchableOpacity onPress={onClose} style={styles.backBtn}>
+            <ChevronLeft size={28} color="#FFF" />
+          </TouchableOpacity>
+          <View>
+            <Text style={styles.headerSubtitle}>TRIP SOUNDTRACK</Text>
+            <Text style={styles.headerTitle}>The Vibe Board</Text>
+          </View>
+        </View>
+        
+        {!showSearch && playlist.length > 0 && (
+          <TouchableOpacity style={[styles.playAllBtn, { backgroundColor: '#1DB954' }]} onPress={playTripSoundtrack}>
+            <Play size={20} color="white" fill="white" />
+            <Text style={styles.playAllText}>Play Trip</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      <AnimatePresence mode="wait">
+        {showSearch ? (
+          <MotiView key="search" from={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={styles.content}>
+            <View style={styles.searchBarWrapper}>
+              <View style={styles.searchBar}>
+                <Search size={20} color="rgba(255,255,255,0.5)" />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Find your favorite songs..."
+                  placeholderTextColor="rgba(255,255,255,0.3)"
+                  value={searchQuery}
+                  onChangeText={handleSearch}
+                  autoFocus
+                  autoCorrect={false}
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => handleSearch('')}>
+                    <X size={18} color="rgba(255,255,255,0.5)" />
+                  </TouchableOpacity>
+                )}
+              </View>
+              <TouchableOpacity onPress={() => setShowSearch(false)}><Text style={styles.cancelText}>Done</Text></TouchableOpacity>
+            </View>
+
+            {isSearching ? (
+              <ActivityIndicator color="#1DB954" style={{ marginTop: 40 }} />
+            ) : (
+              <FlatList
+                data={searchResults}
+                keyExtractor={item => item.id}
+                contentContainerStyle={styles.listContent}
+                renderItem={({ item }) => {
+                  const isAdded = playlist.some(p => p.track_name === item.name);
+                  return (
+                    <TouchableOpacity style={styles.trackCard} onPress={() => addTrack(item)}>
+                      <Image source={{ uri: item.album.images[0]?.url }} style={styles.trackArt} />
+                      <View style={styles.trackInfo}>
+                        <Text style={styles.trackName} numberOfLines={1}>{item.name}</Text>
+                        <Text style={styles.trackArtist} numberOfLines={1}>{item.artists[0].name}</Text>
+                      </View>
+                      {addingId === item.id ? <ActivityIndicator size="small" color="#1DB954" /> : isAdded ? <Check size={20} color="#1DB954" /> : <Plus size={20} color="rgba(255,255,255,0.5)" />}
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+            )}
+          </MotiView>
+        ) : (
+          <MotiView key="list" from={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={styles.content}>
+            {loading ? (
+              <ActivityIndicator color="#1DB954" style={{ marginTop: 40 }} />
+            ) : (
+              <FlatList
+                data={playlist}
+                keyExtractor={item => item.id}
+                contentContainerStyle={styles.listContent}
+                renderItem={({ item }) => (
+                  <View style={styles.playlistItem}>
+                    <TouchableOpacity onPress={() => playSong(item.spotify_id)} style={styles.trackMain}>
+                      <Image source={{ uri: item.album_art }} style={styles.trackArt} />
+                      <View style={styles.trackInfo}>
+                        <Text style={styles.trackName} numberOfLines={1}>{item.track_name}</Text>
+                        <Text style={styles.trackArtist} numberOfLines={1}>{item.artist_name}</Text>
+                      </View>
+                      <Play size={18} color="#1DB954" fill="#1DB954" style={{ marginRight: 15 }} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => removeTrack(item.id)} style={styles.trashBtn}><Trash2 size={18} color="#FF3B30" /></TouchableOpacity>
+                  </View>
+                )}
+                ListEmptyComponent={
+                  <View style={styles.emptyState}>
+                    <Disc size={64} color="rgba(255,255,255,0.1)" />
+                    <Text style={styles.emptyText}>Add some music to start the trip!</Text>
+                  </View>
+                }
+              />
+            )}
+            <TouchableOpacity style={[styles.floatingAddBtn, { backgroundColor: theme.tint }]} onPress={() => setShowSearch(true)}>
+              <Plus size={28} color="white" />
+            </TouchableOpacity>
+          </MotiView>
+        )}
+      </AnimatePresence>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 25 },
+  headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 15 },
+  backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center' },
+  headerSubtitle: { fontSize: 9, fontWeight: '900', color: 'rgba(255,255,255,0.5)', letterSpacing: 2 },
+  headerTitle: { fontSize: 26, fontWeight: '900', color: '#FFF' },
+  playAllBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 25 },
+  playAllText: { color: 'white', fontWeight: '900', fontSize: 14 },
+  content: { flex: 1 },
+  searchBarWrapper: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginBottom: 15, gap: 15 },
+  searchBar: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 15, paddingHorizontal: 15, height: 50, gap: 10 },
+  searchInput: { flex: 1, color: '#FFF', fontSize: 16, fontWeight: '700' },
+  cancelText: { color: '#FFF', fontWeight: '800' },
+  listContent: { paddingHorizontal: 20, paddingBottom: 100 },
+  trackCard: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12 },
+  playlistItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 20, paddingVertical: 8, paddingLeft: 10, paddingRight: 15, marginBottom: 12 },
+  trackMain: { flex: 1, flexDirection: 'row', alignItems: 'center' },
+  trackArt: { width: 50, height: 50, borderRadius: 10 },
+  trackInfo: { flex: 1, marginLeft: 15 },
+  trackName: { color: '#FFF', fontSize: 16, fontWeight: '800' },
+  trackArtist: { color: 'rgba(255,255,255,0.5)', fontSize: 13, fontWeight: '600' },
+  trashBtn: { padding: 5 },
+  emptyState: { alignItems: 'center', marginTop: 100 },
+  emptyText: { color: 'rgba(255,255,255,0.3)', fontSize: 16, fontWeight: '700' },
+  floatingAddBtn: { position: 'absolute', bottom: 30, right: 20, width: 64, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center', elevation: 10 },
+});
