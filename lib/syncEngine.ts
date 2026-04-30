@@ -147,16 +147,16 @@ export const initialFullSync = async (shouldClear = false) => {
           [n.id, n.name, n.category, typeof n.nutrients === 'string' ? n.nutrients : JSON.stringify(n.nutrients), n.base_quantity, n.base_unit, n.user_id, n.created_at]));
 
       await syncTable('recipes', supabase.from('recipes').select('*'),
-        n => db.runSync(`INSERT OR REPLACE INTO recipes (id, name, description, instructions, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
-          [n.id, n.name, n.description, n.instructions, n.user_id, n.created_at]));
+        n => db.runSync(`INSERT OR REPLACE INTO recipes (id, name, description, instructions, nutrients, base_quantity, base_unit, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [n.id, n.name, n.description, n.instructions, n.nutrients, n.base_quantity || 1, n.base_unit || 'serving', n.user_id, n.created_at]));
 
       await syncTable('recipe_ingredients', supabase.from('recipe_ingredients').select('*'),
         n => db.runSync(`INSERT OR REPLACE INTO recipe_ingredients (id, recipe_id, ingredient_id, quantity, unit) VALUES (?, ?, ?, ?, ?)`,
           [n.id, n.recipe_id, n.ingredient_id, n.quantity, n.unit]));
 
       await syncTable('diet_plans', supabase.from('diet_plans').select('*'),
-        n => db.runSync(`INSERT OR REPLACE INTO diet_plans (id, date, meal_time, type, item_id, quantity, unit, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [n.id, n.date, n.meal_time, n.type, n.item_id, n.quantity, n.unit, n.user_id, n.created_at]));
+        n => db.runSync(`INSERT OR REPLACE INTO diet_plans (id, date, meal_time, type, item_id, quantity, unit, user_id, is_eaten, is_shared, is_recurring, days_of_week, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [n.id, n.date, n.meal_time, n.type, n.item_id, n.quantity, n.unit, n.user_id, n.is_eaten || 0, n.is_shared || 0, n.is_recurring || 0, n.days_of_week || '0,1,2,3,4,5,6', n.created_at]));
 
       console.log('Background lazy sync complete.');    } catch (e) {
       console.warn('Background sync failed:', e);
@@ -182,6 +182,7 @@ export const processSyncQueue = async () => {
   isSyncing = true;
   console.log(`📤 Syncing ${pending.length} operations...`);
 
+  // Group operations to handle them better? For now, just robust single processing
   for (const op of pending) {
     try {
       const payload = JSON.parse(op.payload);
@@ -199,13 +200,24 @@ export const processSyncQueue = async () => {
       if (!error) {
         removeSyncOperation(op.id);
       } else {
+        // If it's a foreign key error (23503), the parent hasn't synced yet.
+        // We'll leave it in the queue to try again in the next loop.
+        if (error.code === '23503') {
+          console.warn(`⏳ Waiting for parent record to sync for ${op.table_name}...`);
+          continue; 
+        }
+
         console.error(`❌ Sync failed for ${op.table_name}:`, error.message);
-        // If it's a permanent error (like 404), we remove it to unblock queue
+        // If it's a permanent conflict error, remove it to unblock
         if (error.code === '23505' || error.code === 'PGRST116') removeSyncOperation(op.id);
       }
-    } catch (err) {
-      console.error('Network error during sync:', err);
-      break; 
+    } catch (err: any) {
+      // Handle "Network request failed" or other fetch errors
+      if (err.message === 'Network request failed') {
+        console.log('📶 Sync paused: Network connection unstable.');
+        break; 
+      }
+      console.error('Unexpected error during sync:', err);
     }
   }
   isSyncing = false;

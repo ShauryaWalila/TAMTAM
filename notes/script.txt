@@ -1471,3 +1471,478 @@ alter table posts alter column updated_at set default now();
 
 
 
+
+
+
+CREATE TABLE IF NOT EXISTS trip_songs (
+         id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+         trip_id UUID REFERENCES trips(id) ON DELETE CASCADE,
+         spotify_id TEXT NOT NULL,
+         track_name TEXT NOT NULL,
+         artist_name TEXT NOT NULL,
+         album_art TEXT,
+         duration_ms INTEGER,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        UNIQUE(trip_id, spotify_id)
+    );
+   
+    -- Enable Realtime and open access
+    ALTER TABLE trip_songs ENABLE ROW LEVEL SECURITY;
+    CREATE POLICY "Allow all access to trip_songs" ON trip_songs FOR ALL USING (true) WITH CHECK (true);
+    ALTER PUBLICATION supabase_realtime ADD TABLE trip_songs;
+
+
+
+
+
+
+
+
+    CREATE TABLE IF NOT EXISTS public.trip_songs (
+         id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+         trip_id text NOT NULL, -- Can be a UUID for plans or 'MASTER' for global
+         spotify_id text NOT NULL,
+         track_name text,
+         artist_name text,
+         album_art text,
+         created_at timestamp with time zone DEFAULT now(),
+   
+        -- IMPORTANT: This constraint allows the 'upsert' to work without duplicates
+        UNIQUE(trip_id, spotify_id)
+    );
+   
+    -- Enable RLS (Recommended)
+    ALTER TABLE public.trip_songs ENABLE ROW LEVEL SECURITY;
+   
+    -- Allow all access for now (or refine based on your auth)
+    CREATE POLICY "Allow all access to trip_songs" ON public.trip_songs
+        FOR ALL USING (true) WITH CHECK (true);
+
+
+        ALTER TABLE public.trip_songs
+    ADD CONSTRAINT trip_songs_unique_id UNIQUE (trip_id, spotify_id);
+   
+    -- Enable Realtime for this table (CRITICAL for immediate reflection)
+    ALTER publication supabase_realtime ADD TABLE trip_songs;
+
+
+
+
+
+    
+     -- 2. Ensure the unique constraint is still active on the new type
+     -- (Drop it first if it exists to avoid errors, then recreate)
+     ALTER TABLE public.trip_songs DROP CONSTRAINT IF EXISTS trip_songs_unique_id;
+     ALTER TABLE public.trip_songs ADD CONSTRAINT trip_songs_unique_id UNIQUE (trip_id, spotify_id);
+    
+    -- 3. Double check the primary ID column (usually uuid or text is fine here)
+    -- but ensure it matches your app's expectations
+    ALTER TABLE public.trip_songs ALTER COLUMN id TYPE text
+
+
+
+    
+     ALTER TABLE public.trip_songs
+     DROP CONSTRAINT IF EXISTS trip_songs_trip_id_fkey;
+    
+     -- 2. Now change the columns to TEXT (allows both UUIDs and "MASTER")
+     ALTER TABLE public.trip_songs ALTER COLUMN trip_id TYPE text;
+     ALTER TABLE public.trip_songs ALTER COLUMN id TYPE text;
+    
+     -- 3. Ensure the unique constraint is active so you don't get duplicate songs
+    ALTER TABLE public.trip_songs DROP CONSTRAINT IF EXISTS trip_songs_unique_id;
+    ALTER TABLE public.trip_songs ADD CONSTRAINT trip_songs_unique_id UNIQUE (trip_id, spotify_id);
+
+
+
+
+
+
+
+
+
+     -- 1. Diet Metrics (Calories, Protein, etc.)
+     CREATE TABLE IF NOT EXISTS diet_metrics (
+       id UUID PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
+       name TEXT NOT NULL,
+       unit TEXT,
+       is_active BOOLEAN DEFAULT true,
+       created_at TIMESTAMPTZ DEFAULT now()
+     );
+    
+    -- 2. Ingredients Storage
+    CREATE TABLE IF NOT EXISTS ingredients (
+      id UUID PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
+      name TEXT NOT NULL,
+      category TEXT, -- 'Protein', 'Carb', etc.
+      nutrients JSONB DEFAULT '{}'::jsonb, -- Store dynamic metrics: {"metric_id": value}
+      base_quantity REAL DEFAULT 100,
+      base_unit TEXT DEFAULT 'g',
+      user_id UUID REFERENCES auth.users(id),
+      created_at TIMESTAMPTZ DEFAULT now()
+    );
+   
+    -- 3. Recipes
+    CREATE TABLE IF NOT EXISTS recipes (
+      id UUID PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
+      name TEXT NOT NULL,
+      description TEXT,
+      instructions TEXT,
+      user_id UUID REFERENCES auth.users(id),
+      created_at TIMESTAMPTZ DEFAULT now()
+    );
+   
+    -- 4. Recipe Ingredients (Bridge Table)
+    CREATE TABLE IF NOT EXISTS recipe_ingredients (
+      id UUID PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
+      recipe_id UUID REFERENCES recipes(id) ON DELETE CASCADE,
+      ingredient_id UUID REFERENCES ingredients(id) ON DELETE CASCADE,
+      quantity REAL NOT NULL,
+      unit TEXT,
+      created_at TIMESTAMPTZ DEFAULT now()
+    );
+   
+    -- 5. Diet Plans (The Actual Routine)
+    CREATE TABLE IF NOT EXISTS diet_plans (
+      id UUID PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
+      date DATE NOT NULL,
+      meal_time TEXT, -- 'Breakfast', 'Lunch', etc.
+      type TEXT, -- 'recipe' or 'ingredient'
+      item_id TEXT NOT NULL, -- ID of the recipe or ingredient
+      quantity REAL NOT NULL,
+      unit TEXT,
+      user_id UUID REFERENCES auth.users(id),
+      created_at TIMESTAMPTZ DEFAULT now()
+    );
+   
+    -- ==========================================
+    -- ENABLE RLS (Row Level Security)
+    -- ==========================================
+    ALTER TABLE diet_metrics ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE ingredients ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE recipes ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE recipe_ingredients ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE diet_plans ENABLE ROW LEVEL SECURITY;
+   
+    -- Create Policies (Allowing all authenticated users to read/write for shared experience)
+    CREATE POLICY "Allow all for authenticated users" ON diet_metrics FOR ALL TO authenticated USING (true);
+    CREATE POLICY "Allow all for authenticated users" ON ingredients FOR ALL TO authenticated USING (true);
+    CREATE POLICY "Allow all for authenticated users" ON recipes FOR ALL TO authenticated USING (true);
+    CREATE POLICY "Allow all for authenticated users" ON recipe_ingredients FOR ALL TO authenticated USING (true);
+    CREATE POLICY "Allow all for authenticated users" ON diet_plans FOR ALL TO authenticated USING (true);
+   
+    -- ==========================================
+    -- ENABLE REALTIME
+    -- ==========================================
+    ALTER PUBLICATION supabase_realtime ADD TABLE diet_metrics;
+    ALTER PUBLICATION supabase_realtime ADD TABLE ingredients;
+    ALTER PUBLICATION supabase_realtime ADD TABLE recipes;
+    ALTER PUBLICATION supabase_realtime ADD TABLE recipe_ingredients;
+    ALTER PUBLICATION supabase_realtime ADD TABLE diet_plans;
+   
+    -- ==========================================
+    -- INSERT DEFAULT METRICS
+    -- ==========================================
+    INSERT INTO diet_metrics (name, unit) VALUES
+    ('Calories', 'kcal'),
+    ('Protein', 'g'),
+    ('Carbs', 'g'),
+    ('Fat', 'g'),
+    ('Fiber', 'g');
+
+
+
+
+
+
+
+
+
+
+
+
+
+     -- Diet Metrics (Calories, Protein, Zinc, etc.)
+      CREATE TABLE IF NOT EXISTS diet_metrics (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+    unit TEXT,
+       is_active BOOLEAN DEFAULT true,
+       created_at TIMESTAMPTZ DEFAULT now()
+     );
+    
+     -- Diet Units (g, ml, serving, etc.)
+     CREATE TABLE IF NOT EXISTS diet_units (
+       id TEXT PRIMARY KEY,
+       name TEXT NOT NULL,
+       created_at TIMESTAMPTZ DEFAULT now()
+     );
+    
+     -- Ingredients Storage
+     CREATE TABLE IF NOT EXISTS ingredients (
+       id UUID PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
+       name TEXT NOT NULL,
+       category TEXT,
+       nutrients JSONB DEFAULT '{}'::jsonb, -- Store dynamic metrics: {"m_id": 12.5}
+       base_quantity REAL DEFAULT 100,
+       base_unit TEXT,
+       user_id UUID REFERENCES auth.users(id),
+       created_at TIMESTAMPTZ DEFAULT now()
+     );
+    
+     -- Recipes
+     CREATE TABLE IF NOT EXISTS recipes (
+       id UUID PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
+       name TEXT NOT NULL,
+       description TEXT,
+       instructions TEXT,
+       user_id UUID REFERENCES auth.users(id),
+       created_at TIMESTAMPTZ DEFAULT now()
+     );
+    
+     -- Recipe Ingredients Bridge
+     CREATE TABLE IF NOT EXISTS recipe_ingredients (
+       id UUID PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
+       recipe_id UUID REFERENCES recipes(id) ON DELETE CASCADE,
+       ingredient_id UUID REFERENCES ingredients(id) ON DELETE CASCADE,
+       quantity REAL NOT NULL,
+       unit TEXT,
+       created_at TIMESTAMPTZ DEFAULT now()
+     );
+    
+     -- Diet Plans (The Actual Routine)
+     CREATE TABLE IF NOT EXISTS diet_plans (
+       id UUID PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
+       date DATE NOT NULL,
+       meal_time TEXT,
+       type TEXT, -- 'recipe' or 'ingredient'
+       item_id TEXT NOT NULL,
+       quantity REAL NOT NULL,
+       unit TEXT,
+       user_id UUID REFERENCES auth.users(id),
+       created_at TIMESTAMPTZ DEFAULT now()
+     );
+    
+     -- ==========================================
+     -- 2. SECURITY & REALTIME
+     -- ==========================================
+    
+     ALTER TABLE diet_metrics ENABLE ROW LEVEL SECURITY;
+     ALTER TABLE diet_units ENABLE ROW LEVEL SECURITY;
+     ALTER TABLE ingredients ENABLE ROW LEVEL SECURITY;
+     ALTER TABLE recipes ENABLE ROW LEVEL SECURITY;
+     ALTER TABLE recipe_ingredients ENABLE ROW LEVEL SECURITY;
+     ALTER TABLE diet_plans ENABLE ROW LEVEL SECURITY;
+    
+     CREATE POLICY "Shared Diet Access" ON diet_metrics FOR ALL TO authenticated USING (true);
+     CREATE POLICY "Shared Diet Access" ON diet_units FOR ALL TO authenticated USING (true);
+     CREATE POLICY "Shared Diet Access" ON ingredients FOR ALL TO authenticated USING (true);
+     CREATE POLICY "Shared Diet Access" ON recipes FOR ALL TO authenticated USING (true);
+     CREATE POLICY "Shared Diet Access" ON recipe_ingredients FOR ALL TO authenticated USING (true);
+     CREATE POLICY "Shared Diet Access" ON diet_plans FOR ALL TO authenticated USING (true);
+    
+     -- Enable Realtime for all tables
+     ALTER PUBLICATION supabase_realtime ADD TABLE diet_metrics, diet_units, ingredients, recipes, recipe_ingredients,
+   diet_plans;
+    
+     -- ==========================================
+     -- 3. INITIAL SEED DATA
+     -- ==========================================
+    
+     INSERT INTO diet_metrics (id, name, unit) VALUES
+     ('m1', 'Calories', 'kcal'),
+     ('m2', 'Protein', 'g'),
+     ('m3', 'Carbs', 'g'),
+     ('m4', 'Fat', 'g')
+     ON CONFLICT (id) DO NOTHING;
+    
+     INSERT INTO diet_units (id, name) VALUES
+     ('g', 'g'), ('ml', 'ml'), ('serving', 'serving'), ('piece', 'piece'), ('cup', 'cup')
+    ON CONFLICT (id) DO NOTHING;
+
+
+
+
+
+
+
+    DROP TABLE IF EXISTS diet_metrics CASCADE;
+    
+     CREATE TABLE diet_metrics (
+       id TEXT PRIMARY KEY, -- Changed from UUID to TEXT
+       name TEXT NOT NULL,
+       unit TEXT,
+       is_active BOOLEAN DEFAULT true,
+       created_at TIMESTAMPTZ DEFAULT now()
+    );
+   
+    -- 2. Enable Security again
+    ALTER TABLE diet_metrics ENABLE ROW LEVEL SECURITY;
+    CREATE POLICY "Shared Diet Access" ON diet_metrics FOR ALL TO authenticated USING (true);
+   
+    -- 3. Now the INSERT will work perfectly
+    INSERT INTO diet_metrics (id, name, unit) VALUES
+    ('m1', 'Calories', 'kcal'),
+    ('m2', 'Protein', 'g'),
+    ('m3', 'Carbs', 'g'),
+    ('m4', 'Fat', 'g');
+   
+    -- 4. Enable Realtime
+    ALTER PUBLICATION supabase_realtime ADD TABLE diet_metrics;
+
+
+
+
+
+
+
+   -- 1. Modify User ID columns to accept TEXT (since we use names for login)
+     ALTER TABLE ingredients DROP CONSTRAINT IF EXISTS ingredients_user_id_fkey;
+     ALTER TABLE recipes DROP CONSTRAINT IF EXISTS recipes_user_id_fkey;
+     ALTER TABLE diet_plans DROP CONSTRAINT IF EXISTS diet_plans_user_id_fkey;
+    
+     -- 2. Now convert the columns to TEXT to support your name-based system
+     ALTER TABLE ingredients ALTER COLUMN user_id TYPE TEXT;
+     ALTER TABLE recipes ALTER COLUMN user_id TYPE TEXT;
+     ALTER TABLE diet_plans ALTER COLUMN user_id TYPE TEXT;
+   
+    -- 3. Clear any existing sync-blocking data
+    DELETE FROM ingredients WHERE user_id IS NULL;
+    DELETE FROM recipes WHERE user_id IS NULL;
+    DELETE FROM diet_plans WHERE user_id IS NULL;
+    -- 2. Clear out any bad data that might block sync
+    DELETE FROM ingredients WHERE user_id NOT LIKE '%-%' AND length(user_id) > 20; -- Just safety
+
+
+
+
+
+
+
+     -- 1. Drop existing restricted policies
+     DROP POLICY IF EXISTS "Shared Diet Access" ON diet_metrics;
+     DROP POLICY IF EXISTS "Shared Diet Access" ON ingredients;
+     DROP POLICY IF EXISTS "Shared Diet Access" ON recipes;
+     DROP POLICY IF EXISTS "Shared Diet Access" ON recipe_ingredients;
+     DROP POLICY IF EXISTS "Shared Diet Access" ON diet_plans;
+     DROP POLICY IF EXISTS "Shared Diet Access" ON diet_units;
+    
+     -- 2. Create new open policies that allow 'anon' access
+    -- (Security is still protected by your Supabase API Key)
+    CREATE POLICY "Enable access for all" ON diet_metrics FOR ALL USING (true);
+    CREATE POLICY "Enable access for all" ON ingredients FOR ALL USING (true);
+    CREATE POLICY "Enable access for all" ON recipes FOR ALL USING (true);
+    CREATE POLICY "Enable access for all" ON recipe_ingredients FOR ALL USING (true);
+    CREATE POLICY "Enable access for all" ON diet_plans FOR ALL USING (true);
+    CREATE POLICY "Enable access for all" ON diet_units FOR ALL USING (true);
+
+
+
+
+
+CREATE POLICY "Public access" ON diet_metrics FOR ALL USING (true);
+ CREATE POLICY "Public access" ON ingredients FOR ALL USING (true);
+ CREATE POLICY "Public access" ON recipes FOR ALL USING (true);
+ CREATE POLICY "Public access" ON recipe_ingredients FOR ALL USING (true);
+ CREATE POLICY "Public access" ON diet_plans FOR ALL USING (true);
+ CREATE POLICY "Public access" ON diet_units FOR ALL USING (true);
+
+
+
+
+
+
+
+  ALTER TABLE recipes ADD COLUMN IF NOT EXISTS base_quantity REAL DEFAULT 1;
+ ALTER TABLE recipes ADD COLUMN IF NOT EXISTS base_unit TEXT DEFAULT 'serving';
+
+
+
+
+
+
+
+ -- 1. Drop existing strict FK
+     ALTER TABLE recipe_ingredients DROP CONSTRAINT IF EXISTS recipe_ingredients_recipe_id_fkey;
+    
+     -- 2. Re-add with Deferrable property (allows out-of-order sync)
+     ALTER TABLE recipe_ingredients
+     ADD CONSTRAINT recipe_ingredients_recipe_id_fkey
+     FOREIGN KEY (recipe_id)
+     REFERENCES recipes(id)
+     ON DELETE CASCADE
+    DEFERRABLE INITIALLY DEFERRED;
+   
+    -- 3. Do the same for ingredient link just in case
+    ALTER TABLE recipe_ingredients DROP CONSTRAINT IF EXISTS recipe_ingredients_ingredient_id_fkey;
+    ALTER TABLE recipe_ingredients
+    ADD CONSTRAINT recipe_ingredients_ingredient_id_fkey
+    FOREIGN KEY (ingredient_id)
+    REFERENCES ingredients(id)
+    ON DELETE CASCADE
+    DEFERRABLE INITIALLY DEFERRED;
+
+
+
+
+
+
+
+     -- 1. Update Diet Plans to support Routine vs Actual and Shared entries
+     ALTER TABLE diet_plans
+     ADD COLUMN IF NOT EXISTS is_eaten SMALLINT DEFAULT 0,
+     ADD COLUMN IF NOT EXISTS is_shared SMALLINT DEFAULT 0;
+    
+     -- 2. Update Recipes to support custom yields/batch sizes if not already present
+     ALTER TABLE recipes
+     ADD COLUMN IF NOT EXISTS base_quantity NUMERIC DEFAULT 1,
+     ADD COLUMN IF NOT EXISTS base_unit TEXT DEFAULT 'serving';
+   
+    -- 3. (Optional) Helpful Comments for the Supabase Dashboard
+    COMMENT ON COLUMN diet_plans.is_eaten IS '0 = Planned/Routine, 1 = Actually Consumed';
+    COMMENT ON COLUMN diet_plans.is_shared IS '0 = Personal, 1 = Shared with Partner';
+
+
+
+
+
+
+
+    ALTER TABLE diet_plans
+    ADD COLUMN IF NOT EXISTS is_recurring SMALLINT DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS days_of_week TEXT;
+
+
+
+
+
+
+
+     -- 1. Update 'diet_plans' table to support scheduling and recurring logic
+     ALTER TABLE public.diet_plans
+     ADD COLUMN IF NOT EXISTS is_eaten INTEGER DEFAULT 0,
+     ADD COLUMN IF NOT EXISTS is_shared INTEGER DEFAULT 0,
+     ADD COLUMN IF NOT EXISTS is_recurring INTEGER DEFAULT 0,
+     ADD COLUMN IF NOT EXISTS days_of_week TEXT;
+    
+     -- 2. Update 'recipes' table for yield management
+     ALTER TABLE public.recipes
+    ADD COLUMN IF NOT EXISTS base_quantity REAL DEFAULT 1,
+    ADD COLUMN IF NOT EXISTS base_unit TEXT DEFAULT 'serving';
+   
+    -- 3. Ensure 'meal_time' can store HH:mm strings (usually already TEXT)
+    -- No changes needed if it's already a text column.
+   
+    -- 4. Enable Realtime for these tables (optional but recommended)
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.diet_plans;
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.recipes;
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.ingredients;
+
+
+
+
+
+
+
+
+    

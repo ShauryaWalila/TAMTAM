@@ -15,6 +15,7 @@ export const initDB = () => {
   try {
     db.execSync(`
       PRAGMA journal_mode = WAL;
+      PRAGMA foreign_keys = ON;
       
       -- Sync Queue Table
       CREATE TABLE IF NOT EXISTS sync_queue (
@@ -351,6 +352,9 @@ export const initDB = () => {
         name TEXT NOT NULL,
         description TEXT,
         instructions TEXT,
+        nutrients TEXT, -- JSON string for manual override
+        base_quantity REAL DEFAULT 1,
+        base_unit TEXT DEFAULT 'serving',
         user_id TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
@@ -376,6 +380,10 @@ export const initDB = () => {
         quantity REAL NOT NULL,
         unit TEXT,
         user_id TEXT,
+        is_eaten INTEGER DEFAULT 0,
+        is_shared INTEGER DEFAULT 0,
+        is_recurring INTEGER DEFAULT 0,
+        days_of_week TEXT, -- '0,1,2,3,4,5,6'
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
 
@@ -441,6 +449,15 @@ export const initDB = () => {
 
     // Migration for Journal Posts
     try { db.execSync('ALTER TABLE posts ADD COLUMN updated_at DATETIME;'); } catch(e) {}
+
+    // Migration for Diet System
+    try { db.execSync('ALTER TABLE recipes ADD COLUMN nutrients TEXT;'); } catch(e) {}
+    try { db.execSync('ALTER TABLE recipes ADD COLUMN base_quantity REAL DEFAULT 1;'); } catch(e) {}
+    try { db.execSync('ALTER TABLE recipes ADD COLUMN base_unit TEXT DEFAULT "serving";'); } catch(e) {}
+    try { db.execSync('ALTER TABLE diet_plans ADD COLUMN is_eaten INTEGER DEFAULT 0;'); } catch(e) {}
+    try { db.execSync('ALTER TABLE diet_plans ADD COLUMN is_shared INTEGER DEFAULT 0;'); } catch(e) {}
+    try { db.execSync('ALTER TABLE diet_plans ADD COLUMN is_recurring INTEGER DEFAULT 0;'); } catch(e) {}
+    try { db.execSync('ALTER TABLE diet_plans ADD COLUMN days_of_week TEXT;'); } catch(e) {}
 
     console.log('Local SQLite DB initialized.');
   } catch (error) {

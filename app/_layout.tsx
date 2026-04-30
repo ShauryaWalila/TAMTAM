@@ -44,15 +44,25 @@ export default function RootLayout() {
   });
 
   const [activeAlarm, setActiveAlert] = useState<any>(null);
+  const [appIsReady, setAppIsReady] = useState(false);
 
   useEffect(() => { if (error) throw error; }, [error]);
 
   useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-      initApp();
+    async function prepare() {
+      if (loaded && !appIsReady) {
+        try {
+          await SplashScreen.hideAsync();
+        } catch (e) {
+          // Fallback if native splash is already gone
+        } finally {
+          setAppIsReady(true);
+          initApp();
+        }
+      }
     }
-  }, [loaded]);
+    prepare();
+  }, [loaded, appIsReady]);
 
   const initApp = async () => {
     // 0. INITIALIZE OFFLINE DB & SYNC ENGINE
