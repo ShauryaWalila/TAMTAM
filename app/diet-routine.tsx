@@ -108,12 +108,13 @@ export default function DietRoutineScreen() {
   };
 
   const getCycleWeek = (date: Date, length: number = cycleLength) => {
-    // Use local midnight of Jan 1, 2024 as the reference
-    const epoch = new Date(2024, 0, 1); 
-    const diffTime = date.getTime() - epoch.getTime();
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    const weekDiff = Math.floor(diffDays / 7);
-    return (weekDiff % length) + 1;
+    // Synchronized with main screen logic:
+    // 1st-7th is Week 1, 8th-14th is Week 2, etc.
+    const dayOfMonth = date.getDate();
+    const weekOfMonth = Math.floor((dayOfMonth - 1) / 7) + 1;
+    
+    // Wrap based on cycle length (1, 2, 4...)
+    return ((weekOfMonth - 1) % length) + 1;
   };
 
   const loadRoutines = () => {

@@ -189,9 +189,9 @@ export default function ConsumedHistoryScreen() {
 
   const formatDateLabel = (dateStr: string) => {
     const date = parseISO(dateStr);
-    if (isToday(date)) return 'Today';
-    if (isYesterday(date)) return 'Yesterday';
-    return format(date, 'EEEE, MMM do');
+    if (isToday(date)) return 'TODAY';
+    if (isYesterday(date)) return 'YESTERDAY';
+    return format(date, 'EEEE, MMM do').toUpperCase();
   };
 
   // Grouping by date for the list
@@ -200,6 +200,8 @@ export default function ConsumedHistoryScreen() {
     if (!groupedConsumed[item.date]) groupedConsumed[item.date] = [];
     groupedConsumed[item.date].push(item);
   });
+
+  const sortedDates = Object.keys(groupedConsumed).sort((a, b) => b.localeCompare(a));
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -214,14 +216,14 @@ export default function ConsumedHistoryScreen() {
           
           <View style={{ flex: 1 }}>
             <Text style={[styles.title, { color: theme.text }]}>Consumed</Text>
-            <Text style={{ color: theme.text, opacity: 0.5, fontSize: 12 }}>History & Exceptional Logs</Text>
+            <Text style={{ color: theme.text, opacity: 0.5, fontSize: 12 }}>Daily Report & History</Text>
           </View>
 
           <View style={{ width: 40 }} />
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120 }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
         {consumed.length === 0 ? (
           <View style={styles.emptyContainer}>
             <CheckCircle2 size={60} color={theme.text} opacity={0.1} />
@@ -235,11 +237,19 @@ export default function ConsumedHistoryScreen() {
             </TouchableOpacity>
           </View>
         ) : (
-          Object.keys(groupedConsumed).sort((a, b) => b.localeCompare(a)).map(date => (
-            <View key={date} style={{ marginBottom: 25 }}>
-              <Text style={{ color: theme.text, fontSize: 13, fontWeight: '900', opacity: 0.4, marginBottom: 12, letterSpacing: 1, textTransform: 'uppercase' }}>
-                {formatDateLabel(date)}
-              </Text>
+          sortedDates.map(date => (
+            <View key={date} style={{ marginBottom: 30 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
+                <Text style={{ color: isToday(parseISO(date)) ? '#34C759' : theme.text, fontSize: 13, fontWeight: '900', opacity: isToday(parseISO(date)) ? 1 : 0.4, letterSpacing: 1.5 }}>
+                  {formatDateLabel(date)}
+                </Text>
+                {isToday(parseISO(date)) && (
+                   <View style={{ backgroundColor: 'rgba(52,199,89,0.1)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 }}>
+                      <Text style={{ color: '#34C759', fontSize: 9, fontWeight: '900' }}>REPORT ACTIVE</Text>
+                   </View>
+                )}
+              </View>
+              
               <View style={{ gap: 10 }}>
                 {groupedConsumed[date].map(item => {
                   const detailItem = item.type === 'recipe' 
@@ -249,7 +259,7 @@ export default function ConsumedHistoryScreen() {
                   return (
                     <TouchableOpacity 
                       key={item.id} 
-                      style={[styles.historyCard, { backgroundColor: theme.card }, item.is_eaten === 2 && { opacity: 0.5 }]}
+                      style={[styles.historyCard, { backgroundColor: theme.card, borderLeftWidth: 4, borderLeftColor: item.is_eaten === 2 ? 'rgba(150,150,150,0.3)' : (item.is_shared ? '#AF52DE' : '#34C759') }]}
                       onPress={() => {
                         const nutrients = getItemNutrients(item);
                         const components = getMealComponents(item);
@@ -266,16 +276,20 @@ export default function ConsumedHistoryScreen() {
                           {item.is_eaten === 2 ? <X size={18} color={theme.text} opacity={0.5} /> : (item.type === 'recipe' ? <PieChart size={18} color={item.is_shared ? '#AF52DE' : '#34C759'} /> : <Utensils size={18} color={item.is_shared ? '#AF52DE' : '#34C759'} />)}
                         </View>
                         <View style={{ flex: 1, marginLeft: 15 }}>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
                              <Text style={{ color: theme.text, fontSize: 10, fontWeight: '800', opacity: 0.5 }}>{item.meal_time}</Text>
-                             {item.is_shared === 1 && <View style={styles.miniBadge}><Text style={styles.miniBadgeText}>SHARED</Text></View>}
+                             <View style={{ backgroundColor: 'rgba(150,150,150,0.05)', paddingHorizontal: 4, borderRadius: 4 }}>
+                                <Text style={{ color: theme.text, fontSize: 8, fontWeight: '800', opacity: 0.5 }}>{item.user_id?.substring(0, 8)}</Text>
+                             </View>
                              {item.is_eaten === 2 && <View style={[styles.miniBadge, { backgroundColor: 'rgba(255,59,48,0.1)' }]}><Text style={[styles.miniBadgeText, { color: '#FF3B30' }]}>SKIPPED</Text></View>}
                           </View>
                           <Text style={[styles.itemName, { color: theme.text, textDecorationLine: item.is_eaten === 2 ? 'line-through' : 'none' }]} numberOfLines={1}>{detailItem?.name || 'Unknown'}</Text>
-                          <Text style={{ color: theme.text, opacity: 0.4, fontSize: 11 }}>{item.quantity} {item.unit}</Text>
                         </View>
                       </View>
-                      <ChevronRight size={16} color={theme.text} opacity={0.2} />
+                      <View style={{ alignItems: 'flex-end' }}>
+                         <Text style={{ color: theme.text, fontWeight: '800', fontSize: 14 }}>{item.quantity}</Text>
+                         <Text style={{ color: theme.text, opacity: 0.3, fontSize: 9, fontWeight: '700' }}>{item.unit?.toUpperCase()}</Text>
+                      </View>
                     </TouchableOpacity>
                   );
                 })}
