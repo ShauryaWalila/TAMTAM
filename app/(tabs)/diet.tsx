@@ -133,7 +133,17 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
   const CARD_HEIGHT = Dimensions.get('window').height - insets.top - insets.bottom - 160;
   const TRACK_HEIGHT = CARD_HEIGHT - 100;
   const HANDLE_HEIGHT = 60;
-  const CONTENT_AREA_HEIGHT = CARD_HEIGHT - 60;
+
+  const [measuredHeight, setMeasuredHeight] = useState(CARD_HEIGHT - 60);
+  const contentHeight = useSharedValue(CARD_HEIGHT - 60);
+
+  const onLayoutContainer = (event: any) => {
+    const { height } = event.nativeEvent.layout;
+    if (height > 0 && Math.abs(height - measuredHeight) > 1) {
+      setMeasuredHeight(height);
+      contentHeight.value = height;
+    }
+  };
 
   const [plans, setPlans] = useState<any[]>([]);
   const [showAdd, setShowAdd] = useState(false);
@@ -258,9 +268,9 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
       summaryScrollOffset.value = Math.max(0, Math.min(summaryMaxScroll.value, newVal));
     })
     .onEnd(() => {
-      if (CONTENT_AREA_HEIGHT > 0) {
-        const page = Math.round(summaryScrollOffset.value / CONTENT_AREA_HEIGHT);
-        summaryScrollOffset.value = withSpring(page * CONTENT_AREA_HEIGHT, { damping: 25, stiffness: 120 });
+      if (contentHeight.value > 0) {
+        const page = Math.round(summaryScrollOffset.value / contentHeight.value);
+        summaryScrollOffset.value = withSpring(page * contentHeight.value, { damping: 25, stiffness: 120 });
       }
     });
 
@@ -459,16 +469,16 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
 
   useEffect(() => {
     const itemCount = routineItems.length || 1;
-    const maxScroll = Math.max(0, (itemCount * CONTENT_AREA_HEIGHT) - CONTENT_AREA_HEIGHT);
+    const maxScroll = Math.max(0, (itemCount * measuredHeight) - measuredHeight);
     summaryMaxScroll.value = maxScroll;
     if (routineItems.length === 0 || summaryScrollOffset.value > maxScroll) {
       summaryScrollOffset.value = withSpring(0, { damping: 20 });
     }
-  }, [routineItems.length, CONTENT_AREA_HEIGHT]);
+  }, [routineItems.length, measuredHeight]);
 
   const onLayoutSummaryFrontContent = (event: any) => {
     const { height } = event.nativeEvent.layout;
-    summaryFrontMaxScroll.value = Math.max(0, height - CONTENT_AREA_HEIGHT); 
+    summaryFrontMaxScroll.value = Math.max(0, height - measuredHeight); 
   };
 
   const chartOptions = {
@@ -533,22 +543,20 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
                     </View>
                  </View>
                  <View style={{ flex: 1 }}>
-                    <View style={{ flex: 1, overflow: 'hidden', height: '100%' }}>
+                    <View onLayout={onLayoutContainer} style={{ flex: 1, overflow: 'hidden', height: '100%' }}>
                          <Animated.View style={[summaryContentScrollStyle]}>
                             {routineItems.length === 0 && (
-                              <View style={{ height: CONTENT_AREA_HEIGHT, justifyContent: 'center', alignItems: 'center', padding: 30 }}>
+                              <View style={{ height: measuredHeight, justifyContent: 'center', alignItems: 'center', padding: 30 }}>
                                 <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(52,199,89,0.1)', justifyContent: 'center', alignItems: 'center', marginBottom: 20 }}><CheckCircle2 size={32} color="#34C759" /></View>
                                 <Text style={{ color: theme.text, fontSize: 18, fontWeight: '900', textAlign: 'center', marginBottom: 10 }}>Routine Completed!</Text>
                                 <Text style={{ color: theme.text, opacity: 0.5, textAlign: 'center', fontSize: 14 }}>No planned items left for today. You are right on your routine, keep it up!</Text>
                               </View>
                             )}
                             {routineItems.map((plan, index) => (
-                              <View key={plan.id} style={{ height: CONTENT_AREA_HEIGHT, width: '100%', padding: 5 }}>
-                                 {/* <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
-                                    <View style={{ backgroundColor: 'rgba(255,45,85,0.1)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 }}><Text style={{ color: '#FF2D55', fontSize: 12, fontWeight: '900' }}>MEAL {index + 1} OF {routineItems.length}</Text></View>
-                                    <View style={{ backgroundColor: 'rgba(150,150,150,0.1)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 }}><Text style={{ color: theme.text, fontSize: 10, fontWeight: '800', opacity: 0.6 }}>{plan.meal_time}</Text></View>
-                                 </View> */}
-                                 <RoutineItemCard plan={plan} theme={theme} userName={userName} allRecipes={allRecipes} allIngredients={allIngredients} onToggle={toggleEaten} onSkip={toggleSkipped} onEdit={handleEdit} onDelete={deletePlanItem} isFullCard={true} />
+                              <View key={plan.id} style={{ height: measuredHeight, width: '100%' }}>
+                                 <View style={{ flex: 1, padding: 10 }}>
+                                    <RoutineItemCard plan={plan} theme={theme} userName={userName} allRecipes={allRecipes} allIngredients={allIngredients} onToggle={toggleEaten} onSkip={toggleSkipped} onEdit={handleEdit} onDelete={deletePlanItem} isFullCard={true} />
+                                 </View>
                               </View>
                             ))}
                          </Animated.View>
