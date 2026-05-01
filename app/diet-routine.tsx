@@ -8,6 +8,8 @@ import Animated, { FadeIn, FadeInDown, SlideInBottom, useSharedValue, useAnimate
 import { db, generateUUID, queueSyncOperation } from '@/lib/db';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
+import * as SecureStore from 'expo-secure-store';
+import HighchartsChart from '@/components/HighchartsChart';
 import * as Haptics from 'expo-haptics';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format } from 'date-fns';
@@ -40,6 +42,7 @@ export default function DietRoutineScreen() {
   const [routines, setRoutines] = useState<any[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [userName, setUserName] = useState('');
   
   // -- CONFIGURATION STATE --
   const [cycleLength, setCycleLength] = useState<number>(4);
@@ -72,6 +75,15 @@ export default function DietRoutineScreen() {
   useEffect(() => {
     const today = new Date();
     setActiveDay(today.getDay());
+    const getName = async () => {
+      try {
+        const name = await SecureStore.getItemAsync('user_name');
+        setUserName(name || 'Anonymous');
+      } catch (e) {
+        setUserName('Anonymous');
+      }
+    };
+    getName();
     loadSettings();
     loadLibrary();
     loadRoutines();
@@ -88,6 +100,7 @@ export default function DietRoutineScreen() {
 
   const updateCycleLength = (len: number) => {
     db.runSync('UPDATE diet_settings SET cycle_length = ? WHERE id = "global"', [len]);
+    queueSyncOperation('diet_settings', 'global', 'UPDATE', { id: 'global', cycle_length: len, updated_at: new Date().toISOString() });
     setCycleLength(len);
     const today = new Date();
     setActiveCycle(getCycleWeek(today, len));
@@ -95,8 +108,9 @@ export default function DietRoutineScreen() {
   };
 
   const getCycleWeek = (date: Date, length: number = cycleLength) => {
-    const epoch = new Date('2024-01-01T00:00:00Z');
-    const diffTime = Math.abs(date.getTime() - epoch.getTime());
+    // Use local midnight of Jan 1, 2024 as the reference
+    const epoch = new Date(2024, 0, 1); 
+    const diffTime = date.getTime() - epoch.getTime();
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
     const weekDiff = Math.floor(diffDays / 7);
     return (weekDiff % length) + 1;
@@ -130,7 +144,7 @@ export default function DietRoutineScreen() {
       item_id: newRoutine.item_id,
       quantity: newRoutine.quantity,
       unit: newRoutine.unit,
-      user_id: 'me',
+      user_id: userName,
       is_eaten: 0,
       is_shared: newRoutine.is_shared,
       is_recurring: 1,

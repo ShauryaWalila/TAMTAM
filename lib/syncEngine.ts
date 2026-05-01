@@ -134,6 +134,10 @@ export const initialFullSync = async (shouldClear = false) => {
           [n.id, n.trip_id, n.spotify_id, n.track_name, n.artist_name, n.album_art, n.created_at]));
 
       // DIET SYSTEM SYNC
+      await syncTable('diet_settings', supabase.from('diet_settings').select('*'),
+        n => db.runSync(`INSERT OR REPLACE INTO diet_settings (id, cycle_length, updated_at) VALUES (?, ?, ?)`,
+          [n.id, n.cycle_length, n.updated_at]));
+
       await syncTable('diet_metrics', supabase.from('diet_metrics').select('*'),
         n => db.runSync(`INSERT OR REPLACE INTO diet_metrics (id, name, unit, is_active, created_at) VALUES (?, ?, ?, ?, ?)`,
           [n.id, n.name, n.unit, n.is_active ? 1 : 0, n.created_at]));
@@ -155,8 +159,8 @@ export const initialFullSync = async (shouldClear = false) => {
           [n.id, n.recipe_id, n.ingredient_id, n.quantity, n.unit]));
 
       await syncTable('diet_plans', supabase.from('diet_plans').select('*'),
-        n => db.runSync(`INSERT OR REPLACE INTO diet_plans (id, date, meal_time, type, item_id, quantity, unit, user_id, is_eaten, is_shared, is_recurring, days_of_week, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [n.id, n.date, n.meal_time, n.type, n.item_id, n.quantity, n.unit, n.user_id, n.is_eaten || 0, n.is_shared || 0, n.is_recurring || 0, n.days_of_week || '0,1,2,3,4,5,6', n.created_at]));
+        n => db.runSync(`INSERT OR REPLACE INTO diet_plans (id, date, meal_time, type, item_id, quantity, unit, user_id, is_eaten, is_shared, is_recurring, days_of_week, cycle_week, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [n.id, n.date, n.meal_time, n.type, n.item_id, n.quantity, n.unit, n.user_id, n.is_eaten || 0, n.is_shared || 0, n.is_recurring || 0, n.days_of_week || '0,1,2,3,4,5,6', n.cycle_week || 0, n.created_at]));
 
       console.log('Background lazy sync complete.');    } catch (e) {
       console.warn('Background sync failed:', e);
