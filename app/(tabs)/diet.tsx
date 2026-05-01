@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, View, Text, ScrollView, TouchableOpacity, TextInput, Modal, FlatList, Alert, Dimensions, Platform } from 'react-native';
-import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
-import { Stack } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Stack, useRouter } from 'expo-router';
 import { BlurView } from 'expo-blur';
-import { Plus, Search, ChevronRight, ChevronDown, Trash2, Edit2, Save, X, Utensils, TrendingUp, Calendar, Info, PieChart, Clock } from 'lucide-react-native';
-import Animated, { FadeIn, FadeInDown, SlideInBottom } from 'react-native-reanimated';
+import { Plus, Search, ChevronRight, ChevronDown, Trash2, Edit2, Save, X, Utensils, TrendingUp, Calendar, PieChart, Clock, Rotate3d, Info } from 'lucide-react-native';
+import Animated, { FadeIn, FadeInDown, SlideInBottom, useSharedValue, useAnimatedStyle, withSpring, withTiming, interpolate, cancelAnimation, runOnJS } from 'react-native-reanimated';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { db, generateUUID, queueSyncOperation } from '@/lib/db';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -14,16 +15,20 @@ import * as Haptics from 'expo-haptics';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format } from 'date-fns';
 
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
 type TabType = 'PLAN' | 'RECIPES' | 'INGREDIENTS' | 'REPORT';
 type FilterType = 'week' | 'month' | '3months' | '6months' | 'year' | 'overall';
 
 export default function DietScreen() {
+  const router = useRouter();
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
   const [activeTab, setActiveTab] = useState<TabType>('PLAN');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [userName, setUserName] = useState('');
+  const dietPlanRef = useRef<any>(null);
 
   useEffect(() => {
     const getName = async () => {
@@ -38,66 +43,85 @@ export default function DietScreen() {
   }, []);
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <Stack.Screen options={{ title: 'Diet Plan', headerShown: false }} />
-      
-      <View style={[styles.header, { borderBottomColor: theme.card }]}>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>TAMTAM DIET</Text>
-        <View style={{ flexDirection: 'row', gap: 15 }}>
-          <TouchableOpacity onPress={() => {
-            setIsSearchVisible(!isSearchVisible);
-            if (isSearchVisible) setSearchQuery('');
-          }}>
-            {isSearchVisible ? <X size={24} color={theme.text} /> : <Search size={24} color={theme.text} />}
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setActiveTab('REPORT')}>
-            <TrendingUp size={24} color={activeTab === 'REPORT' ? '#FF2D55' : theme.text} />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {isSearchVisible && (
-        <Animated.View entering={FadeInDown} style={styles.searchContainer}>
-          <View style={[styles.searchBar, { backgroundColor: theme.card }]}>
-            <Search size={18} color={theme.text} opacity={0.5} />
-            <TextInput 
-              placeholder={`Search ${activeTab.toLowerCase()}...`}
-              placeholderTextColor={theme.text + '80'}
-              style={[styles.searchInput, { color: theme.text }]}
-              autoFocus
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
+        <Stack.Screen options={{ title: 'Diet Plan', headerShown: false }} />
+        
+        <View style={[styles.header, { borderBottomColor: theme.card, paddingBottom: 10 }]}>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.headerTitle, { color: theme.text }]}>TAMTAM DIET</Text>
           </View>
-        </Animated.View>
-      )}
+          
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15 }}>
+            {activeTab === 'PLAN' && (
+              <>
+                <TouchableOpacity onPress={() => router.push('/diet-routine')}>
+                  <Calendar size={24} color={theme.text} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => dietPlanRef.current?.openAdd(1)}>
+                  <Utensils size={24} color={theme.text} />
+                </TouchableOpacity>
+              </>
+            )}
 
-      <View style={styles.tabContainer}>
-        {(['PLAN', 'RECIPES', 'INGREDIENTS'] as TabType[]).map((tab) => (
-          <TouchableOpacity 
-            key={tab} 
-            onPress={() => { setActiveTab(tab); setSearchQuery(''); }}
-            style={[styles.tabButton, activeTab === tab && { backgroundColor: '#FF2D55' }]}
-          >
-            <Text style={[styles.tabText, { color: activeTab === tab ? 'white' : theme.text }]}>{tab}</Text>
-          </TouchableOpacity>
-        ))}
+            {activeTab !== 'PLAN' && (
+              <TouchableOpacity onPress={() => {
+                setIsSearchVisible(!isSearchVisible);
+                if (isSearchVisible) setSearchQuery('');
+              }}>
+                {isSearchVisible ? <X size={24} color={theme.text} /> : <Search size={24} color={theme.text} />}
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity onPress={() => setActiveTab('REPORT')}>
+              <TrendingUp size={24} color={activeTab === 'REPORT' ? '#FF2D55' : theme.text} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {isSearchVisible && activeTab !== 'PLAN' && (
+          <Animated.View entering={FadeInDown} style={styles.searchContainer}>
+            <View style={[styles.searchBar, { backgroundColor: theme.card }]}>
+              <Search size={18} color={theme.text} opacity={0.5} />
+              <TextInput 
+                placeholder={`Search ${activeTab.toLowerCase()}...`}
+                placeholderTextColor={theme.text + '80'}
+                style={[styles.searchInput, { color: theme.text }]}
+                autoFocus
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+            </View>
+          </Animated.View>
+        )}
+
+        <View style={styles.tabContainer}>
+          {(['PLAN', 'RECIPES', 'INGREDIENTS'] as TabType[]).map((tab) => (
+            <TouchableOpacity 
+              key={tab} 
+              onPress={() => { setActiveTab(tab); setSearchQuery(''); }}
+              style={[styles.tabButton, activeTab === tab && { backgroundColor: '#FF2D55' }]}
+            >
+              <Text style={[styles.tabText, { color: activeTab === tab ? 'white' : theme.text }]}>{tab}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          {activeTab === 'PLAN' && <DietPlanTab ref={dietPlanRef} theme={theme} searchQuery={searchQuery} userName={userName} setActiveTab={setActiveTab} />}
+          {activeTab === 'RECIPES' && <RecipesTab theme={theme} searchQuery={searchQuery} userName={userName} />}
+          {activeTab === 'INGREDIENTS' && <IngredientsTab theme={theme} searchQuery={searchQuery} userName={userName} />}
+          {activeTab === 'REPORT' && <DietReportTab theme={theme} userName={userName} />}
+        </ScrollView>
       </View>
-
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {activeTab === 'PLAN' && <DietPlanTab theme={theme} searchQuery={searchQuery} userName={userName} />}
-        {activeTab === 'RECIPES' && <RecipesTab theme={theme} searchQuery={searchQuery} userName={userName} />}
-        {activeTab === 'INGREDIENTS' && <IngredientsTab theme={theme} searchQuery={searchQuery} userName={userName} />}
-        {activeTab === 'REPORT' && <DietReportTab theme={theme} userName={userName} />}
-      </ScrollView>
-    </View>
+    </GestureHandlerRootView>
   );
 }
 
 // ==========================================
 // 1. DIET PLAN TAB
 // ==========================================
-function DietPlanTab({ theme, searchQuery, userName }: any) {
+const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveTab }: any, ref) => {
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme() ?? 'light';
   
@@ -115,14 +139,12 @@ function DietPlanTab({ theme, searchQuery, userName }: any) {
   const [isSharedFilter, setIsSharedFilter] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [isSummaryFlipped, setIsSummaryFlipped] = useState(false);
   
   const [dietPlanProgress, setDietPlanProgress] = useState<any>({ 
     me: { target: {}, actual: {} }, 
     them: { target: {}, actual: {} } 
   });
-
-  // Fallback for stale/cached builds
-  const totals = dietPlanProgress;
 
   const [newPlan, setNewPlan] = useState({ 
     meal_time: '08:00', 
@@ -134,8 +156,106 @@ function DietPlanTab({ theme, searchQuery, userName }: any) {
     is_shared: 0,
     is_recurring: 0,
     days_of_week: '0,1,2,3,4,5,6',
+    cycle_week: 0,
     date: new Date()
   });
+
+  // Expose methods to parent
+  React.useImperativeHandle(ref, () => ({
+    openAdd: (isEaten: number) => {
+      setNewPlan(prev => ({ ...prev, is_eaten: isEaten, item_id: '' }));
+      setIsPickerMode(false);
+      setShowAdd(true);
+    }
+  }));
+
+  // Reanimated Shared Values for Flip Card
+  const summaryFlipRotation = useSharedValue(0);
+  const summaryScrollOffset = useSharedValue(0);
+  const summaryMaxScroll = useSharedValue(0);
+  const summaryFrontScrollOffset = useSharedValue(0);
+  const summaryFrontMaxScroll = useSharedValue(0);
+
+  const summaryFrontStyle = useAnimatedStyle(() => ({
+    transform: [{ rotateY: `${summaryFlipRotation.value}deg` }],
+    backfaceVisibility: 'hidden',
+    zIndex: summaryFlipRotation.value <= 90 || summaryFlipRotation.value >= 270 ? 1 : 0
+  }));
+
+  const summaryBackStyle = useAnimatedStyle(() => ({
+    transform: [{ rotateY: `${summaryFlipRotation.value + 180}deg` }],
+    backfaceVisibility: 'hidden',
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    zIndex: summaryFlipRotation.value > 90 && summaryFlipRotation.value < 270 ? 1 : 0
+  }));
+
+  const summaryContentScrollStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: -summaryScrollOffset.value }]
+  }));
+
+  const summaryFrontContentScrollStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: -summaryFrontScrollOffset.value }]
+  }));
+
+  const summarySliderStyle = useAnimatedStyle(() => {
+    const trackHeight = 300;
+    const handleHeight = 60;
+    const range = trackHeight - handleHeight;
+    const pos = summaryMaxScroll.value > 0 ? (summaryScrollOffset.value / summaryMaxScroll.value) * range : 0;
+    return {
+      transform: [{ translateY: pos }],
+      opacity: summaryMaxScroll.value > 0 ? 1 : 0
+    };
+  });
+
+  const summaryFrontSliderStyle = useAnimatedStyle(() => {
+    const trackHeight = 300;
+    const handleHeight = 60;
+    const range = trackHeight - handleHeight;
+    const pos = summaryFrontMaxScroll.value > 0 ? (summaryFrontScrollOffset.value / summaryFrontMaxScroll.value) * range : 0;
+    return {
+      transform: [{ translateY: pos }],
+      opacity: summaryFrontMaxScroll.value > 0 ? 1 : 0
+    };
+  });
+
+  const toggleSummaryFlip = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setIsSummaryFlipped(!isSummaryFlipped);
+    summaryFlipRotation.value = withSpring(isSummaryFlipped ? 0 : 180, { damping: 12, stiffness: 90 });
+  };
+
+  const summarySliderGesture = Gesture.Pan()
+    .onUpdate((e) => {
+      if (summaryMaxScroll.value <= 0) return;
+      const trackHeight = 300;
+      const handleHeight = 60;
+      const range = trackHeight - handleHeight;
+      let pos = e.y - (handleHeight / 2);
+      pos = Math.max(0, Math.min(range, pos));
+      summaryScrollOffset.value = (pos / range) * summaryMaxScroll.value;
+    });
+
+  const summaryFrontSliderGesture = Gesture.Pan()
+    .onUpdate((e) => {
+      if (summaryFrontMaxScroll.value <= 0) return;
+      const trackHeight = 300;
+      const handleHeight = 60;
+      const range = trackHeight - handleHeight;
+      let pos = e.y - (handleHeight / 2);
+      pos = Math.max(0, Math.min(range, pos));
+      summaryFrontScrollOffset.value = (pos / range) * summaryFrontMaxScroll.value;
+    });
+
+  const onLayoutSummaryContent = (event: any) => {
+    const { height } = event.nativeEvent.layout;
+    summaryMaxScroll.value = Math.max(0, height - 350); 
+  };
+
+  const onLayoutSummaryFrontContent = (event: any) => {
+    const { height } = event.nativeEvent.layout;
+    summaryFrontMaxScroll.value = Math.max(0, height - 350); 
+  };
 
   // -- 2. LOADERS --
   useEffect(() => {
@@ -156,17 +276,31 @@ function DietPlanTab({ theme, searchQuery, userName }: any) {
 
   const loadUnits = () => setUnits(db.getAllSync('SELECT * FROM diet_units ORDER BY name ASC'));
 
+  const getCycleWeek = (date: Date) => {
+    // Load cycle length from settings (default 4)
+    const settings = db.getFirstSync('SELECT cycle_length FROM diet_settings WHERE id = "global"') as any;
+    const length = settings?.cycle_length || 4;
+    
+    // 4-week cycle starting from epoch
+    const epoch = new Date('2024-01-01T00:00:00Z');
+    const diffTime = Math.abs(date.getTime() - epoch.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    const weekDiff = Math.floor(diffDays / 7);
+    return (weekDiff % length) + 1;
+  };
+
   const loadPlans = () => {
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
     const dayIndex = today.getDay().toString();
+    const currentCycleWeek = getCycleWeek(today);
 
     const data = db.getAllSync(`
       SELECT * FROM diet_plans 
       WHERE (date = ? AND is_recurring = 0)
-         OR (is_recurring = 1 AND days_of_week LIKE ?)
+         OR (is_recurring = 1 AND days_of_week LIKE ? AND (cycle_week = 0 OR cycle_week = ?))
       ORDER BY meal_time
-    `, [todayStr, `%${dayIndex}%`]);
+    `, [todayStr, `%${dayIndex}%`, currentCycleWeek]);
     
     setPlans(data);
     calculateDailyTotals(data);
@@ -260,21 +394,22 @@ function DietPlanTab({ theme, searchQuery, userName }: any) {
       is_shared: newPlan.is_shared,
       is_recurring: newPlan.is_recurring,
       days_of_week: newPlan.days_of_week,
+      cycle_week: newPlan.cycle_week,
       created_at: new Date().toISOString() 
     };
 
     if (editingPlanId) {
-      db.runSync('UPDATE diet_plans SET date=?, meal_time=?, type=?, item_id=?, quantity=?, unit=?, is_eaten=?, is_shared=?, is_recurring=?, days_of_week=? WHERE id=?', 
-        [payload.date, payload.meal_time, payload.type, payload.item_id, payload.quantity, payload.unit, payload.is_eaten, payload.is_shared, payload.is_recurring, payload.days_of_week, id]);
+      db.runSync('UPDATE diet_plans SET date=?, meal_time=?, type=?, item_id=?, quantity=?, unit=?, is_eaten=?, is_shared=?, is_recurring=?, days_of_week=?, cycle_week=? WHERE id=?', 
+        [payload.date, payload.meal_time, payload.type, payload.item_id, payload.quantity, payload.unit, payload.is_eaten, payload.is_shared, payload.is_recurring, payload.days_of_week, payload.cycle_week, id]);
       queueSyncOperation('diet_plans', id, 'UPDATE', payload);
     } else {
-      db.runSync('INSERT INTO diet_plans (id, date, meal_time, type, item_id, quantity, unit, user_id, is_eaten, is_shared, is_recurring, days_of_week, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', 
-        [payload.id, payload.date, payload.meal_time, payload.type, payload.item_id, payload.quantity, payload.unit, payload.user_id, payload.is_eaten, payload.is_shared, payload.is_recurring, payload.days_of_week, payload.created_at]);
+      db.runSync('INSERT INTO diet_plans (id, date, meal_time, type, item_id, quantity, unit, user_id, is_eaten, is_shared, is_recurring, days_of_week, cycle_week, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', 
+        [payload.id, payload.date, payload.meal_time, payload.type, payload.item_id, payload.quantity, payload.unit, payload.user_id, payload.is_eaten, payload.is_shared, payload.is_recurring, payload.days_of_week, payload.cycle_week, payload.created_at]);
       queueSyncOperation('diet_plans', id, 'INSERT', payload);
     }
 
     setShowAdd(false); setEditingPlanId(null);
-    setNewPlan({ ...newPlan, item_id: '', quantity: 1, is_eaten: 0, is_shared: 0, is_recurring: 0, date: new Date() });
+    setNewPlan({ ...newPlan, item_id: '', quantity: 1, is_eaten: 0, is_shared: 0, is_recurring: 0, cycle_week: 0, date: new Date() });
     loadPlans();
   };
 
@@ -289,9 +424,11 @@ function DietPlanTab({ theme, searchQuery, userName }: any) {
       is_shared: plan.is_shared,
       is_recurring: plan.is_recurring,
       days_of_week: plan.days_of_week,
+      cycle_week: plan.cycle_week || 0,
       date: new Date(plan.date)
     });
     setEditingPlanId(plan.id);
+    setIsPickerMode(false);
     setShowAdd(true);
   };
 
@@ -326,98 +463,167 @@ function DietPlanTab({ theme, searchQuery, userName }: any) {
     ]
   };
 
+  const [routineSearch, setRoutineSearch] = useState('');
+  const [isRoutineSearchVisible, setIsRoutineSearchVisible] = useState(false);
+
   const filteredPlans = plans.filter(p => {
     const isMe = p.user_id === userName;
     const isShared = p.is_shared === 1;
-    if (isSharedFilter) return isShared;
-    return isMe || isShared;
+    let matchesUser = isSharedFilter ? isShared : (isMe || isShared);
+    if (!matchesUser) return false;
+    
+    if (routineSearch) {
+      const item = p.type === 'recipe' ? allRecipes.find(r => r.id === p.item_id) : allIngredients.find(i => i.id === p.item_id);
+      return item?.name?.toLowerCase().includes(routineSearch.toLowerCase());
+    }
+    return true;
   });
 
   const routineItems = filteredPlans.filter(p => p.is_eaten === 0);
   const consumedItems = filteredPlans.filter(p => p.is_eaten === 1);
 
+  // Grouping logic for "Diet Chart" feel
+  const groupItemsByTime = (items: any[]) => {
+    const groups: { [key: string]: any[] } = {};
+    items.forEach(item => {
+      const hour = parseInt(item.meal_time.split(':')[0]);
+      let groupName = 'Others';
+      if (hour >= 5 && hour < 11) groupName = 'Morning';
+      else if (hour >= 11 && hour < 16) groupName = 'Afternoon';
+      else if (hour >= 16 && hour < 20) groupName = 'Evening';
+      else groupName = 'Night';
+      
+      if (!groups[groupName]) groups[groupName] = [];
+      groups[groupName].push(item);
+    });
+    return groups;
+  };
+
+  const groupedRoutine = groupItemsByTime(routineItems);
+
   return (
     <Animated.View entering={FadeInDown} style={styles.tabView}>
-      <View style={styles.summaryCard}>
-        <BlurView intensity={80} style={[styles.glassCard, { backgroundColor: 'rgba(255,45,85,0.05)', borderWidth: 1, borderColor: 'rgba(255,45,85,0.1)' }]}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-            <Text style={[styles.cardTitle, { color: '#FF2D55', marginBottom: 0 }]}>Daily Progress</Text>
-            <TouchableOpacity onPress={() => setIsSharedFilter(!isSharedFilter)} style={[styles.smallTab, isSharedFilter && { backgroundColor: '#FF2D55' }]}>
-              <Text style={{ color: isSharedFilter ? 'white' : theme.text, fontSize: 10, fontWeight: '800' }}>SHARED ONLY</Text>
-            </TouchableOpacity>
-          </View>
-          
-          <View style={{ gap: 15, marginBottom: 20 }}>
-            {metrics.slice(0, 2).map(m => {
-              const actual = dietPlanProgress.me.actual[m.id] || 0;
-              const target = dietPlanProgress.me.target[m.id] || 0;
-              const progress = target > 0 ? Math.min(1, actual / target) : 0;
-              return (
-                <View key={m.id}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 }}>
-                    <Text style={{ color: theme.text, fontSize: 12, fontWeight: '700' }}>{m.name}</Text>
-                    <Text style={{ color: theme.text, fontSize: 12, fontWeight: '800' }}>{actual.toFixed(0)} / {target.toFixed(0)} {m.unit}</Text>
-                  </View>
-                  <View style={{ height: 8, backgroundColor: theme.card, borderRadius: 4, overflow: 'hidden' }}>
-                    <View style={{ height: '100%', width: `${progress * 100}%`, backgroundColor: '#FF2D55', borderRadius: 4 }} />
-                  </View>
+      {/* 1. FLIPPABLE SUMMARY & ROUTINE CARD */}
+      <View style={{ height: 400, marginBottom: 30, perspective: 1000 }}>
+        {/* FRONT SIDE: NUTRIENT CHART */}
+        <Animated.View style={[styles.glassCard, { backgroundColor: 'rgba(255,45,85,0.05)', borderWidth: 1, borderColor: 'rgba(255,45,85,0.1)', height: '100%', position: 'absolute', width: '100%' }, summaryFrontStyle]}>
+           <View style={{ flex: 1, flexDirection: 'row' }}>
+              <View style={{ flex: 1, overflow: 'hidden' }}>
+                 <Animated.View onLayout={onLayoutSummaryFrontContent} style={summaryFrontContentScrollStyle}>
+                    <TouchableOpacity activeOpacity={1} onPress={toggleSummaryFlip}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                          <Text style={[styles.cardTitle, { color: '#FF2D55', marginBottom: 0 }]}>Daily Progress</Text>
+                          <View style={{ flexDirection: 'row', gap: 8 }}>
+                            <TouchableOpacity onPress={() => setIsSharedFilter(!isSharedFilter)} style={[styles.smallTab, isSharedFilter && { backgroundColor: '#FF2D55' }]}>
+                              <Text style={{ color: isSharedFilter ? 'white' : theme.text, fontSize: 10, fontWeight: '800' }}>SHARED ONLY</Text>
+                            </TouchableOpacity>
+                            <Rotate3d size={18} color={theme.text} opacity={0.3} />
+                          </View>
+                      </View>
+                      
+                      <View style={{ gap: 15, marginBottom: 20 }}>
+                          {metrics.slice(0, 2).map(m => {
+                            const actual = dietPlanProgress.me.actual[m.id] || 0;
+                            const target = dietPlanProgress.me.target[m.id] || 0;
+                            const progress = target > 0 ? Math.min(1, actual / target) : 0;
+                            return (
+                              <View key={m.id}>
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 }}>
+                                  <Text style={{ color: theme.text, fontSize: 12, fontWeight: '700' }}>{m.name}</Text>
+                                  <Text style={{ color: theme.text, fontSize: 12, fontWeight: '800' }}>{actual.toFixed(0)} / {target.toFixed(0)} {m.unit}</Text>
+                                </View>
+                                <View style={{ height: 8, backgroundColor: theme.card, borderRadius: 4, overflow: 'hidden' }}>
+                                  <View style={{ height: '100%', width: `${progress * 100}%`, backgroundColor: '#FF2D55', borderRadius: 4 }} />
+                                </View>
+                              </View>
+                            );
+                          })}
+                      </View>
+                      <HighchartsChart height={180} options={chartOptions} />
+                    </TouchableOpacity>
+                 </Animated.View>
+              </View>
+              <View style={{ width: 8, height: 300, backgroundColor: 'rgba(150,150,150,0.05)', borderRadius: 4, marginLeft: 10 }}>
+                 <GestureDetector gesture={summaryFrontSliderGesture}>
+                    <Animated.View style={[styles.sliderHandle, { width: 8, height: 60, borderRadius: 4, backgroundColor: '#FF2D55' }, summaryFrontSliderStyle]} />
+                 </GestureDetector>
+              </View>
+           </View>
+        </Animated.View>
+
+        {/* BACK SIDE: THE ROUTINE */}
+        <Animated.View style={[styles.glassCard, { backgroundColor: theme.card, height: '100%', position: 'absolute', width: '100%' }, summaryBackStyle]}>
+          <View style={{ flex: 1, overflow: 'hidden' }}>
+             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15, zIndex: 10 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                   <TouchableOpacity onPress={toggleSummaryFlip}><Rotate3d size={18} color={theme.text} opacity={0.5} /></TouchableOpacity>
+                   <Text style={[styles.sectionTitle, { color: theme.text, marginBottom: 0 }]}>Diet Chart</Text>
                 </View>
-              );
-            })}
-          </View>
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                   <TouchableOpacity onPress={() => setIsRoutineSearchVisible(!isRoutineSearchVisible)}>
+                      <Search size={18} color={theme.text} opacity={isRoutineSearchVisible ? 1 : 0.3} />
+                   </TouchableOpacity>
+                   <TouchableOpacity onPress={() => { setNewPlan({...newPlan, is_eaten: 0, item_id: ''}); setIsPickerMode(true); setShowAdd(true); }} style={[styles.addButton, { width: 30, height: 30 }]}>
+                      <Plus size={18} color="white" />
+                   </TouchableOpacity>
+                </View>
+             </View>
 
-          <HighchartsChart height={180} options={chartOptions} />
-        </BlurView>
-      </View>
-
-      <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>The Routine</Text>
-        <TouchableOpacity onPress={() => { setNewPlan({...newPlan, is_eaten: 0}); setShowAdd(true); }} style={styles.addButton}>
-          <Plus size={20} color="white" />
-        </TouchableOpacity>
-      </View>
-      
-      {routineItems.length === 0 && <Text style={{ color: theme.text, opacity: 0.3, textAlign: 'center', marginVertical: 20, fontStyle: 'italic' }}>No planned items left</Text>}
-      {routineItems.map(plan => {
-        const item = plan.type === 'recipe' ? allRecipes.find(r => r.id === plan.item_id) : allIngredients.find(i => i.id === plan.item_id);
-        const isMe = plan.user_id === userName;
-        const isShared = plan.is_shared === 1;
-        return (
-          <TouchableOpacity 
-            key={plan.id} 
-            onLongPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); handleEdit(plan); }}
-            delayLongPress={500}
-            style={[styles.itemCard, { backgroundColor: theme.card, borderLeftWidth: 4, borderLeftColor: isShared ? '#AF52DE' : (isMe ? '#FF2D55' : '#5AC8FA') }]}
-          >
-            <TouchableOpacity onPress={() => toggleEaten(plan)} style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-               <View style={{ width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: isShared ? '#AF52DE' : '#FF2D55', marginRight: 15 }} />
-               <View>
-                 <Text style={[styles.itemTime, { color: isShared ? '#AF52DE' : (isMe ? '#FF2D55' : '#5AC8FA') }]}>
-                   {plan.meal_time} {isShared ? '(Shared)' : (!isMe ? '(Partner)' : '')}
-                 </Text>
-                 <Text style={[styles.itemName, { color: theme.text }]}>{item?.name}</Text>
-                 {plan.is_recurring === 1 && (
-                   <View style={{ flexDirection: 'row', gap: 2, marginTop: 4 }}>
-                     {['S','M','T','W','T','F','S'].map((d, i) => (
-                       <View key={i} style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: plan.days_of_week.includes(i.toString()) ? '#FF2D55' : theme.text + '10', justifyContent: 'center', alignItems: 'center' }}>
-                         <Text style={{ fontSize: 6, color: plan.days_of_week.includes(i.toString()) ? 'white' : theme.text, fontWeight: '900' }}>{d}</Text>
-                       </View>
-                     ))}
-                   </View>
-                 )}
+             {isRoutineSearchVisible && (
+               <View style={[styles.searchBar, { backgroundColor: 'rgba(150,150,150,0.05)', height: 36, marginBottom: 15 }]}>
+                  <Search size={14} color={theme.text} opacity={0.5} />
+                  <TextInput 
+                    placeholder="Search chart..." 
+                    style={{ flex: 1, color: theme.text, fontSize: 12 }} 
+                    value={routineSearch}
+                    onChangeText={setRoutineSearch}
+                    autoFocus
+                  />
+                  {routineSearch.length > 0 && <TouchableOpacity onPress={() => setRoutineSearch('')}><X size={14} color={theme.text} opacity={0.5} /></TouchableOpacity>}
                </View>
-            </TouchableOpacity>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-               <Text style={[styles.itemValue, { color: theme.text, marginRight: 15 }]}>{plan.quantity} {plan.unit}</Text>
-               <TouchableOpacity onPress={() => deletePlanItem(plan.id)}><Trash2 size={16} color="#FF2D55" opacity={0.3} /></TouchableOpacity>
-            </View>
-          </TouchableOpacity>
-        );
-      })}
+             )}
 
-      <View style={[styles.sectionHeader, { marginTop: 30 }]}>
-        <Text style={[styles.sectionTitle, { color: theme.text, opacity: 0.6 }]}>Actually Consumed</Text>
-        <TouchableOpacity onPress={() => { setEditingPlanId(null); setNewPlan({...newPlan, is_eaten: 1}); setShowAdd(true); }} style={[styles.addButton, { backgroundColor: theme.card }]}>
+             <View style={{ flex: 1, flexDirection: 'row' }}>
+                <View style={{ flex: 1, overflow: 'hidden' }}>
+                   <Animated.View onLayout={onLayoutSummaryContent} style={summaryContentScrollStyle}>
+                      {routineItems.length === 0 && <Text style={{ color: theme.text, opacity: 0.3, textAlign: 'center', marginVertical: 40, fontStyle: 'italic' }}>No planned items left</Text>}
+                      
+                      {['Morning', 'Afternoon', 'Evening', 'Night'].map(group => groupedRoutine[group] && (
+                        <View key={group} style={{ marginBottom: 15 }}>
+                           <Text style={{ color: '#FF2D55', fontSize: 10, fontWeight: '900', letterSpacing: 1, marginBottom: 8, opacity: 0.6 }}>{group.toUpperCase()}</Text>
+                           {groupedRoutine[group].map(plan => (
+                              <RoutineItemCard 
+                                key={plan.id} 
+                                plan={plan} 
+                                theme={theme} 
+                                userName={userName} 
+                                allRecipes={allRecipes} 
+                                allIngredients={allIngredients} 
+                                onToggle={toggleEaten} 
+                                onEdit={handleEdit} 
+                                onDelete={deletePlanItem} 
+                              />
+                           ))}
+                        </View>
+                      ))}
+                      <View style={{ height: 40 }} />
+                   </Animated.View>
+                </View>
+
+                <View style={{ width: 8, height: 300, backgroundColor: 'rgba(150,150,150,0.05)', borderRadius: 4, marginLeft: 10 }}>
+                   <GestureDetector gesture={summarySliderGesture}>
+                      <Animated.View style={[styles.sliderHandle, { width: 8, height: 60, borderRadius: 4, backgroundColor: '#FF2D55' }, summarySliderStyle]} />
+                   </GestureDetector>
+                </View>
+             </View>
+          </View>
+        </Animated.View>
+      </View>
+
+      {/* 2. ACTUALLY CONSUMED SECTION (Separate) */}
+      <View style={styles.sectionHeader}>
+        <Text style={[styles.sectionTitle, { color: theme.text, opacity: 0.6 }]}>Consumed Report</Text>
+        <TouchableOpacity onPress={() => { setEditingPlanId(null); setNewPlan({...newPlan, is_eaten: 1, item_id: ''}); setIsPickerMode(true); setShowAdd(true); }} style={[styles.addButton, { backgroundColor: theme.card }]}>
           <Plus size={20} color={theme.text} />
         </TouchableOpacity>
       </View>
@@ -433,17 +639,22 @@ function DietPlanTab({ theme, searchQuery, userName }: any) {
             delayLongPress={500}
             style={[styles.itemCard, { backgroundColor: theme.card, opacity: 0.7, borderLeftWidth: 4, borderLeftColor: isShared ? '#AF52DE' : (isMe ? '#FF2D55' : '#5AC8FA') }]}
           >
-            <TouchableOpacity onPress={() => toggleEaten(plan)} style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: isShared ? '#AF52DE' : '#FF2D55', justifyContent: 'center', alignItems: 'center', marginRight: 15 }}>
                   <Save size={12} color="white" />
                </View>
                <View>
-                 <Text style={[styles.itemTime, { color: isShared ? '#AF52DE' : (isMe ? '#FF2D55' : '#5AC8FA') }]}>
-                   {plan.meal_time} {isShared ? '(Shared)' : (!isMe ? '(Partner)' : '')}
-                 </Text>
+                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Text style={[styles.itemTime, { color: isShared ? '#AF52DE' : (isMe ? '#FF2D55' : '#5AC8FA') }]}>
+                      {plan.meal_time}
+                    </Text>
+                    <View style={{ backgroundColor: 'rgba(150,150,150,0.1)', paddingHorizontal: 4, borderRadius: 4 }}>
+                       <Text style={{ fontSize: 8, fontWeight: '800', color: theme.text }}>{plan.user_id?.substring(0, 8)}</Text>
+                    </View>
+                 </View>
                  <Text style={[styles.itemName, { color: theme.text, textDecorationLine: 'line-through' }]}>{item?.name}</Text>
                </View>
-            </TouchableOpacity>
+            </View>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                <Text style={[styles.itemValue, { color: theme.text, marginRight: 15 }]}>{plan.quantity} {plan.unit}</Text>
                <TouchableOpacity onPress={() => deletePlanItem(plan.id)}><Trash2 size={16} color="#FF2D55" opacity={0.3} /></TouchableOpacity>
@@ -451,11 +662,10 @@ function DietPlanTab({ theme, searchQuery, userName }: any) {
           </TouchableOpacity>
         );
       })}
-      <Modal visible={showAdd} animationType="slide" transparent statusBarTranslucent>
+      <Modal visible={showAdd} animationType="slide" transparent>
         <BlurView intensity={100} tint={colorScheme} style={styles.modalOverlay}>
-           <SafeAreaView edges={['top']} style={[styles.modalContent, { backgroundColor: theme.background, minHeight: '85%' }]}>
-              {!isPickerMode ? (
-                /* MAIN FORM VIEW */
+           <View style={[styles.modalContent, { backgroundColor: theme.background, marginTop: 60 }]}>
+             {!isPickerMode ? (
                 <View style={{ flex: 1 }}>
                   <View style={styles.modalHeader}>
                     <Text style={[styles.modalTitle, { color: theme.text }]}>{editingPlanId ? 'Edit' : 'Add'} Meal</Text>
@@ -537,7 +747,7 @@ function DietPlanTab({ theme, searchQuery, userName }: any) {
                         </View>
                         <View style={{ marginLeft: 15 }}>
                           <Text style={{ color: theme.text, fontSize: 16, fontWeight: '700' }}>{(() => { if (!newPlan.item_id) return 'Search & Select...'; const item = newPlan.type === 'recipe' ? allRecipes.find(r => r.id === newPlan.item_id) : allIngredients.find(i => i.id === newPlan.item_id); return item?.name || 'Select Item'; })()}</Text>
-                          {newPlan.item_id && <Text style={{ color: theme.text, fontSize: 10, opacity: 0.5, textTransform: 'uppercase', fontWeight: '800' }}>{newPlan.type}</Text>}
+                          {newPlan.item_id ? <Text style={{ color: theme.text, fontSize: 10, opacity: 0.5, textTransform: 'uppercase', fontWeight: '800' }}>{newPlan.type}</Text> : null}
                         </View>
                       </View>
                       <ChevronRight size={20} color={theme.text} opacity={0.3} />
@@ -564,14 +774,13 @@ function DietPlanTab({ theme, searchQuery, userName }: any) {
                   </ScrollView>
                 </View>
               ) : (
-                /* PICKER VIEW (Inside same modal) */
                 <View style={{ flex: 1 }}>
                   <View style={styles.modalHeader}>
                     <TouchableOpacity onPress={() => setIsPickerMode(false)} style={{ flexDirection: 'row', alignItems: 'center' }}>
                       <ChevronDown size={24} color={theme.text} style={{ transform: [{ rotate: '90deg' }] }} />
                       <Text style={[styles.modalTitle, { color: theme.text, marginLeft: 10 }]}>Select Item</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => { setIsPickerMode(false); setPickerSearch(''); }}><X size={24} color={theme.text} /></TouchableOpacity>
+                    <TouchableOpacity onPress={() => { setShowAdd(false); setIsPickerMode(false); setPickerSearch(''); }}><X size={24} color={theme.text} /></TouchableOpacity>
                   </View>
 
                   <View style={[styles.searchBar, { backgroundColor: theme.card, marginBottom: 20 }]}>
@@ -622,12 +831,12 @@ function DietPlanTab({ theme, searchQuery, userName }: any) {
                   />
                 </View>
               )}
-           </SafeAreaView>
+           </View>
         </BlurView>
       </Modal>
     </Animated.View>
   );
-}
+});
 
 // ==========================================
 // 2. RECIPES TAB
@@ -763,7 +972,7 @@ function RecipesTab({ theme, searchQuery, userName }: any) {
             <Text style={[styles.itemName, { color: theme.text }]}>{r.name}</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <Text style={{ color: theme.text, opacity: 0.6, fontSize: 11 }}>Yield: {r.base_quantity} {r.base_unit}</Text>
-              {r.nutrients && <View style={{ backgroundColor: 'rgba(255,45,85,0.1)', paddingHorizontal: 6, borderRadius: 4 }}><Text style={{ color: '#FF2D55', fontSize: 8, fontWeight: '900' }}>QUICK LOG</Text></View>}
+              {r.nutrients ? <View style={{ backgroundColor: 'rgba(255,45,85,0.1)', paddingHorizontal: 6, borderRadius: 4 }}><Text style={{ color: '#FF2D55', fontSize: 8, fontWeight: '900' }}>QUICK LOG</Text></View> : null}
             </View>
           </View>
           <ChevronRight size={20} color={theme.text} opacity={0.5} />
@@ -839,9 +1048,9 @@ function RecipesTab({ theme, searchQuery, userName }: any) {
         </BlurView>
       </Modal>
 
-      <Modal visible={showAdd} animationType="slide" transparent statusBarTranslucent>
+      <Modal visible={showAdd} animationType="slide" transparent>
         <BlurView intensity={100} tint={colorScheme} style={styles.modalOverlay}>
-           <SafeAreaView edges={['top']} style={[styles.modalContent, { backgroundColor: theme.background }]}>
+           <View style={[styles.modalContent, { backgroundColor: theme.background, marginTop: 60 }]}>
               <View style={styles.modalHeader}><Text style={[styles.modalTitle, { color: theme.text }]}>{editingRecipeId ? 'Edit' : 'Create'} Entry</Text><TouchableOpacity onPress={() => setShowAdd(false)}><X size={24} color={theme.text} /></TouchableOpacity></View>
               <ScrollView showsVerticalScrollIndicator={false}>
                 <TextInput placeholder="Item Name (e.g. KFC Zinger)" style={[styles.input, { color: theme.text, borderColor: theme.card }]} value={newRecipe.name} onChangeText={t => setNewRecipe({...newRecipe, name: t})} />
@@ -948,7 +1157,7 @@ function RecipesTab({ theme, searchQuery, userName }: any) {
                 )}
                 <TouchableOpacity onPress={saveRecipe} style={styles.saveButton}><Save size={20} color="white" /><Text style={styles.saveButtonText}>Save Entry</Text></TouchableOpacity>
               </ScrollView>
-           </SafeAreaView>
+           </View>
         </BlurView>
       </Modal>
     </Animated.View>
@@ -1052,9 +1261,9 @@ function IngredientsTab({ theme, searchQuery, userName }: any) {
         </TouchableOpacity>
       </Modal>
 
-      <Modal visible={showAdd} animationType="slide" transparent statusBarTranslucent>
+      <Modal visible={showAdd} animationType="slide" transparent>
         <BlurView intensity={100} tint={colorScheme} style={styles.modalOverlay}>
-           <SafeAreaView edges={['top']} style={[styles.modalContent, { backgroundColor: theme.background }]}>
+           <View style={[styles.modalContent, { backgroundColor: theme.background, marginTop: 60 }]}>
               <View style={[styles.modalHeader]}><Text style={[styles.modalTitle, { color: theme.text }]}>{editingIngId ? 'Edit' : 'Add'} Ingredient</Text><TouchableOpacity onPress={() => { setShowAdd(false); setEditingIngId(null); }}><X size={24} color={theme.text} /></TouchableOpacity></View>
               <ScrollView showsVerticalScrollIndicator={false}>
                 <TextInput placeholder="Ingredient Name" style={[styles.input, { color: theme.text, borderColor: theme.card }]} value={newIng.name} onChangeText={t => setNewIng({...newIng, name: t})} />
@@ -1090,7 +1299,7 @@ function IngredientsTab({ theme, searchQuery, userName }: any) {
                 </View>
                 <TouchableOpacity onPress={saveIngredient} style={styles.saveButton}><Save size={20} color="white" /><Text style={styles.saveButtonText}>Save Ingredient</Text></TouchableOpacity><View style={{ height: 100 }} />
               </ScrollView>
-           </SafeAreaView>
+           </View>
         </BlurView>
       </Modal>
     </Animated.View>
@@ -1233,6 +1442,82 @@ function DietReportTab({ theme, userName }: any) {
   );
 }
 
+function RoutineItemCard({ plan, theme, userName, allRecipes, allIngredients, onToggle, onEdit, onDelete }: any) {
+  const item = plan.type === 'recipe' ? allRecipes.find((r: any) => r.id === plan.item_id) : allIngredients.find((i: any) => i.id === plan.item_id);
+  const isMe = plan.user_id === userName;
+  const isShared = plan.is_shared === 1;
+
+  const translateX = useSharedValue(0);
+
+  const panGesture = Gesture.Pan()
+    .activeOffsetX([-20, 20])
+    .onUpdate((e) => {
+      translateX.value = e.translationX;
+    })
+    .onEnd((e) => {
+      if (translateX.value > 100) {
+        runOnJS(onToggle)(plan);
+        translateX.value = withSpring(SCREEN_WIDTH);
+      } else if (translateX.value < -100) {
+        translateX.value = withSpring(0);
+      } else {
+        translateX.value = withSpring(0);
+      }
+    });
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+    backgroundColor: interpolate(
+      translateX.value,
+      [-100, 0, 100],
+      ['rgba(255,45,85,0.05)', theme.card, 'rgba(52,199,89,0.1)']
+    )
+  }));
+
+  return (
+    <GestureDetector gesture={panGesture}>
+      <Animated.View 
+        style={[
+          styles.itemCard, 
+          animatedStyle, 
+          { 
+            borderLeftWidth: 4, 
+            borderLeftColor: isShared ? '#AF52DE' : (isMe ? '#FF2D55' : '#5AC8FA'),
+            overflow: 'hidden'
+          }
+        ]}
+      >
+        <TouchableOpacity 
+          onLongPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); onEdit(plan); }}
+          delayLongPress={500}
+          activeOpacity={0.7}
+          style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
+        >
+           <View style={{ width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: isShared ? '#AF52DE' : '#FF2D55', marginRight: 15 }} />
+           <View>
+             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={[styles.itemTime, { color: isShared ? '#AF52DE' : (isMe ? '#FF2D55' : '#5AC8FA') }]}>
+                  {plan.meal_time}
+                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(150,150,150,0.1)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
+                   {isShared ? <Info size={10} color="#AF52DE" /> : (isMe ? <Plus size={10} color="#FF2D55" /> : <TrendingUp size={10} color="#5AC8FA" />)}
+                   <Text style={{ fontSize: 8, fontWeight: '900', color: isShared ? '#AF52DE' : (isMe ? '#FF2D55' : '#5AC8FA') }}>
+                     {isShared ? 'SHARED' : (isMe ? 'ME' : 'PARTNER')}
+                   </Text>
+                </View>
+             </View>
+             <Text style={[styles.itemName, { color: theme.text }]}>{item?.name}</Text>
+           </View>
+        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+           <Text style={[styles.itemValue, { color: theme.text, marginRight: 15 }]}>{plan.quantity} {plan.unit}</Text>
+           <TouchableOpacity onPress={() => onDelete(plan.id)}><Trash2 size={16} color="#FF2D55" opacity={0.3} /></TouchableOpacity>
+        </View>
+      </Animated.View>
+    </GestureDetector>
+  );
+}
+
 function NutrientItem({ label, value, unit, color }: any) {
   return (
     <View style={styles.nutrientItem}>
@@ -1271,8 +1556,8 @@ const styles = StyleSheet.create({
   itemTime: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase' },
   itemValue: { fontSize: 14, fontWeight: '700' },
   miniNutrientGrid: { flexDirection: 'row', flexWrap: 'wrap' },
-  modalOverlay: { flex: 1, justifyContent: 'flex-end' },
-  modalContent: { borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 24, minHeight: '75%' },
+  modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' },
+  modalContent: { height: '90%', borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 24, overflow: 'hidden' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 },
   modalTitle: { fontSize: 24, fontWeight: '800' },
   input: { borderWidth: 1, borderRadius: 12, padding: 12, marginBottom: 15, fontSize: 16 },
@@ -1292,6 +1577,8 @@ const styles = StyleSheet.create({
   segmentActive: { backgroundColor: 'white', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
   segmentText: { fontSize: 11, fontWeight: '700' },
   dayCircle: { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(150,150,150,0.1)', justifyContent: 'center', alignItems: 'center' },
+  smallHeaderButton: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, gap: 4 },
+  sliderHandle: { position: 'absolute', right: 0 },
   filterContainer: { paddingHorizontal: 0, marginTop: 5 },
   optionsMenu: { position: 'absolute', bottom: 40, left: 20, right: 20, borderRadius: 24, padding: 20, elevation: 10, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 20 },
   optionsTitle: { fontSize: 18, fontWeight: '900', marginBottom: 20, textAlign: 'center' },

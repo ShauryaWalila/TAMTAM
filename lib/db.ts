@@ -370,6 +370,14 @@ export const initDB = () => {
         FOREIGN KEY(ingredient_id) REFERENCES ingredients(id)
       );
 
+      -- Diet Settings
+      CREATE TABLE IF NOT EXISTS diet_settings (
+        id TEXT PRIMARY KEY,
+        cycle_length INTEGER DEFAULT 4, -- 1, 2, or 4 week cycles
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+      INSERT OR IGNORE INTO diet_settings (id, cycle_length) VALUES ('global', 4);
+
       -- Diet Plans (The Routine)
       CREATE TABLE IF NOT EXISTS diet_plans (
         id TEXT PRIMARY KEY,
@@ -384,6 +392,7 @@ export const initDB = () => {
         is_shared INTEGER DEFAULT 0,
         is_recurring INTEGER DEFAULT 0,
         days_of_week TEXT, -- '0,1,2,3,4,5,6'
+        cycle_week INTEGER DEFAULT 0, -- 0=Every Week, 1=Week 1, 2=Week 2, 3=Week 3, 4=Week 4
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
 
@@ -458,6 +467,7 @@ export const initDB = () => {
     try { db.execSync('ALTER TABLE diet_plans ADD COLUMN is_shared INTEGER DEFAULT 0;'); } catch(e) {}
     try { db.execSync('ALTER TABLE diet_plans ADD COLUMN is_recurring INTEGER DEFAULT 0;'); } catch(e) {}
     try { db.execSync('ALTER TABLE diet_plans ADD COLUMN days_of_week TEXT;'); } catch(e) {}
+    try { db.execSync('ALTER TABLE diet_plans ADD COLUMN cycle_week INTEGER DEFAULT 0;'); } catch(e) {}
 
     console.log('Local SQLite DB initialized.');
   } catch (error) {
