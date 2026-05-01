@@ -192,32 +192,26 @@ export default function DietRoutineScreen() {
   });
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background,marginTop:10 }]}>
-      <Stack.Screen options={{ 
-        title: 'Diet Planner',
-        headerShown: true,
-        headerTransparent: true,
-        headerBlurEffect: colorScheme as any,
-        headerLeft: () => (
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <ChevronLeft size={28} color={theme.text} />
-          </TouchableOpacity>
-        ),
-        headerTitleStyle: { color: theme.text, fontWeight: '900' }
-      }} />
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <Stack.Screen options={{ headerShown: false }} />
 
-      <View style={{ paddingTop: insets.top + 50 }}>
-        {/* HEADER WITH CONFIG TOGGLE */}
-        <View style={{ paddingHorizontal: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-          <View>
+      <View style={{ paddingTop: insets.top + 20 }}>
+        {/* UNIFIED HEADER ROW */}
+        <View style={{ paddingHorizontal: 15, flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+          <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 10 }}>
+            <ChevronLeft size={32} color={theme.text} />
+          </TouchableOpacity>
+          
+          <View style={{ flex: 1 }}>
             <Text style={[styles.title, { color: theme.text }]}>Diet Planner</Text>
             <Text style={{ color: theme.text, opacity: 0.5, fontSize: 12 }}>{cycleLength}-Week Rotation Active</Text>
           </View>
+
           <TouchableOpacity 
             onPress={() => { setIsConfigVisible(!isConfigOpen); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
             style={[styles.smallHeaderButton, { backgroundColor: theme.card }]}
           >
-            <Settings size={18} color={isConfigOpen ? '#FF2D55' : theme.text} />
+            <Settings size={22} color={isConfigOpen ? '#FF2D55' : theme.text} />
           </TouchableOpacity>
         </View>
 

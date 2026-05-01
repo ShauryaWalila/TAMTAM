@@ -58,7 +58,7 @@ export default function DietScreen() {
                 <TouchableOpacity onPress={() => router.push('/diet-routine')}>
                   <Calendar size={24} color={theme.text} />
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => dietPlanRef.current?.openAdd(1)}>
+                <TouchableOpacity onPress={() => router.push('/diet-history')}>
                   <Utensils size={24} color={theme.text} />
                 </TouchableOpacity>
               </>
@@ -291,19 +291,55 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
 
   const loadPlans = () => {
     const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
+    const todayStr = format(today, 'yyyy-MM-dd');
     const dayIndex = today.getDay().toString();
     const currentCycleWeek = getCycleWeek(today);
 
-    const data = db.getAllSync(`
-      SELECT * FROM diet_plans 
-      WHERE (date = ? AND is_recurring = 0)
-         OR (is_recurring = 1 AND days_of_week LIKE ? AND (cycle_week = 0 OR cycle_week = ?))
-      ORDER BY meal_time
-    `, [todayStr, `%${dayIndex}%`, currentCycleWeek]);
+    // 1. Get all "instantiated" plans for today (manual logs + marked routine items)
+    const instantiated = db.getAllSync('SELECT * FROM diet_plans WHERE date = ?', [todayStr]) as any[];
     
-    setPlans(data);
-    calculateDailyTotals(data);
+    // 2. Get all "template" routines for today
+    const templates = db.getAllSync(`
+      SELECT * FROM diet_plans 
+      WHERE is_recurring = 1 AND days_of_week LIKE ? AND (cycle_week = 0 OR cycle_week = ?)
+    `, [`%${dayIndex}%`, currentCycleWeek]) as any[];
+
+    // 3. Filter templates: only show if NOT already instantiated for today
+    const activeTemplates = templates.filter(t => !instantiated.some(i => i.item_id === t.item_id && i.is_recurring === 1));
+
+    const allCurrentPlans = [...instantiated, ...activeTemplates].sort((a, b) => a.meal_time.localeCompare(b.meal_time));
+    
+    setPlans(allCurrentPlans);
+    calculateDailyTotals(allCurrentPlans);
+    sweepYesterdayRoutine();
+  };
+
+  const sweepYesterdayRoutine = () => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yestStr = format(yesterday, 'yyyy-MM-dd');
+    const dayIndex = yesterday.getDay().toString();
+    const cycleWeek = getCycleWeek(yesterday);
+
+    // Get what was supposed to be eaten yesterday
+    const templates = db.getAllSync(`
+      SELECT * FROM diet_plans 
+      WHERE is_recurring = 1 AND days_of_week LIKE ? AND (cycle_week = 0 OR cycle_week = ?)
+    `, [`%${dayIndex}%`, cycleWeek]) as any[];
+
+    // Get what was actually recorded yesterday
+    const instantiated = db.getAllSync('SELECT item_id FROM diet_plans WHERE date = ? AND is_recurring = 1', [yestStr]) as any[];
+    const recordedIds = instantiated.map(i => i.item_id);
+
+    // Mark missing ones as is_eaten = 2 (Skipped)
+    templates.forEach(t => {
+      if (!recordedIds.includes(t.item_id)) {
+        const id = generateUUID();
+        const payload = { ...t, id, date: yestStr, is_eaten: 2, created_at: new Date().toISOString() };
+        db.runSync('INSERT INTO diet_plans (id, date, meal_time, type, item_id, quantity, unit, user_id, is_eaten, is_shared, is_recurring, days_of_week, cycle_week, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', 
+          [payload.id, payload.date, payload.meal_time, payload.type, payload.item_id, payload.quantity, payload.unit, payload.user_id, payload.is_eaten, payload.is_shared, payload.is_recurring, payload.days_of_week, payload.cycle_week, payload.created_at]);
+      }
+    });
   };
 
   // -- 3. LOGIC --
@@ -321,6 +357,8 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
     });
 
     currentPlans.forEach(plan => {
+      if (plan.is_eaten === 2) return; // SKIP stats for unconsumed items
+
       const isMe = plan.user_id === userName || plan.is_shared === 1;
       const isPartner = plan.user_id !== userName || plan.is_shared === 1;
       
