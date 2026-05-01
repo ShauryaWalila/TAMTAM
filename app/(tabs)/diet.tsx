@@ -134,8 +134,21 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
   const TRACK_HEIGHT = CARD_HEIGHT - 100;
   const HANDLE_HEIGHT = 60;
 
-  const [measuredHeight, setMeasuredHeight] = useState(CARD_HEIGHT - 60);
+  // 1. Shared Values (MUST BE DECLARED FIRST)
   const contentHeight = useSharedValue(CARD_HEIGHT - 60);
+  const summaryFlipRotation = useSharedValue(0);
+  const summaryScrollOffset = useSharedValue(0);
+  const summaryMaxScroll = useSharedValue(0);
+  const summaryFrontScrollOffset = useSharedValue(0);
+  const summaryFrontMaxScroll = useSharedValue(0);
+  const savedScrollOffset = useSharedValue(0);
+  const savedFrontScrollOffset = useSharedValue(0);
+  const lastStep = useSharedValue(0);
+  const sliderScale = useSharedValue(1);
+  const sliderDragPos = useSharedValue(0);
+  const isDraggingSlider = useSharedValue(false);
+
+  const [measuredHeight, setMeasuredHeight] = useState(CARD_HEIGHT - 60);
 
   const onLayoutContainer = (event: any) => {
     const { height } = event.nativeEvent.layout;
@@ -197,12 +210,6 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
     }
   }));
 
-  const summaryFlipRotation = useSharedValue(0);
-  const summaryScrollOffset = useSharedValue(0);
-  const summaryMaxScroll = useSharedValue(0);
-  const summaryFrontScrollOffset = useSharedValue(0);
-  const summaryFrontMaxScroll = useSharedValue(0);
-
   const summaryFrontStyle = useAnimatedStyle(() => ({
     transform: [{ rotateY: `${summaryFlipRotation.value}deg` }],
     backfaceVisibility: 'hidden',
@@ -228,18 +235,37 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
 
   const summarySliderStyle = useAnimatedStyle(() => {
     const range = TRACK_HEIGHT - HANDLE_HEIGHT;
-    const pos = summaryMaxScroll.value > 0 ? (summaryScrollOffset.value / summaryMaxScroll.value) * range : 0;
+    const snapPos = summaryMaxScroll.value > 0 ? (summaryScrollOffset.value / summaryMaxScroll.value) * range : 0;
+    
+    // Use direct drag position during touch, otherwise use snapped position
+    const activePos = isDraggingSlider.value 
+      ? Math.max(0, Math.min(range, sliderDragPos.value))
+      : withSpring(snapPos, { damping: 20, stiffness: 200 });
+
     return {
-      transform: [{ translateY: pos }],
+      transform: [
+        { translateY: activePos },
+        { scaleX: sliderScale.value },
+        { scaleY: interpolate(sliderScale.value, [1, 1.3], [1, 0.8]) }
+      ],
       opacity: summaryMaxScroll.value > 0 ? 1 : 0
     };
   });
 
   const summaryFrontSliderStyle = useAnimatedStyle(() => {
     const range = TRACK_HEIGHT - HANDLE_HEIGHT;
-    const pos = summaryFrontMaxScroll.value > 0 ? (summaryFrontScrollOffset.value / summaryFrontMaxScroll.value) * range : 0;
+    const snapPos = summaryFrontMaxScroll.value > 0 ? (summaryFrontScrollOffset.value / summaryFrontMaxScroll.value) * range : 0;
+    
+    const activePos = isDraggingSlider.value 
+      ? Math.max(0, Math.min(range, sliderDragPos.value))
+      : withSpring(snapPos, { damping: 20, stiffness: 200 });
+
     return {
-      transform: [{ translateY: pos }],
+      transform: [
+        { translateY: activePos },
+        { scaleX: sliderScale.value },
+        { scaleY: interpolate(sliderScale.value, [1, 1.3], [1, 0.8]) }
+      ],
       opacity: summaryFrontMaxScroll.value > 0 ? 1 : 0
     };
   });
@@ -249,9 +275,6 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
     setIsSummaryFlipped(!isSummaryFlipped);
     summaryFlipRotation.value = withSpring(isSummaryFlipped ? 0 : 180, { damping: 15, stiffness: 100 });
   };
-
-  const savedScrollOffset = useSharedValue(0);
-  const savedFrontScrollOffset = useSharedValue(0);
 
   const contentDragGesture = Gesture.Pan()
     .activeOffsetY([-10, 10])
@@ -264,13 +287,44 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
         summaryScrollOffset.value = 0;
         return;
       }
-      const newVal = savedScrollOffset.value - e.translationY;
-      summaryScrollOffset.value = Math.max(0, Math.min(summaryMaxScroll.value, newVal));
+      let newVal = savedScrollOffset.value - e.translationY;
+      
+      // Rubber banding at ends
+      if (newVal < 0) newVal = newVal * 0.3;
+      else if (newVal > summaryMaxScroll.value) newVal = summaryMaxScroll.value + (newVal - summaryMaxScroll.value) * 0.3;
+      
+      summaryScrollOffset.value = newVal;
     })
-    .onEnd(() => {
+    .onEnd((e) => {
       if (contentHeight.value > 0) {
-        const page = Math.round(summaryScrollOffset.value / contentHeight.value);
-        summaryScrollOffset.value = withSpring(page * contentHeight.value, { damping: 25, stiffness: 120 });
+        const velocity = -e.velocityY;
+        const translation = -e.translationY;
+        const currentScroll = summaryScrollOffset.value;
+        const currentIndex = Math.round(savedScrollOffset.value / contentHeight.value);
+        const totalItems = Math.round(summaryMaxScroll.value / contentHeight.value) + 1;
+
+        let targetIndex = currentIndex;
+        const threshold = contentHeight.value * 0.15; // 15% sensitivity
+
+        // Swipe logic: Determine if we should move to next/prev based on velocity or distance
+        if (Math.abs(velocity) > 500 || Math.abs(translation) > threshold) {
+          if (velocity > 300 || translation > threshold) {
+            targetIndex = Math.min(totalItems - 1, currentIndex + 1);
+          } else if (velocity < -300 || translation < -threshold) {
+            targetIndex = Math.max(0, currentIndex - 1);
+          }
+        }
+
+        // Snap to the target page with snappy spring
+        summaryScrollOffset.value = withSpring(targetIndex * contentHeight.value, { 
+          damping: 22, 
+          stiffness: 200,
+          velocity: velocity
+        });
+        
+        if (targetIndex !== currentIndex) {
+          runOnJS(Haptics.selectionAsync)();
+        }
       }
     });
 
@@ -282,26 +336,90 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
     })
     .onUpdate((e) => {
       if (summaryFrontMaxScroll.value <= 0) return;
-      const newVal = savedFrontScrollOffset.value - e.translationY;
-      summaryFrontScrollOffset.value = Math.max(0, Math.min(summaryFrontMaxScroll.value, newVal));
+      let newVal = savedFrontScrollOffset.value - e.translationY;
+      if (newVal < 0) newVal = newVal * 0.3;
+      else if (newVal > summaryFrontMaxScroll.value) newVal = summaryFrontMaxScroll.value + (newVal - summaryFrontMaxScroll.value) * 0.3;
+      summaryFrontScrollOffset.value = newVal;
+    })
+    .onEnd((e) => {
+      if (summaryFrontMaxScroll.value > 0) {
+        const velocity = -e.velocityY;
+        const target = Math.max(0, Math.min(summaryFrontMaxScroll.value, summaryFrontScrollOffset.value + velocity * 0.1));
+        summaryFrontScrollOffset.value = withSpring(target, { damping: 20, stiffness: 150, velocity });
+      }
     });
 
   const summarySliderGesture = Gesture.Pan()
+    .minDistance(0)
+    .onStart((e) => {
+      isDraggingSlider.value = true;
+      sliderScale.value = withSpring(1.3, { damping: 10, stiffness: 300 });
+      lastStep.value = Math.round(summaryScrollOffset.value / (contentHeight.value || 1));
+      
+      const range = TRACK_HEIGHT - HANDLE_HEIGHT;
+      let pos = e.y - (HANDLE_HEIGHT / 2);
+      sliderDragPos.value = Math.max(0, Math.min(range, pos));
+    })
     .onUpdate((e) => {
       if (summaryMaxScroll.value <= 0) return;
       const range = TRACK_HEIGHT - HANDLE_HEIGHT;
       let pos = e.y - (HANDLE_HEIGHT / 2);
-      pos = Math.max(0, Math.min(range, pos));
-      summaryScrollOffset.value = (pos / range) * summaryMaxScroll.value;
+      
+      // Follow finger exactly for the handle
+      sliderDragPos.value = pos;
+      
+      const totalSteps = Math.round(summaryMaxScroll.value / (contentHeight.value || 1));
+      if (totalSteps > 0) {
+        const stepSize = range / totalSteps;
+        const currentStep = Math.round(Math.max(0, Math.min(range, pos)) / stepSize);
+        
+        if (currentStep !== lastStep.value) {
+          lastStep.value = currentStep;
+          runOnJS(Haptics.selectionAsync)();
+          // Content snaps snappily
+          summaryScrollOffset.value = withSpring(currentStep * contentHeight.value, { 
+            damping: 12, 
+            stiffness: 200,
+            mass: 0.5
+          });
+        }
+      } else {
+        summaryScrollOffset.value = (Math.max(0, Math.min(range, pos)) / range) * summaryMaxScroll.value;
+      }
+    })
+    .onEnd(() => {
+      isDraggingSlider.value = false;
+      sliderScale.value = withSpring(1, { damping: 12, stiffness: 200 });
+      const totalSteps = Math.round(summaryMaxScroll.value / (contentHeight.value || 1));
+      if (totalSteps > 0) {
+        const currentStep = Math.round(summaryScrollOffset.value / contentHeight.value);
+        summaryScrollOffset.value = withSpring(currentStep * contentHeight.value, { 
+          damping: 18, 
+          stiffness: 250
+        });
+      }
     });
 
   const summaryFrontSliderGesture = Gesture.Pan()
+    .minDistance(0)
+    .onStart((e) => {
+      isDraggingSlider.value = true;
+      sliderScale.value = withSpring(1.3, { damping: 10, stiffness: 300 });
+      const range = TRACK_HEIGHT - HANDLE_HEIGHT;
+      let pos = e.y - (HANDLE_HEIGHT / 2);
+      sliderDragPos.value = Math.max(0, Math.min(range, pos));
+    })
     .onUpdate((e) => {
       if (summaryFrontMaxScroll.value <= 0) return;
       const range = TRACK_HEIGHT - HANDLE_HEIGHT;
       let pos = e.y - (HANDLE_HEIGHT / 2);
-      pos = Math.max(0, Math.min(range, pos));
-      summaryFrontScrollOffset.value = (pos / range) * summaryFrontMaxScroll.value;
+      sliderDragPos.value = pos;
+      const cappedPos = Math.max(0, Math.min(range, pos));
+      summaryFrontScrollOffset.value = (cappedPos / range) * summaryFrontMaxScroll.value;
+    })
+    .onEnd(() => {
+      isDraggingSlider.value = false;
+      sliderScale.value = withSpring(1, { damping: 12, stiffness: 200 });
     });
 
   const loadLibrary = () => {
@@ -340,7 +458,8 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
       AND is_eaten = 0
     `, [dayIndex, currentCycleWeek]) as any[] || [];
 
-    const activeTemplates = templates.filter(t => !instantiated.some(i => i.item_id === t.item_id && i.meal_time === t.meal_time));
+    // Filter out templates that have been instantiated today (by template_id)
+    const activeTemplates = templates.filter(t => !instantiated.some(i => i.template_id === t.id));
     const allCurrentPlans = [...instantiated, ...activeTemplates].sort((a, b) => a.meal_time.localeCompare(b.meal_time));
     
     setPlans(allCurrentPlans);
@@ -433,8 +552,9 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
     const todayStr = format(selectedDate, 'yyyy-MM-dd');
     if (plan.is_recurring === 1) {
       const id = generateUUID();
-      const payload = { ...plan, id, date: todayStr, is_eaten: 1, created_at: new Date().toISOString() };
-      db.runSync('INSERT INTO diet_plans (id, date, meal_time, type, item_id, quantity, unit, user_id, is_eaten, is_shared, is_recurring, days_of_week, cycle_week, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [payload.id, payload.date, payload.meal_time, payload.type, payload.item_id, payload.quantity, payload.unit, payload.user_id, payload.is_eaten, payload.is_shared, payload.is_recurring, payload.days_of_week, payload.cycle_week, payload.created_at]);
+      const payload = { ...plan, id, date: todayStr, is_eaten: 1, template_id: plan.id, created_at: new Date().toISOString() };
+      db.runSync('INSERT INTO diet_plans (id, date, meal_time, type, item_id, quantity, unit, user_id, is_eaten, is_shared, is_recurring, days_of_week, cycle_week, template_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', 
+        [payload.id, payload.date, payload.meal_time, payload.type, payload.item_id, payload.quantity, payload.unit, payload.user_id, payload.is_eaten, payload.is_shared, payload.is_recurring, payload.days_of_week, payload.cycle_week, payload.template_id, payload.created_at]);
       queueSyncOperation('diet_plans', id, 'INSERT', payload);
     } else {
       db.runSync('UPDATE diet_plans SET is_eaten = 1, date = ? WHERE id = ?', [todayStr, plan.id]);
@@ -448,8 +568,9 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
     const todayStr = format(selectedDate, 'yyyy-MM-dd');
     if (plan.is_recurring === 1) {
       const id = generateUUID();
-      const payload = { ...plan, id, date: todayStr, is_eaten: 2, created_at: new Date().toISOString() };
-      db.runSync('INSERT INTO diet_plans (id, date, meal_time, type, item_id, quantity, unit, user_id, is_eaten, is_shared, is_recurring, days_of_week, cycle_week, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [payload.id, payload.date, payload.meal_time, payload.type, payload.item_id, payload.quantity, payload.unit, payload.user_id, payload.is_eaten, payload.is_shared, payload.is_recurring, payload.days_of_week, payload.cycle_week, payload.created_at]);
+      const payload = { ...plan, id, date: todayStr, is_eaten: 2, template_id: plan.id, created_at: new Date().toISOString() };
+      db.runSync('INSERT INTO diet_plans (id, date, meal_time, type, item_id, quantity, unit, user_id, is_eaten, is_shared, is_recurring, days_of_week, cycle_week, template_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', 
+        [payload.id, payload.date, payload.meal_time, payload.type, payload.item_id, payload.quantity, payload.unit, payload.user_id, payload.is_eaten, payload.is_shared, payload.is_recurring, payload.days_of_week, payload.cycle_week, payload.template_id, payload.created_at]);
       queueSyncOperation('diet_plans', id, 'INSERT', payload);
     } else {
       db.runSync('UPDATE diet_plans SET is_eaten = 2, date = ? WHERE id = ?', [todayStr, plan.id]);
@@ -566,7 +687,23 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
             </Animated.View>
           </View>
           <GestureDetector gesture={isSummaryFlipped ? summarySliderGesture : summaryFrontSliderGesture}>
-             <View style={[styles.sliderTrack, { height: TRACK_HEIGHT, marginLeft: 12 }]}><Animated.View style={[styles.sliderHandle, { backgroundColor: '#FF2D55' }, isSummaryFlipped ? summarySliderStyle : summaryFrontSliderStyle]} /></View>
+             <View style={[styles.sliderTrack, { height: TRACK_HEIGHT, marginLeft: 12 }]}>
+                {isSummaryFlipped && routineItems.length > 1 && Array.from({ length: routineItems.length }).map((_, i) => (
+                  <View 
+                    key={i} 
+                    style={{ 
+                      position: 'absolute', 
+                      top: (i / (routineItems.length - 1)) * (TRACK_HEIGHT - HANDLE_HEIGHT) + (HANDLE_HEIGHT / 2), 
+                      left: 9,
+                      width: 12, 
+                      height: 2, 
+                      backgroundColor: 'rgba(255,45,85,0.3)', 
+                      borderRadius: 1 
+                    }} 
+                  />
+                ))}
+                <Animated.View style={[styles.sliderHandle, { backgroundColor: '#FF2D55' }, isSummaryFlipped ? summarySliderStyle : summaryFrontSliderStyle]} />
+             </View>
           </GestureDetector>
         </View>
       </View>
@@ -638,6 +775,14 @@ function RoutineItemCard({ plan, theme, userName, allRecipes, allIngredients, on
       }
     });
 
+  const leftHintStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(translateX.value, [-120, -40], [0.8, 0], Extrapolate.CLAMP)
+  }));
+
+  const rightHintStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(translateX.value, [40, 120], [0, 0.8], Extrapolate.CLAMP)
+  }));
+
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
       { translateX: translateX.value },
@@ -645,8 +790,8 @@ function RoutineItemCard({ plan, theme, userName, allRecipes, allIngredients, on
     ],
     backgroundColor: interpolate(
       translateX.value,
-      [-100, 0, 100],
-      ['rgba(255,149,0,0.2)', theme.card, 'rgba(52,199,89,0.2)'],
+      [-150, 0, 150],
+      ['rgba(255,59,48,0.4)', theme.card, 'rgba(52,199,89,0.4)'],
       Extrapolate.CLAMP
     )
   }));
@@ -654,7 +799,14 @@ function RoutineItemCard({ plan, theme, userName, allRecipes, allIngredients, on
   if (isFullCard) {
     return (
       <GestureDetector gesture={panGesture}>
-        <Animated.View style={[{ flex: 1, borderRadius: 24, padding: 24, justifyContent: 'space-between', borderWidth: 1, borderColor: 'rgba(150,150,150,0.1)' }, animatedStyle]}>
+        <Animated.View style={[{ flex: 1, borderRadius: 24, padding: 24, justifyContent: 'space-between', borderWidth: 1, borderColor: 'rgba(150,150,150,0.1)', overflow: 'hidden' }, animatedStyle]}>
+          <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: '#FF3B30', justifyContent: 'center', alignItems: 'center', zIndex: 10 }, leftHintStyle]}>
+            <Text style={{ color: 'white', fontSize: 32, fontWeight: '900', letterSpacing: 4 }}>NOT EATEN</Text>
+          </Animated.View>
+          <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: '#34C759', justifyContent: 'center', alignItems: 'center', zIndex: 10 }, rightHintStyle]}>
+            <Text style={{ color: 'white', fontSize: 32, fontWeight: '900', letterSpacing: 4 }}>ATE</Text>
+          </Animated.View>
+          
           <View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15, marginBottom: 25 }}>
                <View style={{ width: 50, height: 50, borderRadius: 25, backgroundColor: isShared ? 'rgba(175,82,222,0.1)' : 'rgba(255,45,85,0.1)', justifyContent: 'center', alignItems: 'center' }}>
