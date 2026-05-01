@@ -4,7 +4,7 @@ import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context'
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { BlurView } from 'expo-blur';
 import { Plus, Search, ChevronRight, ChevronDown, Trash2, Edit2, Save, X, Utensils, TrendingUp, Calendar, PieChart, Clock, Rotate3d, Info, CheckCircle2, ChevronLeft } from 'lucide-react-native';
-import Animated, { FadeIn, FadeInDown, SlideInBottom, useSharedValue, useAnimatedStyle, withSpring, withTiming, interpolate, runOnJS, Extrapolate } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, SlideInBottom, useSharedValue, useAnimatedStyle, withSpring, withTiming, interpolate, interpolateColor, runOnJS, Extrapolate } from 'react-native-reanimated';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { db, generateUUID, queueSyncOperation } from '@/lib/db';
 import Colors from '@/constants/Colors';
@@ -771,68 +771,124 @@ function RoutineItemCard({ plan, theme, userName, allRecipes, allIngredients, on
         runOnJS(onSkip)(plan);
         translateX.value = withTiming(-SCREEN_WIDTH, { duration: 300 });
       } else {
-        translateX.value = withSpring(0);
+        translateX.value = withSpring(0, { damping: 20, stiffness: 200 });
       }
     });
 
   const leftHintStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(translateX.value, [-120, -40], [0.8, 0], Extrapolate.CLAMP)
+    opacity: interpolate(translateX.value, [-120, -40], [1, 0], Extrapolate.CLAMP),
+    transform: [{ scale: interpolate(translateX.value, [-150, -40], [1, 0.8], Extrapolate.CLAMP) }]
   }));
 
   const rightHintStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(translateX.value, [40, 120], [0, 0.8], Extrapolate.CLAMP)
+    opacity: interpolate(translateX.value, [40, 120], [0, 1], Extrapolate.CLAMP),
+    transform: [{ scale: interpolate(translateX.value, [40, 150], [0.8, 1], Extrapolate.CLAMP) }]
   }));
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: translateX.value },
-      { rotate: `${interpolate(translateX.value, [-SCREEN_WIDTH, SCREEN_WIDTH], [-10, 10])}deg` }
-    ],
-    backgroundColor: interpolate(
-      translateX.value,
-      [-150, 0, 150],
-      ['rgba(255,59,48,0.4)', theme.card, 'rgba(52,199,89,0.4)'],
-      Extrapolate.CLAMP
-    )
-  }));
+  const animatedStyle = useAnimatedStyle(() => {
+    const defaultBg = isShared ? 'rgba(175,82,222,0.08)' : 'rgba(255,45,85,0.08)';
+    const defaultBorder = isShared ? 'rgba(175,82,222,0.2)' : 'rgba(255,45,85,0.2)';
+    
+    return {
+      transform: [
+        { translateX: translateX.value },
+        { rotate: `${interpolate(translateX.value, [-SCREEN_WIDTH, SCREEN_WIDTH], [-10, 10])}deg` },
+        { scale: interpolate(Math.abs(translateX.value), [0, 150], [1, 0.96], Extrapolate.CLAMP) }
+      ],
+      backgroundColor: interpolateColor(
+        translateX.value,
+        [-150, 0, 150],
+        ['#FF3B30', defaultBg, '#34C759']
+      ),
+      borderColor: interpolateColor(
+        translateX.value,
+        [-150, 0, 150],
+        ['#FF3B30', defaultBorder, '#34C759']
+      )
+    };
+  });
 
   if (isFullCard) {
     return (
       <GestureDetector gesture={panGesture}>
-        <Animated.View style={[{ flex: 1, borderRadius: 24, padding: 24, justifyContent: 'space-between', borderWidth: 1, borderColor: 'rgba(150,150,150,0.1)', overflow: 'hidden' }, animatedStyle]}>
-          <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: '#FF3B30', justifyContent: 'center', alignItems: 'center', zIndex: 10 }, leftHintStyle]}>
-            <Text style={{ color: 'white', fontSize: 32, fontWeight: '900', letterSpacing: 4 }}>NOT EATEN</Text>
+        <Animated.View style={[{ flex: 1, borderRadius: 32, padding: 24, justifyContent: 'space-between', borderWidth: 1.5, overflow: 'hidden' }, animatedStyle]}>
+          <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { justifyContent: 'center', alignItems: 'center', zIndex: 10, borderRadius: 32, overflow: 'hidden' }, leftHintStyle]}>
+             <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(255, 59, 48, 0.92)', justifyContent: 'center', alignItems: 'center' }]}>
+                <X size={80} color="white" strokeWidth={3} />
+                <Text style={{ color: 'white', fontSize: 32, fontWeight: '900', letterSpacing: 4, marginTop: 20 }}>SKIP IT</Text>
+             </View>
           </Animated.View>
-          <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: '#34C759', justifyContent: 'center', alignItems: 'center', zIndex: 10 }, rightHintStyle]}>
-            <Text style={{ color: 'white', fontSize: 32, fontWeight: '900', letterSpacing: 4 }}>ATE</Text>
+          <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { justifyContent: 'center', alignItems: 'center', zIndex: 10, borderRadius: 32, overflow: 'hidden' }, rightHintStyle]}>
+             <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(52, 199, 89, 0.92)', justifyContent: 'center', alignItems: 'center' }]}>
+                <CheckCircle2 size={80} color="white" strokeWidth={3} />
+                <Text style={{ color: 'white', fontSize: 32, fontWeight: '900', letterSpacing: 4, marginTop: 20 }}>EATEN</Text>
+             </View>
           </Animated.View>
           
           <View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15, marginBottom: 25 }}>
-               <View style={{ width: 50, height: 50, borderRadius: 25, backgroundColor: isShared ? 'rgba(175,82,222,0.1)' : 'rgba(255,45,85,0.1)', justifyContent: 'center', alignItems: 'center' }}>
-                  {plan.type === 'recipe' ? <PieChart size={24} color={isShared ? '#AF52DE' : '#FF2D55'} /> : <Utensils size={24} color={isShared ? '#AF52DE' : '#FF2D55'} />}
+               <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: isShared ? 'rgba(175,82,222,0.15)' : 'rgba(255,45,85,0.15)', justifyContent: 'center', alignItems: 'center' }}>
+                  {plan.type === 'recipe' ? <PieChart size={28} color={isShared ? '#AF52DE' : '#FF2D55'} /> : <Utensils size={28} color={isShared ? '#AF52DE' : '#FF2D55'} />}
                </View>
                <View style={{ flex: 1 }}>
-                  <Text style={{ color: theme.text, fontSize: 12, fontWeight: '800', opacity: 0.5, textTransform: 'uppercase', letterSpacing: 1 }}>{plan.type}</Text>
-                  <Text style={{ color: theme.text, fontSize: 26, fontWeight: '900' }} numberOfLines={2}>{item?.name || 'Unknown Item'}</Text>
+                  <Text style={{ color: theme.text, fontSize: 13, fontWeight: '800', opacity: 0.5, textTransform: 'uppercase', letterSpacing: 1.5 }}>{plan.type}</Text>
+                  <Text style={{ color: theme.text, fontSize: 28, fontWeight: '900', lineHeight: 32 }} numberOfLines={2}>{item?.name || 'Unknown Item'}</Text>
                </View>
             </View>
-            <View style={{ backgroundColor: 'rgba(150,150,150,0.05)', borderRadius: 20, padding: 20, marginBottom: 20 }}>
-               <Text style={{ color: theme.text, fontSize: 10, fontWeight: '900', opacity: 0.4, marginBottom: 12, letterSpacing: 1.5 }}>SPECIFICATIONS</Text>
-               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <View><Text style={{ color: theme.text, fontSize: 22, fontWeight: '800' }}>{plan.quantity}</Text><Text style={{ color: theme.text, fontSize: 11, fontWeight: '700', opacity: 0.5 }}>{(plan.unit || '').toUpperCase()}</Text></View>
-                  <View style={{ alignItems: 'flex-end' }}><Text style={{ color: theme.text, fontSize: 22, fontWeight: '800' }}>{plan.meal_time}</Text><Text style={{ color: theme.text, fontSize: 11, fontWeight: '700', opacity: 0.5 }}>SCHEDULED</Text></View>
+            
+            <View style={{ backgroundColor: isShared ? 'rgba(175,82,222,0.06)' : 'rgba(255,45,85,0.06)', borderRadius: 24, padding: 24, marginBottom: 20 }}>
+               <Text style={{ color: theme.text, fontSize: 11, fontWeight: '900', opacity: 0.4, marginBottom: 15, letterSpacing: 2 }}>SPECIFICATIONS</Text>
+               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <View>
+                    <Text style={{ color: theme.text, fontSize: 28, fontWeight: '800' }}>{plan.quantity}</Text>
+                    <Text style={{ color: theme.text, fontSize: 12, fontWeight: '700', opacity: 0.6 }}>{(plan.unit || '').toUpperCase()}</Text>
+                  </View>
+                  <View style={{ width: 1, height: 40, backgroundColor: theme.text, opacity: 0.1 }} />
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={{ color: theme.text, fontSize: 28, fontWeight: '800' }}>{plan.meal_time}</Text>
+                    <Text style={{ color: theme.text, fontSize: 12, fontWeight: '700', opacity: 0.6 }}>SCHEDULED</Text>
+                  </View>
                </View>
             </View>
+
             {isShared === 1 && (
-               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(175,82,222,0.05)', padding: 12, borderRadius: 14 }}>
-                  <Info size={14} color="#AF52DE" /><Text style={{ color: '#AF52DE', fontSize: 12, fontWeight: '800' }}>SHARED WITH PARTNER</Text>
+               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: 'rgba(175,82,222,0.08)', padding: 15, borderRadius: 16 }}>
+                  <Info size={16} color="#AF52DE" />
+                  <Text style={{ color: '#AF52DE', fontSize: 13, fontWeight: '800', letterSpacing: 0.5 }}>SHARED WITH PARTNER</Text>
                </View>
             )}
           </View>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-             <TouchableOpacity onPress={() => onEdit(plan)} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, backgroundColor: 'rgba(150,150,150,0.05)', borderRadius: 12 }}><Edit2 size={18} color={theme.text} opacity={0.6} /><Text style={{ color: theme.text, fontSize: 13, fontWeight: '800', opacity: 0.6 }}>EDIT MEAL</Text></TouchableOpacity>
-             <TouchableOpacity onPress={() => onDelete(plan.id)} style={{ backgroundColor: 'rgba(255,59,48,0.05)', padding: 12, borderRadius: 12 }}><Trash2 size={20} color="#FF3B30" opacity={0.7} /></TouchableOpacity>
+
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 10 }}>
+             <TouchableOpacity 
+               onPress={() => onEdit(plan)} 
+               style={{ 
+                 flexDirection: 'row', 
+                 alignItems: 'center', 
+                 gap: 10, 
+                 paddingVertical: 14, 
+                 paddingHorizontal: 20, 
+                 backgroundColor: isShared ? 'rgba(175,82,222,0.1)' : 'rgba(255,45,85,0.1)', 
+                 borderRadius: 18 
+               }}
+             >
+                <Edit2 size={18} color={isShared ? '#AF52DE' : '#FF2D55'} />
+                <Text style={{ color: isShared ? '#AF52DE' : '#FF2D55', fontSize: 14, fontWeight: '900' }}>EDIT MEAL</Text>
+             </TouchableOpacity>
+             
+             <TouchableOpacity 
+               onPress={() => onDelete(plan.id)} 
+               style={{ 
+                 width: 50, 
+                 height: 50, 
+                 borderRadius: 18, 
+                 backgroundColor: 'rgba(255,59,48,0.08)', 
+                 justifyContent: 'center', 
+                 alignItems: 'center' 
+               }}
+             >
+                <Trash2 size={22} color="#FF3B30" opacity={0.8} />
+             </TouchableOpacity>
           </View>
         </Animated.View>
       </GestureDetector>
