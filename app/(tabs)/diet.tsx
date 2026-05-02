@@ -595,21 +595,6 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
 
   return (
     <View style={{ flex: 1, padding: 15 }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 12, paddingRight: 42 }}>
-          <TouchableOpacity 
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setIsSharedFilter(!isSharedFilter);
-            }} 
-            style={[styles.smallTab, { paddingHorizontal: 12, paddingVertical: 8 }, isSharedFilter && { backgroundColor: '#FF2D55' }]}
-          >
-            {isSharedFilter ? (
-              <Users size={16} color="white" />
-            ) : (
-              <User size={16} color={theme.text || '#000'} />
-            )}
-          </TouchableOpacity>
-      </View>
       <View style={[styles.tabView]}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <GestureDetector gesture={containerTapGesture}>
@@ -684,25 +669,42 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
               </Animated.View>
             </View>
           </GestureDetector>
-          <GestureDetector gesture={isSummaryFlipped ? summarySliderGesture : summaryFrontSliderGesture}>
-             <View style={[styles.sliderTrack, { height: TRACK_HEIGHT, marginLeft: 12 }]}>
-                {isSummaryFlipped && routineItems.length > 1 && Array.from({ length: routineItems.length }).map((_, i) => (
-                  <View 
-                    key={i} 
-                    style={{ 
-                      position: 'absolute', 
-                      top: (i / (routineItems.length - 1)) * (TRACK_HEIGHT - HANDLE_HEIGHT) + (HANDLE_HEIGHT / 2), 
-                      left: 9,
-                      width: 12, 
-                      height: 2, 
-                      backgroundColor: 'rgba(255,45,85,0.3)', 
-                      borderRadius: 1 
-                    }} 
-                  />
-                ))}
-                <Animated.View style={[styles.sliderHandle, { backgroundColor: '#FF2D55' }, isSummaryFlipped ? summarySliderStyle : summaryFrontSliderStyle]} />
-             </View>
-          </GestureDetector>
+          
+          <View style={{ marginLeft: 12, alignItems: 'center', gap: 10 }}>
+            <TouchableOpacity 
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setIsSharedFilter(!isSharedFilter);
+              }} 
+              style={[styles.smallTab, { paddingHorizontal: 10, paddingVertical: 10, width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' }, isSharedFilter && { backgroundColor: '#FF2D55' }]}
+            >
+              {isSharedFilter ? (
+                <Users size={16} color="white" />
+              ) : (
+                <User size={16} color={theme.text || '#000'} />
+              )}
+            </TouchableOpacity>
+
+            <GestureDetector gesture={isSummaryFlipped ? summarySliderGesture : summaryFrontSliderGesture}>
+               <View style={[styles.sliderTrack, { height: TRACK_HEIGHT - 46 }]}>
+                  {isSummaryFlipped && routineItems.length > 1 && Array.from({ length: routineItems.length }).map((_, i) => (
+                    <View 
+                      key={i} 
+                      style={{ 
+                        position: 'absolute', 
+                        top: (i / (routineItems.length - 1)) * ((TRACK_HEIGHT - 46) - HANDLE_HEIGHT) + (HANDLE_HEIGHT / 2), 
+                        left: 9,
+                        width: 12, 
+                        height: 2, 
+                        backgroundColor: 'rgba(255,45,85,0.3)', 
+                        borderRadius: 1 
+                      }} 
+                    />
+                  ))}
+                  <Animated.View style={[styles.sliderHandle, { backgroundColor: '#FF2D55' }, isSummaryFlipped ? summarySliderStyle : summaryFrontSliderStyle]} />
+               </View>
+            </GestureDetector>
+          </View>
         </View>
       </View>
 
