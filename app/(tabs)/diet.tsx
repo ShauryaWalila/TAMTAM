@@ -3,7 +3,7 @@ import { StyleSheet, View, Text, ScrollView, TouchableOpacity, TextInput, Modal,
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { BlurView } from 'expo-blur';
-import { Plus, Search, ChevronRight, ChevronDown, Trash2, Edit2, Save, X, Utensils, TrendingUp, Calendar, PieChart, Clock, Rotate3d, Info, CheckCircle2, ChevronLeft } from 'lucide-react-native';
+import { Plus, Search, ChevronRight, ChevronDown, Trash2, Edit2, Save, X, Utensils, TrendingUp, Calendar, PieChart, Clock, Rotate3d, Info, CheckCircle2, ChevronLeft, User, Users } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInDown, SlideInBottom, useSharedValue, useAnimatedStyle, withSpring, withTiming, interpolate, interpolateColor, runOnJS, Extrapolate } from 'react-native-reanimated';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { db, generateUUID, queueSyncOperation } from '@/lib/db';
@@ -458,6 +458,8 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
     });
     (currentPlans || []).forEach(plan => {
       if (plan.is_eaten === 2) return;
+      if (isSharedFilter && plan.is_shared !== 1) return;
+
       const isMe = plan.user_id === userName || plan.is_shared === 1;
       const isPartner = plan.user_id !== userName || plan.is_shared === 1;
       const getItemNutrients = () => {
@@ -501,6 +503,10 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
     });
     setDietPlanProgress(dailyTotals);
   };
+
+  useEffect(() => {
+    calculateDailyTotals(plans);
+  }, [isSharedFilter, plans]);
 
   const savePlanItem = () => {
     if (!newPlan.item_id) return;
@@ -560,7 +566,7 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
     loadPlans();
   };
 
-  const routineItems = (plans || []).filter(p => p.is_eaten === 0);
+  const routineItems = (plans || []).filter(p => p.is_eaten === 0 && (!isSharedFilter || p.is_shared === 1));
 
   useEffect(() => {
     const itemCount = routineItems.length || 1;
@@ -589,6 +595,21 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
 
   return (
     <View style={{ flex: 1, padding: 15 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 12, paddingRight: 42 }}>
+          <TouchableOpacity 
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setIsSharedFilter(!isSharedFilter);
+            }} 
+            style={[styles.smallTab, { paddingHorizontal: 12, paddingVertical: 8 }, isSharedFilter && { backgroundColor: '#FF2D55' }]}
+          >
+            {isSharedFilter ? (
+              <Users size={16} color="white" />
+            ) : (
+              <User size={16} color={theme.text || '#000'} />
+            )}
+          </TouchableOpacity>
+      </View>
       <View style={[styles.tabView]}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <GestureDetector gesture={containerTapGesture}>
@@ -599,12 +620,7 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
                        <Animated.View onLayout={onLayoutSummaryFrontContent} style={[summaryFrontContentScrollStyle, { padding: 5 }]}>
                             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                                 <Text style={{ fontSize: 18, fontWeight: '800', color: '#FF2D55' }}>Daily Progress</Text>
-                                <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-                                  <TouchableOpacity onPress={() => setIsSharedFilter(!isSharedFilter)} style={[styles.smallTab, isSharedFilter && { backgroundColor: '#FF2D55' }]}>
-                                    <Text style={{ color: isSharedFilter ? 'white' : (theme.text || '#000'), fontSize: 10, fontWeight: '800' }}>SHARED ONLY</Text>
-                                  </TouchableOpacity>
-                                  <Rotate3d size={18} color={theme.text || '#000'} opacity={0.3} />
-                                </View>
+                                <Rotate3d size={18} color={theme.text || '#000'} opacity={0.3} />
                             </View>
                             
                             <View style={{ gap: 15, marginBottom: 20 }}>
