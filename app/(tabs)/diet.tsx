@@ -134,7 +134,7 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
   const TRACK_HEIGHT = CARD_HEIGHT - 100;
   const HANDLE_HEIGHT = 60;
 
-  // 1. Shared Values (MUST BE DECLARED FIRST)
+  // Shared Values
   const contentHeight = useSharedValue(CARD_HEIGHT - 60);
   const summaryFlipRotation = useSharedValue(0);
   const summaryScrollOffset = useSharedValue(0);
@@ -170,6 +170,7 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
   const [isSharedFilter, setIsSharedFilter] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [isSummaryFlipped, setIsSummaryFlipped] = useState(false);
+  const [pickerSearch, setPickerSearch] = useState('');
   
   const [dietPlanProgress, setDietPlanProgress] = useState<any>({ 
     me: { target: {}, actual: {} }, 
@@ -210,20 +211,41 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
     }
   }));
 
-  const summaryFrontStyle = useAnimatedStyle(() => ({
-    transform: [{ rotateY: `${summaryFlipRotation.value}deg` }],
-    backfaceVisibility: 'hidden',
-    zIndex: summaryFlipRotation.value <= 90 || summaryFlipRotation.value >= 270 ? 1 : 0,
-    opacity: withTiming(summaryFlipRotation.value <= 90 || summaryFlipRotation.value >= 270 ? 1 : 0, { duration: 100 })
-  }));
+  const toggleSummaryFlip = () => {
+    runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
+    setIsSummaryFlipped(!isSummaryFlipped);
+    summaryFlipRotation.value = withSpring(isSummaryFlipped ? 0 : 180, { 
+      damping: 18, 
+      stiffness: 120,
+      mass: 0.8
+    });
+  };
 
-  const summaryBackStyle = useAnimatedStyle(() => ({
-    transform: [{ rotateY: `${summaryFlipRotation.value + 180}deg` }],
-    backfaceVisibility: 'hidden',
-    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    zIndex: summaryFlipRotation.value > 90 && summaryFlipRotation.value < 270 ? 1 : 0,
-    opacity: withTiming(summaryFlipRotation.value > 90 && summaryFlipRotation.value < 270 ? 1 : 0, { duration: 100 })
-  }));
+  const containerTapGesture = Gesture.Tap().onEnd(() => {
+    runOnJS(toggleSummaryFlip)();
+  });
+
+  const summaryFrontStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        { perspective: 1200 },
+        { rotateY: `${summaryFlipRotation.value}deg` }
+      ],
+      opacity: interpolate(summaryFlipRotation.value, [85, 95], [1, 0], Extrapolate.CLAMP),
+      zIndex: summaryFlipRotation.value <= 90 ? 1 : 0
+    };
+  });
+
+  const summaryBackStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        { perspective: 1200 },
+        { rotateY: `${summaryFlipRotation.value + 180}deg` }
+      ],
+      opacity: interpolate(summaryFlipRotation.value, [85, 95], [0, 1], Extrapolate.CLAMP),
+      zIndex: summaryFlipRotation.value > 90 ? 1 : 0
+    };
+  });
 
   const summaryContentScrollStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: -summaryScrollOffset.value }]
@@ -237,7 +259,6 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
     const range = TRACK_HEIGHT - HANDLE_HEIGHT;
     const snapPos = summaryMaxScroll.value > 0 ? (summaryScrollOffset.value / summaryMaxScroll.value) * range : 0;
     
-    // Use direct drag position during touch, otherwise use snapped position
     const activePos = isDraggingSlider.value 
       ? Math.max(0, Math.min(range, sliderDragPos.value))
       : withSpring(snapPos, { damping: 20, stiffness: 200 });
@@ -270,12 +291,6 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
     };
   });
 
-  const toggleSummaryFlip = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setIsSummaryFlipped(!isSummaryFlipped);
-    summaryFlipRotation.value = withSpring(isSummaryFlipped ? 0 : 180, { damping: 15, stiffness: 100 });
-  };
-
   const contentDragGesture = Gesture.Pan()
     .activeOffsetY([-10, 10])
     .failOffsetX([-20, 20])
@@ -288,43 +303,24 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
         return;
       }
       let newVal = savedScrollOffset.value - e.translationY;
-      
-      // Rubber banding at ends
       if (newVal < 0) newVal = newVal * 0.3;
       else if (newVal > summaryMaxScroll.value) newVal = summaryMaxScroll.value + (newVal - summaryMaxScroll.value) * 0.3;
-      
       summaryScrollOffset.value = newVal;
     })
     .onEnd((e) => {
       if (contentHeight.value > 0) {
         const velocity = -e.velocityY;
         const translation = -e.translationY;
-        const currentScroll = summaryScrollOffset.value;
         const currentIndex = Math.round(savedScrollOffset.value / contentHeight.value);
         const totalItems = Math.round(summaryMaxScroll.value / contentHeight.value) + 1;
-
         let targetIndex = currentIndex;
-        const threshold = contentHeight.value * 0.15; // 15% sensitivity
-
-        // Swipe logic: Determine if we should move to next/prev based on velocity or distance
+        const threshold = contentHeight.value * 0.15;
         if (Math.abs(velocity) > 500 || Math.abs(translation) > threshold) {
-          if (velocity > 300 || translation > threshold) {
-            targetIndex = Math.min(totalItems - 1, currentIndex + 1);
-          } else if (velocity < -300 || translation < -threshold) {
-            targetIndex = Math.max(0, currentIndex - 1);
-          }
+          if (velocity > 300 || translation > threshold) targetIndex = Math.min(totalItems - 1, currentIndex + 1);
+          else if (velocity < -300 || translation < -threshold) targetIndex = Math.max(0, currentIndex - 1);
         }
-
-        // Snap to the target page with snappy spring
-        summaryScrollOffset.value = withSpring(targetIndex * contentHeight.value, { 
-          damping: 22, 
-          stiffness: 200,
-          velocity: velocity
-        });
-        
-        if (targetIndex !== currentIndex) {
-          runOnJS(Haptics.selectionAsync)();
-        }
+        summaryScrollOffset.value = withSpring(targetIndex * contentHeight.value, { damping: 22, stiffness: 200, velocity });
+        if (targetIndex !== currentIndex) runOnJS(Haptics.selectionAsync)();
       }
     });
 
@@ -355,7 +351,6 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
       isDraggingSlider.value = true;
       sliderScale.value = withSpring(1.3, { damping: 10, stiffness: 300 });
       lastStep.value = Math.round(summaryScrollOffset.value / (contentHeight.value || 1));
-      
       const range = TRACK_HEIGHT - HANDLE_HEIGHT;
       let pos = e.y - (HANDLE_HEIGHT / 2);
       sliderDragPos.value = Math.max(0, Math.min(range, pos));
@@ -364,24 +359,15 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
       if (summaryMaxScroll.value <= 0) return;
       const range = TRACK_HEIGHT - HANDLE_HEIGHT;
       let pos = e.y - (HANDLE_HEIGHT / 2);
-      
-      // Follow finger exactly for the handle
       sliderDragPos.value = pos;
-      
       const totalSteps = Math.round(summaryMaxScroll.value / (contentHeight.value || 1));
       if (totalSteps > 0) {
         const stepSize = range / totalSteps;
         const currentStep = Math.round(Math.max(0, Math.min(range, pos)) / stepSize);
-        
         if (currentStep !== lastStep.value) {
           lastStep.value = currentStep;
           runOnJS(Haptics.selectionAsync)();
-          // Content snaps snappily
-          summaryScrollOffset.value = withSpring(currentStep * contentHeight.value, { 
-            damping: 12, 
-            stiffness: 200,
-            mass: 0.5
-          });
+          summaryScrollOffset.value = withSpring(currentStep * contentHeight.value, { damping: 12, stiffness: 200, mass: 0.5 });
         }
       } else {
         summaryScrollOffset.value = (Math.max(0, Math.min(range, pos)) / range) * summaryMaxScroll.value;
@@ -393,10 +379,7 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
       const totalSteps = Math.round(summaryMaxScroll.value / (contentHeight.value || 1));
       if (totalSteps > 0) {
         const currentStep = Math.round(summaryScrollOffset.value / contentHeight.value);
-        summaryScrollOffset.value = withSpring(currentStep * contentHeight.value, { 
-          damping: 18, 
-          stiffness: 250
-        });
+        summaryScrollOffset.value = withSpring(currentStep * contentHeight.value, { damping: 18, stiffness: 250 });
       }
     });
 
@@ -446,10 +429,7 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
     const todayStr = format(selectedDate, 'yyyy-MM-dd');
     const dayIndex = selectedDate.getDay().toString();
     const currentCycleWeek = getCycleWeek(selectedDate);
-
     const instantiated = db.getAllSync('SELECT * FROM diet_plans WHERE date = ? AND (is_eaten > 0 OR is_recurring = 0)', [todayStr]) as any[] || [];
-    
-    // Robust schedule matching using INSTR for comma-separated day strings
     const templates = db.getAllSync(`
       SELECT * FROM diet_plans 
       WHERE is_recurring = 1 
@@ -457,11 +437,8 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
       AND (cycle_week = 0 OR cycle_week = ?)
       AND is_eaten = 0
     `, [dayIndex, currentCycleWeek]) as any[] || [];
-
-    // Filter out templates that have been instantiated today (by template_id)
     const activeTemplates = templates.filter(t => !instantiated.some(i => i.template_id === t.id));
     const allCurrentPlans = [...instantiated, ...activeTemplates].sort((a, b) => a.meal_time.localeCompare(b.meal_time));
-    
     setPlans(allCurrentPlans);
     calculateDailyTotals(allCurrentPlans);
   };
@@ -483,7 +460,6 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
       if (plan.is_eaten === 2) return;
       const isMe = plan.user_id === userName || plan.is_shared === 1;
       const isPartner = plan.user_id !== userName || plan.is_shared === 1;
-      
       const getItemNutrients = () => {
         let totalNutrients: any = {};
         currentMetrics.forEach(m => totalNutrients[m.id] = 0);
@@ -513,15 +489,14 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
         }
         return totalNutrients;
       };
-
       const planNutrients = getItemNutrients();
       if (isMe) {
-        if (plan.is_eaten === 0) currentMetrics.forEach(m => dailyTotals.me.target[m.id] += planNutrients[m.id]);
-        else currentMetrics.forEach(m => dailyTotals.me.actual[m.id] += planNutrients[m.id]);
+        currentMetrics.forEach(m => dailyTotals.me.target[m.id] += planNutrients[m.id]);
+        if (plan.is_eaten === 1) currentMetrics.forEach(m => dailyTotals.me.actual[m.id] += planNutrients[m.id]);
       }
       if (isPartner) {
-        if (plan.is_eaten === 0) currentMetrics.forEach(m => dailyTotals.them.target[m.id] += planNutrients[m.id]);
-        else currentMetrics.forEach(m => dailyTotals.them.actual[m.id] += planNutrients[m.id]);
+        currentMetrics.forEach(m => dailyTotals.them.target[m.id] += planNutrients[m.id]);
+        if (plan.is_eaten === 1) currentMetrics.forEach(m => dailyTotals.them.actual[m.id] += planNutrients[m.id]);
       }
     });
     setDietPlanProgress(dailyTotals);
@@ -532,7 +507,6 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
     const id = editingPlanId || generateUUID();
     const todayStr = format(selectedDate, 'yyyy-MM-dd');
     const payload = { id, date: todayStr, meal_time: newPlan.meal_time, type: newPlan.type, item_id: newPlan.item_id, quantity: newPlan.quantity, unit: newPlan.unit, user_id: userName, is_eaten: newPlan.is_eaten, is_shared: newPlan.is_shared, is_recurring: newPlan.is_recurring, days_of_week: newPlan.days_of_week, cycle_week: newPlan.cycle_week, created_at: new Date().toISOString() };
-    
     if (editingPlanId) {
       db.runSync('UPDATE diet_plans SET date=?, meal_time=?, type=?, item_id=?, quantity=?, unit=?, is_eaten=?, is_shared=?, is_recurring=?, days_of_week=?, cycle_week=? WHERE id=?', [payload.date, payload.meal_time, payload.type, payload.item_id, payload.quantity, payload.unit, payload.is_eaten, payload.is_shared, payload.is_recurring, payload.days_of_week, payload.cycle_week, id]);
       queueSyncOperation('diet_plans', id, 'UPDATE', payload);
@@ -605,10 +579,10 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
   const chartOptions = {
     chart: { type: 'column', backgroundColor: 'transparent', height: 200 },
     title: { text: '' },
-    xAxis: { categories: ['Calories', 'Protein'], labels: { style: { color: theme.text } } },
+    xAxis: { categories: metrics.slice(0, 2).map((m: any) => m.name), labels: { style: { color: theme.text } } },
     series: [
-      { name: 'Me (Actual)', data: [dietPlanProgress.me.actual['m1'] || 0, dietPlanProgress.me.actual['m2'] || 0], color: '#FF2D55' },
-      { name: 'Partner (Actual)', data: [dietPlanProgress.them.actual['m1'] || 0, dietPlanProgress.them.actual['m2'] || 0], color: '#5AC8FA' }
+      { name: 'Me (Actual)', data: metrics.slice(0, 2).map((m: any) => dietPlanProgress.me.actual[m.id] || 0), color: '#FF2D55' },
+      { name: 'Partner (Actual)', data: metrics.slice(0, 2).map((m: any) => dietPlanProgress.them.actual[m.id] || 0), color: '#5AC8FA' }
     ],
     credits: { enabled: false }
   };
@@ -617,75 +591,80 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
     <View style={{ flex: 1, padding: 15 }}>
       <View style={[styles.tabView]}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <View style={{ flex: 1, height: CARD_HEIGHT, perspective: 1000 }}>
-            {/* FRONT SIDE */}
-            <Animated.View style={[styles.glassCard, { backgroundColor: 'rgba(255,45,85,0.05)', borderWidth: 1, borderColor: 'rgba(255,45,85,0.1)', height: '100%', position: 'absolute', width: '100%' }, summaryFrontStyle]}>
-               <View style={{ flex: 1 }}>
-                  <View style={{ flex: 1, overflow: 'hidden', height: '100%' }}>
-                       <Animated.View onLayout={onLayoutSummaryFrontContent} style={[summaryFrontContentScrollStyle, { padding: 5 }]}>
-                          <TouchableOpacity activeOpacity={1} onPress={toggleSummaryFlip}>
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                                <Text style={[styles.cardTitle, { color: '#FF2D55', marginBottom: 0 }]}>Daily Progress</Text>
-                                <View style={{ flexDirection: 'row', gap: 8 }}>
-                                  <TouchableOpacity onPress={() => setIsSharedFilter(!isSharedFilter)} style={[styles.smallTab, isSharedFilter && { backgroundColor: '#FF2D55' }]}><Text style={{ color: isSharedFilter ? 'white' : theme.text, fontSize: 10, fontWeight: '800' }}>SHARED ONLY</Text></TouchableOpacity>
-                                  <Rotate3d size={18} color={theme.text} opacity={0.3} />
-                                </View>
-                            </View>
-                            <View style={{ gap: 15, marginBottom: 20 }}>
-                                {metrics.slice(0, 2).map(m => {
-                                  const actual = dietPlanProgress.me.actual[m.id] || 0;
-                                  const target = dietPlanProgress.me.target[m.id] || 0;
-                                  const progress = target > 0 ? Math.min(1, actual / target) : 0;
-                                  return (
-                                    <View key={m.id}>
-                                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 }}><Text style={{ color: theme.text, fontSize: 12, fontWeight: '700' }}>{m.name}</Text><Text style={{ color: theme.text, fontSize: 12, fontWeight: '800' }}>{actual.toFixed(0)} / {target.toFixed(0)} {m.unit}</Text></View>
-                                      <View style={{ height: 8, backgroundColor: theme.card, borderRadius: 4, overflow: 'hidden' }}><View style={{ height: '100%', width: `${progress * 100}%`, backgroundColor: '#FF2D55', borderRadius: 4 }} /></View>
-                                    </View>
-                                  );
-                                })}
-                            </View>
-                            <HighchartsChart height={CARD_HEIGHT - 220} options={chartOptions} />
-                          </TouchableOpacity>
-                       </Animated.View>
-                  </View>
-               </View>
-            </Animated.View>
-
-            {/* BACK SIDE */}
-            <Animated.View style={[styles.glassCard, { backgroundColor: theme.card, height: '100%', position: 'absolute', width: '100%' }, summaryBackStyle]}>
-              <View style={{ flex: 1, overflow: 'hidden' }}>
-                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2,marginTop:3,marginLeft:15, zIndex: 10 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                       <TouchableOpacity onPress={toggleSummaryFlip}><Rotate3d size={18} color={theme.text} opacity={0.5} /></TouchableOpacity>
-                       <View>
-                         {/* <Text style={[styles.sectionTitle, { color: theme.text, marginBottom: 0 }]}>Diet Chart</Text> */}
-                         <Text style={{ color: theme.text, fontSize: 8, fontWeight: '900', opacity: 0.4 }}>WEEK {getCycleWeek(new Date())} ACTIVE</Text>
-                       </View>
-                    </View>
-                 </View>
+          <GestureDetector gesture={containerTapGesture}>
+            <View style={{ flex: 1, height: CARD_HEIGHT }}>
+              {/* FRONT SIDE */}
+              <Animated.View style={[styles.glassCardFront, { backgroundColor: 'rgba(255,45,85,0.05)', borderWidth: 1, borderColor: 'rgba(255,45,85,0.1)', height: '100%', position: 'absolute', width: '100%' }, summaryFrontStyle]}>
                  <View style={{ flex: 1 }}>
-                    <View onLayout={onLayoutContainer} style={{ flex: 1, overflow: 'hidden', height: '100%' }}>
-                         <Animated.View style={[summaryContentScrollStyle]}>
-                            {routineItems.length === 0 && (
-                              <View style={{ height: measuredHeight, justifyContent: 'center', alignItems: 'center', padding: 30 }}>
-                                <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(52,199,89,0.1)', justifyContent: 'center', alignItems: 'center', marginBottom: 20 }}><CheckCircle2 size={32} color="#34C759" /></View>
-                                <Text style={{ color: theme.text, fontSize: 18, fontWeight: '900', textAlign: 'center', marginBottom: 10 }}>Routine Completed!</Text>
-                                <Text style={{ color: theme.text, opacity: 0.5, textAlign: 'center', fontSize: 14 }}>No planned items left for today. You are right on your routine, keep it up!</Text>
+                    <View style={{ flex: 1, overflow: 'hidden', height: '100%' }}>
+                         <Animated.View onLayout={onLayoutSummaryFrontContent} style={[summaryFrontContentScrollStyle, { padding: 5 }]}>
+                            <View style={{ flex: 1 }}>
+                              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                                  <Text style={[styles.cardTitle, { color: '#FF2D55', marginBottom: 0 }]}>Daily Progress</Text>
+                                  <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                                    <TouchableOpacity onPress={() => setIsSharedFilter(!isSharedFilter)} style={[styles.smallTab, isSharedFilter && { backgroundColor: '#FF2D55' }]}>
+                                      <Text style={{ color: isSharedFilter ? 'white' : theme.text, fontSize: 10, fontWeight: '800' }}>SHARED ONLY</Text>
+                                    </TouchableOpacity>
+                                    <Rotate3d size={18} color={theme.text} opacity={0.3} />
+                                  </View>
                               </View>
-                            )}
-                            {routineItems.map((plan, index) => (
-                              <View key={plan.id} style={{ height: measuredHeight, width: '100%' }}>
-                                 <View style={{ flex: 1, padding: 10 }}>
-                                    <RoutineItemCard plan={plan} theme={theme} userName={userName} allRecipes={allRecipes} allIngredients={allIngredients} onToggle={toggleEaten} onSkip={toggleSkipped} onEdit={handleEdit} onDelete={deletePlanItem} isFullCard={true} />
-                                 </View>
+                              <View style={{ gap: 15, marginBottom: 20 }}>
+                                  {metrics.slice(0, 2).map(m => {
+                                    const actual = dietPlanProgress.me.actual[m.id] || 0;
+                                    const target = dietPlanProgress.me.target[m.id] || 0;
+                                    const progress = target > 0 ? Math.min(1, actual / target) : 0;
+                                    return (
+                                      <View key={m.id}>
+                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 }}><Text style={{ color: theme.text, fontSize: 12, fontWeight: '700' }}>{m.name}</Text><Text style={{ color: theme.text, fontSize: 12, fontWeight: '800' }}>{actual.toFixed(0)} / {target.toFixed(0)} {m.unit}</Text></View>
+                                        <View style={{ height: 8, backgroundColor: theme.card, borderRadius: 4, overflow: 'hidden' }}><View style={{ height: '100%', width: `${progress * 100}%`, backgroundColor: '#FF2D55', borderRadius: 4 }} /></View>
+                                      </View>
+                                    );
+                                  })}
                               </View>
-                            ))}
+                              <View pointerEvents="none" style={{ flex: 1 }}>
+                                 <HighchartsChart height={CARD_HEIGHT - 220} options={chartOptions} />
+                              </View>
+                            </View>
                          </Animated.View>
                     </View>
                  </View>
-              </View>
-            </Animated.View>
-          </View>
+              </Animated.View>
+
+              {/* BACK SIDE */}
+              <Animated.View style={[styles.glassCard, { backgroundColor: theme.card, height: '100%', position: 'absolute', width: '100%' }, summaryBackStyle]}>
+                <View style={{ flex: 1, overflow: 'hidden' }}>
+                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2,marginTop:3,marginLeft:15, zIndex: 10 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                         <Rotate3d size={18} color={theme.text} opacity={0.5} />
+                         <View>
+                           <Text style={{ color: theme.text, fontSize: 8, fontWeight: '900', opacity: 0.4 }}>WEEK {getCycleWeek(new Date())} ACTIVE</Text>
+                         </View>
+                      </View>
+                   </View>
+                   <View style={{ flex: 1 }}>
+                      <View onLayout={onLayoutContainer} style={{ flex: 1, overflow: 'hidden', height: '100%' }}>
+                           <Animated.View style={[summaryContentScrollStyle]}>
+                              {routineItems.length === 0 && (
+                                <View style={{ height: measuredHeight, justifyContent: 'center', alignItems: 'center', padding: 30 }}>
+                                  <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(52,199,89,0.1)', justifyContent: 'center', alignItems: 'center', marginBottom: 20 }}><CheckCircle2 size={32} color="#34C759" /></View>
+                                  <Text style={{ color: theme.text, fontSize: 18, fontWeight: '900', textAlign: 'center', marginBottom: 10 }}>Routine Completed!</Text>
+                                  <Text style={{ color: theme.text, opacity: 0.5, textAlign: 'center', fontSize: 14 }}>No planned items left for today. You are right on your routine, keep it up!</Text>
+                                </View>
+                              )}
+                              {routineItems.map((plan, index) => (
+                                <View key={plan.id} style={{ height: measuredHeight, width: '100%' }}>
+                                   <View style={{ flex: 1, padding: 10 }}>
+                                      <RoutineItemCard plan={plan} theme={theme} userName={userName} allRecipes={allRecipes} allIngredients={allIngredients} onToggle={toggleEaten} onSkip={toggleSkipped} onEdit={handleEdit} onDelete={deletePlanItem} isFullCard={true} />
+                                   </View>
+                                </View>
+                              ))}
+                           </Animated.View>
+                      </View>
+                   </View>
+                </View>
+              </Animated.View>
+            </View>
+          </GestureDetector>
           <GestureDetector gesture={isSummaryFlipped ? summarySliderGesture : summaryFrontSliderGesture}>
              <View style={[styles.sliderTrack, { height: TRACK_HEIGHT, marginLeft: 12 }]}>
                 {isSummaryFlipped && routineItems.length > 1 && Array.from({ length: routineItems.length }).map((_, i) => (
@@ -754,7 +733,6 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
 function RoutineItemCard({ plan, theme, userName, allRecipes, allIngredients, onToggle, onSkip, onEdit, onDelete, isFullCard }: any) {
   const item = plan.type === 'recipe' ? (allRecipes || []).find((r: any) => r.id === plan.item_id) : (allIngredients || []).find((i: any) => i.id === plan.item_id);
   const isShared = plan.is_shared === 1;
-
   const translateX = useSharedValue(0);
 
   const panGesture = Gesture.Pan()
@@ -788,105 +766,68 @@ function RoutineItemCard({ plan, theme, userName, allRecipes, allIngredients, on
   const animatedStyle = useAnimatedStyle(() => {
     const defaultBg = isShared ? 'rgba(175,82,222,0.08)' : 'rgba(255,45,85,0.08)';
     const defaultBorder = isShared ? 'rgba(175,82,222,0.2)' : 'rgba(255,45,85,0.2)';
-    
     return {
       transform: [
         { translateX: translateX.value },
         { rotate: `${interpolate(translateX.value, [-SCREEN_WIDTH, SCREEN_WIDTH], [-10, 10])}deg` },
         { scale: interpolate(Math.abs(translateX.value), [0, 150], [1, 0.96], Extrapolate.CLAMP) }
       ],
-      backgroundColor: interpolateColor(
-        translateX.value,
-        [-150, 0, 150],
-        ['#FF3B30', defaultBg, '#34C759']
-      ),
-      borderColor: interpolateColor(
-        translateX.value,
-        [-150, 0, 150],
-        ['#FF3B30', defaultBorder, '#34C759']
-      )
+      backgroundColor: interpolateColor(translateX.value, [-150, 0, 150], ['#FF3B30', defaultBg, '#34C759']),
+      borderColor: interpolateColor(translateX.value, [-150, 0, 150], ['#FF3B30', defaultBorder, '#34C759'])
     };
   });
 
   if (isFullCard) {
+    const accentColor = isShared ? '#AF52DE' : '#FF2D55';
+    const accentBg = isShared ? 'rgba(175,82,222,0.1)' : 'rgba(255,45,85,0.1)';
     return (
       <GestureDetector gesture={panGesture}>
-        <Animated.View style={[{ flex: 1, borderRadius: 32, padding: 24, justifyContent: 'space-between', borderWidth: 1.5, overflow: 'hidden' }, animatedStyle]}>
-          <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { justifyContent: 'center', alignItems: 'center', zIndex: 10, borderRadius: 32, overflow: 'hidden' }, leftHintStyle]}>
+        <Animated.View style={[{ flex: 1, borderRadius: 40, padding: 30, justifyContent: 'space-between', alignItems: 'center', borderWidth: 1.5, overflow: 'hidden' }, animatedStyle]}>
+          <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { justifyContent: 'center', alignItems: 'center', zIndex: 10, borderRadius: 40, overflow: 'hidden' }, leftHintStyle]}>
              <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(255, 59, 48, 0.92)', justifyContent: 'center', alignItems: 'center' }]}>
-                <X size={80} color="white" strokeWidth={3} />
-                <Text style={{ color: 'white', fontSize: 32, fontWeight: '900', letterSpacing: 4, marginTop: 20 }}>SKIP IT</Text>
+                <X size={100} color="white" strokeWidth={3} />
+                <Text style={{ color: 'white', fontSize: 36, fontWeight: '900', letterSpacing: 6, marginTop: 24 }}>SKIP IT</Text>
              </View>
           </Animated.View>
-          <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { justifyContent: 'center', alignItems: 'center', zIndex: 10, borderRadius: 32, overflow: 'hidden' }, rightHintStyle]}>
+          <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { justifyContent: 'center', alignItems: 'center', zIndex: 10, borderRadius: 40, overflow: 'hidden' }, rightHintStyle]}>
              <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(52, 199, 89, 0.92)', justifyContent: 'center', alignItems: 'center' }]}>
-                <CheckCircle2 size={80} color="white" strokeWidth={3} />
-                <Text style={{ color: 'white', fontSize: 32, fontWeight: '900', letterSpacing: 4, marginTop: 20 }}>EATEN</Text>
+                <CheckCircle2 size={100} color="white" strokeWidth={3} />
+                <Text style={{ color: 'white', fontSize: 36, fontWeight: '900', letterSpacing: 6, marginTop: 24 }}>EATEN</Text>
              </View>
           </Animated.View>
           
-          <View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15, marginBottom: 25 }}>
-               <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: isShared ? 'rgba(175,82,222,0.15)' : 'rgba(255,45,85,0.15)', justifyContent: 'center', alignItems: 'center' }}>
-                  {plan.type === 'recipe' ? <PieChart size={28} color={isShared ? '#AF52DE' : '#FF2D55'} /> : <Utensils size={28} color={isShared ? '#AF52DE' : '#FF2D55'} />}
+          <View style={{ alignItems: 'center', width: '100%', flex: 1, justifyContent: 'center' }}>
+            <View style={{ width: 100, height: 100, borderRadius: 50, backgroundColor: accentBg, justifyContent: 'center', alignItems: 'center', marginBottom: 25, shadowColor: accentColor, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.15, shadowRadius: 20 }}>
+               {plan.type === 'recipe' ? <PieChart size={48} color={accentColor} strokeWidth={2.5} /> : <Utensils size={48} color={accentColor} strokeWidth={2.5} />}
+            </View>
+            <Text style={{ color: accentColor, fontSize: 14, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 3, marginBottom: 8, opacity: 0.8 }}>{plan.type}</Text>
+            <Text style={{ color: theme.text, fontSize: 32, fontWeight: '900', textAlign: 'center', lineHeight: 38, marginBottom: 25 }} numberOfLines={3}>{item?.name || 'Unknown Item'}</Text>
+            <View style={{ flexDirection: 'row', gap: 12, marginBottom: 30 }}>
+               <View style={{ backgroundColor: theme.card, paddingVertical: 10, paddingHorizontal: 18, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(150,150,150,0.1)' }}>
+                  <Text style={{ color: theme.text, fontSize: 16, fontWeight: '800' }}>{plan.quantity} <Text style={{ fontSize: 12, opacity: 0.6 }}>{(plan.unit || '').toUpperCase()}</Text></Text>
                </View>
-               <View style={{ flex: 1 }}>
-                  <Text style={{ color: theme.text, fontSize: 13, fontWeight: '800', opacity: 0.5, textTransform: 'uppercase', letterSpacing: 1.5 }}>{plan.type}</Text>
-                  <Text style={{ color: theme.text, fontSize: 28, fontWeight: '900', lineHeight: 32 }} numberOfLines={2}>{item?.name || 'Unknown Item'}</Text>
+               <View style={{ backgroundColor: theme.card, paddingVertical: 10, paddingHorizontal: 18, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(150,150,150,0.1)' }}>
+                  <Text style={{ color: theme.text, fontSize: 16, fontWeight: '800' }}><Clock size={14} color={theme.text} opacity={0.5} /> {plan.meal_time}</Text>
                </View>
             </View>
-            
-            <View style={{ backgroundColor: isShared ? 'rgba(175,82,222,0.06)' : 'rgba(255,45,85,0.06)', borderRadius: 24, padding: 24, marginBottom: 20 }}>
-               <Text style={{ color: theme.text, fontSize: 11, fontWeight: '900', opacity: 0.4, marginBottom: 15, letterSpacing: 2 }}>SPECIFICATIONS</Text>
-               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <View>
-                    <Text style={{ color: theme.text, fontSize: 28, fontWeight: '800' }}>{plan.quantity}</Text>
-                    <Text style={{ color: theme.text, fontSize: 12, fontWeight: '700', opacity: 0.6 }}>{(plan.unit || '').toUpperCase()}</Text>
-                  </View>
-                  <View style={{ width: 1, height: 40, backgroundColor: theme.text, opacity: 0.1 }} />
-                  <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={{ color: theme.text, fontSize: 28, fontWeight: '800' }}>{plan.meal_time}</Text>
-                    <Text style={{ color: theme.text, fontSize: 12, fontWeight: '700', opacity: 0.6 }}>SCHEDULED</Text>
-                  </View>
-               </View>
-            </View>
-
-            {isShared === 1 && (
-               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: 'rgba(175,82,222,0.08)', padding: 15, borderRadius: 16 }}>
+            {isShared === 1 ? (
+               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12, paddingHorizontal: 20, backgroundColor: 'rgba(175,82,222,0.08)', borderRadius: 25 }}>
                   <Info size={16} color="#AF52DE" />
                   <Text style={{ color: '#AF52DE', fontSize: 13, fontWeight: '800', letterSpacing: 0.5 }}>SHARED WITH PARTNER</Text>
+               </View>
+            ) : (
+               <View style={{ paddingVertical: 12, paddingHorizontal: 20, backgroundColor: 'rgba(150,150,150,0.05)', borderRadius: 25 }}>
+                  <Text style={{ color: theme.text, fontSize: 12, fontWeight: '800', opacity: 0.4, letterSpacing: 1 }}>SWIPE TO TRACK PROGRESS</Text>
                </View>
             )}
           </View>
 
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 10 }}>
-             <TouchableOpacity 
-               onPress={() => onEdit(plan)} 
-               style={{ 
-                 flexDirection: 'row', 
-                 alignItems: 'center', 
-                 gap: 10, 
-                 paddingVertical: 14, 
-                 paddingHorizontal: 20, 
-                 backgroundColor: isShared ? 'rgba(175,82,222,0.1)' : 'rgba(255,45,85,0.1)', 
-                 borderRadius: 18 
-               }}
-             >
-                <Edit2 size={18} color={isShared ? '#AF52DE' : '#FF2D55'} />
-                <Text style={{ color: isShared ? '#AF52DE' : '#FF2D55', fontSize: 14, fontWeight: '900' }}>EDIT MEAL</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%', paddingTop: 20 }}>
+             <TouchableOpacity onPress={() => onEdit(plan)} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 14, paddingHorizontal: 20, backgroundColor: accentBg, borderRadius: 18 }}>
+                <Edit2 size={18} color={accentColor} />
+                <Text style={{ color: accentColor, fontSize: 14, fontWeight: '900' }}>EDIT MEAL</Text>
              </TouchableOpacity>
-             
-             <TouchableOpacity 
-               onPress={() => onDelete(plan.id)} 
-               style={{ 
-                 width: 50, 
-                 height: 50, 
-                 borderRadius: 18, 
-                 backgroundColor: 'rgba(255,59,48,0.08)', 
-                 justifyContent: 'center', 
-                 alignItems: 'center' 
-               }}
-             >
+             <TouchableOpacity onPress={() => onDelete(plan.id)} style={{ width: 50, height: 50, borderRadius: 18, backgroundColor: 'rgba(255,59,48,0.08)', justifyContent: 'center', alignItems: 'center' }}>
                 <Trash2 size={22} color="#FF3B30" opacity={0.8} />
              </TouchableOpacity>
           </View>
@@ -1060,6 +1001,7 @@ const styles = StyleSheet.create({
   scrollContent: { padding: 20 },
   tabView: { flex: 1 },
   glassCard: { borderRadius: 24, padding: 0, overflow: 'hidden' },
+  glassCardFront: { borderRadius: 24, padding: 20, overflow: 'hidden' },
   cardTitle: { fontSize: 18, fontWeight: '800', marginBottom: 15 },
   nutrientGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 15, marginTop: 20 },
   nutrientItem: { width: '45%' },
@@ -1094,4 +1036,8 @@ const styles = StyleSheet.create({
   optionsTitle: { fontSize: 18, fontWeight: '900', marginBottom: 20, textAlign: 'center' },
   optionBtn: { flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 16, marginBottom: 10, backgroundColor: 'rgba(150,150,150,0.05)' },
   optionText: { fontSize: 16, fontWeight: '700', marginLeft: 12 },
+  smallTab: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, backgroundColor: 'rgba(150,150,150,0.1)' },
+  dropdownButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 12, borderRadius: 12 },
+  dropdownList: { position: 'absolute', left: 0, right: 0, borderRadius: 12, elevation: 5, zIndex: 100 },
+  dropdownItem: { padding: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(150,150,150,0.1)' },
 });
