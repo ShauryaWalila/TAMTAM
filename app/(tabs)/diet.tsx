@@ -593,42 +593,45 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <GestureDetector gesture={containerTapGesture}>
             <View style={{ flex: 1, height: CARD_HEIGHT }}>
-              {/* FRONT SIDE */}
-              <Animated.View style={[styles.glassCardFront, { backgroundColor: 'rgba(255,45,85,0.05)', borderWidth: 1, borderColor: 'rgba(255,45,85,0.1)', height: '100%', position: 'absolute', width: '100%' }, summaryFrontStyle]}>
-                 <View style={{ flex: 1 }}>
-                    <View style={{ flex: 1, overflow: 'hidden', height: '100%' }}>
-                         <Animated.View onLayout={onLayoutSummaryFrontContent} style={[summaryFrontContentScrollStyle, { padding: 5 }]}>
-                            <View style={{ flex: 1 }}>
-                              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                                  <Text style={[styles.cardTitle, { color: '#FF2D55', marginBottom: 0 }]}>Daily Progress</Text>
-                                  <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-                                    <TouchableOpacity onPress={() => setIsSharedFilter(!isSharedFilter)} style={[styles.smallTab, isSharedFilter && { backgroundColor: '#FF2D55' }]}>
-                                      <Text style={{ color: isSharedFilter ? 'white' : theme.text, fontSize: 10, fontWeight: '800' }}>SHARED ONLY</Text>
-                                    </TouchableOpacity>
-                                    <Rotate3d size={18} color={theme.text} opacity={0.3} />
-                                  </View>
-                              </View>
-                              <View style={{ gap: 15, marginBottom: 20 }}>
-                                  {metrics.slice(0, 2).map(m => {
-                                    const actual = dietPlanProgress.me.actual[m.id] || 0;
-                                    const target = dietPlanProgress.me.target[m.id] || 0;
-                                    const progress = target > 0 ? Math.min(1, actual / target) : 0;
-                                    return (
-                                      <View key={m.id}>
-                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 }}><Text style={{ color: theme.text, fontSize: 12, fontWeight: '700' }}>{m.name}</Text><Text style={{ color: theme.text, fontSize: 12, fontWeight: '800' }}>{actual.toFixed(0)} / {target.toFixed(0)} {m.unit}</Text></View>
-                                        <View style={{ height: 8, backgroundColor: theme.card, borderRadius: 4, overflow: 'hidden' }}><View style={{ height: '100%', width: `${progress * 100}%`, backgroundColor: '#FF2D55', borderRadius: 4 }} /></View>
-                                      </View>
-                                    );
-                                  })}
-                              </View>
-                              <View pointerEvents="none" style={{ flex: 1 }}>
-                                 <HighchartsChart height={CARD_HEIGHT - 220} options={chartOptions} />
-                              </View>
+            {/* FRONT SIDE */}
+            <Animated.View style={[styles.glassCardFront, { backgroundColor: 'rgba(255,45,85,0.05)', borderWidth: 1, borderColor: 'rgba(255,45,85,0.1)', height: '100%', position: 'absolute', width: '100%' }, summaryFrontStyle]}>
+                 <View style={{ flex: 1, overflow: 'hidden' }}>
+                       <Animated.View onLayout={onLayoutSummaryFrontContent} style={[summaryFrontContentScrollStyle, { padding: 5 }]}>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                                <Text style={{ fontSize: 18, fontWeight: '800', color: '#FF2D55' }}>Daily Progress</Text>
+                                <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                                  <TouchableOpacity onPress={() => setIsSharedFilter(!isSharedFilter)} style={[styles.smallTab, isSharedFilter && { backgroundColor: '#FF2D55' }]}>
+                                    <Text style={{ color: isSharedFilter ? 'white' : (theme.text || '#000'), fontSize: 10, fontWeight: '800' }}>SHARED ONLY</Text>
+                                  </TouchableOpacity>
+                                  <Rotate3d size={18} color={theme.text || '#000'} opacity={0.3} />
+                                </View>
                             </View>
-                         </Animated.View>
-                    </View>
+                            
+                            <View style={{ gap: 15, marginBottom: 20 }}>
+                                {(metrics || []).slice(0, 2).map(m => {
+                                  const actual = dietPlanProgress.me.actual[m.id] || 0;
+                                  const target = dietPlanProgress.me.target[m.id] || 0;
+                                  const progress = target > 0 ? Math.min(1, actual / target) : 0;
+                                  return (
+                                    <View key={m.id}>
+                                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 }}>
+                                        <Text style={{ color: theme.text || '#000', fontSize: 12, fontWeight: '700' }}>{m.name || 'Metric'}</Text>
+                                        <Text style={{ color: theme.text || '#000', fontSize: 12, fontWeight: '800' }}>{actual.toFixed(0)} / {target.toFixed(0)} {m.unit || ''}</Text>
+                                      </View>
+                                      <View style={{ height: 8, backgroundColor: 'rgba(150,150,150,0.1)', borderRadius: 4, overflow: 'hidden' }}>
+                                        <View style={{ height: '100%', width: `${progress * 100}%`, backgroundColor: '#FF2D55', borderRadius: 4 }} />
+                                      </View>
+                                    </View>
+                                  );
+                                })}
+                            </View>
+                            
+                            <View pointerEvents="none">
+                               <HighchartsChart height={CARD_HEIGHT - 220} options={chartOptions} />
+                            </View>
+                       </Animated.View>
                  </View>
-              </Animated.View>
+            </Animated.View>
 
               {/* BACK SIDE */}
               <Animated.View style={[styles.glassCard, { backgroundColor: theme.card, height: '100%', position: 'absolute', width: '100%' }, summaryBackStyle]}>
