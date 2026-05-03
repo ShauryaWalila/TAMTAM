@@ -8,6 +8,8 @@ import Animated, { FadeIn, FadeInDown, SlideInBottom } from 'react-native-reanim
 import { db, generateUUID, queueSyncOperation } from '@/lib/db';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
+import * as SecureStore from 'expo-secure-store';
+import HighchartsChart from '@/components/HighchartsChart';
 import * as Haptics from 'expo-haptics';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
@@ -23,6 +25,7 @@ export default function ConsumedHistoryScreen() {
   const [consumed, setConsumed] = useState<any[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [userName, setUserName] = useState('');
   
   const [showStats, setShowStats] = useState<any | null>(null);
   const [showOptions, setShowOptions] = useState<any | null>(null);
@@ -47,6 +50,15 @@ export default function ConsumedHistoryScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
 
   useEffect(() => {
+    const getName = async () => {
+      try {
+        const name = await SecureStore.getItemAsync('user_name');
+        setUserName(name || 'Anonymous');
+      } catch (e) {
+        setUserName('Anonymous');
+      }
+    };
+    getName();
     loadConsumed();
     loadLibrary();
     loadMetrics();
@@ -153,7 +165,7 @@ export default function ConsumedHistoryScreen() {
       item_id: newLog.item_id,
       quantity: newLog.quantity,
       unit: newLog.unit,
-      user_id: 'me', // TODO: Get current user
+      user_id: userName,
       is_eaten: 1,
       is_shared: newLog.is_shared,
       is_recurring: 0, // Manual logs are typically one-off
@@ -161,8 +173,8 @@ export default function ConsumedHistoryScreen() {
     };
 
     if (editingId) {
-      db.runSync('UPDATE diet_plans SET date=?, meal_time=?, type=?, item_id=?, quantity=?, unit=?, is_shared=? WHERE id=?',
-        [payload.date, payload.meal_time, payload.type, payload.item_id, payload.quantity, payload.unit, payload.is_shared, id]);
+      db.runSync('UPDATE diet_plans SET date=?, meal_time=?, type=?, item_id=?, quantity=?, unit=?, is_shared=?, user_id=? WHERE id=?',
+        [payload.date, payload.meal_time, payload.type, payload.item_id, payload.quantity, payload.unit, payload.is_shared, payload.user_id, id]);
       queueSyncOperation('diet_plans', id, 'UPDATE', payload);
     } else {
       db.runSync('INSERT INTO diet_plans (id, date, meal_time, type, item_id, quantity, unit, user_id, is_eaten, is_shared, is_recurring, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
@@ -281,6 +293,11 @@ export default function ConsumedHistoryScreen() {
                              <View style={{ backgroundColor: 'rgba(150,150,150,0.05)', paddingHorizontal: 4, borderRadius: 4 }}>
                                 <Text style={{ color: theme.text, fontSize: 8, fontWeight: '800', opacity: 0.5 }}>{item.user_id?.substring(0, 8)}</Text>
                              </View>
+                             {item.is_recurring === 0 && (
+                               <View style={[styles.miniBadge, { backgroundColor: 'rgba(52,199,89,0.1)' }]}>
+                                 <Text style={[styles.miniBadgeText, { color: '#34C759' }]}>ONE-TIME</Text>
+                               </View>
+                             )}
                              {item.is_eaten === 2 && <View style={[styles.miniBadge, { backgroundColor: 'rgba(255,59,48,0.1)' }]}><Text style={[styles.miniBadgeText, { color: '#FF3B30' }]}>SKIPPED</Text></View>}
                           </View>
                           <Text style={[styles.itemName, { color: theme.text, textDecorationLine: item.is_eaten === 2 ? 'line-through' : 'none' }]} numberOfLines={1}>{detailItem?.name || 'Unknown'}</Text>

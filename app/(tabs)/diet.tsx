@@ -132,6 +132,8 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
 
   const CARD_HEIGHT = Dimensions.get('window').height - insets.top - insets.bottom - 160;
   const TRACK_HEIGHT = CARD_HEIGHT - 100;
+  const SLIDER_ADJUSTMENT = 46;
+  const ACTUAL_TRACK_HEIGHT = TRACK_HEIGHT - SLIDER_ADJUSTMENT;
   const HANDLE_HEIGHT = 60;
 
   // Shared Values
@@ -256,7 +258,7 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
   }));
 
   const summarySliderStyle = useAnimatedStyle(() => {
-    const range = TRACK_HEIGHT - HANDLE_HEIGHT;
+    const range = ACTUAL_TRACK_HEIGHT - HANDLE_HEIGHT;
     const snapPos = summaryMaxScroll.value > 0 ? (summaryScrollOffset.value / summaryMaxScroll.value) * range : 0;
     
     const activePos = isDraggingSlider.value 
@@ -274,7 +276,7 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
   });
 
   const summaryFrontSliderStyle = useAnimatedStyle(() => {
-    const range = TRACK_HEIGHT - HANDLE_HEIGHT;
+    const range = ACTUAL_TRACK_HEIGHT - HANDLE_HEIGHT;
     const snapPos = summaryFrontMaxScroll.value > 0 ? (summaryFrontScrollOffset.value / summaryFrontMaxScroll.value) * range : 0;
     
     const activePos = isDraggingSlider.value 
@@ -351,13 +353,13 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
       isDraggingSlider.value = true;
       sliderScale.value = withSpring(1.3, { damping: 10, stiffness: 300 });
       lastStep.value = Math.round(summaryScrollOffset.value / (contentHeight.value || 1));
-      const range = TRACK_HEIGHT - HANDLE_HEIGHT;
+      const range = ACTUAL_TRACK_HEIGHT - HANDLE_HEIGHT;
       let pos = e.y - (HANDLE_HEIGHT / 2);
       sliderDragPos.value = Math.max(0, Math.min(range, pos));
     })
     .onUpdate((e) => {
       if (summaryMaxScroll.value <= 0) return;
-      const range = TRACK_HEIGHT - HANDLE_HEIGHT;
+      const range = ACTUAL_TRACK_HEIGHT - HANDLE_HEIGHT;
       let pos = e.y - (HANDLE_HEIGHT / 2);
       sliderDragPos.value = pos;
       const totalSteps = Math.round(summaryMaxScroll.value / (contentHeight.value || 1));
@@ -388,13 +390,13 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
     .onStart((e) => {
       isDraggingSlider.value = true;
       sliderScale.value = withSpring(1.3, { damping: 10, stiffness: 300 });
-      const range = TRACK_HEIGHT - HANDLE_HEIGHT;
+      const range = ACTUAL_TRACK_HEIGHT - HANDLE_HEIGHT;
       let pos = e.y - (HANDLE_HEIGHT / 2);
       sliderDragPos.value = Math.max(0, Math.min(range, pos));
     })
     .onUpdate((e) => {
       if (summaryFrontMaxScroll.value <= 0) return;
-      const range = TRACK_HEIGHT - HANDLE_HEIGHT;
+      const range = ACTUAL_TRACK_HEIGHT - HANDLE_HEIGHT;
       let pos = e.y - (HANDLE_HEIGHT / 2);
       sliderDragPos.value = pos;
       const cappedPos = Math.max(0, Math.min(range, pos));
@@ -450,55 +452,67 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
   );
 
   const calculateDailyTotals = (currentPlans: any[]) => {
-    const dailyTotals: any = { me: { target: {}, actual: {} }, them: { target: {}, actual: {} } };
+    const dailyTotals: any = { me: {}, them: {} };
     const currentMetrics = (metrics && metrics.length > 0) ? metrics : db.getAllSync('SELECT * FROM diet_metrics WHERE is_active = 1') || [];
+    
+    // Initialize
     currentMetrics.forEach((m: any) => { 
-      dailyTotals.me.target[m.id] = 0; dailyTotals.me.actual[m.id] = 0; 
-      dailyTotals.them.target[m.id] = 0; dailyTotals.them.actual[m.id] = 0; 
+      dailyTotals.me[m.id] = 0; 
+      dailyTotals.them[m.id] = 0; 
     });
-    (currentPlans || []).forEach(plan => {
-      if (plan.is_eaten === 2) return;
+
+    if (!currentPlans) return;
+
+    (currentPlans).forEach(plan => {
+      if (plan.is_eaten !== 1) return; // ONLY sum eaten/consumed items
       if (isSharedFilter && plan.is_shared !== 1) return;
 
-      const isMe = plan.user_id === userName || plan.is_shared === 1;
-      const isPartner = plan.user_id !== userName || plan.is_shared === 1;
+      const isMe = (plan.user_id || '').toLowerCase() === (userName || '').toLowerCase() || plan.is_shared === 1;
+      const isPartner = (plan.user_id || '').toLowerCase() !== (userName || '').toLowerCase() || plan.is_shared === 1;
+      
       const getItemNutrients = () => {
         let totalNutrients: any = {};
         currentMetrics.forEach(m => totalNutrients[m.id] = 0);
-        if (plan.type === 'ingredient') {
-          const ing = db.getFirstSync('SELECT * FROM ingredients WHERE id = ?', [plan.item_id]) as any;
-          if (ing) {
-            const nutrients = JSON.parse(ing.nutrients || '{}');
-            const ratio = (parseFloat(plan.quantity) || 0) / (ing.base_quantity || 1);
-            currentMetrics.forEach(m => totalNutrients[m.id] = (nutrients[m.id] || 0) * ratio);
-          }
-        } else {
-          const recipe = db.getFirstSync('SELECT * FROM recipes WHERE id = ?', [plan.item_id]) as any;
-          if (recipe) {
-            const recipeRatio = (parseFloat(plan.quantity) || 0) / (recipe.base_quantity || 1);
-            if (recipe.nutrients) {
-              const manualNutrients = JSON.parse(recipe.nutrients);
-              currentMetrics.forEach(m => totalNutrients[m.id] = (manualNutrients[m.id] || 0) * recipeRatio);
-            } else {
-              const recipeIngs = db.getAllSync('SELECT ri.quantity, i.nutrients, i.base_quantity FROM recipe_ingredients ri JOIN ingredients i ON ri.ingredient_id = i.id WHERE ri.recipe_id = ?', [plan.item_id]) as any[] || [];
-              recipeIngs.forEach(ri => {
-                const nutrients = JSON.parse(ri.nutrients || '{}');
-                const ingRatio = (ri.quantity / (ri.base_quantity || 1));
-                currentMetrics.forEach(m => { totalNutrients[m.id] += (nutrients[m.id] || 0) * ingRatio * recipeRatio; });
-              });
+        
+        try {
+          if (plan.type === 'ingredient') {
+            const ing = db.getFirstSync('SELECT * FROM ingredients WHERE id = ?', [plan.item_id]) as any;
+            if (ing) {
+              const nutrients = JSON.parse(ing.nutrients || '{}');
+              const ratio = (parseFloat(plan.quantity) || 0) / (ing.base_quantity || 1);
+              currentMetrics.forEach(m => totalNutrients[m.id] = (nutrients[m.id] || 0) * ratio);
+            }
+          } else {
+            const recipe = db.getFirstSync('SELECT * FROM recipes WHERE id = ?', [plan.item_id]) as any;
+            if (recipe) {
+              const recipeRatio = (parseFloat(plan.quantity) || 0) / (recipe.base_quantity || 1);
+              if (recipe.nutrients) {
+                const manualNutrients = JSON.parse(recipe.nutrients);
+                currentMetrics.forEach(m => totalNutrients[m.id] = (manualNutrients[m.id] || 0) * recipeRatio);
+              } else {
+                const recipeIngs = db.getAllSync('SELECT ri.quantity, i.nutrients, i.base_quantity FROM recipe_ingredients ri JOIN ingredients i ON ri.ingredient_id = i.id WHERE ri.recipe_id = ?', [plan.item_id]) as any[] || [];
+                recipeIngs.forEach(ri => {
+                  const nutrients = JSON.parse(ri.nutrients || '{}');
+                  const ingRatio = (ri.quantity / (ri.base_quantity || 1));
+                  currentMetrics.forEach(m => { totalNutrients[m.id] += (nutrients[m.id] || 0) * ingRatio * recipeRatio; });
+                });
+              }
             }
           }
-        }
+        } catch (e) { console.warn('Nutrient calc error', e); }
         return totalNutrients;
       };
+
       const planNutrients = getItemNutrients();
       if (isMe) {
-        currentMetrics.forEach(m => dailyTotals.me.target[m.id] += planNutrients[m.id]);
-        if (plan.is_eaten === 1) currentMetrics.forEach(m => dailyTotals.me.actual[m.id] += planNutrients[m.id]);
+        currentMetrics.forEach(m => {
+          dailyTotals.me[m.id] += (planNutrients[m.id] || 0);
+        });
       }
       if (isPartner) {
-        currentMetrics.forEach(m => dailyTotals.them.target[m.id] += planNutrients[m.id]);
-        if (plan.is_eaten === 1) currentMetrics.forEach(m => dailyTotals.them.actual[m.id] += planNutrients[m.id]);
+        currentMetrics.forEach(m => {
+          dailyTotals.them[m.id] += (planNutrients[m.id] || 0);
+        });
       }
     });
     setDietPlanProgress(dailyTotals);
@@ -506,7 +520,7 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
 
   useEffect(() => {
     calculateDailyTotals(plans);
-  }, [isSharedFilter, plans]);
+  }, [isSharedFilter, plans, userName]);
 
   const savePlanItem = () => {
     if (!newPlan.item_id) return;
@@ -567,6 +581,7 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
   };
 
   const routineItems = (plans || []).filter(p => p.is_eaten === 0 && (!isSharedFilter || p.is_shared === 1));
+  const consumedItems = (plans || []).filter(p => p.is_eaten === 1 && (!isSharedFilter || p.is_shared === 1));
 
   useEffect(() => {
     const itemCount = routineItems.length || 1;
@@ -583,12 +598,12 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
   };
 
   const chartOptions = {
-    chart: { type: 'column', backgroundColor: 'transparent', height: 200 },
+    chart: { type: 'column', backgroundColor: 'transparent', height: 180 },
     title: { text: '' },
     xAxis: { categories: metrics.slice(0, 2).map((m: any) => m.name), labels: { style: { color: theme.text } } },
     series: [
-      { name: 'Me (Actual)', data: metrics.slice(0, 2).map((m: any) => dietPlanProgress.me.actual[m.id] || 0), color: '#FF2D55' },
-      { name: 'Partner (Actual)', data: metrics.slice(0, 2).map((m: any) => dietPlanProgress.them.actual[m.id] || 0), color: '#5AC8FA' }
+      { name: 'Me (Total)', data: metrics.slice(0, 2).map((m: any) => dietPlanProgress.me[m.id] || 0), color: '#FF2D55' },
+      { name: 'Partner (Total)', data: metrics.slice(0, 2).map((m: any) => dietPlanProgress.them[m.id] || 0), color: '#5AC8FA' }
     ],
     credits: { enabled: false }
   };
@@ -600,36 +615,64 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
           <GestureDetector gesture={containerTapGesture}>
             <View style={{ flex: 1, height: CARD_HEIGHT }}>
             {/* FRONT SIDE */}
-            <Animated.View style={[styles.glassCardFront, { backgroundColor: 'rgba(255,45,85,0.05)', borderWidth: 1, borderColor: 'rgba(255,45,85,0.1)', height: '100%', position: 'absolute', width: '100%' }, summaryFrontStyle]}>
+            <Animated.View style={[styles.glassCardFront, { backgroundColor: 'rgba(255,45,85,0.02)', borderWidth: 1, borderColor: 'rgba(255,45,85,0.1)', height: '100%', position: 'absolute', width: '100%' }, summaryFrontStyle]}>
                  <View style={{ flex: 1, overflow: 'hidden' }}>
                        <Animated.View onLayout={onLayoutSummaryFrontContent} style={[summaryFrontContentScrollStyle, { padding: 5 }]}>
                             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                                <Text style={{ fontSize: 18, fontWeight: '800', color: '#FF2D55' }}>Daily Progress</Text>
+                                <View>
+                                  <Text style={{ fontSize: 18, fontWeight: '800', color: '#FF2D55' }}>Daily Progress</Text>
+                                  <Text style={{ fontSize: 10, fontWeight: '700', color: theme.text, opacity: 0.5 }}>TOTAL CONSUMED TODAY</Text>
+                                </View>
                                 <Rotate3d size={18} color={theme.text || '#000'} opacity={0.3} />
                             </View>
                             
-                            <View style={{ gap: 15, marginBottom: 20 }}>
-                                {(metrics || []).slice(0, 2).map(m => {
-                                  const actual = dietPlanProgress.me.actual[m.id] || 0;
-                                  const target = dietPlanProgress.me.target[m.id] || 0;
-                                  const progress = target > 0 ? Math.min(1, actual / target) : 0;
+                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
+                                {(metrics || []).slice(0, 4).map(m => {
+                                  const total = dietPlanProgress.me[m.id] || 0;
                                   return (
-                                    <View key={m.id}>
-                                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 }}>
-                                        <Text style={{ color: theme.text || '#000', fontSize: 12, fontWeight: '700' }}>{m.name || 'Metric'}</Text>
-                                        <Text style={{ color: theme.text || '#000', fontSize: 12, fontWeight: '800' }}>{actual.toFixed(0)} / {target.toFixed(0)} {m.unit || ''}</Text>
-                                      </View>
-                                      <View style={{ height: 8, backgroundColor: 'rgba(150,150,150,0.1)', borderRadius: 4, overflow: 'hidden' }}>
-                                        <View style={{ height: '100%', width: `${progress * 100}%`, backgroundColor: '#FF2D55', borderRadius: 4 }} />
-                                      </View>
+                                    <View key={m.id} style={{ width: '47%', backgroundColor: theme.card, padding: 12, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(150,150,150,0.1)' }}>
+                                      <Text style={{ color: theme.text || '#000', fontSize: 10, fontWeight: '700', opacity: 0.6, marginBottom: 4 }}>{m.name || 'Metric'}</Text>
+                                      <Text style={{ color: '#FF2D55', fontSize: 18, fontWeight: '900' }}>{total.toFixed(0)} <Text style={{ fontSize: 12, opacity: 0.5 }}>{m.unit || ''}</Text></Text>
                                     </View>
                                   );
                                 })}
                             </View>
                             
-                            <View pointerEvents="none">
-                               <HighchartsChart height={CARD_HEIGHT - 220} options={chartOptions} />
+                            <View pointerEvents="none" style={{ marginBottom: 20 }}>
+                               <HighchartsChart height={180} options={chartOptions} />
                             </View>
+
+                            {consumedItems.length > 0 && (
+                              <View style={{ marginTop: 10 }}>
+                                <Text style={{ color: theme.text, fontSize: 12, fontWeight: '900', opacity: 0.4, letterSpacing: 1, marginBottom: 12 }}>TODAY'S LOG</Text>
+                                <View style={{ gap: 8 }}>
+                                  {consumedItems.map(item => {
+                                    const detailItem = item.type === 'recipe' 
+                                      ? allRecipes.find(r => r.id === item.item_id) 
+                                      : allIngredients.find(i => i.id === item.item_id);
+                                    return (
+                                      <View key={item.id} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(150,150,150,0.05)', padding: 12, borderRadius: 16, gap: 12 }}>
+                                        <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: item.is_shared ? 'rgba(175,82,222,0.1)' : 'rgba(255,45,85,0.1)', justifyContent: 'center', alignItems: 'center' }}>
+                                          {item.type === 'recipe' ? <PieChart size={16} color={item.is_shared ? '#AF52DE' : '#FF2D55'} /> : <Utensils size={16} color={item.is_shared ? '#AF52DE' : '#FF2D55'} />}
+                                        </View>
+                                        <View style={{ flex: 1 }}>
+                                          <Text style={{ color: theme.text, fontSize: 14, fontWeight: '800' }} numberOfLines={1}>{detailItem?.name || 'Unknown'}</Text>
+                                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                                            <Text style={{ color: theme.text, fontSize: 10, opacity: 0.5, fontWeight: '700' }}>{item.meal_time}</Text>
+                                            {item.is_recurring === 0 && (
+                                              <View style={{ backgroundColor: '#FF2D55', paddingHorizontal: 4, py: 1, borderRadius: 4 }}>
+                                                <Text style={{ color: 'white', fontSize: 7, fontWeight: '900' }}>ONE-TIME</Text>
+                                              </View>
+                                            )}
+                                          </View>
+                                        </View>
+                                        <Text style={{ color: theme.text, fontSize: 13, fontWeight: '900' }}>{item.quantity} <Text style={{ fontSize: 10, opacity: 0.5 }}>{item.unit}</Text></Text>
+                                      </View>
+                                    );
+                                  })}
+                                </View>
+                              </View>
+                            )}
                        </Animated.View>
                  </View>
             </Animated.View>
@@ -652,7 +695,7 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
                                 <View style={{ height: measuredHeight, justifyContent: 'center', alignItems: 'center', padding: 30 }}>
                                   <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(52,199,89,0.1)', justifyContent: 'center', alignItems: 'center', marginBottom: 20 }}><CheckCircle2 size={32} color="#34C759" /></View>
                                   <Text style={{ color: theme.text, fontSize: 18, fontWeight: '900', textAlign: 'center', marginBottom: 10 }}>Routine Completed!</Text>
-                                  <Text style={{ color: theme.text, opacity: 0.5, textAlign: 'center', fontSize: 14 }}>No planned items left for today. You are right on your routine, keep it up!</Text>
+                                  <Text style={{ color: theme.text, opacity: 0.5, textAlign: 'center', fontSize: 14 }}>All items tracked for today. Great job keeping up with your routine!</Text>
                                 </View>
                               )}
                               {routineItems.map((plan, index) => (
@@ -676,7 +719,7 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 setIsSharedFilter(!isSharedFilter);
               }} 
-              style={[styles.smallTab, { paddingHorizontal: 10, paddingVertical: 10, width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' }, isSharedFilter && { backgroundColor: '#FF2D55' }]}
+              style={[styles.smallTab, { paddingHorizontal: 10, paddingVertical: 10, width: 36, height: 36, borderRadius: 12, justifyContent: 'center', alignItems: 'center' }, isSharedFilter && { backgroundColor: '#FF2D55' }]}
             >
               {isSharedFilter ? (
                 <Users size={16} color="white" />
@@ -821,7 +864,19 @@ function RoutineItemCard({ plan, theme, userName, allRecipes, allIngredients, on
             <View style={{ width: 100, height: 100, borderRadius: 50, backgroundColor: accentBg, justifyContent: 'center', alignItems: 'center', marginBottom: 25, shadowColor: accentColor, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.15, shadowRadius: 20 }}>
                {plan.type === 'recipe' ? <PieChart size={48} color={accentColor} strokeWidth={2.5} /> : <Utensils size={48} color={accentColor} strokeWidth={2.5} />}
             </View>
-            <Text style={{ color: accentColor, fontSize: 14, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 3, marginBottom: 8, opacity: 0.8 }}>{plan.type}</Text>
+            <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center', marginBottom: 8 }}>
+              <Text style={{ color: accentColor, fontSize: 14, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 3, opacity: 0.8 }}>{plan.type}</Text>
+              {plan.is_recurring === 0 && (
+                <View style={{ backgroundColor: accentColor, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
+                  <Text style={{ color: 'white', fontSize: 8, fontWeight: '900' }}>ONE-TIME</Text>
+                </View>
+              )}
+              {plan.is_eaten === 1 && (
+                <View style={{ backgroundColor: '#34C759', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
+                  <Text style={{ color: 'white', fontSize: 8, fontWeight: '900' }}>CONSUMED</Text>
+                </View>
+              )}
+            </View>
             <Text style={{ color: theme.text, fontSize: 32, fontWeight: '900', textAlign: 'center', lineHeight: 38, marginBottom: 25 }} numberOfLines={3}>{item?.name || 'Unknown Item'}</Text>
             <View style={{ flexDirection: 'row', gap: 12, marginBottom: 30 }}>
                <View style={{ backgroundColor: theme.card, paddingVertical: 10, paddingHorizontal: 18, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(150,150,150,0.1)' }}>
@@ -841,16 +896,6 @@ function RoutineItemCard({ plan, theme, userName, allRecipes, allIngredients, on
                   <Text style={{ color: theme.text, fontSize: 12, fontWeight: '800', opacity: 0.4, letterSpacing: 1 }}>SWIPE TO TRACK PROGRESS</Text>
                </View>
             )}
-          </View>
-
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%', paddingTop: 20 }}>
-             <TouchableOpacity onPress={() => onEdit(plan)} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 14, paddingHorizontal: 20, backgroundColor: accentBg, borderRadius: 18 }}>
-                <Edit2 size={18} color={accentColor} />
-                <Text style={{ color: accentColor, fontSize: 14, fontWeight: '900' }}>EDIT MEAL</Text>
-             </TouchableOpacity>
-             <TouchableOpacity onPress={() => onDelete(plan.id)} style={{ width: 50, height: 50, borderRadius: 18, backgroundColor: 'rgba(255,59,48,0.08)', justifyContent: 'center', alignItems: 'center' }}>
-                <Trash2 size={22} color="#FF3B30" opacity={0.8} />
-             </TouchableOpacity>
           </View>
         </Animated.View>
       </GestureDetector>
