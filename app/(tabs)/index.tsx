@@ -520,7 +520,7 @@ export default function DashboardScreen() {
         </View>
 
         {/* --- DIET SECTION --- */}
-        <View style={styles.section}>
+        {/* <View style={styles.section}>
           <TouchableOpacity 
             onPress={() => DeviceEventEmitter.emit('show-navigator')} // Or direct navigation if preferred
             activeOpacity={0.7} 
@@ -537,7 +537,7 @@ export default function DashboardScreen() {
             </View>
             <ChevronRight color={theme.tabIconDefault} size={20} />
           </TouchableOpacity>
-        </View>
+        </View> */}
 
         {/* --- RESTORED ROUTINE SECTION --- */}
         <View style={styles.section}>

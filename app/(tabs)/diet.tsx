@@ -615,58 +615,86 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
           <GestureDetector gesture={containerTapGesture}>
             <View style={{ flex: 1, height: CARD_HEIGHT }}>
             {/* FRONT SIDE */}
-            <Animated.View style={[styles.glassCardFront, { backgroundColor: 'rgba(255,45,85,0.02)', borderWidth: 1, borderColor: 'rgba(255,45,85,0.1)', height: '100%', position: 'absolute', width: '100%' }, summaryFrontStyle]}>
+            <Animated.View style={[styles.glassCardFront, { backgroundColor: theme.card, borderWidth: 1, borderColor: 'rgba(150,150,150,0.1)', height: '100%', position: 'absolute', width: '100%', shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.08, shadowRadius: 24, elevation: 5 }, summaryFrontStyle]}>
                  <View style={{ flex: 1, overflow: 'hidden' }}>
+                       {/* Subtle Background Accent */}
+                       <View style={{ position: 'absolute', top: -40, right: -40, width: 180, height: 180, borderRadius: 90, backgroundColor: 'rgba(255,45,85,0.04)', zIndex: -1 }} />
+                       
                        <Animated.View onLayout={onLayoutSummaryFrontContent} style={[summaryFrontContentScrollStyle, { padding: 5 }]}>
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 }}>
                                 <View>
-                                  <Text style={{ fontSize: 18, fontWeight: '800', color: '#FF2D55' }}>Daily Progress</Text>
-                                  <Text style={{ fontSize: 10, fontWeight: '700', color: theme.text, opacity: 0.5 }}>TOTAL CONSUMED TODAY</Text>
+                                  <Text style={{ fontSize: 24, fontWeight: '900', color: theme.text, letterSpacing: -0.5 }}>Daily Intake</Text>
+                                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                                    <View style={{ width: 8, height: 2, borderRadius: 1, backgroundColor: '#FF2D55' }} />
+                                    <Text style={{ fontSize: 10, fontWeight: '800', color: theme.text, opacity: 0.4, letterSpacing: 1.5 }}>TRACKING ACTIVE</Text>
+                                  </View>
                                 </View>
-                                <Rotate3d size={18} color={theme.text || '#000'} opacity={0.3} />
+                                <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(150,150,150,0.05)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(150,150,150,0.08)' }}>
+                                  <TrendingUp size={22} color="#FF2D55" />
+                                </View>
                             </View>
                             
-                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
-                                {(metrics || []).slice(0, 4).map(m => {
+                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 25 }}>
+                                {(metrics || []).slice(0, 4).map((m, idx) => {
                                   const total = dietPlanProgress.me[m.id] || 0;
+                                  const config = [
+                                    { color: '#FF2D55', bg: 'rgba(255,45,85,0.05)' },
+                                    { color: '#AF52DE', bg: 'rgba(175,82,222,0.05)' },
+                                    { color: '#5AC8FA', bg: 'rgba(90,200,250,0.05)' },
+                                    { color: '#FF9500', bg: 'rgba(255,149,0,0.05)' }
+                                  ];
+                                  const style = config[idx % config.length];
+                                  
                                   return (
-                                    <View key={m.id} style={{ width: '47%', backgroundColor: theme.card, padding: 12, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(150,150,150,0.1)' }}>
-                                      <Text style={{ color: theme.text || '#000', fontSize: 10, fontWeight: '700', opacity: 0.6, marginBottom: 4 }}>{m.name || 'Metric'}</Text>
-                                      <Text style={{ color: '#FF2D55', fontSize: 18, fontWeight: '900' }}>{total.toFixed(0)} <Text style={{ fontSize: 12, opacity: 0.5 }}>{m.unit || ''}</Text></Text>
+                                    <View key={m.id} style={{ width: '47%', backgroundColor: style.bg, padding: 16, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(150,150,150,0.05)' }}>
+                                      <Text style={{ color: style.color, fontSize: 10, fontWeight: '900', opacity: 0.7, marginBottom: 10, letterSpacing: 0.5 }}>{m.name?.toUpperCase() || 'METRIC'}</Text>
+                                      <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
+                                        <Text style={{ color: theme.text, fontSize: 24, fontWeight: '900' }}>{total.toFixed(0)}</Text>
+                                        <Text style={{ fontSize: 12, fontWeight: '700', color: theme.text, opacity: 0.3 }}>{m.unit || ''}</Text>
+                                      </View>
                                     </View>
                                   );
                                 })}
                             </View>
                             
-                            <View pointerEvents="none" style={{ marginBottom: 20 }}>
+                            <View pointerEvents="none" style={{ marginBottom: 25, backgroundColor: 'rgba(150,150,150,0.02)', borderRadius: 28, padding: 12, borderWidth: 1, borderColor: 'rgba(150,150,150,0.05)' }}>
                                <HighchartsChart height={180} options={chartOptions} />
                             </View>
 
                             {consumedItems.length > 0 && (
-                              <View style={{ marginTop: 10 }}>
-                                <Text style={{ color: theme.text, fontSize: 12, fontWeight: '900', opacity: 0.4, letterSpacing: 1, marginBottom: 12 }}>TODAY'S LOG</Text>
-                                <View style={{ gap: 8 }}>
+                              <View style={{ marginTop: 5 }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 15 }}>
+                                  <Text style={{ color: theme.text, fontSize: 13, fontWeight: '900', opacity: 0.5, letterSpacing: 1 }}>TODAY'S LOG</Text>
+                                  <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(150,150,150,0.1)' }} />
+                                </View>
+                                <View style={{ gap: 10 }}>
                                   {consumedItems.map(item => {
                                     const detailItem = item.type === 'recipe' 
                                       ? allRecipes.find(r => r.id === item.item_id) 
                                       : allIngredients.find(i => i.id === item.item_id);
                                     return (
-                                      <View key={item.id} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(150,150,150,0.05)', padding: 12, borderRadius: 16, gap: 12 }}>
-                                        <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: item.is_shared ? 'rgba(175,82,222,0.1)' : 'rgba(255,45,85,0.1)', justifyContent: 'center', alignItems: 'center' }}>
-                                          {item.type === 'recipe' ? <PieChart size={16} color={item.is_shared ? '#AF52DE' : '#FF2D55'} /> : <Utensils size={16} color={item.is_shared ? '#AF52DE' : '#FF2D55'} />}
+                                      <View key={item.id} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: theme.card, padding: 14, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(150,150,150,0.08)' }}>
+                                        <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: item.is_shared ? 'rgba(175,82,222,0.1)' : 'rgba(255,45,85,0.1)', justifyContent: 'center', alignItems: 'center' }}>
+                                          {item.type === 'recipe' ? <PieChart size={18} color={item.is_shared ? '#AF52DE' : '#FF2D55'} /> : <Utensils size={18} color={item.is_shared ? '#AF52DE' : '#FF2D55'} />}
                                         </View>
-                                        <View style={{ flex: 1 }}>
-                                          <Text style={{ color: theme.text, fontSize: 14, fontWeight: '800' }} numberOfLines={1}>{detailItem?.name || 'Unknown'}</Text>
-                                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
-                                            <Text style={{ color: theme.text, fontSize: 10, opacity: 0.5, fontWeight: '700' }}>{item.meal_time}</Text>
+                                        <View style={{ flex: 1, marginLeft: 14 }}>
+                                          <Text style={{ color: theme.text, fontSize: 15, fontWeight: '800' }} numberOfLines={1}>{detailItem?.name || 'Unknown'}</Text>
+                                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                              <Clock size={10} color={theme.text} opacity={0.4} />
+                                              <Text style={{ color: theme.text, fontSize: 10, opacity: 0.4, fontWeight: '700' }}>{item.meal_time}</Text>
+                                            </View>
                                             {item.is_recurring === 0 && (
-                                              <View style={{ backgroundColor: '#FF2D55', paddingHorizontal: 4, py: 1, borderRadius: 4 }}>
-                                                <Text style={{ color: 'white', fontSize: 7, fontWeight: '900' }}>ONE-TIME</Text>
+                                              <View style={{ backgroundColor: 'rgba(255,45,85,0.1)', paddingHorizontal: 6, py: 1.5, borderRadius: 6 }}>
+                                                <Text style={{ color: '#FF2D55', fontSize: 7, fontWeight: '900', letterSpacing: 0.5 }}>ONE-TIME</Text>
                                               </View>
                                             )}
                                           </View>
                                         </View>
-                                        <Text style={{ color: theme.text, fontSize: 13, fontWeight: '900' }}>{item.quantity} <Text style={{ fontSize: 10, opacity: 0.5 }}>{item.unit}</Text></Text>
+                                        <View style={{ alignItems: 'flex-end' }}>
+                                          <Text style={{ color: theme.text, fontSize: 14, fontWeight: '900' }}>{item.quantity}</Text>
+                                          <Text style={{ fontSize: 9, fontWeight: '800', color: theme.text, opacity: 0.3, textTransform: 'uppercase' }}>{item.unit}</Text>
+                                        </View>
                                       </View>
                                     );
                                   })}
