@@ -1970,3 +1970,179 @@ CREATE POLICY "Public access" ON diet_metrics FOR ALL USING (true);
 
 
 
+ -- 1. Add cycle_week to diet_plans
+     ALTER TABLE diet_plans
+     ADD COLUMN IF NOT EXISTS cycle_week INTEGER DEFAULT 0;
+    
+     -- 2. Create Diet Settings table
+     CREATE TABLE IF NOT EXISTS diet_settings (
+       id TEXT PRIMARY KEY,
+       cycle_length INTEGER DEFAULT 4,
+       updated_at TIMESTAMPTZ DEFAULT now()
+    );
+   
+    -- 3. Insert initial global setting
+    INSERT INTO diet_settings (id, cycle_length)
+    VALUES ('global', 4)
+    ON CONFLICT (id) DO NOTHING;
+   
+    -- 4. Enable Realtime for the new settings
+    ALTER PUBLICATION supabase_realtime ADD TABLE diet_settings;
+   
+  
+  
+
+
+
+
+
+
+
+   -- 1. Add the template_id column to diet_plans
+     -- This allows tracking which recurring template an instance belongs to
+     ALTER TABLE public.diet_plans
+     ADD COLUMN IF NOT EXISTS template_id TEXT;
+    
+     -- 2. Add an index for faster lookups when filtering templates
+     CREATE INDEX IF NOT EXISTS idx_diet_plans_template_id ON public.diet_plans(template_id);
+    
+     -- 3. Update the description/comment for clarity
+    COMMENT ON COLUMN public.diet_plans.template_id IS 'References the ID of the recurring template if this is an
+      instantiated meal instance';
+   
+    -- 4. (Optional) Ensure RLS policies are up to date if you've added them
+    -- If you have Row Level Security enabled, the existing policies usually cover new columns,
+    -- but you can run this to be sure the table remains accessible.
+    ALTER TABLE public.diet_plans ENABLE ROW LEVEL SECURITY;
+   
+    -- Example policy update if you use standard user-based RLS:
+    -- CREATE POLICY "Users can manage their own diet plans"
+    -- ON public.diet_plans FOR ALL
+    -- USING (auth.uid()::text = user_id);
+
+
+
+
+
+
+
+
+
+    
+
+
+     -- 1. Create New Tables for Goals and Settings
+     CREATE TABLE IF NOT EXISTS diet_settings (
+       id TEXT PRIMARY KEY,
+       cycle_length INT DEFAULT 4,
+       updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+     );
+    
+     CREATE TABLE IF NOT EXISTS diet_goals (
+       id TEXT PRIMARY KEY, -- metric_id:user_id:cycle_week
+      metric_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      target_value FLOAT DEFAULT 0,
+      cycle_week INT DEFAULT 0, -- 0=Global/Daily, 1-4=Specific Week
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
+   
+    -- 2. Core Diet Tables (If not already present)
+    CREATE TABLE IF NOT EXISTS diet_metrics (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      unit TEXT,
+      is_active INT DEFAULT 1,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
+   
+    CREATE TABLE IF NOT EXISTS diet_units (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
+   
+    CREATE TABLE IF NOT EXISTS ingredients (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      nutrients TEXT, -- JSON string
+      base_quantity FLOAT DEFAULT 100,
+      base_unit TEXT DEFAULT 'g',
+      user_id TEXT,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
+   
+    CREATE TABLE IF NOT EXISTS recipes (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT,
+      nutrients TEXT, -- JSON string override
+      base_quantity FLOAT DEFAULT 1,
+      base_unit TEXT DEFAULT 'serving',
+      user_id TEXT,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
+   
+    CREATE TABLE IF NOT EXISTS recipe_ingredients (
+      id TEXT PRIMARY KEY,
+      recipe_id TEXT REFERENCES recipes(id) ON DELETE CASCADE,
+      ingredient_id TEXT REFERENCES ingredients(id) ON DELETE CASCADE,
+      quantity FLOAT NOT NULL,
+      unit TEXT
+    );
+   
+    CREATE TABLE IF NOT EXISTS diet_plans (
+      id TEXT PRIMARY KEY,
+      date DATE NOT NULL,
+      meal_time TEXT,
+      type TEXT,
+      item_id TEXT NOT NULL,
+      quantity FLOAT NOT NULL,
+      unit TEXT,
+      user_id TEXT,
+      is_eaten INT DEFAULT 0,
+      is_shared INT DEFAULT 0,
+      is_recurring INT DEFAULT 0,
+      days_of_week TEXT,
+      cycle_week INT DEFAULT 0,
+      template_id TEXT,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
+   
+    -- 3. Seed Default Settings & Metrics
+    INSERT INTO diet_settings (id, cycle_length)
+    VALUES ('global', 4)
+    ON CONFLICT (id) DO NOTHING;
+   
+    INSERT INTO diet_metrics (id, name, unit) VALUES
+    ('m1', 'Calories', 'kcal'),
+    ('m2', 'Protein', 'g'),
+    ('m3', 'Carbs', 'g'),
+    ('m4', 'Fat', 'g'),
+    ('m5', 'Fiber', 'g')
+    ON CONFLICT (id) DO NOTHING;
+   
+    INSERT INTO diet_units (id, name) VALUES
+    ('g', 'g'), ('ml', 'ml'), ('serving', 'serving'), ('cup', 'cup')
+    ON CONFLICT (id) DO NOTHING;
+   
+    -- 4. Enable Realtime (Optional, for instant sync between partners)
+    ALTER PUBLICATION supabase_realtime ADD TABLE diet_plans;
+    ALTER PUBLICATION supabase_realtime ADD TABLE diet_goals;
+    ALTER PUBLICATION supabase_realtime ADD TABLE diet_settings;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    

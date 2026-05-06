@@ -13,7 +13,7 @@ import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import RadialNavigator from '@/components/RadialNavigator';
 import { MotiView, AnimatePresence } from 'moti';
-import { format, differenceInDays, startOfToday, eachDayOfInterval, subDays, differenceInMinutes } from 'date-fns';
+import { format, differenceInDays, startOfToday, eachDayOfInterval, subDays, differenceInMinutes, startOfDay, isAfter } from 'date-fns';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { sendStudyNotification } from '@/lib/notifications';
 import { getMotivationalBoost } from '@/lib/aiEngine';
@@ -51,6 +51,8 @@ export default function StudyHubDashboard() {
   const [editingDumpId, setEditingDumpId] = useState<string | null>(null);
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showAllDumps, setShowAllDumps] = useState(false);
+  const [expandedDumpId, setExpandedDumpId] = useState<string | null>(null);
 
   const [isTimerRunning, setIsTimerStarted] = useState(false);
   const [isTimerPaused, setIsTimerPaused] = useState(false);
@@ -353,7 +355,54 @@ export default function StudyHubDashboard() {
         <View style={[styles.heatmapCard, { backgroundColor: theme.card }]}><View style={styles.heatmapGrid}>{heatmapData.map((d, i) => <View key={i} style={[styles.heatmapSquare, { backgroundColor: d.count > 0 ? `rgba(52, 199, 89, ${Math.min(1, d.count/10 + 0.2)})` : theme.background }]} />)}</View><Text style={styles.heatmapLabel}>Last 30 days of medical focus</Text></View>
 
         <View style={[styles.sectionHeader, { marginTop: 30 }]}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><MessageSquare color={theme.secondary} size={24} /><Text style={[styles.sectionTitle, { color: theme.text }]}>Brain Dump Inbox</Text></View><TouchableOpacity onPress={() => { setEditingDumpId(null); setDumpContent(''); setIsDumpModalVisible(true); }} style={[styles.addBtn, { backgroundColor: theme.secondary + '20' }]}><Plus size={20} color={theme.secondary} /></TouchableOpacity></View>
-        <View style={[styles.dumpCard, { backgroundColor: theme.card }]}>{brainDump.slice(0, 3).map(item => (<View key={item.id} style={styles.dumpItem}><Text style={[styles.dumpText, { color: theme.text }]} numberOfLines={1}>{item.content}</Text><View style={{ flexDirection: 'row', gap: 12 }}><TouchableOpacity onPress={() => { setEditingDumpId(item.id); setDumpContent(item.content); setIsDumpModalVisible(true); }}><Edit3 size={18} color={theme.tabIconDefault} /></TouchableOpacity><TouchableOpacity onPress={() => { db.runSync(`UPDATE study_brain_dump SET is_processed = 1 WHERE id = ?`, [item.id]); queueSyncOperation('study_brain_dump', item.id, 'UPDATE', { is_processed: 1 }); refreshFromSQLite(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}><Check size={18} color="#34C759" /></TouchableOpacity></View></View>))}{brainDump.length === 0 && <Text style={styles.emptyText}>Inbox is clean!</Text>}</View>
+        <View style={[styles.dumpCard, { backgroundColor: theme.card }]}>
+          {(showAllDumps ? brainDump : brainDump.slice(0, 3)).map(item => (
+            <TouchableOpacity 
+              key={item.id} 
+              style={styles.dumpItem} 
+              onPress={() => { setExpandedDumpId(expandedDumpId === item.id ? null : item.id); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+            >
+              <Text 
+                style={[styles.dumpText, { color: theme.text }]} 
+                numberOfLines={expandedDumpId === item.id ? undefined : 1}
+              >
+                {item.content}
+              </Text>
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <TouchableOpacity onPress={() => { setEditingDumpId(item.id); setDumpContent(item.content); setIsDumpModalVisible(true); }}>
+                  <Edit3 size={18} color={theme.tabIconDefault} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => { db.runSync(`UPDATE study_brain_dump SET is_processed = 1 WHERE id = ?`, [item.id]); queueSyncOperation('study_brain_dump', item.id, 'UPDATE', { is_processed: 1 }); refreshFromSQLite(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}>
+                  <Check size={18} color="#34C759" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => {
+                  Alert.alert('Delete Thought?', 'This will permanently remove this brain dump.', [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Delete', style: 'destructive', onPress: () => {
+                      db.runSync(`DELETE FROM study_brain_dump WHERE id = ?`, [item.id]);
+                      queueSyncOperation('study_brain_dump', item.id, 'DELETE', {});
+                      refreshFromSQLite();
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    }}
+                  ]);
+                }}>
+                  <Trash2 size={18} color="#FF3B30" />
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          ))}
+          {brainDump.length > 3 && (
+            <TouchableOpacity 
+              onPress={() => { setShowAllDumps(!showAllDumps); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); }} 
+              style={styles.showMoreBtn}
+            >
+              <Text style={[styles.showMoreText, { color: theme.secondary }]}>
+                {showAllDumps ? 'Show Less' : `See All (${brainDump.length})`}
+              </Text>
+            </TouchableOpacity>
+          )}
+          {brainDump.length === 0 && <Text style={styles.emptyText}>Inbox is clean!</Text>}
+        </View>
 
         <View style={[styles.sectionHeader, { marginTop: 40 }]}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><BookOpen color={theme.tint} size={24} /><Text style={[styles.sectionTitle, { color: theme.text }]}>Flashcard Decks</Text></View><TouchableOpacity onPress={() => setIsDeckModalVisible(true)} style={[styles.addBtn, { backgroundColor: theme.tint + '20' }]}><Plus size={20} color={theme.tint} /></TouchableOpacity></View>
         <View style={styles.grid}>{filteredDecks.map(deck => (<TouchableOpacity key={deck.id} style={[styles.card, { backgroundColor: theme.card, borderTopColor: deck.color || theme.tint, borderTopWidth: 4 }]} onPress={() => router.push(`/study-hub/deck/${deck.id}`)} onLongPress={() => { Alert.alert('Delete Deck?', 'Remove this deck?', [{ text: 'Cancel' }, { text: 'Delete', style: 'destructive', onPress: () => { db.runSync(`DELETE FROM study_decks WHERE id = ?`, [deck.id]); queueSyncOperation('study_decks', deck.id, 'DELETE', {}); refreshFromSQLite(); }}]); }}><Text style={[styles.cardTitle, { color: theme.text }]}>{deck.title}</Text><Text style={[styles.cardSub, { color: theme.tabIconDefault }]} numberOfLines={2}>{deck.description || "No description"}</Text></TouchableOpacity>))}</View>
@@ -435,6 +484,8 @@ const styles = StyleSheet.create({
   boardThumb: { width: '100%', height: 80, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
   statIcon: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
   emptyText: { color: '#888', fontStyle: 'italic', padding: 10 },
+  showMoreBtn: { paddingVertical: 10, alignItems: 'center', borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.03)', marginTop: 5 },
+  showMoreText: { fontSize: 12, fontWeight: '800', letterSpacing: 0.5 },
   modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
   modalContent: { padding: 30, borderTopLeftRadius: 40, borderTopRightRadius: 40, gap: 15 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
