@@ -397,6 +397,16 @@ export const initDB = () => {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
 
+      -- Diet Goals
+      CREATE TABLE IF NOT EXISTS diet_goals (
+        id TEXT PRIMARY KEY, -- metric_id:user_id:cycle_week
+        metric_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        target_value REAL DEFAULT 0,
+        cycle_week INTEGER DEFAULT 0, -- 0=Global/Daily, 1-4=Specific Week
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+
       -- Trip Songs (Vibe Board)
       CREATE TABLE IF NOT EXISTS trip_songs (
         id TEXT PRIMARY KEY,

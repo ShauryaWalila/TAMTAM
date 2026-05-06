@@ -3,7 +3,7 @@ import { StyleSheet, View, Text, ScrollView, TouchableOpacity, TextInput, Modal,
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { BlurView } from 'expo-blur';
-import { Plus, Search, ChevronRight, ChevronDown, Trash2, Edit2, Save, X, Utensils, TrendingUp, Calendar, PieChart, Clock, Rotate3d, Info, CheckCircle2, ChevronLeft, User, Users } from 'lucide-react-native';
+import { Plus, Search, ChevronRight, ChevronDown, Trash2, Edit2, Save, X, Utensils, TrendingUp, Calendar, PieChart, Clock, Rotate3d, Info, CheckCircle2, ChevronLeft, User, Users, Settings } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInDown, SlideInBottom, useSharedValue, useAnimatedStyle, withSpring, withTiming, interpolate, interpolateColor, runOnJS, Extrapolate } from 'react-native-reanimated';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { db, generateUUID, queueSyncOperation } from '@/lib/db';
@@ -27,7 +27,9 @@ export default function DietScreen() {
   const [activeTab, setActiveTab] = useState<TabType>('PLAN');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchVisible, setIsSearchVisible] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [userName, setUserName] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
   const dietPlanRef = useRef<any>(null);
 
   useEffect(() => {
@@ -40,6 +42,28 @@ export default function DietScreen() {
       }
     };
     getName();
+
+    // -- DATABASE MIGRATION --
+    try {
+      db.execSync(`
+        CREATE TABLE IF NOT EXISTS diet_goals (
+          id TEXT PRIMARY KEY,
+          metric_id TEXT NOT NULL,
+          user_id TEXT NOT NULL,
+          target_value REAL DEFAULT 0,
+          cycle_week INTEGER DEFAULT 0,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS diet_settings (
+          id TEXT PRIMARY KEY,
+          cycle_length INTEGER DEFAULT 4,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+        INSERT OR IGNORE INTO diet_settings (id, cycle_length) VALUES ('global', 4);
+      `);
+    } catch (e) {
+      console.warn('Migration failed', e);
+    }
   }, []);
 
   return (
@@ -53,6 +77,10 @@ export default function DietScreen() {
           </View>
           
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15 }}>
+            <TouchableOpacity onPress={() => setShowSettings(true)}>
+              <Settings size={24} color={theme.text} />
+            </TouchableOpacity>
+
             {activeTab === 'PLAN' && (
               <>
                 <TouchableOpacity onPress={() => router.push('/diet-routine')}>
@@ -108,24 +136,152 @@ export default function DietScreen() {
         </View>
 
         <View style={{ flex: 1 }}>
-          {activeTab === 'PLAN' && userName !== '' && <DietPlanTab ref={dietPlanRef} theme={theme} searchQuery={searchQuery} userName={userName} setActiveTab={setActiveTab} />}
+          {activeTab === 'PLAN' && userName !== '' && <DietPlanTab ref={dietPlanRef} theme={theme} searchQuery={searchQuery} userName={userName} setActiveTab={setActiveTab} refreshKey={refreshKey} />}
           {activeTab !== 'PLAN' && (
             <ScrollView contentContainerStyle={styles.scrollContent}>
               {activeTab === 'RECIPES' && <RecipesTab theme={theme} searchQuery={searchQuery} userName={userName} />}
               {activeTab === 'INGREDIENTS' && <IngredientsTab theme={theme} searchQuery={searchQuery} userName={userName} />}
-              {activeTab === 'REPORT' && <DietReportTab theme={theme} userName={userName} />}
+              {activeTab === 'REPORT' && <DietReportTab theme={theme} userName={userName} refreshKey={refreshKey} />}
             </ScrollView>
           )}
         </View>
+
+        <DietSettingsModal 
+          visible={showSettings} 
+          onClose={() => { setShowSettings(false); setRefreshKey(prev => prev + 1); }} 
+          theme={theme} 
+          userName={userName} 
+          colorScheme={colorScheme}
+        />
       </View>
     </GestureHandlerRootView>
+  );
+}
+
+function DietSettingsModal({ visible, onClose, theme, userName, colorScheme }: any) {
+  const [cycleLength, setCycleLength] = useState(4);
+  const [goals, setGoals] = useState<any[]>([]);
+  const [metrics, setMetrics] = useState<any[]>([]);
+  const [selectedWeek, setSelectedWeek] = useState(0); // 0=Global/Daily, 1-4=Week
+  
+  useEffect(() => {
+    if (visible) {
+      loadSettings();
+      loadMetrics();
+    }
+  }, [visible]);
+
+  useEffect(() => {
+    if (visible && metrics.length > 0) {
+      loadGoals();
+    }
+  }, [visible, metrics, selectedWeek]);
+
+  const loadSettings = () => {
+    const s = db.getFirstSync('SELECT cycle_length FROM diet_settings WHERE id = "global"') as any;
+    setCycleLength(s?.cycle_length || 4);
+  };
+
+  const loadMetrics = () => {
+    setMetrics(db.getAllSync('SELECT * FROM diet_metrics WHERE is_active = 1') || []);
+  };
+
+  const loadGoals = () => {
+    const data = db.getAllSync('SELECT * FROM diet_goals WHERE user_id = ? AND cycle_week = ?', [userName, selectedWeek]) as any[];
+    const goalMap: any = {};
+    data.forEach(g => goalMap[g.metric_id] = g.target_value);
+    setGoals(metrics.map(m => ({ ...m, value: goalMap[m.id] || 0 })));
+  };
+
+  const saveSettings = () => {
+    // 1. Update Cycle Settings
+    const settingsPayload = { id: 'global', cycle_length: cycleLength };
+    db.runSync('UPDATE diet_settings SET cycle_length = ? WHERE id = "global"', [cycleLength]);
+    queueSyncOperation('diet_settings', 'global', 'UPDATE', settingsPayload);
+
+    // 2. Update Individual Goals
+    goals.forEach(g => {
+      const id = `${g.id}:${userName}:${selectedWeek}`;
+      const goalPayload = { id, metric_id: g.id, user_id: userName, target_value: g.value, cycle_week: selectedWeek };
+      
+      db.runSync('INSERT OR REPLACE INTO diet_goals (id, metric_id, user_id, target_value, cycle_week) VALUES (?, ?, ?, ?, ?)', 
+        [id, g.id, userName, g.value, selectedWeek]);
+      
+      queueSyncOperation('diet_goals', id, 'INSERT', goalPayload);
+    });
+
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    onClose();
+  };
+
+  const updateGoal = (metricId: string, val: string) => {
+    setGoals(prev => prev.map(g => g.id === metricId ? { ...g, value: parseFloat(val) || 0 } : g));
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent>
+      <BlurView intensity={100} tint={colorScheme} style={styles.modalOverlay}>
+        <View style={[styles.modalContent, { backgroundColor: theme.background, height: '80%' }]}>
+          <View style={styles.modalHeader}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>Diet Settings</Text>
+            <TouchableOpacity onPress={onClose}><X size={24} color={theme.text} /></TouchableOpacity>
+          </View>
+          
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <Text style={[styles.inputLabel, { color: theme.text }]}>Routine Cycle Length</Text>
+            <View style={[styles.segmentedContainer, { marginBottom: 25 }]}>
+              {[1, 2, 4].map(len => (
+                <TouchableOpacity key={len} onPress={() => setCycleLength(len)} style={[styles.segmentButton, cycleLength === len && [styles.segmentActive, { backgroundColor: theme.card }]]}>
+                  <Text style={[styles.segmentText, { color: theme.text }]}>{len} WEEK{len > 1 ? 'S' : ''}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
+              <Text style={[styles.inputLabel, { color: theme.text, marginBottom: 0 }]}>Nutritional Goals</Text>
+              {cycleLength > 1 && (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                  {[0, 1, 2, 3, 4].slice(0, cycleLength + 1).map(w => (
+                    <TouchableOpacity key={w} onPress={() => setSelectedWeek(w)} style={[styles.smallTab, selectedWeek === w && { backgroundColor: '#FF2D55' }]}>
+                      <Text style={{ color: selectedWeek === w ? 'white' : theme.text, fontSize: 10, fontWeight: '800' }}>
+                        {w === 0 ? 'DAILY' : `W${w}`}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              )}
+            </View>
+
+            <View style={{ backgroundColor: 'rgba(150,150,150,0.05)', borderRadius: 20, padding: 20, marginBottom: 20 }}>
+              {goals.map(g => (
+                <View key={g.id} style={styles.nutrientInputRow}>
+                  <Text style={{ color: theme.text, flex: 1, fontWeight: '600' }}>{g.name} ({g.unit})</Text>
+                  <TextInput 
+                    keyboardType="decimal-pad" 
+                    style={[styles.smallInput, { color: theme.text, borderColor: 'rgba(150,150,150,0.2)', width: 100 }]} 
+                    value={g.value.toString()} 
+                    onChangeText={v => updateGoal(g.id, v)} 
+                  />
+                </View>
+              ))}
+            </View>
+
+            <TouchableOpacity onPress={saveSettings} style={styles.saveButton}>
+              <Save size={20} color="white" />
+              <Text style={styles.saveButtonText}>Save Settings</Text>
+            </TouchableOpacity>
+            <View style={{ height: 50 }} />
+          </ScrollView>
+        </View>
+      </BlurView>
+    </Modal>
   );
 }
 
 // ==========================================
 // 1. DIET PLAN TAB
 // ==========================================
-const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveTab }: any, ref) => {
+const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveTab, refreshKey }: any, ref) => {
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme() ?? 'light';
   const selectedDate = new Date();
@@ -173,10 +329,11 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [isSummaryFlipped, setIsSummaryFlipped] = useState(false);
   const [pickerSearch, setPickerSearch] = useState('');
+  const [dietGoals, setDietGoals] = useState<any>({});
   
   const [dietPlanProgress, setDietPlanProgress] = useState<any>({ 
-    me: { target: {}, actual: {} }, 
-    them: { target: {}, actual: {} } 
+    me: {}, 
+    them: {} 
   });
 
   const [newPlan, setNewPlan] = useState({ 
@@ -427,6 +584,21 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
     return ((weekOfMonth - 1) % length) + 1;
   };
 
+  const loadGoals = () => {
+    const currentWeek = getCycleWeek(selectedDate);
+    const data = db.getAllSync(`
+      SELECT * FROM diet_goals 
+      WHERE user_id = ? AND (cycle_week = ? OR cycle_week = 0)
+      ORDER BY cycle_week DESC
+    `, [userName, currentWeek]) as any[];
+    
+    const goalMap: any = {};
+    data.forEach(g => {
+      if (!goalMap[g.metric_id]) goalMap[g.metric_id] = g.target_value;
+    });
+    setDietGoals(goalMap);
+  };
+
   const loadPlans = () => {
     const todayStr = format(selectedDate, 'yyyy-MM-dd');
     const dayIndex = selectedDate.getDay().toString();
@@ -447,8 +619,8 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
 
   useFocusEffect(
     React.useCallback(() => {
-      loadLibrary(); loadMetrics(); loadUnits(); loadPlans();
-    }, [userName, metrics.length])
+      loadLibrary(); loadMetrics(); loadUnits(); loadPlans(); loadGoals();
+    }, [userName, metrics.length, refreshKey])
   );
 
   const calculateDailyTotals = (currentPlans: any[]) => {
@@ -602,8 +774,9 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
     title: { text: '' },
     xAxis: { categories: metrics.slice(0, 2).map((m: any) => m.name), labels: { style: { color: theme.text } } },
     series: [
-      { name: 'Me (Total)', data: metrics.slice(0, 2).map((m: any) => dietPlanProgress.me[m.id] || 0), color: '#FF2D55' },
-      { name: 'Partner (Total)', data: metrics.slice(0, 2).map((m: any) => dietPlanProgress.them[m.id] || 0), color: '#5AC8FA' }
+      { name: 'Me (Actual)', data: metrics.slice(0, 2).map((m: any) => dietPlanProgress.me[m.id] || 0), color: '#FF2D55' },
+      { name: 'Partner (Actual)', data: metrics.slice(0, 2).map((m: any) => dietPlanProgress.them[m.id] || 0), color: '#5AC8FA' },
+      { name: 'My Goal', data: metrics.slice(0, 2).map((m: any) => dietGoals[m.id] || 0), color: theme.text, dashStyle: 'dot' }
     ],
     credits: { enabled: false }
   };
@@ -637,6 +810,7 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
                             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 25 }}>
                                 {(metrics || []).slice(0, 4).map((m, idx) => {
                                   const total = dietPlanProgress.me[m.id] || 0;
+                                  const goal = dietGoals[m.id] || 0;
                                   const config = [
                                     { color: '#FF2D55', bg: 'rgba(255,45,85,0.05)' },
                                     { color: '#AF52DE', bg: 'rgba(175,82,222,0.05)' },
@@ -650,7 +824,7 @@ const DietPlanTab = React.forwardRef(({ theme, searchQuery, userName, setActiveT
                                       <Text style={{ color: style.color, fontSize: 10, fontWeight: '900', opacity: 0.7, marginBottom: 10, letterSpacing: 0.5 }}>{m.name?.toUpperCase() || 'METRIC'}</Text>
                                       <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
                                         <Text style={{ color: theme.text, fontSize: 24, fontWeight: '900' }}>{total.toFixed(0)}</Text>
-                                        <Text style={{ fontSize: 12, fontWeight: '700', color: theme.text, opacity: 0.3 }}>{m.unit || ''}</Text>
+                                        <Text style={{ fontSize: 12, fontWeight: '700', color: theme.text, opacity: 0.3 }}>/ {goal} {m.unit || ''}</Text>
                                       </View>
                                     </View>
                                   );
@@ -951,19 +1125,50 @@ function RecipesTab({ theme, searchQuery, userName }: any) {
   const [editingRecipeId, setEditingRecipeId] = useState<string | null>(null);
   const [showOptions, setShowOptions] = useState<any | null>(null);
   const [showDetails, setShowDetails] = useState<any | null>(null);
-  const [newRecipe, setNewRecipe] = useState({ name: '', description: '', ingredients: [] as any[], base_quantity: 1, base_unit: 'serving', is_manual: false, nutrients: {} as any });
+  const [newRecipe, setNewRecipe] = useState({ 
+    name: '', 
+    description: '', 
+    ingredients: [] as any[], 
+    base_quantity: 1, 
+    base_unit: 'serving',
+    is_manual: false,
+    nutrients: {} as any
+  });
+  const [allIngredients, setAllIngredients] = useState<any[]>([]);
+  const [pickerSearch, setPickerSearch] = useState('');
+  const [isPickerMode, setIsPickerMode] = useState(false);
+  const [tempSelectedIds, setTempSelectedIds] = useState<string[]>([]);
   const [metrics, setMetrics] = useState<any[]>([]);
   const [units, setUnits] = useState<any[]>([]);
+  const [isUnitDropdownOpen, setIsUnitDropdownOpen] = useState(false);
+  const [openIngUnitIdx, setOpenIngUnitIdx] = useState<number | null>(null);
   const colorScheme = useColorScheme() ?? 'light';
-  
-  useEffect(() => { loadRecipes(); loadMetrics(); loadUnits(); }, []);
+
+  useEffect(() => { loadRecipes(); loadIngredients(); loadMetrics(); loadUnits(); }, []);
   const loadRecipes = () => setRecipes(db.getAllSync('SELECT * FROM recipes ORDER BY created_at DESC') || []);
+  const loadIngredients = () => setAllIngredients(db.getAllSync('SELECT * FROM ingredients ORDER BY name ASC') || []);
   const loadMetrics = () => setMetrics(db.getAllSync('SELECT * FROM diet_metrics WHERE is_active = 1') || []);
   const loadUnits = () => setUnits(db.getAllSync('SELECT * FROM diet_units ORDER BY name ASC') || []);
-  
+
   const handleEdit = (recipe: any) => {
-    const recipeIngs = db.getAllSync('SELECT ri.*, i.name, i.nutrients, i.base_quantity, i.base_unit FROM recipe_ingredients ri JOIN ingredients i ON ri.ingredient_id = i.id WHERE ri.recipe_id = ?', [recipe.id]) as any[] || [];
-    setNewRecipe({ name: recipe.name, description: recipe.description, base_quantity: recipe.base_quantity || 1, base_unit: recipe.base_unit || 'serving', is_manual: !!recipe.nutrients, nutrients: JSON.parse(recipe.nutrients || '{}'), ingredients: recipeIngs.map(ri => ({ ...ri, id: ri.ingredient_id, recipe_quantity: ri.quantity, recipe_unit: ri.unit })) });
+    const recipeIngs = db.getAllSync('SELECT ri.*, i.name, i.nutrients, i.base_quantity as ing_base_qty, i.base_unit as ing_base_unit FROM recipe_ingredients ri JOIN ingredients i ON ri.ingredient_id = i.id WHERE ri.recipe_id = ?', [recipe.id]) as any[] || [];
+    setNewRecipe({ 
+      name: recipe.name, 
+      description: recipe.description, 
+      base_quantity: recipe.base_quantity || 1, 
+      base_unit: recipe.base_unit || 'serving', 
+      is_manual: !!recipe.nutrients, 
+      nutrients: JSON.parse(recipe.nutrients || '{}'), 
+      ingredients: recipeIngs.map(ri => ({ 
+        id: ri.ingredient_id, 
+        name: ri.name, 
+        nutrients: ri.nutrients, 
+        recipe_quantity: ri.quantity, 
+        recipe_unit: ri.unit,
+        base_quantity: ri.ing_base_qty,
+        base_unit: ri.ing_base_unit
+      })) 
+    });
     setEditingRecipeId(recipe.id); setShowOptions(null); setShowAdd(true);
   };
 
@@ -978,32 +1183,250 @@ function RecipesTab({ theme, searchQuery, userName }: any) {
       } else {
         db.runSync('INSERT INTO recipes (id, name, description, base_quantity, base_unit, nutrients, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [recipeId, newRecipe.name, newRecipe.description, payload.base_quantity, payload.base_unit, payload.nutrients, userName, payload.created_at]);
       }
+      if (!newRecipe.is_manual) {
+        newRecipe.ingredients.forEach(ing => {
+          db.runSync('INSERT INTO recipe_ingredients (recipe_id, ingredient_id, quantity, unit) VALUES (?, ?, ?, ?)', [recipeId, ing.id, ing.recipe_quantity, ing.recipe_unit]);
+        });
+      }
     });
     setShowAdd(false); setEditingRecipeId(null); loadRecipes();
+  };
+
+  const toggleTempSelected = (id: string) => {
+    setTempSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const commitSelectedIngredients = () => {
+    const toAdd = allIngredients.filter(i => tempSelectedIds.includes(i.id) && !newRecipe.ingredients.find(existing => existing.id === i.id));
+    setNewRecipe({
+      ...newRecipe,
+      ingredients: [...newRecipe.ingredients, ...toAdd.map(i => ({
+        ...i,
+        recipe_quantity: i.base_quantity || 100,
+        recipe_unit: i.base_unit || 'g'
+      }))]
+    });
+    setIsPickerMode(false);
   };
 
   const calculateTotals = (ings: any[]) => {
     if (newRecipe.is_manual) return newRecipe.nutrients;
     const t: any = {}; (metrics || []).forEach(m => t[m.id] = 0);
-    (ings || []).forEach(ing => { const nutrients = JSON.parse(ing.nutrients || '{}'); const ratio = (ing.recipe_quantity || 0) / (ing.base_quantity || 1); metrics.forEach(m => t[m.id] += (nutrients[m.id] || 0) * ratio); });
+    (ings || []).forEach(ing => { 
+      const nutrients = JSON.parse(ing.nutrients || '{}'); 
+      const ratio = (ing.recipe_quantity || 0) / (ing.base_quantity || 1); 
+      metrics.forEach(m => t[m.id] += (nutrients[m.id] || 0) * ratio); 
+    });
     return t;
+  };
+
+  const totalsPerBase = calculateTotals(newRecipe.ingredients);
+
+  const timerRef = useRef<any>(null);
+  const handlePressIn = (metricId: string, delta: number) => {
+    updateManualNutrient(metricId, delta);
+    let tickCount = 0;
+    timerRef.current = setInterval(() => {
+      tickCount++;
+      const amount = delta * (1 + Math.floor(tickCount / 10) * 5);
+      updateManualNutrient(metricId, amount);
+    }, 100);
+  };
+  const handlePressOut = () => { if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; } };
+  const updateManualNutrient = (metricId: string, amount: number) => {
+    setNewRecipe(prev => {
+      const n = { ...prev.nutrients };
+      n[metricId] = Math.max(0, (parseFloat(n[metricId] || 0)) + amount);
+      return { ...prev, nutrients: n };
+    });
   };
 
   return (
     <Animated.View entering={FadeInDown} style={styles.tabView}>
-      <View style={styles.sectionHeader}><Text style={[styles.sectionTitle, { color: theme.text }]}>Shared Recipes</Text><TouchableOpacity onPress={() => { setEditingRecipeId(null); setShowAdd(true); }} style={styles.addButton}><Plus size={20} color="white" /></TouchableOpacity></View>
+      <View style={styles.sectionHeader}><Text style={[styles.sectionTitle, { color: theme.text }]}>Shared Recipes</Text><TouchableOpacity onPress={() => { setEditingRecipeId(null); setNewRecipe({ name: '', description: '', ingredients: [], base_quantity: 1, base_unit: 'serving', is_manual: false, nutrients: {} }); setShowAdd(true); }} style={styles.addButton}><Plus size={20} color="white" /></TouchableOpacity></View>
       {(recipes || []).filter(r => (r.name || '').toLowerCase().includes((searchQuery || '').toLowerCase())).map(r => (
         <TouchableOpacity key={r.id} onPress={() => setShowDetails(r)} onLongPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); setShowOptions(r); }} delayLongPress={500} activeOpacity={0.7} style={[styles.itemCard, { backgroundColor: theme.card }]}>
           <View><Text style={[styles.itemName, { color: theme.text }]}>{r.name}</Text><View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Text style={{ color: theme.text, opacity: 0.6, fontSize: 11 }}>Yield: {r.base_quantity} {r.base_unit}</Text></View></View><ChevronRight size={20} color={theme.text} opacity={0.5} />
         </TouchableOpacity>
       ))}
+      
+      {/* Options Modal */}
       <Modal visible={!!showOptions} transparent animationType="fade"><TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowOptions(null)}><BlurView intensity={20} tint={colorScheme} style={StyleSheet.absoluteFill} /><View style={[styles.optionsMenu, { backgroundColor: theme.background }]}>
           <Text style={[styles.optionsTitle, { color: theme.text }]}>{showOptions?.name}</Text>
           <TouchableOpacity onPress={() => handleEdit(showOptions)} style={styles.optionBtn}><Edit2 size={20} color={theme.text} /><Text style={[styles.optionText, { color: theme.text }]}>Edit Entry</Text></TouchableOpacity>
           <TouchableOpacity onPress={() => { Alert.alert('Delete Recipe?', 'This will remove the recipe.', [{ text: 'Cancel' }, { text: 'Delete', style: 'destructive', onPress: () => { db.runSync('DELETE FROM recipes WHERE id = ?', [showOptions.id]); loadRecipes(); setShowOptions(null); } }]); }} style={styles.optionBtn}><Trash2 size={20} color="#FF3B30" /><Text style={[styles.optionText, { color: '#FF3B30' }]}>Delete Entry</Text></TouchableOpacity>
         </View></TouchableOpacity></Modal>
+
+      {/* Details Modal */}
       <Modal visible={!!showDetails} animationType="slide" transparent><BlurView intensity={100} tint={colorScheme} style={styles.modalOverlay}><View style={[styles.modalContent, { backgroundColor: theme.background, maxHeight: '90%' }]}><View style={[styles.modalHeader, { borderBottomWidth: 1, borderBottomColor: 'rgba(150,150,150,0.1)', paddingBottom: 15 }]}><Text style={[styles.modalTitle, { color: theme.text }]}>Item Details</Text><TouchableOpacity onPress={() => setShowDetails(null)}><X size={24} color={theme.text} /></TouchableOpacity></View><ScrollView showsVerticalScrollIndicator={false}><Text style={{ fontSize: 28, fontWeight: '900', color: theme.text, marginBottom: 5 }}>{showDetails?.name}</Text><View style={[styles.glassCardRecipe, { backgroundColor: '#FF2D55', marginBottom: 25 }]}><Text style={{ color: 'white', fontWeight: '800', marginBottom: 15 }}>NUTRIENT BREAKDOWN</Text><View style={styles.nutrientGrid}>{(metrics || []).map(m => { let total = 0; if (showDetails?.nutrients) { total = JSON.parse(showDetails.nutrients)[m.id] || 0; } else { const ings = db.getAllSync('SELECT ri.quantity, i.nutrients, i.base_quantity FROM recipe_ingredients ri JOIN ingredients i ON ri.ingredient_id = i.id WHERE ri.recipe_id = ?', [showDetails?.id]) as any[] || []; total = calculateTotals(ings.map(i => ({...i, recipe_quantity: i.quantity})))[m.id]; } return <NutrientItem key={m.id} label={m.name} value={total?.toFixed(1)} unit={m.unit} color="white" /> })}</View></View></ScrollView></View></BlurView></Modal>
-      <Modal visible={showAdd} animationType="slide" transparent><BlurView intensity={100} tint={colorScheme} style={styles.modalOverlay}><View style={[styles.modalContent, { backgroundColor: theme.background, marginTop: 60 }]}><View style={styles.modalHeader}><Text style={[styles.modalTitle, { color: theme.text }]}>{editingRecipeId ? 'Edit' : 'Create'} Entry</Text><TouchableOpacity onPress={() => setShowAdd(false)}><X size={24} color={theme.text} /></TouchableOpacity></View><ScrollView showsVerticalScrollIndicator={false}><TextInput placeholder="Item Name" style={[styles.input, { color: theme.text, borderColor: theme.card }]} value={newRecipe.name} onChangeText={t => setNewRecipe({...newRecipe, name: t})} /><View style={[styles.segmentedContainer, { marginBottom: 25 }]}><TouchableOpacity onPress={() => setNewRecipe({...newRecipe, is_manual: false})} style={[styles.segmentButton, !newRecipe.is_manual && [styles.segmentActive, { backgroundColor: theme.card }]]}><Utensils size={14} color={!newRecipe.is_manual ? '#FF2D55' : theme.text} /><Text style={[styles.segmentText, { color: theme.text }]}>INGREDIENTS</Text></TouchableOpacity><TouchableOpacity onPress={() => setNewRecipe({...newRecipe, is_manual: true})} style={[styles.segmentButton, newRecipe.is_manual && [styles.segmentActive, { backgroundColor: theme.card }]]}><Save size={14} color={newRecipe.is_manual ? '#FF2D55' : theme.text} /><Text style={[styles.segmentText, { color: theme.text }]}>QUICK LOG</Text></TouchableOpacity></View><TouchableOpacity onPress={saveRecipe} style={styles.saveButton}><Save size={20} color="white" /><Text style={styles.saveButtonText}>Save Entry</Text></TouchableOpacity></ScrollView></View></BlurView></Modal>
+
+      {/* Main Add/Edit Modal */}
+      <Modal visible={showAdd} animationType="slide" transparent><BlurView intensity={100} tint={colorScheme} style={styles.modalOverlay}><View style={[styles.modalContent, { backgroundColor: theme.background, marginTop: 60 }]}>
+              {!isPickerMode ? (
+                <View style={{ flex: 1 }}>
+                  <View style={styles.modalHeader}>
+                    <Text style={[styles.modalTitle, { color: theme.text }]}>{editingRecipeId ? 'Edit' : 'Create'} Entry</Text>
+                    <TouchableOpacity onPress={() => setShowAdd(false)}><X size={24} color={theme.text} /></TouchableOpacity>
+                  </View>
+                  <ScrollView showsVerticalScrollIndicator={false}>
+                    <TextInput placeholder="Recipe Name" style={[styles.input, { color: theme.text, borderColor: theme.card }]} value={newRecipe.name} onChangeText={t => setNewRecipe({...newRecipe, name: t})} />
+                    
+                    <View style={[styles.segmentedContainer, { marginBottom: 25 }]}>
+                      <TouchableOpacity onPress={() => setNewRecipe({...newRecipe, is_manual: false})} style={[styles.segmentButton, !newRecipe.is_manual && [styles.segmentActive, { backgroundColor: theme.card }]]}>
+                        <Utensils size={14} color={!newRecipe.is_manual ? '#FF2D55' : theme.text} />
+                        <Text style={[styles.segmentText, { color: theme.text }]}>INGREDIENTS</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => setNewRecipe({...newRecipe, is_manual: true})} style={[styles.segmentButton, newRecipe.is_manual && [styles.segmentActive, { backgroundColor: theme.card }]]}>
+                        <Save size={14} color={newRecipe.is_manual ? '#FF2D55' : theme.text} />
+                        <Text style={[styles.segmentText, { color: theme.text }]}>QUICK LOG</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    <View style={{ flexDirection: 'row', gap: 15, marginBottom: 20 }}>
+                      <View style={{ flex: 1 }}><Text style={[styles.inputLabel, { color: theme.text }]}>Yield Amt</Text><TextInput keyboardType="decimal-pad" style={[styles.input, { color: theme.text, borderColor: theme.card }]} value={newRecipe.base_quantity.toString()} onChangeText={v => setNewRecipe({...newRecipe, base_quantity: parseFloat(v) || 1})} /></View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.inputLabel, { color: theme.text }]}>Yield Unit</Text>
+                        <TouchableOpacity onPress={() => setIsUnitDropdownOpen(!isUnitDropdownOpen)} style={[styles.dropdownButton, { backgroundColor: theme.card }]}>
+                          <Text style={{ color: theme.text, fontWeight: '700' }}>{units.find(u => u.id === newRecipe.base_unit)?.name || 'Select'}</Text>
+                          <ChevronDown size={18} color={theme.text} />
+                        </TouchableOpacity>
+                        {isUnitDropdownOpen && (
+                          <View style={[styles.dropdownList, { backgroundColor: theme.card }]}>
+                            <ScrollView style={{ maxHeight: 150 }}>{units.map(u => (<TouchableOpacity key={u.id} onPress={() => { setNewRecipe({...newRecipe, base_unit: u.id}); setIsUnitDropdownOpen(false); }} style={styles.dropdownItem}><Text style={{ color: theme.text, fontWeight: newRecipe.base_unit === u.id ? '800' : '400' }}>{u.name}</Text></TouchableOpacity>))}</ScrollView>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+
+                    {newRecipe.is_manual ? (
+                      <View style={{ backgroundColor: 'rgba(150,150,150,0.05)', borderRadius: 20, padding: 20, marginBottom: 20 }}>
+                        <Text style={[styles.inputLabel, { color: theme.text, opacity: 0.6, fontSize: 13 }]}>MANUAL NUTRIENTS</Text>
+                        {metrics.map(m => (
+                            <View key={m.id} style={styles.nutrientInputRow}>
+                              <Text style={{ color: theme.text, flex: 1, fontSize: 14 }}>{m.name} ({m.unit})</Text>
+                              <View style={styles.stepperContainer}>
+                                <TouchableOpacity onPressIn={() => handlePressIn(m.id, -1)} onPressOut={handlePressOut} style={[styles.stepperBtn, { backgroundColor: theme.card }]}><Text style={{ color: theme.text, fontSize: 18, fontWeight: 'bold' }}>-</Text></TouchableOpacity>
+                                <TextInput keyboardType="decimal-pad" style={[styles.smallInput, { color: theme.text, borderColor: 'transparent', width: 60 }]} value={String(newRecipe.nutrients[m.id] || 0)} onChangeText={v => { const n = {...newRecipe.nutrients}; n[m.id] = parseFloat(v) || 0; setNewRecipe({...newRecipe, nutrients: n}); }} />
+                                <TouchableOpacity onPressIn={() => handlePressIn(m.id, 1)} onPressOut={handlePressOut} style={[styles.stepperBtn, { backgroundColor: theme.card }]}><Text style={{ color: theme.text, fontSize: 18, fontWeight: 'bold' }}>+</Text></TouchableOpacity>
+                              </View>
+                            </View>
+                        ))}
+                      </View>
+                    ) : (
+                      <>
+                        <View style={[styles.miniNutrientGrid, { marginBottom: 20, backgroundColor: theme.card, padding: 15, borderRadius: 16 }]}>
+                          <Text style={{ width: '100%', color: theme.text, fontSize: 12, fontWeight: '800', marginBottom: 10, opacity: 0.6 }}>TOTAL BATCH NUTRIENTS</Text>
+                          {metrics.map(m => (<View key={m.id} style={{ width: '33%', marginBottom: 10 }}><Text style={{ color: '#FF2D55', fontSize: 10, fontWeight: 'bold' }}>{m.name.toUpperCase()}</Text><Text style={{ color: theme.text, fontSize: 16, fontWeight: '800' }}>{totalsPerBase[m.id]?.toFixed(1)}{m.unit}</Text></View>))}
+                        </View>
+
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
+                          <Text style={styles.inputLabel}>Ingredients</Text>
+                          <TouchableOpacity 
+                            onPress={() => {
+                              setTempSelectedIds(newRecipe.ingredients.map(i => i.id));
+                              setPickerSearch('');
+                              setIsPickerMode(true);
+                            }} 
+                            style={{ backgroundColor: 'rgba(255,45,85,0.1)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 }}
+                          >
+                            <Text style={{ color: '#FF2D55', fontSize: 11, fontWeight: '900' }}>+ SELECT FROM LIBRARY</Text>
+                          </TouchableOpacity>
+                        </View>
+
+                        {newRecipe.ingredients.map((ing, idx) => (
+                          <View key={idx} style={[styles.itemCard, { backgroundColor: theme.card, marginBottom: 5, flexDirection: 'column', alignItems: 'flex-start' }]}>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginBottom: 10 }}><Text style={{ color: theme.text, fontWeight: 'bold' }}>{ing.name}</Text><TouchableOpacity onPress={() => { const ings = [...newRecipe.ingredients]; ings.splice(idx, 1); setNewRecipe({...newRecipe, ingredients: ings}); }}><Trash2 size={16} color="#FF2D55" /></TouchableOpacity></View>
+                            <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center', zIndex: idx === openIngUnitIdx ? 1001 : 1 }}>
+                              <TextInput 
+                                keyboardType="decimal-pad" 
+                                style={[styles.smallInput, { color: theme.text, borderColor: 'rgba(150,150,150,0.2)', width: 80, height: 36 }]} 
+                                value={ing.recipe_quantity.toString()} 
+                                onChangeText={(v) => { const ings = [...newRecipe.ingredients]; ings[idx].recipe_quantity = parseFloat(v) || 0; setNewRecipe({...newRecipe, ingredients: ings}); }} 
+                              />
+                              <View style={{ flex: 1, position: 'relative' }}>
+                                <TouchableOpacity onPress={() => setOpenIngUnitIdx(openIngUnitIdx === idx ? null : idx)} style={[styles.dropdownButton, { backgroundColor: theme.background, padding: 8, height: 36, borderWidth: 1, borderColor: 'rgba(150,150,150,0.2)' }]}>
+                                  <Text style={{ color: theme.text, fontSize: 12, fontWeight: '600' }}>{units.find(u => u.id === ing.recipe_unit)?.name || 'Unit'}</Text>
+                                  <ChevronDown size={14} color={theme.text} />
+                                </TouchableOpacity>
+                                {openIngUnitIdx === idx && (
+                                  <View style={[styles.dropdownList, { top: 40, backgroundColor: theme.card, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 }]}>
+                                    <ScrollView style={{ maxHeight: 120 }} nestedScrollEnabled>
+                                      {units.map(u => (
+                                        <TouchableOpacity 
+                                          key={u.id} 
+                                          onPress={() => { 
+                                            const ings = [...newRecipe.ingredients]; 
+                                            ings[idx].recipe_unit = u.id; 
+                                            setNewRecipe({...newRecipe, ingredients: ings}); 
+                                            setOpenIngUnitIdx(null); 
+                                          }} 
+                                          style={styles.dropdownItem}
+                                        >
+                                          <Text style={{ color: theme.text, fontSize: 12 }}>{u.name}</Text>
+                                        </TouchableOpacity>
+                                      ))}
+                                    </ScrollView>
+                                  </View>
+                                )}
+                              </View>
+                            </View>
+                          </View>
+                        ))}
+                      </>
+                    )}
+                    <TouchableOpacity onPress={saveRecipe} style={styles.saveButton}><Save size={20} color="white" /><Text style={styles.saveButtonText}>Save Entry</Text></TouchableOpacity>
+                    <View style={{ height: 50 }} />
+                  </ScrollView>
+                </View>
+              ) : (
+                <View style={{ flex: 1 }}>
+                  <View style={styles.modalHeader}>
+                    <TouchableOpacity onPress={() => setIsPickerMode(false)} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <ChevronLeft size={24} color={theme.text} />
+                      <Text style={[styles.modalTitle, { color: theme.text, marginLeft: 10 }]}>Select Ingredients</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={commitSelectedIngredients} style={{ backgroundColor: '#FF2D55', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12 }}>
+                      <Text style={{ color: 'white', fontWeight: '800' }}>Done ({tempSelectedIds.length})</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <View style={[styles.searchBar, { backgroundColor: theme.card, marginBottom: 20 }]}>
+                    <Search size={18} color={theme.text} opacity={0.5} />
+                    <TextInput 
+                      placeholder="Search ingredients..." 
+                      placeholderTextColor={theme.text + '80'} 
+                      style={[styles.searchInput, { color: theme.text }]} 
+                      value={pickerSearch} 
+                      onChangeText={setPickerSearch} 
+                      autoFocus 
+                    />
+                  </View>
+
+                  <FlatList 
+                    data={allIngredients.filter(i => (i.name || '').toLowerCase().includes(pickerSearch.toLowerCase()))} 
+                    keyExtractor={item => item.id} 
+                    showsVerticalScrollIndicator={false}
+                    renderItem={({ item }) => {
+                      const isSelected = tempSelectedIds.includes(item.id);
+                      return (
+                        <TouchableOpacity 
+                          onPress={() => toggleTempSelected(item.id)} 
+                          style={[styles.itemCard, { backgroundColor: theme.card, borderWidth: isSelected ? 1.5 : 0, borderColor: '#FF2D55' }]}
+                        >
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ color: theme.text, fontWeight: isSelected ? '800' : '600' }}>{item.name}</Text>
+                            <Text style={{ color: theme.text, fontSize: 10, opacity: 0.5 }}>{item.base_quantity}{item.base_unit}</Text>
+                          </View>
+                          <View style={{ width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: isSelected ? '#FF2D55' : 'rgba(150,150,150,0.2)', backgroundColor: isSelected ? '#FF2D55' : 'transparent', justifyContent: 'center', alignItems: 'center' }}>
+                            {isSelected && <CheckCircle2 size={16} color="white" />}
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    }} 
+                  />
+                </View>
+              )}
+           </View></BlurView></Modal>
     </Animated.View>
   );
 }
@@ -1015,30 +1438,151 @@ function IngredientsTab({ theme, searchQuery, userName }: any) {
   const [ingredients, setIngredients] = useState<any[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [editingIngId, setEditingIngId] = useState<string | null>(null);
-  const [newIng, setNewIng] = useState({ name: '', category: 'General', nutrients: {} as any, base_quantity: 100, base_unit: 'g' });
+  const [showOptions, setShowOptions] = useState<any | null>(null);
+  const [showDetails, setShowDetails] = useState<any | null>(null);
+  const [newIng, setNewIng] = useState({ name: '', nutrients: {} as any, base_quantity: 100, base_unit: 'g' });
+  const [metrics, setMetrics] = useState<any[]>([]);
+  const [units, setUnits] = useState<any[]>([]);
+  const [isUnitDropdownOpen, setIsUnitDropdownOpen] = useState(false);
   const colorScheme = useColorScheme() ?? 'light';
   
-  useEffect(() => { loadIngredients(); }, []);
+  useEffect(() => { loadIngredients(); loadMetrics(); loadUnits(); }, []);
   const loadIngredients = () => setIngredients(db.getAllSync('SELECT * FROM ingredients ORDER BY name ASC') || []);
+  const loadMetrics = () => setMetrics(db.getAllSync('SELECT * FROM diet_metrics WHERE is_active = 1') || []);
+  const loadUnits = () => setUnits(db.getAllSync('SELECT * FROM diet_units ORDER BY name ASC') || []);
   
+  const timerRef = useRef<any>(null);
+  const handlePressIn = (metricId: string, delta: number) => {
+    updateNutrient(metricId, delta);
+    let tickCount = 0;
+    timerRef.current = setInterval(() => {
+      tickCount++;
+      const multiplier = Math.floor(tickCount / 10);
+      const amount = delta * (1 + multiplier * 5);
+      updateNutrient(metricId, amount);
+    }, 100);
+  };
+  const handlePressOut = () => { if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; } };
+  const updateNutrient = (metricId: string, amount: number) => {
+    setNewIng(prev => {
+      const n = { ...prev.nutrients };
+      // @ts-ignore
+      n[metricId] = Math.max(0, (parseFloat(n[metricId] || 0)) + amount);
+      return { ...prev, nutrients: n };
+    });
+  };
+
+  const handleEdit = (ing: any) => {
+    setNewIng({ name: ing.name, nutrients: JSON.parse(ing.nutrients || '{}'), base_quantity: ing.base_quantity || 100, base_unit: ing.base_unit || 'g' });
+    setEditingIngId(ing.id); setShowOptions(null); setShowAdd(true);
+  };
+
   const saveIngredient = () => {
     if (!newIng.name) return;
     const id = editingIngId || generateUUID();
-    const payload = { id, name: newIng.name, category: newIng.category, nutrients: JSON.stringify(newIng.nutrients), base_quantity: newIng.base_quantity, base_unit: newIng.base_unit, user_id: userName, created_at: new Date().toISOString() };
-    if (editingIngId) db.runSync('UPDATE ingredients SET name=?, category=?, nutrients=?, base_quantity=?, base_unit=? WHERE id=?', [payload.name, payload.category, payload.nutrients, payload.base_quantity, payload.base_unit, id]);
-    else db.runSync('INSERT INTO ingredients (id, name, category, nutrients, base_quantity, base_unit, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [payload.id, payload.name, payload.category, payload.nutrients, payload.base_quantity, payload.base_unit, payload.user_id, payload.created_at]);
+    const payload = { id, name: newIng.name, nutrients: JSON.stringify(newIng.nutrients), base_quantity: newIng.base_quantity, base_unit: newIng.base_unit, user_id: userName, created_at: new Date().toISOString() };
+    if (editingIngId) db.runSync('UPDATE ingredients SET name=?, nutrients=?, base_quantity=?, base_unit=? WHERE id=?', [payload.name, payload.nutrients, payload.base_quantity, payload.base_unit, id]);
+    else db.runSync('INSERT INTO ingredients (id, name, nutrients, base_quantity, base_unit, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)', [payload.id, payload.name, payload.nutrients, payload.base_quantity, payload.base_unit, payload.user_id, payload.created_at]);
     setShowAdd(false); setEditingIngId(null); loadIngredients();
   };
 
   return (
     <Animated.View entering={FadeInDown} style={styles.tabView}>
-      <View style={styles.sectionHeader}><Text style={[styles.sectionTitle, { color: theme.text }]}>Shared Library</Text><TouchableOpacity onPress={() => { setEditingIngId(null); setShowAdd(true); }} style={styles.addButton}><Plus size={20} color="white" /></TouchableOpacity></View>
+      <View style={styles.sectionHeader}><Text style={[styles.sectionTitle, { color: theme.text }]}>Shared Library</Text><TouchableOpacity onPress={() => { setEditingIngId(null); setNewIng({ name: '', nutrients: {}, base_quantity: '' as any, base_unit: '' }); setShowAdd(true); }} style={styles.addButton}><Plus size={20} color="white" /></TouchableOpacity></View>
       {(ingredients || []).filter(i => (i.name || '').toLowerCase().includes((searchQuery || '').toLowerCase())).map(ing => (
-        <View key={ing.id} style={[styles.itemCard, { backgroundColor: theme.card, flexDirection: 'column', alignItems: 'flex-start' }]}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginBottom: 8 }}><View><Text style={[styles.itemName, { color: theme.text, fontWeight: 'bold' }]}>{ing.name}</Text></View><Text style={{ color: '#FF2D55', fontSize: 12 }}>{ing.category}</Text></View>
-        </View>
+        <TouchableOpacity key={ing.id} onPress={() => setShowDetails(ing)} onLongPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); setShowOptions(ing); }} delayLongPress={500} activeOpacity={0.7} style={[styles.itemCard, { backgroundColor: theme.card, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
+          <View style={{ flex: 1 }}><Text style={[styles.itemName, { color: theme.text, fontWeight: 'bold' }]}>{ing.name}</Text></View>
+          <ChevronRight size={20} color={theme.text} opacity={0.5} />
+        </TouchableOpacity>
       ))}
-      <Modal visible={showAdd} animationType="slide" transparent><BlurView intensity={100} tint={colorScheme} style={styles.modalOverlay}><View style={[styles.modalContent, { backgroundColor: theme.background, marginTop: 60 }]}><View style={styles.modalHeader}><Text style={[styles.modalTitle, { color: theme.text }]}>{editingIngId ? 'Edit' : 'Add'} Ingredient</Text><TouchableOpacity onPress={() => setShowAdd(false)}><X size={24} color={theme.text} /></TouchableOpacity></View><ScrollView showsVerticalScrollIndicator={false}><TextInput placeholder="Ingredient Name" style={[styles.input, { color: theme.text, borderColor: theme.card }]} value={newIng.name} onChangeText={t => setNewIng({...newIng, name: t})} /><TouchableOpacity onPress={saveIngredient} style={styles.saveButton}><Save size={20} color="white" /><Text style={styles.saveButtonText}>Save Ingredient</Text></TouchableOpacity></ScrollView></View></BlurView></Modal>
+
+      <Modal visible={!!showOptions} transparent animationType="fade">
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowOptions(null)}>
+          <BlurView intensity={20} tint={colorScheme} style={StyleSheet.absoluteFill} />
+          <View style={[styles.optionsMenu, { backgroundColor: theme.background }]}>
+            <Text style={[styles.optionsTitle, { color: theme.text }]}>{showOptions?.name}</Text>
+            <TouchableOpacity onPress={() => handleEdit(showOptions)} style={styles.optionBtn}><Edit2 size={20} color={theme.text} /><Text style={[styles.optionText, { color: theme.text }]}>Edit Entry</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => { Alert.alert('Delete Ingredient?', 'This will remove the ingredient.', [{ text: 'Cancel' }, { text: 'Delete', style: 'destructive', onPress: () => { db.runSync('DELETE FROM ingredients WHERE id = ?', [showOptions.id]); loadIngredients(); setShowOptions(null); } }]); }} style={styles.optionBtn}><Trash2 size={20} color="#FF3B30" /><Text style={[styles.optionText, { color: '#FF3B30' }]}>Delete Entry</Text></TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      <Modal visible={!!showDetails} animationType="slide" transparent>
+        <BlurView intensity={100} tint={colorScheme} style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: theme.background, maxHeight: '90%' }]}>
+            <View style={[styles.modalHeader, { borderBottomWidth: 1, borderBottomColor: 'rgba(150,150,150,0.1)', paddingBottom: 15 }]}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>Item Details</Text>
+              <TouchableOpacity onPress={() => setShowDetails(null)}><X size={24} color={theme.text} /></TouchableOpacity>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Text style={{ fontSize: 28, fontWeight: '900', color: theme.text, marginBottom: 5 }}>{showDetails?.name}</Text>
+              <Text style={{ color: theme.text, opacity: 0.5, marginBottom: 20 }}>Base: {showDetails?.base_quantity} {showDetails?.base_unit}</Text>
+              
+              <View style={[styles.glassCardRecipe, { backgroundColor: '#34C759', marginBottom: 25 }]}>
+                <Text style={{ color: 'white', fontWeight: '800', marginBottom: 15 }}>NUTRIENT BREAKDOWN</Text>
+                <View style={styles.nutrientGrid}>
+                  {(metrics || []).map(m => {
+                    const nutrients = JSON.parse(showDetails?.nutrients || '{}');
+                    return <NutrientItem key={m.id} label={m.name} value={(nutrients[m.id] || 0).toFixed(1)} unit={m.unit} color="white" />
+                  })}
+                </View>
+              </View>
+            </ScrollView>
+          </View>
+        </BlurView>
+      </Modal>
+
+      <Modal visible={showAdd} animationType="slide" transparent>
+        <BlurView intensity={100} tint={colorScheme} style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: theme.background, marginTop: 60 }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>{editingIngId ? 'Edit' : 'Add'} Ingredient</Text>
+              <TouchableOpacity onPress={() => setShowAdd(false)}><X size={24} color={theme.text} /></TouchableOpacity>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <TextInput placeholder="Ingredient Name" style={[styles.input, { color: theme.text, borderColor: theme.card }]} value={newIng.name} onChangeText={t => setNewIng({...newIng, name: t})} />
+              
+              <View style={{ flexDirection: 'row', gap: 15, marginBottom: 20 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.inputLabel}>Base Qty</Text>
+                  <TextInput keyboardType="decimal-pad" style={[styles.input, { color: theme.text, borderColor: theme.card }]} value={newIng.base_quantity.toString()} onChangeText={v => setNewIng({...newIng, base_quantity: parseFloat(v) || 0})} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.inputLabel}>Unit</Text>
+                    <TouchableOpacity onPress={() => setIsUnitDropdownOpen(!isUnitDropdownOpen)} style={[styles.dropdownButton, { backgroundColor: theme.card }]}>
+                      <Text style={{ color: theme.text, fontWeight: '700' }}>{units.find(u => u.id === newIng.base_unit)?.name || 'Select'}</Text>
+                      <ChevronDown size={18} color={theme.text} />
+                    </TouchableOpacity>
+                    {isUnitDropdownOpen && (
+                      <View style={[styles.dropdownList, { backgroundColor: theme.card }]}>
+                        <ScrollView style={{ maxHeight: 150 }}>{units.map(u => (<TouchableOpacity key={u.id} onPress={() => { setNewIng({...newIng, base_unit: u.id}); setIsUnitDropdownOpen(false); }} style={styles.dropdownItem}><Text style={{ color: theme.text, fontWeight: newIng.base_unit === u.id ? '800' : '400' }}>{u.name}</Text></TouchableOpacity>))}</ScrollView>
+                      </View>
+                    )}
+                </View>
+              </View>
+
+              <Text style={styles.inputLabel}>NUTRIENTS (PER BASE QTY)</Text>
+              <View style={{ maxHeight: 300, backgroundColor: 'rgba(150,150,150,0.05)', borderRadius: 16, padding: 10 }}>
+                  <ScrollView nestedScrollEnabled showsVerticalScrollIndicator={true}>
+                    {metrics.map(m => (
+                      <View key={m.id} style={styles.nutrientInputRow}>
+                        <Text style={{ color: theme.text, flex: 1, fontSize: 14 }}>{m.name} ({m.unit})</Text>
+                        <View style={styles.stepperContainer}>
+                          <TouchableOpacity onPressIn={() => handlePressIn(m.id, -1)} onPressOut={handlePressOut} style={[styles.stepperBtn, { backgroundColor: theme.card }]}><Text style={{ color: theme.text, fontSize: 18, fontWeight: 'bold' }}>-</Text></TouchableOpacity>
+                          <TextInput keyboardType="decimal-pad" style={[styles.smallInput, { color: theme.text, borderColor: 'transparent', width: 60 }]} value={String((newIng.nutrients as any)[m.id] || 0)} onChangeText={v => { const n = {...newIng.nutrients}; (n as any)[m.id] = parseFloat(v) || 0; setNewIng({...newIng, nutrients: n}); }} />
+                          <TouchableOpacity onPressIn={() => handlePressIn(m.id, 1)} onPressOut={handlePressOut} style={[styles.stepperBtn, { backgroundColor: theme.card }]}><Text style={{ color: theme.text, fontSize: 18, fontWeight: 'bold' }}>+</Text></TouchableOpacity>
+                        </View>
+                      </View>
+                    ))}
+                  </ScrollView>
+                </View>
+
+              <TouchableOpacity onPress={saveIngredient} style={[styles.saveButton, { backgroundColor: '#34C759' }]}><Save size={20} color="white" /><Text style={styles.saveButtonText}>Save Ingredient</Text></TouchableOpacity>
+              <View style={{ height: 100 }} />
+            </ScrollView>
+          </View>
+        </BlurView>
+      </Modal>
     </Animated.View>
   );
 }
@@ -1046,37 +1590,172 @@ function IngredientsTab({ theme, searchQuery, userName }: any) {
 // ==========================================
 // 4. DIET REPORT TAB
 // ==========================================
-function DietReportTab({ theme, userName }: any) {
+function DietReportTab({ theme, userName, refreshKey }: any) {
   const [filter, setFilter] = useState<FilterType>('week');
-  const [reportData, setReportData] = useState<any>({ dates: [], me: [], partner: [] });
+  const [reportData, setReportData] = useState<any>({ dates: [], meActual: [], meGoal: [], partnerActual: [] });
+  const [metrics, setMetrics] = useState<any[]>([]);
+  const [selectedMetricId, setSelectedMetricId] = useState<string>('m1'); // Default to Calories
 
   useEffect(() => {
-    const dates: string[] = [];
-    const meData: number[] = [];
-    const partnerData: number[] = [];
-    for (let i = 7; i >= 0; i--) {
-      const d = subDays(new Date(), i);
-      dates.push(format(d, 'MMM dd'));
-      meData.push(Math.random() * 2000); 
-      partnerData.push(Math.random() * 1800);
+    const data = db.getAllSync('SELECT * FROM diet_metrics WHERE is_active = 1') || [];
+    setMetrics(data);
+    if (data.length > 0 && !data.find(m => m.id === selectedMetricId)) {
+      setSelectedMetricId(data[0].id);
     }
-    setReportData({ dates, me: meData, partner: partnerData });
-  }, [filter]);
+  }, []);
+
+  useEffect(() => {
+    if (metrics.length > 0) {
+      loadReport();
+    }
+  }, [filter, userName, refreshKey, selectedMetricId, metrics]);
+
+  const getCycleWeek = (date: Date) => {
+    const settings = db.getFirstSync('SELECT cycle_length FROM diet_settings WHERE id = "global"') as any;
+    const length = settings?.cycle_length || 4;
+    const dayOfMonth = date.getDate();
+    const weekOfMonth = Math.floor((dayOfMonth - 1) / 7) + 1;
+    return ((weekOfMonth - 1) % length) + 1;
+  };
+
+  const loadReport = () => {
+    const now = new Date();
+    let days = 7;
+    if (filter === 'month') days = 30;
+    else if (filter === '3months') days = 90;
+    else if (filter === '6months') days = 180;
+    else if (filter === 'year') days = 365;
+    else if (filter === 'overall') days = 730;
+
+    const categories: string[] = [];
+    const meActual: number[] = [];
+    const meGoal: number[] = [];
+    const partnerActual: number[] = [];
+
+    const startDate = subDays(now, days - 1);
+    const startDateStr = format(startDate, 'yyyy-MM-dd');
+
+    // Get consumed items
+    const plans = db.getAllSync('SELECT * FROM diet_plans WHERE date >= ? AND is_eaten = 1', [startDateStr]) as any[];
+
+    // Get goals
+    const goals = db.getAllSync('SELECT * FROM diet_goals WHERE user_id = ?', [userName]) as any[];
+    const goalMap: any = {}; // week -> metric_id -> value
+    goals.forEach(g => {
+      if (!goalMap[g.cycle_week]) goalMap[g.cycle_week] = {};
+      goalMap[g.cycle_week][g.metric_id] = g.target_value;
+    });
+
+    const dailyData: any = {};
+    for (let i = 0; i < days; i++) {
+      const d = subDays(now, days - 1 - i);
+      const dStr = format(d, 'yyyy-MM-dd');
+      dailyData[dStr] = { me: 0, partner: 0, goal: 0 };
+      categories.push(format(d, 'MMM dd'));
+      
+      const week = getCycleWeek(d);
+      const weekGoal = goalMap[week]?.[selectedMetricId] || goalMap[0]?.[selectedMetricId] || 0;
+      dailyData[dStr].goal = weekGoal;
+    }
+
+    plans.forEach(p => {
+      if (!dailyData[p.date]) return;
+      
+      const isMe = (p.user_id || '').toLowerCase() === (userName || '').toLowerCase() || p.is_shared === 1;
+      const isPartner = (p.user_id || '').toLowerCase() !== (userName || '').toLowerCase() || p.is_shared === 1;
+
+      let val = 0;
+      try {
+        if (p.type === 'ingredient') {
+          const ing = db.getFirstSync('SELECT * FROM ingredients WHERE id = ?', [p.item_id]) as any;
+          if (ing) {
+            const nutrients = JSON.parse(ing.nutrients || '{}');
+            val = (nutrients[selectedMetricId] || 0) * ((parseFloat(p.quantity) || 0) / (ing.base_quantity || 1));
+          }
+        } else {
+          const recipe = db.getFirstSync('SELECT * FROM recipes WHERE id = ?', [p.item_id]) as any;
+          if (recipe) {
+            const ratio = (parseFloat(p.quantity) || 0) / (recipe.base_quantity || 1);
+            if (recipe.nutrients) {
+              val = (JSON.parse(recipe.nutrients)[selectedMetricId] || 0) * ratio;
+            } else {
+              const recipeIngs = db.getAllSync('SELECT ri.quantity, i.nutrients, i.base_quantity FROM recipe_ingredients ri JOIN ingredients i ON ri.ingredient_id = i.id WHERE ri.recipe_id = ?', [p.item_id]) as any[];
+              recipeIngs.forEach(ri => {
+                const nutrients = JSON.parse(ri.nutrients || '{}');
+                val += (nutrients[selectedMetricId] || 0) * (ri.quantity / (ri.base_quantity || 1)) * ratio;
+              });
+            }
+          }
+        }
+      } catch (e) {}
+
+      if (isMe) dailyData[p.date].me += val;
+      if (isPartner) dailyData[p.date].partner += val;
+    });
+
+    Object.keys(dailyData).sort().forEach(date => {
+      meActual.push(dailyData[date].me);
+      meGoal.push(dailyData[date].goal);
+      partnerActual.push(dailyData[date].partner);
+    });
+
+    setReportData({ dates: categories, meActual, meGoal, partnerActual });
+  };
 
   const chartOptions = {
-    chart: { type: 'areaspline', backgroundColor: 'transparent', height: 250 },
-    xAxis: { categories: reportData.dates, labels: { style: { color: theme.text } } },
+    chart: { type: 'areaspline', backgroundColor: 'transparent', height: 280 },
+    title: { text: '' },
+    xAxis: { categories: reportData.dates, labels: { style: { color: theme.text }, step: Math.ceil(reportData.dates.length / 7) } },
+    yAxis: { title: { text: metrics.find(m => m.id === selectedMetricId)?.name || '' }, gridLineColor: 'rgba(150,150,150,0.1)', labels: { style: { color: theme.text } } },
+    plotOptions: { areaspline: { fillOpacity: 0.1, marker: { enabled: false } } },
     series: [
-      { name: 'My Intake', data: reportData.me, color: '#FF2D55' },
-      { name: 'Partner Intake', data: reportData.partner, color: '#5AC8FA' }
+      { name: 'My Goal', data: reportData.meGoal, color: theme.text, dashStyle: 'dot', fillOpacity: 0 },
+      { name: 'Me (Actual)', data: reportData.meActual, color: '#FF2D55' },
+      { name: 'Partner (Actual)', data: reportData.partnerActual, color: '#5AC8FA' }
     ],
     credits: { enabled: false }
   };
 
   return (
     <Animated.View entering={FadeInDown} style={styles.tabView}>
-      <View style={[styles.glassCard, { backgroundColor: theme.card, marginBottom: 20 }]}>
-        <HighchartsChart options={chartOptions} height={250} />
+      <View style={{ marginBottom: 20 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 10 }}>
+          {['week', 'month', '3months', '6months', 'year', 'overall'].map(f => (
+            <TouchableOpacity key={f} onPress={() => setFilter(f as any)} style={[styles.smallTab, filter === f && { backgroundColor: '#FF2D55' }]}>
+              <Text style={{ color: filter === f ? 'white' : theme.text, fontSize: 10, fontWeight: '800' }}>{f.toUpperCase()}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+        
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+          {metrics.map(m => (
+            <TouchableOpacity key={m.id} onPress={() => setSelectedMetricId(m.id)} style={[styles.smallTab, selectedMetricId === m.id && { backgroundColor: theme.card, borderColor: '#FF2D55', borderWidth: 1 }]}>
+              <Text style={{ color: theme.text, fontSize: 10, fontWeight: '800' }}>{m.name.toUpperCase()}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
+      <View style={[styles.glassCard, { backgroundColor: theme.card, padding: 15, minHeight: 300 }]}>
+        <HighchartsChart options={chartOptions} height={280} />
+      </View>
+
+      <View style={{ marginTop: 25, gap: 15 }}>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>Summary Stats</Text>
+        <View style={{ flexDirection: 'row', gap: 12 }}>
+          <View style={{ flex: 1, backgroundColor: 'rgba(255,45,85,0.05)', padding: 16, borderRadius: 20 }}>
+             <Text style={{ color: '#FF2D55', fontSize: 10, fontWeight: '900' }}>AVG DAILY</Text>
+             <Text style={{ color: theme.text, fontSize: 20, fontWeight: '900', marginTop: 4 }}>
+               {(reportData.meActual.reduce((a:any, b:any) => a + b, 0) / (reportData.meActual.length || 1)).toFixed(0)}
+             </Text>
+          </View>
+          <View style={{ flex: 1, backgroundColor: 'rgba(90,200,250,0.05)', padding: 16, borderRadius: 20 }}>
+             <Text style={{ color: '#5AC8FA', fontSize: 10, fontWeight: '900' }}>TOTAL PERIOD</Text>
+             <Text style={{ color: theme.text, fontSize: 20, fontWeight: '900', marginTop: 4 }}>
+               {reportData.meActual.reduce((a:any, b:any) => a + b, 0).toFixed(0)}
+             </Text>
+          </View>
+        </View>
       </View>
     </Animated.View>
   );
@@ -1135,4 +1814,8 @@ const styles = StyleSheet.create({
   dropdownButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 12, borderRadius: 12 },
   dropdownList: { position: 'absolute', left: 0, right: 0, borderRadius: 12, elevation: 5, zIndex: 100 },
   dropdownItem: { padding: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(150,150,150,0.1)' },
+  nutrientInputRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  stepperContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(150,150,150,0.1)', borderRadius: 12, padding: 2 },
+  stepperBtn: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  smallInput: { borderWidth: 1, borderRadius: 8, padding: 8, width: 80, textAlign: 'center' },
 });
