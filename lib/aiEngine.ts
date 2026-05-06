@@ -6,7 +6,14 @@ import * as FileSystem from 'expo-file-system';
 import NetInfo from '@react-native-community/netinfo';
 
 // 🛡️ CONFIGURATION
-const GROQ_KEY = process.env.EXPO_PUBLIC_GROQ_API_KEY || "";
+const getGroqKey = () => {
+  try {
+    const row = db.getFirstSync(`SELECT value FROM system_config WHERE key = 'groq_api_key'`) as any;
+    if (row && row.value && row.value.trim().length > 0) return row.value.trim();
+  } catch (e) {}
+  return process.env.EXPO_PUBLIC_GROQ_API_KEY || "";
+};
+
 const GROQ_BASE_URL = "https://api.groq.com/openai/v1/chat/completions";
 const GROQ_AUDIO_URL = "https://api.groq.com/openai/v1/audio/transcriptions";
 
@@ -33,9 +40,12 @@ export const getHybridContext = async (userPrompt: string, userId: string) => {
 };
 
 const callGroq = async (model: string, messages: any[], temperature = 0.6) => {
+  const apiKey = getGroqKey();
+  if (!apiKey) throw new Error("Groq API Key not found. Set it in Settings.");
+
   const response = await fetch(GROQ_BASE_URL, {
     method: 'POST',
-    headers: { 'Authorization': `Bearer ${GROQ_KEY.trim()}`, 'Content-Type': 'application/json' },
+    headers: { 'Authorization': `Bearer ${apiKey.trim()}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ model, messages, temperature })
   });
   const data = await response.json();
@@ -45,7 +55,8 @@ const callGroq = async (model: string, messages: any[], temperature = 0.6) => {
 
 // 1. VOICE TRANSCRIPTION (STT)
 export const transcribeAudio = async (uri: string) => {
-  if (!GROQ_KEY) throw new Error("API Key Missing");
+  const apiKey = getGroqKey();
+  if (!apiKey) throw new Error("API Key Missing");
   try {
     const formData = new FormData();
     // @ts-ignore

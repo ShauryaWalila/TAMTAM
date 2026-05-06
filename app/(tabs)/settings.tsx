@@ -93,13 +93,50 @@ export default function SettingsScreen() {
   const [totalCalculatedTime, setTotalCalculatedTime] = useState<string | null>(null);
   const [pickerIndex, setPickerIndex] = useState<number | null>(null);
 
+  // Groq API Key State
+  const [isGroqModalVisible, setIsGroqModalVisible] = useState(false);
+  const [groqKey, setGroqKey] = useState('');
+  const [isSavingGroq, setIsSavingGroq] = useState(false);
+
   useEffect(() => {
     fetchProfile();
     fetchChillCategories();
     fetchWardrobeCategories();
     fetchDietMetrics();
     fetchDietUnits();
+    loadGroqKey();
   }, []);
+
+  const loadGroqKey = async () => {
+    const name = await SecureStore.getItemAsync('user_name');
+    if (name?.toLowerCase().trim() === 'pratishth') {
+      try {
+        const row = db.getFirstSync(`SELECT value FROM system_config WHERE key = 'groq_api_key'`) as any;
+        if (row) setGroqKey(row.value);
+      } catch (e) {}
+    }
+  };
+
+  const updateGroqKey = async () => {
+    setIsSavingGroq(true);
+    try {
+      db.runSync(`INSERT OR REPLACE INTO system_config (key, value, updated_at) VALUES ('groq_api_key', ?, CURRENT_TIMESTAMP)`, [groqKey]);
+      
+      // Also sync to Supabase immediately if online
+      const { error } = await supabase.from('system_config').upsert({ key: 'groq_api_key', value: groqKey, updated_at: new Date().toISOString() });
+      
+      if (!error) {
+        Alert.alert("Success", "Groq API Key updated successfully!");
+        setIsGroqModalVisible(false);
+      } else {
+        throw error;
+      }
+    } catch (e: any) {
+      Alert.alert("Error", "Failed to update API Key: " + e.message);
+    } finally {
+      setIsSavingGroq(false);
+    }
+  };
 
   const fetchDietMetrics = () => {
     const data = db.getAllSync('SELECT * FROM diet_metrics ORDER BY created_at ASC');
@@ -501,6 +538,36 @@ export default function SettingsScreen() {
                   <TouchableOpacity onPress={openWhatsApp} style={[styles.waGoBtn, { backgroundColor: '#25D366' }]}><Text style={{ color: 'white', fontWeight: 'bold' }}>GO</Text></TouchableOpacity>
                 </View>
               </View>
+
+              {userName?.toLowerCase().trim() === 'pratishth' && (
+                <View style={styles.toolSection}>
+                  <Text style={[styles.sectionLabel, { color: theme.tint }]}>Groq AI Engine</Text>
+                  <View style={{ gap: 10 }}>
+                    <TextInput 
+                      style={[styles.modalInput, { backgroundColor: theme.background, color: theme.text }]} 
+                      placeholder="gsk_..." 
+                      placeholderTextColor={theme.tabIconDefault}
+                      value={groqKey} 
+                      onChangeText={setGroqKey}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      secureTextEntry={true}
+                    />
+                    <TouchableOpacity 
+                      onPress={updateGroqKey} 
+                      disabled={isSavingGroq}
+                      style={[styles.addBtnFull, { backgroundColor: theme.tint, opacity: isSavingGroq ? 0.6 : 1 }]}
+                    >
+                      {isSavingGroq ? <ActivityIndicator color="#fff" /> : (
+                        <>
+                          <Brain size={20} color="white" />
+                          <Text style={styles.addBtnText}>SAVE API KEY</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
               
               <View style={styles.toolSection}>
                 <View style={[styles.row, { justifyContent: 'space-between', marginBottom: 10 }]}>
@@ -716,6 +783,39 @@ export default function SettingsScreen() {
           </BlurView>
         </View>
       </Modal>
+
+      {/* 🤖 GROQ API MODAL */}
+      <Modal visible={isGroqModalVisible} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <BlurView intensity={100} tint={colorScheme} style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>Groq AI Engine</Text>
+              <TouchableOpacity onPress={() => setIsGroqModalVisible(false)}><X size={24} color={theme.text} /></TouchableOpacity>
+            </View>
+            <Text style={{ color: theme.tabIconDefault, marginBottom: 10 }}>Update Groq API key. Syncs to Supabase and used for all AI features.</Text>
+            
+            <TextInput 
+              style={[styles.input, { backgroundColor: theme.background, color: theme.text }]} 
+              placeholder="gsk_..." 
+              placeholderTextColor={theme.tabIconDefault}
+              value={groqKey} 
+              onChangeText={setGroqKey}
+              autoCapitalize="none"
+              autoCorrect={false}
+              secureTextEntry={true}
+            />
+
+            <TouchableOpacity 
+              onPress={updateGroqKey} 
+              disabled={isSavingGroq}
+              style={[styles.saveBtn, { backgroundColor: theme.tint, opacity: isSavingGroq ? 0.6 : 1 }]}
+            >
+              {isSavingGroq ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>SAVE API KEY</Text>}
+            </TouchableOpacity>
+            <Text style={{ color: '#888', fontSize: 10, textAlign: 'center', marginTop: 10 }}>Stored securely in public.system_config</Text>
+          </BlurView>
+        </View>
+      </Modal>
     </ThemedView>
   );
 }
@@ -774,5 +874,8 @@ const styles = StyleSheet.create({
   pickerCard: { width: '100%', backgroundColor: 'white', borderRadius: 32, padding: 25, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 20 },
   pickerTitle: { fontSize: 20, fontWeight: '900', marginBottom: 20, textAlign: 'center' },
   doneBtn: { height: 56, borderRadius: 18, justifyContent: 'center', alignItems: 'center', marginTop: 20 },
-  doneBtnText: { color: 'white', fontSize: 16, fontWeight: '800' }
+  doneBtnText: { color: 'white', fontSize: 16, fontWeight: '800' },
+  input: { height: 56, borderRadius: 18, paddingHorizontal: 20, fontWeight: '600', marginBottom: 15 },
+  saveBtn: { height: 56, borderRadius: 18, justifyContent: 'center', alignItems: 'center', marginTop: 10 },
+  saveBtnText: { color: 'white', fontSize: 16, fontWeight: '800' }
 });

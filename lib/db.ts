@@ -284,6 +284,16 @@ export const initDB = () => {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
 
+      -- Phase 5: Dynamic Configuration
+      CREATE TABLE IF NOT EXISTS system_config (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+
+      -- Pre-populate with default key if table just created (optional)
+      INSERT OR IGNORE INTO system_config (key, value) VALUES ('groq_api_key', '');
+
       -- ==========================================
       -- FTS5: ULTRA-FAST LOCAL SEARCH ENGINE
       -- ==========================================

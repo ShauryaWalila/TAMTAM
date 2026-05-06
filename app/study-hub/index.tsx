@@ -46,9 +46,23 @@ export default function StudyHubDashboard() {
   const [viewMonth, setViewMonth] = useState(new Date());
 
   const calendarDays = useMemo(() => {
-    const start = startOfWeek(startOfMonth(viewMonth));
-    const end = endOfWeek(endOfMonth(viewMonth));
-    return eachDayOfInterval({ start, end });
+    const monthStart = startOfMonth(viewMonth);
+    const start = startOfWeek(monthStart);
+    const monthEnd = endOfMonth(viewMonth);
+    const end = endOfWeek(monthEnd);
+    
+    // Use eachDayOfInterval to get base days
+    let days = eachDayOfInterval({ start, end });
+    
+    // Normalize to 42 days (6 weeks) to ensure Sunday index 0 remains stable
+    if (days.length < 42) {
+      const lastDay = days[days.length - 1];
+      const extraNeeded = 42 - days.length;
+      for (let i = 1; i <= extraNeeded; i++) {
+        days.push(addDays(lastDay, i));
+      }
+    }
+    return days;
   }, [viewMonth]);
 
   const [aiBoost, setAiBoost] = useState<string>('Your medical journey is a marathon, keep going! 🩺');
@@ -118,12 +132,41 @@ export default function StudyHubDashboard() {
   const init = async () => {
     const name = await SecureStore.getItemAsync('user_name');
     if (name) {
-      const u = name.toLowerCase();
+      const u = name.toLowerCase().trim();
       setCurrentUser(u);
       refreshFromSQLite();
       fetchData(u);
       fetchAIBoost(u);
+      if (u === 'pratishth') {
+        try {
+          const row = db.getFirstSync(`SELECT value FROM system_config WHERE key = 'groq_api_key'`) as any;
+          if (row) setGroqKey(row.value);
+        } catch (e) {}
+      }
       setTimeout(() => fetchActiveSessions(), 500);
+    }
+  };
+
+  const updateGroqKey = async () => {
+    if (currentUser !== 'pratishth') return;
+    setIsSavingGroq(true);
+    try {
+      db.runSync(`INSERT OR REPLACE INTO system_config (key, value, updated_at) VALUES ('groq_api_key', ?, CURRENT_TIMESTAMP)`, [groqKey]);
+      queueSyncOperation('system_config', 'groq_api_key', 'UPDATE', { value: groqKey });
+      
+      // Also sync to Supabase immediately if online
+      const { error } = await supabase.from('system_config').upsert({ key: 'groq_api_key', value: groqKey, updated_at: new Date().toISOString() });
+      
+      if (!error) {
+        Alert.alert("Success", "Groq API Key updated successfully!");
+        setIsGroqModalVisible(false);
+      } else {
+        throw error;
+      }
+    } catch (e: any) {
+      Alert.alert("Error", "Failed to update API Key: " + e.message);
+    } finally {
+      setIsSavingGroq(false);
     }
   };
 
@@ -480,11 +523,22 @@ export default function StudyHubDashboard() {
 
         <TouchableOpacity style={[styles.syllabusCard, { backgroundColor: theme.card }]} onPress={() => router.push('/study-hub/syllabus')}>
           <View style={styles.syllabusHeader}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}><View style={[styles.statIcon, { backgroundColor: '#AF52DE15' }]}><ListChecks size={24} color="#AF52DE" /></View><View><Text style={[styles.cardTitle, { color: theme.text, marginBottom: 2 }]}>Syllabus Mastery</Text><Text style={styles.cardSub}>{syllabus.length} topics tracked</Text></View></View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}><View style={[styles.statIcon, { backgroundColor: '#AF52DE15' }]}><ListChecks size={24} color="#AF52DE" /></View><View><Text style={[styles.cardTitle, { color: theme.text, marginBottom: 2 }]}>Syllabus Mastery</Text><Text style={cardSub}>{syllabus.length} topics tracked</Text></View></View>
             <View style={styles.progressCircle}><Text style={[styles.progressText, { color: theme.text }]}>{syllabusProgress}%</Text></View>
           </View>
           <View style={styles.syllabusProgressBar}><View style={[styles.syllabusProgressFill, { width: `${syllabusProgress}%`, backgroundColor: '#AF52DE' }]} /></View>
         </TouchableOpacity>
+
+        {currentUser === 'pratishth' && (
+          <TouchableOpacity style={[styles.buddyCard, { backgroundColor: theme.card, borderLeftWidth: 4, borderLeftColor: '#34C759' }]} onPress={() => setIsGroqModalVisible(true)}>
+            <View style={styles.buddyHeader}>
+              <View style={[styles.buddyAvatar, { backgroundColor: '#34C75915' }]}><BrainCircuit size={24} color="#34C759" /></View>
+              <View style={{ flex: 1 }}><Text style={[styles.cardTitle, { color: theme.text, marginBottom: 2 }]}>Groq API Engine</Text><Text style={styles.buddyStatus}>Dynamic Key Management</Text></View>
+              <Repeat size={18} color="#34C759" />
+            </View>
+            <View style={styles.buddyFooter}><Text style={[styles.buddyAction, { color: '#34C759' }]}>UPDATE API KEY</Text><ChevronRight size={14} color="#34C759" /></View>
+          </TouchableOpacity>
+        )}
 
         {/* STUDY ROUTINE SECTION */}
         <View style={styles.sectionHeader}>
@@ -789,10 +843,10 @@ const styles = StyleSheet.create({
   calendarGridContainer: { padding: 15, borderRadius: 24, marginBottom: 25, elevation: 2 },
   calendarHeaderNav: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15, paddingHorizontal: 5 },
   calendarMonthText: { fontSize: 16, fontWeight: '800' },
-  weekDaysHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
-  weekDayText: { width: (SCREEN_WIDTH - 100) / 7, textAlign: 'center', fontSize: 10, fontWeight: '900', color: '#888' },
-  daysGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  gridDay: { width: (SCREEN_WIDTH - 100) / 7, height: 40, justifyContent: 'center', alignItems: 'center', marginBottom: 5 },
+  weekDaysHeader: { flexDirection: 'row', justifyContent: 'flex-start', marginBottom: 10 },
+  weekDayText: { width: '14.28%', textAlign: 'center', fontSize: 10, fontWeight: '900', color: '#888' },
+  daysGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start' },
+  gridDay: { width: '14.28%', height: 40, justifyContent: 'center', alignItems: 'center', marginBottom: 5 },
   gridDayText: { fontSize: 14, fontWeight: '600' },
   gridCountBadge: { position: 'absolute', top: 2, right: 2, width: 14, height: 14, borderRadius: 7, justifyContent: 'center', alignItems: 'center' },
   gridCountText: { fontSize: 8, fontWeight: '900' },

@@ -8,7 +8,7 @@ import { Heart, Calendar, MessageCircle, MapPin, ChevronRight, ChevronLeft, Spar
 import { 
   differenceInSeconds, format, isAfter, isBefore, addWeeks, addMonths, subMonths, set, setDay, 
   startOfDay, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, 
-  isSameMonth, isSameDay, addYears, differenceInYears, differenceInDays 
+  isSameMonth, isSameDay, addYears, differenceInYears, differenceInDays, addDays 
 } from 'date-fns';
 import { supabase } from '@/lib/supabase';
 import { db, queueSyncOperation, generateUUID } from '@/lib/db';
@@ -459,9 +459,19 @@ export default function DashboardScreen() {
   };
 
   const calendarDays = useMemo(() => {
-    const start = startOfWeek(startOfMonth(currentMonth), { weekStartsOn: 1 });
-    const end = endOfWeek(endOfMonth(currentMonth), { weekStartsOn: 1 });
-    return eachDayOfInterval({ start, end });
+    const monthStart = startOfMonth(currentMonth);
+    const start = startOfWeek(monthStart);
+    const monthEnd = endOfMonth(currentMonth);
+    const end = endOfWeek(monthEnd);
+    let days = eachDayOfInterval({ start, end });
+    if (days.length < 42) {
+      const lastDay = days[days.length - 1];
+      const extraNeeded = 42 - days.length;
+      for (let i = 1; i <= extraNeeded; i++) {
+        days.push(addDays(lastDay, i));
+      }
+    }
+    return days;
   }, [currentMonth]);
 
   const selectedDayEvents = calendarEvents.filter(e => isEventOnDay(e, selectedCalendarDate));
@@ -590,7 +600,7 @@ export default function DashboardScreen() {
               <TouchableOpacity onPress={() => setCurrentMonth(addMonths(currentMonth, 1))}><ChevronRight color={theme.text} size={24} /></TouchableOpacity>
             </View>
             <View style={styles.weekDaysRow}>
-              {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => <Text key={i} style={[styles.weekDayText, { color: theme.tabIconDefault }]}>{d}</Text>)}
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => <Text key={i} style={[styles.weekDayText, { color: theme.tabIconDefault }]}>{d}</Text>)}
             </View>
             <View style={styles.daysGrid}>
               {calendarDays.map((day, i) => {
@@ -772,9 +782,9 @@ const styles = StyleSheet.create({
   calendarHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, backgroundColor: 'transparent' },
   monthText: { fontSize: 18, fontWeight: '800' },
   weekDaysRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10, backgroundColor: 'transparent' },
-  weekDayText: { width: (SCREEN_WIDTH - 72) / 7, textAlign: 'center', fontSize: 12, fontWeight: '800' },
+  weekDayText: { width: '14.28%', textAlign: 'center', fontSize: 12, fontWeight: '800' },
   daysGrid: { flexDirection: 'row', flexWrap: 'wrap', backgroundColor: 'transparent' },
-  dayCell: { width: (SCREEN_WIDTH - 72) / 7, height: 40, justifyContent: 'center', alignItems: 'center', borderRadius: 10, marginBottom: 4 },
+  dayCell: { width: '14.28%', height: 40, justifyContent: 'center', alignItems: 'center', borderRadius: 10, marginBottom: 4 },
   dayCellText: { fontSize: 14, fontWeight: '600' },
   eventDot: { width: 4, height: 4, borderRadius: 2, position: 'absolute', bottom: 6 },
   dayEventsContainer: { paddingHorizontal: 4, backgroundColor: 'transparent', marginTop: 20 },
