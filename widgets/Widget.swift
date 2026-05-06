@@ -66,31 +66,92 @@ struct DistanceWidgetView: View {
     let location: String?
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Distance")
-                .font(.system(size: 12, weight: .bold))
-                .foregroundColor(.secondary)
-            
-            HStack(alignment: .bottom, spacing: 2) {
-                Text(distance ?? "0")
-                    .font(.system(size: 32, weight: .black))
-                Text("km")
-                    .font(.system(size: 14, weight: .bold))
-                    .padding(.bottom, 6)
+        let distValue = Double(distance?.replacingOccurrences(of: ",", with: "") ?? "0") ?? 0
+        let isTogether = distValue < 1.0
+        
+        VStack(spacing: 0) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("DISTANCE")
+                        .font(.system(size: 8, weight: .black))
+                        .foregroundColor(.secondary)
+                        .tracking(1)
+                    Text(isTogether ? "TOGETHER" : "\(distance ?? "0") km")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(isTogether ? .pink : .primary)
+                }
+                Spacer()
+                Image(systemName: isTogether ? "heart.fill" : "person.2.fill")
+                    .font(.system(size: 12))
+                    .foregroundColor(isTogether ? .pink : .secondary)
             }
+            .padding(.bottom, 8)
+            
+            ZStack {
+                // Background Soft Path
+                Path { path in
+                    path.move(to: CGPoint(x: 10, y: 30))
+                    path.addQuadCurve(to: CGPoint(x: 140, y: 30), control: CGPoint(x: 75, y: 10))
+                }
+                .stroke(isTogether ? Color.pink.opacity(0.1) : Color.gray.opacity(0.1), lineWidth: 4)
+                
+                // Pulsing Tether
+                Path { path in
+                    path.move(to: CGPoint(x: 10, y: 30))
+                    path.addQuadCurve(to: CGPoint(x: 140, y: 30), control: CGPoint(x: 75, y: 10))
+                }
+                .stroke(isTogether ? Color.pink : Color.blue, style: StrokeStyle(lineWidth: 1.5, lineCap: .round, dash: [3, 6]))
+                
+                // Character 1: Home
+                VStack(spacing: 2) {
+                    ZStack {
+                        Circle().fill(.white).frame(width: 28, height: 28).shadow(radius: 1)
+                        Text("🏠").font(.system(size: 14))
+                    }
+                    Text("YOU").font(.system(size: 6, weight: .black)).foregroundColor(.secondary)
+                }
+                .position(x: 15, y: 30)
+                
+                // Character 2: Partner (Moves)
+                let progress = isTogether ? 0.25 : min(0.9, 1.0 / (log10(max(1.5, distValue))))
+                let xPos = 15 + (125 * progress)
+                let yPos = 30 - (sin(progress * .pi) * 15) // Move along the arc
+                
+                VStack(spacing: 2) {
+                    ZStack {
+                        Circle().fill(isTogether ? .pink : .white).frame(width: 28, height: 28).shadow(radius: 2)
+                        Text(isTogether ? "❤️" : "🏃‍♂️").font(.system(size: 14))
+                    }
+                    Text(isTogether ? "HOME" : "THEM").font(.system(size: 6, weight: .black)).foregroundColor(isTogether ? .pink : .secondary)
+                }
+                .position(x: xPos, y: yPos)
+                
+                if isTogether {
+                    Text("Safe & Sound")
+                        .font(.system(size: 8, weight: .bold, design: .serif))
+                        .italic()
+                        .foregroundColor(.pink)
+                        .offset(y: 25)
+                }
+            }
+            .frame(height: 60)
             
             Spacer()
             
             HStack {
-                Image(systemName: "location.fill")
-                    .font(.system(size: 10))
-                Text(location ?? "Unknown")
-                    .font(.system(size: 10, weight: .medium))
+                Image(systemName: "mappin.and.ellipse")
+                    .font(.system(size: 8))
+                Text(isTogether ? "With You" : (location ?? "Searching..."))
+                    .font(.system(size: 9, weight: .semibold))
             }
-            .foregroundColor(.secondary)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .background(isTogether ? Color.pink.opacity(0.1) : Color.gray.opacity(0.05))
+            .cornerRadius(20)
+            .foregroundColor(isTogether ? .pink : .secondary)
         }
         .padding()
-        .containerBackground(LinearGradient(colors: [.blue.opacity(0.1), .purple.opacity(0.1)], startPoint: .topLeading, endPoint: .bottomTrailing), for: .widget)
+        .containerBackground(isTogether ? .pink.opacity(0.03) : .clear, for: .widget)
     }
 }
 

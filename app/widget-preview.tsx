@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, View, ScrollView, TouchableOpacity, Image, Dimensions } from 'react-native';
 import { Text } from '@/components/Themed';
 import { Stack, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { X, Hand, Clock, MapPin, Calendar, Sparkles } from 'lucide-react-native';
+import { X, Hand, Clock, MapPin, Calendar, Sparkles, MapPin as Pin, Heart } from 'lucide-react-native';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
 import { LinearGradient } from 'expo-linear-gradient';
+import { MotiView } from 'moti';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const WIDGET_SMALL = (SCREEN_WIDTH - 60) / 2;
@@ -17,6 +18,8 @@ export default function WidgetPreviewScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
+
+  const [isPreviewTogether, setIsTogether] = useState(false);
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -33,7 +36,88 @@ export default function WidgetPreviewScreen() {
         <Text style={styles.description}>These are how your widgets will look on your iOS home screen.</Text>
 
         <View style={styles.grid}>
-          {/* 1. Drawing Widget */}
+          {/* 1. Distance Widget (Updated with Tether) */}
+          <View style={[styles.widgetWrapper, { width: '100%' }]}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <Text style={styles.widgetLabel}>Distance (Medium)</Text>
+              <TouchableOpacity onPress={() => setIsTogether(!isPreviewTogether)} style={styles.toggleBtn}>
+                <Text style={styles.toggleBtnText}>{isPreviewTogether ? "VIEW FAR" : "VIEW TOGETHER"}</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <View 
+              style={[
+                styles.widgetBase, 
+                styles.mediumWidget, 
+                { padding: 15, backgroundColor: isPreviewTogether ? '#FFF5F7' : '#F8FAFC' }
+              ]}
+            >
+              <View style={styles.previewHeader}>
+                <View>
+                  <Text style={[styles.previewLabel, { color: theme.tabIconDefault }]}>DISTANCE</Text>
+                  <Text style={[styles.previewMainVal, { color: isPreviewTogether ? '#FF2D55' : theme.text }]}>
+                    {isPreviewTogether ? "TOGETHER" : "520.4 km"}
+                  </Text>
+                </View>
+                <MotiView 
+                  animate={{ scale: isPreviewTogether ? 1.2 : 1 }}
+                  transition={{ type: 'spring', damping: 10 }}
+                >
+                  <Heart size={16} color={isPreviewTogether ? '#FF2D55' : '#DDD'} fill={isPreviewTogether ? '#FF2D55' : 'transparent'} />
+                </MotiView>
+              </View>
+
+              <View style={styles.tetherContainer}>
+                {/* Arc Path (Static representation) */}
+                <View style={[styles.tetherArc, { borderColor: isPreviewTogether ? '#FF2D5522' : '#00000008' }]} />
+                
+                {/* You (Home) - Black Lined Style */}
+                <View style={styles.charContainer}>
+                  <View style={[styles.charCircle, { borderColor: '#000' }]}>
+                    <Text style={{ fontSize: 14 }}>🏠</Text>
+                  </View>
+                  <Text style={styles.charLabel}>YOU</Text>
+                </View>
+
+                {/* Partner (Runner/Heart) - Animated Arc */}
+                <MotiView 
+                  animate={{ 
+                    translateX: isPreviewTogether ? 40 : (WIDGET_MEDIUM - 100),
+                    translateY: isPreviewTogether ? -5 : -15,
+                    scale: isPreviewTogether ? 1.1 : 1
+                  }}
+                  transition={{ type: 'spring', damping: 12 }}
+                  style={[styles.charContainer, { position: 'absolute' }]}
+                >
+                  <View style={[styles.charCircle, { borderColor: isPreviewTogether ? '#FF2D55' : '#000', backgroundColor: isPreviewTogether ? '#FF2D5510' : '#FFF' }]}>
+                    <Text style={{ fontSize: 14 }}>{isPreviewTogether ? "❤️" : "🏃‍♂️"}</Text>
+                  </View>
+                  <Text style={[styles.charLabel, isPreviewTogether && { color: '#FF2D55' }]}>
+                    {isPreviewTogether ? "HOME" : "THEM"}
+                  </Text>
+                  
+                  {isPreviewTogether && (
+                    <MotiView 
+                      from={{ opacity: 0, scale: 0.5 }} 
+                      animate={{ opacity: 1, scale: 1 }} 
+                      style={styles.floatingTag}
+                    >
+                      <Text style={styles.floatingTagText}>Safe & Sound</Text>
+                    </MotiView>
+                  )}
+                </MotiView>
+              </View>
+
+              <View style={[styles.previewPill, { backgroundColor: isPreviewTogether ? '#FF2D5510' : '#00000005' }]}>
+                <Pin size={8} color={isPreviewTogether ? '#FF2D55' : '#8E8E93'} />
+                <Text style={[styles.previewPillText, { color: isPreviewTogether ? '#FF2D55' : '#8E8E93' }]}>
+                  {isPreviewTogether ? "Same place" : "London, UK"}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* 2. Drawing Widget */}
           <View style={styles.widgetWrapper}>
             <Text style={styles.widgetLabel}>Drawing (Small)</Text>
             <View style={[styles.widgetBase, styles.smallWidget, { overflow: 'hidden' }]}>
@@ -142,6 +226,20 @@ const styles = StyleSheet.create({
   scrollContent: { padding: 20 },
   sectionTitle: { fontSize: 12, fontWeight: '900', letterSpacing: 1.5, marginBottom: 8 },
   description: { fontSize: 14, color: '#8E8E93', marginBottom: 30, lineHeight: 20 },
+  toggleBtn: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 8, backgroundColor: 'rgba(150,150,150,0.1)' },
+  toggleBtnText: { fontSize: 10, fontWeight: '800', color: '#8E8E93' },
+  previewHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 },
+  previewLabel: { fontSize: 8, fontWeight: '900', letterSpacing: 1 },
+  previewMainVal: { fontSize: 18, fontWeight: '800', marginTop: 2 },
+  tetherContainer: { height: 70, justifyContent: 'center', marginVertical: 10 },
+  tetherArc: { position: 'absolute', left: 20, right: 20, height: 40, borderTopWidth: 2, borderStyle: 'dotted', borderRadius: 100, borderLeftWidth: 0, borderRightWidth: 0 },
+  charContainer: { alignItems: 'center', width: 40 },
+  charCircle: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#FFF', borderWidth: 1.5, justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 2, elevation: 2 },
+  charLabel: { fontSize: 6, fontWeight: '900', marginTop: 4, color: '#8E8E93', letterSpacing: 0.5 },
+  floatingTag: { position: 'absolute', top: 45, width: 80, alignItems: 'center' },
+  floatingTagText: { fontSize: 8, fontWeight: '800', color: '#FF2D55', fontStyle: 'italic' },
+  previewPill: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, marginTop: 10 },
+  previewPillText: { fontSize: 9, fontWeight: '700' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   widgetWrapper: { marginBottom: 30, width: WIDGET_SMALL },
   widgetLabel: { fontSize: 11, fontWeight: '700', color: '#8E8E93', marginBottom: 10, textTransform: 'uppercase' },

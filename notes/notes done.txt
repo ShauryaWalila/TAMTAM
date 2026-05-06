@@ -26,3 +26,4 @@ exam mode(
 )
 exportable itinerary, drawing
 songs and all in the plan mode
+eating

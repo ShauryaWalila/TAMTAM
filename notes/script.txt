@@ -2145,4 +2145,52 @@ CREATE POLICY "Public access" ON diet_metrics FOR ALL USING (true);
 
 
 
-    
+     -- 1. Create the Study Routines table
+     CREATE TABLE IF NOT EXISTS public.study_routines (
+         id TEXT PRIMARY KEY,
+         user_id TEXT NOT NULL,
+         title TEXT NOT NULL,
+         description TEXT,
+         start_time TEXT, -- Stores format "HH:mm"
+         end_time TEXT,   -- Stores format "HH:mm"
+         date DATE NOT NULL, -- Stores format "yyyy-MM-dd"
+        is_completed INTEGER DEFAULT 0,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+   
+    -- 2. Enable Row Level Security (RLS)
+    ALTER TABLE public.study_routines ENABLE ROW LEVEL SECURITY;
+   
+    -- 3. Create Policies (Allows you and your partner to sync/view)
+    -- Replace 'your-partner-id' if you want strict partner-only access,
+    -- or use the general authenticated policy below for simplicity.
+   
+    CREATE POLICY "Users can manage their own routines"
+    ON public.study_routines
+    FOR ALL
+    USING (auth.uid()::text = user_id);
+   
+    CREATE POLICY "Partners can view each other's routines"
+    ON public.study_routines
+    FOR SELECT
+    USING (true); -- Allows read-access for synced study partners
+   
+    -- 4. Enable Realtime (Optional, for instant updates across devices)
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.study_routines;
+   
+    -- 5. Create index for faster date-based lookups
+    CREATE INDEX IF NOT EXISTS idx_study_routines_date ON public.study_routines(date);
+    CREATE INDEX IF NOT EXISTS idx_study_routines_user ON public.study_routines(user_id);
+
+
+
+
+
+
+
+
+
+
+
+
+
