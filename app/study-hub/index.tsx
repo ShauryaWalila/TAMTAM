@@ -8,17 +8,24 @@ import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { db, queueSyncOperation, generateUUID } from '@/lib/db';
 import * as SecureStore from 'expo-secure-store';
-import { BookOpen, Plus, X, BrainCircuit, PenTool, LayoutDashboard, Clock, ChevronLeft, Search as SearchIcon, Calendar, Flame, MessageSquare, Check, Trash2, ChevronRight, ListChecks, Minus, Edit3, Moon, Play, Pause, Bell, Sparkles, Bot } from 'lucide-react-native';
+import { BookOpen, Plus, X, BrainCircuit, PenTool, LayoutDashboard, Clock, ChevronLeft, Search as SearchIcon, Calendar, Flame, MessageSquare, Check, Trash2, ChevronRight, ListChecks, Minus, Edit3, Moon, Play, Pause, Bell, Sparkles, Bot, CalendarDays, Copy, Repeat } from 'lucide-react-native';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import RadialNavigator from '@/components/RadialNavigator';
 import { MotiView, AnimatePresence } from 'moti';
-import { format, differenceInDays, startOfToday, eachDayOfInterval, subDays, differenceInMinutes, startOfDay, isAfter } from 'date-fns';
+import { format, differenceInDays, startOfToday, eachDayOfInterval, subDays, differenceInMinutes, startOfDay, isAfter, addDays, addWeeks, addMonths, isSameDay, startOfMonth, endOfMonth, startOfWeek, endOfWeek, subMonths } from 'date-fns';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { sendStudyNotification } from '@/lib/notifications';
 import { getMotivationalBoost } from '@/lib/aiEngine';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+const RECURRENCE_OPTIONS = [
+  { label: 'None', value: 'none' },
+  { label: 'Daily (7d)', value: 'daily' },
+  { label: 'Weekly (4w)', value: 'weekly' },
+  { label: 'Monthly (3m)', value: 'monthly' }
+];
 
 export default function StudyHubDashboard() {
   const colorScheme = useColorScheme() ?? 'light';
@@ -33,6 +40,16 @@ export default function StudyHubDashboard() {
   const [habitLog, setHabitLog] = useState<any[]>([]);
   const [brainDump, setBrainDump] = useState<any[]>([]);
   const [syllabus, setSyllabus] = useState<any[]>([]);
+  const [routines, setRoutines] = useState<any[]>([]);
+  const [routineCounts, setRoutineCounts] = useState<Record<string, number>>({});
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [viewMonth, setViewMonth] = useState(new Date());
+
+  const calendarDays = useMemo(() => {
+    const start = startOfWeek(startOfMonth(viewMonth));
+    const end = endOfWeek(endOfMonth(viewMonth));
+    return eachDayOfInterval({ start, end });
+  }, [viewMonth]);
 
   const [aiBoost, setAiBoost] = useState<string>('Your medical journey is a marathon, keep going! 🩺');
   const [loadingBoost, setLoadingBoost] = useState(false);
@@ -53,6 +70,18 @@ export default function StudyHubDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showAllDumps, setShowAllDumps] = useState(false);
   const [expandedDumpId, setExpandedDumpId] = useState<string | null>(null);
+
+  const [isRoutineModalVisible, setIsRoutineModalVisible] = useState(false);
+  const [routineTitle, setRoutineTitle] = useState('');
+  const [routineDesc, setRoutineDesc] = useState('');
+  const [routineStart, setRoutineStart] = useState('09:00');
+  const [routineEnd, setRoutineEnd] = useState('10:00');
+  const [routineRecurrence, setRoutineRecurrence] = useState('none');
+  const [showStartTimePicker, setShowStartTimePicker] = useState(false);
+  const [showEndTimePicker, setShowEndTimePicker] = useState(false);
+  const [isCopyModalVisible, setIsCopyModalVisible] = useState(false);
+  const [copySourceDate, setCopySourceDate] = useState(subDays(new Date(), 1));
+  const [showCopyDatePicker, setShowCopyDatePicker] = useState(false);
 
   const [isTimerRunning, setIsTimerStarted] = useState(false);
   const [isTimerPaused, setIsTimerPaused] = useState(false);
@@ -128,6 +157,115 @@ export default function StudyHubDashboard() {
       setHabitLog(db.getAllSync(`SELECT * FROM study_habit_log ORDER BY date DESC LIMIT 365`) || []);
       setBrainDump(db.getAllSync(`SELECT * FROM study_brain_dump WHERE is_processed = 0 ORDER BY created_at DESC`) || []);
       setSyllabus(db.getAllSync(`SELECT * FROM study_syllabus ORDER BY order_index ASC`) || []);
+      refreshRoutinesFromSQLite();
+    } catch (e) {}
+  };
+
+  const refreshRoutinesFromSQLite = () => {
+    try {
+      const dateStr = format(selectedDate, 'yyyy-MM-dd');
+      const data = db.getAllSync(`SELECT * FROM study_routines WHERE date = ? ORDER BY start_time ASC`, [dateStr]) as any[];
+      setRoutines(data || []);
+
+      // Get counts for the calendar dots (next 14 days)
+      const counts: Record<string, number> = {};
+      const routinesAll = db.getAllSync(`SELECT date, COUNT(*) as count FROM study_routines GROUP BY date`) as any[];
+      routinesAll.forEach(r => { counts[r.date] = r.count; });
+      setRoutineCounts(counts);
+    } catch (e) {}
+  };
+
+  useEffect(() => {
+    refreshRoutinesFromSQLite();
+  }, [selectedDate]);
+
+  const addStudyRoutine = async () => {
+    if (!routineTitle.trim()) return;
+    
+    const baseDate = selectedDate;
+    let datesToInsert = [format(baseDate, 'yyyy-MM-dd')];
+
+    if (routineRecurrence === 'daily') {
+      for (let i = 1; i < 7; i++) datesToInsert.push(format(addDays(baseDate, i), 'yyyy-MM-dd'));
+    } else if (routineRecurrence === 'weekly') {
+      for (let i = 1; i < 4; i++) datesToInsert.push(format(addWeeks(baseDate, i), 'yyyy-MM-dd'));
+    } else if (routineRecurrence === 'monthly') {
+      for (let i = 1; i < 3; i++) datesToInsert.push(format(addMonths(baseDate, i), 'yyyy-MM-dd'));
+    }
+
+    try {
+      datesToInsert.forEach(d => {
+        const id = generateUUID();
+        const payload = {
+          id,
+          user_id: currentUser,
+          title: routineTitle.trim(),
+          description: routineDesc.trim(),
+          start_time: routineStart,
+          end_time: routineEnd,
+          date: d,
+          is_completed: 0,
+          created_at: new Date().toISOString()
+        };
+        db.runSync(`INSERT INTO study_routines (id, user_id, title, description, start_time, end_time, date, is_completed, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [payload.id, payload.user_id, payload.title, payload.description, payload.start_time, payload.end_time, payload.date, payload.is_completed, payload.created_at]);
+        queueSyncOperation('study_routines', id, 'INSERT', payload);
+      });
+
+      setIsRoutineModalVisible(false);
+      setRoutineTitle('');
+      setRoutineDesc('');
+      setRoutineRecurrence('none');
+      refreshRoutinesFromSQLite();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (e) {}
+  };
+
+  const deleteRoutine = (id: string) => {
+    Alert.alert('Delete Task?', 'Remove this from your routine?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => {
+        db.runSync(`DELETE FROM study_routines WHERE id = ?`, [id]);
+        queueSyncOperation('study_routines', id, 'DELETE', {});
+        refreshRoutinesFromSQLite();
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      }}
+    ]);
+  };
+
+  const toggleRoutineComplete = (id: string, current: number) => {
+    const next = current === 1 ? 0 : 1;
+    db.runSync(`UPDATE study_routines SET is_completed = ? WHERE id = ?`, [next, id]);
+    queueSyncOperation('study_routines', id, 'UPDATE', { is_completed: next });
+    refreshRoutinesFromSQLite();
+    if (next === 1) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const copyRoutineFromDay = () => {
+    try {
+      const sourceDateStr = format(copySourceDate, 'yyyy-MM-dd');
+      const targetDateStr = format(selectedDate, 'yyyy-MM-dd');
+      
+      const sourceItems = db.getAllSync(`SELECT * FROM study_routines WHERE date = ?`, [sourceDateStr]) as any[];
+      
+      if (sourceItems.length === 0) {
+        Alert.alert('No Items', 'No routine found on the source date.');
+        return;
+      }
+
+      sourceItems.forEach(item => {
+        const id = generateUUID();
+        const payload = { ...item, id, date: targetDateStr, is_completed: 0, created_at: new Date().toISOString() };
+        delete payload.rowid; // Ensure no SQLite internal rowid is copied
+        db.runSync(`INSERT INTO study_routines (id, user_id, title, description, start_time, end_time, date, is_completed, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [payload.id, payload.user_id, payload.title, payload.description, payload.start_time, payload.end_time, payload.date, payload.is_completed, payload.created_at]);
+        queueSyncOperation('study_routines', id, 'INSERT', payload);
+      });
+
+      setIsCopyModalVisible(false);
+      refreshRoutinesFromSQLite();
+      Alert.alert('Success', `Copied ${sourceItems.length} items to ${targetDateStr}`);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (e) {}
   };
 
@@ -348,6 +486,95 @@ export default function StudyHubDashboard() {
           <View style={styles.syllabusProgressBar}><View style={[styles.syllabusProgressFill, { width: `${syllabusProgress}%`, backgroundColor: '#AF52DE' }]} /></View>
         </TouchableOpacity>
 
+        {/* STUDY ROUTINE SECTION */}
+        <View style={styles.sectionHeader}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <CalendarDays color={theme.tint} size={24} />
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Study Routine</Text>
+          </View>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <TouchableOpacity onPress={() => setIsCopyModalVisible(true)} style={[styles.addBtn, { backgroundColor: theme.secondary + '20' }]}>
+              <Copy size={18} color={theme.secondary} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setIsRoutineModalVisible(true)} style={[styles.addBtn, { backgroundColor: theme.tint + '20' }]}>
+              <Plus size={20} color={theme.tint} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* MONTH GRID CALENDAR */}
+        <View style={[styles.calendarGridContainer, { backgroundColor: theme.card }]}>
+          <View style={styles.calendarHeaderNav}>
+            <TouchableOpacity onPress={() => setViewMonth(subMonths(viewMonth, 1))}><ChevronLeft size={20} color={theme.text} /></TouchableOpacity>
+            <Text style={[styles.calendarMonthText, { color: theme.text }]}>{format(viewMonth, 'MMMM yyyy')}</Text>
+            <TouchableOpacity onPress={() => setViewMonth(addMonths(viewMonth, 1))}><ChevronRight size={20} color={theme.text} /></TouchableOpacity>
+          </View>
+          
+          <View style={styles.weekDaysHeader}>
+            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
+              <Text key={i} style={styles.weekDayText}>{day}</Text>
+            ))}
+          </View>
+
+          <View style={styles.daysGrid}>
+            {calendarDays.map((date, i) => {
+              const dateStr = format(date, 'yyyy-MM-dd');
+              const isSelected = isSameDay(date, selectedDate);
+              const isCurrentMonth = date.getMonth() === viewMonth.getMonth();
+              const count = routineCounts[dateStr] || 0;
+              const isToday = isSameDay(date, startOfToday());
+
+              return (
+                <TouchableOpacity 
+                  key={i} 
+                  onPress={() => { setSelectedDate(date); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                  style={[
+                    styles.gridDay, 
+                    isSelected && { backgroundColor: theme.tint, borderRadius: 12 },
+                    !isCurrentMonth && { opacity: 0.3 }
+                  ]}
+                >
+                  <Text style={[
+                    styles.gridDayText, 
+                    { color: isSelected ? '#fff' : theme.text },
+                    isToday && !isSelected && { color: theme.tint, fontWeight: '900' }
+                  ]}>
+                    {format(date, 'd')}
+                  </Text>
+                  {count > 0 && (
+                    <View style={[styles.gridCountBadge, { backgroundColor: isSelected ? '#fff' : theme.tint }]}>
+                      <Text style={[styles.gridCountText, { color: isSelected ? theme.tint : '#fff' }]}>{count}</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        <View style={[styles.routineList, { backgroundColor: theme.card }]}>
+          <Text style={styles.routineDateHeader}>{isSameDay(selectedDate, startOfToday()) ? 'Today' : format(selectedDate, 'PPPP')}</Text>
+          {routines.map(item => (
+            <View key={item.id} style={styles.routineItem}>
+              <TouchableOpacity onPress={() => toggleRoutineComplete(item.id, item.is_completed)} style={[styles.routineCheck, item.is_completed === 1 && { backgroundColor: '#34C759', borderColor: '#34C759' }]}>
+                {item.is_completed === 1 && <Check size={14} color="#fff" />}
+              </TouchableOpacity>
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={[styles.routineTitle, { color: theme.text }, item.is_completed === 1 && { textDecorationLine: 'line-through', opacity: 0.5 }]}>{item.title}</Text>
+                <Text style={styles.routineTime}>{item.start_time} - {item.end_time}</Text>
+              </View>
+              <TouchableOpacity onPress={() => deleteRoutine(item.id)}>
+                <Trash2 size={16} color="#FF3B30" opacity={0.5} />
+              </TouchableOpacity>
+            </View>
+          ))}
+          {routines.length === 0 && (
+            <View style={styles.emptyRoutine}>
+              <Text style={styles.emptyText}>No tasks planned for this day.</Text>
+            </View>
+          )}
+        </View>
+
         <View style={styles.sectionHeader}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Calendar color={theme.tint} size={24} /><Text style={[styles.sectionTitle, { color: theme.text }]}>Exam Countdown</Text></View><TouchableOpacity onPress={() => setIsExamModalVisible(true)} style={[styles.addBtn, { backgroundColor: theme.tint + '20' }]}><Plus size={20} color={theme.tint} /></TouchableOpacity></View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 15, paddingBottom: 10 }}>{exams.map(exam => { const daysLeft = differenceInDays(new Date(exam.exam_date), startOfToday()); return (<TouchableOpacity key={exam.id} style={[styles.examCard, { backgroundColor: theme.card }]} onLongPress={() => { Alert.alert('Delete Exam?', 'Remove this countdown?', [{ text: 'Cancel' }, { text: 'Delete', style: 'destructive', onPress: () => { db.runSync(`DELETE FROM study_exams WHERE id = ?`, [exam.id]); db.runSync(`DELETE FROM calendar_events WHERE id = ?`, [exam.id]); queueSyncOperation('study_exams', exam.id, 'DELETE', {}); queueSyncOperation('calendar_events', exam.id, 'DELETE', {}); refreshFromSQLite(); }}]); }}><Text style={[styles.examTitle, { color: theme.text }]}>{exam.title}</Text><Text style={[styles.examDays, { color: theme.tint }]}>{daysLeft} Days Left</Text><View style={styles.examProgressBase}><View style={[styles.examProgressFill, { backgroundColor: theme.tint, width: `${Math.min(100, Math.max(5, (1 - daysLeft/60) * 100))}%` }]} /></View></TouchableOpacity>); })}{exams.length === 0 && <Text style={styles.emptyText}>Add your next Prof exam!</Text>}</ScrollView>
 
@@ -416,6 +643,79 @@ export default function StudyHubDashboard() {
       <Modal visible={isDeckModalVisible} transparent animationType="fade"><TouchableWithoutFeedback onPress={Keyboard.dismiss}><View style={styles.modalOverlay}><KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ width: '100%' }}><BlurView intensity={100} tint={colorScheme} style={styles.modalContent}><View style={styles.modalHeader}><Text style={[styles.modalTitle, { color: theme.text }]}>New Study Deck</Text><TouchableOpacity onPress={() => setIsDeckModalVisible(false)}><X size={24} color={theme.text} /></TouchableOpacity></View><TextInput style={[styles.input, { backgroundColor: theme.background, color: theme.text }]} placeholder="Subject" placeholderTextColor={theme.tabIconDefault} value={newDeckTitle} onChangeText={setNewDeckTitle} /><TextInput style={[styles.input, { backgroundColor: theme.background, color: theme.text, height: 100, textAlignVertical: 'top' }]} placeholder="Description" placeholderTextColor={theme.tabIconDefault} multiline value={newDeckDesc} onChangeText={setNewDeckDesc} /><TouchableOpacity onPress={createDeck} style={[styles.saveBtn, { backgroundColor: theme.tint }]}><Text style={styles.saveBtnText}>Create Deck</Text></TouchableOpacity></BlurView></KeyboardAvoidingView></View></TouchableWithoutFeedback></Modal>
       <Modal visible={isWhiteboardModalVisible} transparent animationType="fade"><TouchableWithoutFeedback onPress={Keyboard.dismiss}><View style={styles.modalOverlay}><KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ width: '100%' }}><BlurView intensity={100} tint={colorScheme} style={styles.modalContent}><View style={styles.modalHeader}><Text style={[styles.modalTitle, { color: theme.text }]}>New Med-Board</Text><TouchableOpacity onPress={() => setIsWhiteboardModalVisible(false)}><X size={24} color={theme.text} /></TouchableOpacity></View><TextInput style={[styles.input, { backgroundColor: theme.background, color: theme.text }]} placeholder="Board Name" placeholderTextColor={theme.tabIconDefault} value={newWhiteboardTitle} onChangeText={setNewWhiteboardTitle} /><TouchableOpacity onPress={createWhiteboard} style={[styles.saveBtn, { backgroundColor: theme.tint }]}><Text style={styles.saveBtnText}>Create Board</Text></TouchableOpacity></BlurView></KeyboardAvoidingView></View></TouchableWithoutFeedback></Modal>
       <Modal visible={isExamModalVisible} transparent animationType="fade"><View style={styles.modalOverlay}><BlurView intensity={100} tint={colorScheme} style={styles.modalContent}><Text style={[styles.modalTitle, { color: theme.text }]}>Add Exam</Text><TextInput style={[styles.input, { backgroundColor: theme.background, color: theme.text }]} placeholder="Exam Title" value={examTitle} onChangeText={setExamTitle} /><TouchableOpacity onPress={() => setShowDatePicker(true)} style={[styles.dateInput, { backgroundColor: theme.background }]}><Calendar size={20} color={theme.tint} /><Text style={{ color: theme.text, fontWeight: '600', marginLeft: 10 }}>{format(examDate, 'PPP')}</Text></TouchableOpacity>{showDatePicker && (<DateTimePicker value={examDate} mode="date" display={Platform.OS === 'ios' ? 'inline' : 'default'} onChange={onDateChange} minimumDate={new Date()} />)}<TouchableOpacity onPress={addExam} style={[styles.saveBtn, { backgroundColor: theme.tint, marginTop: 10 }]}><Text style={styles.saveBtnText}>Add countdown</Text></TouchableOpacity><TouchableOpacity onPress={() => setIsExamModalVisible(false)}><Text style={{ textAlign: 'center', color: '#888', marginTop: 10 }}>Cancel</Text></TouchableOpacity></BlurView></View></Modal>
+
+      {/* NEW ROUTINE MODAL */}
+      <Modal visible={isRoutineModalVisible} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <BlurView intensity={100} tint={colorScheme} style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>New Study Task</Text>
+              <TouchableOpacity onPress={() => setIsRoutineModalVisible(false)}><X size={24} color={theme.text} /></TouchableOpacity>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <TextInput 
+                style={[styles.input, { backgroundColor: theme.background, color: theme.text }]} 
+                placeholder="Task (e.g., Read Patho)" 
+                value={routineTitle} 
+                onChangeText={setRoutineTitle} 
+              />
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <TouchableOpacity onPress={() => setShowStartTimePicker(true)} style={[styles.dateInput, { backgroundColor: theme.background, flex: 1 }]}>
+                  <Clock size={16} color={theme.tint} />
+                  <Text style={{ color: theme.text, marginLeft: 8 }}>{routineStart}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setShowEndTimePicker(true)} style={[styles.dateInput, { backgroundColor: theme.background, flex: 1 }]}>
+                  <Clock size={16} color={theme.tint} />
+                  <Text style={{ color: theme.text, marginLeft: 8 }}>{routineEnd}</Text>
+                </TouchableOpacity>
+              </View>
+
+              <Text style={styles.modalLabel}>RECURRENCE</Text>
+              <View style={styles.recurrenceRow}>
+                {RECURRENCE_OPTIONS.map(opt => (
+                  <TouchableOpacity 
+                    key={opt.value} 
+                    onPress={() => setRoutineRecurrence(opt.value)}
+                    style={[styles.recurrenceBtn, routineRecurrence === opt.value && { backgroundColor: theme.tint }]}
+                  >
+                    <Text style={[styles.recurrenceText, { color: routineRecurrence === opt.value ? '#fff' : theme.tabIconDefault }]}>{opt.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {showStartTimePicker && <DateTimePicker mode="time" is24Hour value={new Date()} onChange={(e, d) => { setShowStartTimePicker(false); if (d) setRoutineStart(format(d, 'HH:mm')); }} />}
+              {showEndTimePicker && <DateTimePicker mode="time" is24Hour value={new Date()} onChange={(e, d) => { setShowEndTimePicker(false); if (d) setRoutineEnd(format(d, 'HH:mm')); }} />}
+
+              <TouchableOpacity onPress={addStudyRoutine} style={[styles.saveBtn, { backgroundColor: theme.tint }]}>
+                <Text style={styles.saveBtnText}>Save Task</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </BlurView>
+        </View>
+      </Modal>
+
+      {/* COPY ROUTINE MODAL */}
+      <Modal visible={isCopyModalVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <BlurView intensity={100} tint={colorScheme} style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>Copy Day Plan</Text>
+              <TouchableOpacity onPress={() => setIsCopyModalVisible(false)}><X size={24} color={theme.text} /></TouchableOpacity>
+            </View>
+            <Text style={{ color: theme.tabIconDefault, marginBottom: 15 }}>Pick a source day to copy tasks from.</Text>
+            <TouchableOpacity onPress={() => setShowCopyDatePicker(true)} style={[styles.dateInput, { backgroundColor: theme.background }]}>
+              <Calendar size={20} color={theme.secondary} />
+              <Text style={{ color: theme.text, fontWeight: '600', marginLeft: 10 }}>{format(copySourceDate, 'PPP')}</Text>
+            </TouchableOpacity>
+            {showCopyDatePicker && <DateTimePicker value={copySourceDate} mode="date" display="inline" onChange={(e, d) => { setShowCopyDatePicker(false); if (d) setCopySourceDate(d); }} />}
+            
+            <TouchableOpacity onPress={copyRoutineFromDay} style={[styles.saveBtn, { backgroundColor: theme.secondary, marginTop: 20 }]}>
+              <Text style={styles.saveBtnText}>Duplicate to {format(selectedDate, 'MMM d')}</Text>
+            </TouchableOpacity>
+          </BlurView>
+        </View>
+      </Modal>
+
       <RadialNavigator />
     </ThemedView>
   );
@@ -486,10 +786,31 @@ const styles = StyleSheet.create({
   emptyText: { color: '#888', fontStyle: 'italic', padding: 10 },
   showMoreBtn: { paddingVertical: 10, alignItems: 'center', borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.03)', marginTop: 5 },
   showMoreText: { fontSize: 12, fontWeight: '800', letterSpacing: 0.5 },
+  calendarGridContainer: { padding: 15, borderRadius: 24, marginBottom: 25, elevation: 2 },
+  calendarHeaderNav: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15, paddingHorizontal: 5 },
+  calendarMonthText: { fontSize: 16, fontWeight: '800' },
+  weekDaysHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
+  weekDayText: { width: (SCREEN_WIDTH - 100) / 7, textAlign: 'center', fontSize: 10, fontWeight: '900', color: '#888' },
+  daysGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  gridDay: { width: (SCREEN_WIDTH - 100) / 7, height: 40, justifyContent: 'center', alignItems: 'center', marginBottom: 5 },
+  gridDayText: { fontSize: 14, fontWeight: '600' },
+  gridCountBadge: { position: 'absolute', top: 2, right: 2, width: 14, height: 14, borderRadius: 7, justifyContent: 'center', alignItems: 'center' },
+  gridCountText: { fontSize: 8, fontWeight: '900' },
+  routineList: { padding: 20, borderRadius: 24, marginBottom: 30 },
+  routineDateHeader: { fontSize: 14, fontWeight: '800', color: '#888', marginBottom: 15 },
+  routineItem: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
+  routineCheck: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: 'rgba(0,0,0,0.1)', justifyContent: 'center', alignItems: 'center' },
+  routineTitle: { fontSize: 15, fontWeight: '700' },
+  routineTime: { fontSize: 11, color: '#888', fontWeight: '600' },
+  emptyRoutine: { alignItems: 'center', paddingVertical: 10 },
   modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
   modalContent: { padding: 30, borderTopLeftRadius: 40, borderTopRightRadius: 40, gap: 15 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   modalTitle: { fontSize: 24, fontWeight: '900' },
+  modalLabel: { fontSize: 10, fontWeight: '900', color: '#888', marginTop: 10, letterSpacing: 1 },
+  recurrenceRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 5 },
+  recurrenceBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, backgroundColor: 'rgba(0,0,0,0.03)' },
+  recurrenceText: { fontSize: 11, fontWeight: '800' },
   input: { padding: 20, borderRadius: 20, fontSize: 16, fontWeight: '600' },
   dateInput: { padding: 20, borderRadius: 20, flexDirection: 'row', alignItems: 'center' },
   saveBtn: { height: 60, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginTop: 10 },

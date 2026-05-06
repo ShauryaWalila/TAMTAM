@@ -271,6 +271,19 @@ export const initDB = () => {
         created_at DATETIME
       );
 
+      -- Phase 4: Study Routines
+      CREATE TABLE IF NOT EXISTS study_routines (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT,
+        start_time TEXT, -- HH:mm
+        end_time TEXT,   -- HH:mm
+        date DATE NOT NULL, -- yyyy-MM-dd
+        is_completed INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+
       -- ==========================================
       -- FTS5: ULTRA-FAST LOCAL SEARCH ENGINE
       -- ==========================================

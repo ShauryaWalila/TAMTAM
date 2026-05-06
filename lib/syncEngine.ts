@@ -162,6 +162,10 @@ export const initialFullSync = async (shouldClear = false) => {
         n => db.runSync(`INSERT OR REPLACE INTO diet_plans (id, date, meal_time, type, item_id, quantity, unit, user_id, is_eaten, is_shared, is_recurring, days_of_week, cycle_week, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [n.id, n.date, n.meal_time, n.type, n.item_id, n.quantity, n.unit, n.user_id, n.is_eaten || 0, n.is_shared || 0, n.is_recurring || 0, n.days_of_week || '0,1,2,3,4,5,6', n.cycle_week || 0, n.created_at]));
 
+      await syncTable('study_routines', supabase.from('study_routines').select('*'),
+        n => db.runSync(`INSERT OR REPLACE INTO study_routines (id, user_id, title, description, start_time, end_time, date, is_completed, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [n.id, n.user_id, n.title, n.description, n.start_time, n.end_time, n.date, n.is_completed || 0, n.created_at]));
+
       console.log('Background lazy sync complete.');    } catch (e) {
       console.warn('Background sync failed:', e);
     }
