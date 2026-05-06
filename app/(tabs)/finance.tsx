@@ -17,6 +17,9 @@ import * as Sharing from 'expo-sharing';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Linking from 'expo-linking';
+import { extractMerchantName, extractSMSAmount } from '@/lib/utils';
+import * as Haptics from 'expo-haptics';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -174,6 +177,42 @@ export default function FinanceScreen() {
     };
     init();
 
+    // 🔗 DEEP LINK AUTOMATION
+    const handleDeepLink = async (url: string) => {
+      if (!url.includes('tamtam://transaction')) return;
+      const parsed = Linking.parse(url);
+      const { amount: rawAmt, merchant: rawMerc, raw: smsBody } = parsed.queryParams || {};
+      
+      if (rawAmt || smsBody) {
+        const cleanedAmt = rawAmt ? parseFloat(rawAmt.toString()) : extractSMSAmount(smsBody?.toString() || '');
+        const cleanedMerc = rawMerc ? rawMerc.toString() : extractMerchantName(smsBody?.toString() || '');
+        
+        if (cleanedAmt !== 0) {
+          const id = generateUUID();
+          const name = await SecureStore.getItemAsync('user_name');
+          const payload = {
+            id,
+            amount: cleanedAmt,
+            type: cleanedAmt < 0 ? 'debit' : 'credit',
+            category: 'Other',
+            description: cleanedMerc,
+            user_id: name?.toLowerCase() || 'unknown',
+            created_at: new Date().toISOString()
+          };
+          
+          db.runSync(`INSERT INTO finances (id, amount, type, category, description, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
+            [payload.id, Math.abs(payload.amount), payload.type, payload.category, payload.description, payload.user_id, payload.created_at]);
+          queueSyncOperation('finances', id, 'INSERT', payload);
+          
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          refreshFromSQLite();
+        }
+      }
+    };
+
+    const urlListener = Linking.addEventListener('url', (e) => handleDeepLink(e.url));
+    Linking.getInitialURL().then(url => { if (url) handleDeepLink(url); });
+
     const subFinance = supabase.channel('finance_updates').on('postgres_changes', { event: '*', schema: 'public', table: 'finances' }, (p) => {
       if (p.eventType !== 'DELETE') {
         const n = p.new;
@@ -200,10 +239,22 @@ export default function FinanceScreen() {
       if (currentUserName && otherUserName) fetchBalances(currentUserName, otherUserName);
     }).subscribe();
 
+    const subRealtimeTransactions = supabase.channel('public:transactions')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'finances' }, (payload) => {
+        const n = payload.new;
+        db.runSync(`INSERT OR REPLACE INTO finances (id, created_at, amount, category, description, user_id, type) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
+          [n.id, n.created_at, n.amount, n.category, n.description, n.user_id, n.type]);
+        refreshFromSQLite();
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      })
+      .subscribe();
+
     return () => {
+      urlListener.remove();
       supabase.removeChannel(subFinance);
       supabase.removeChannel(subTargets);
       supabase.removeChannel(subBalances);
+      supabase.removeChannel(subRealtimeTransactions);
     };
   }, [currentUserName, otherUserName, isAuthenticated]);
 
@@ -399,14 +450,14 @@ export default function FinanceScreen() {
   const totalSpent = filteredTransactions.filter(t => t.type === 'debit').reduce((sum, t) => sum + t.amount, 0);
   const totalReceived = filteredTransactions.filter(t => t.type === 'credit').reduce((sum, t) => sum + t.amount, 0);
 
-  let currentBankBalance = 0;
-  if (userFilter === 'me') {
-    currentBankBalance = myBalance + totalReceived - totalSpent;
-  } else if (userFilter === 'partner') {
-    currentBankBalance = partnerBalance + totalReceived - totalSpent;
-  } else {
-    currentBankBalance = myBalance + partnerBalance + totalReceived - totalSpent;
-  }
+  const totalNetBalance = useMemo(() => {
+    // Global net balance from all transactions ever recorded (not just filtered)
+    return transactions.reduce((sum, t) => {
+      return t.type === 'credit' ? sum + t.amount : sum - t.amount;
+    }, 0);
+  }, [transactions]);
+
+  let currentBankBalance = (userFilter === 'both' ? (myBalance + partnerBalance) : (userFilter === 'me' ? myBalance : partnerBalance)) + totalNetBalance;
 
   const exportPDF = async () => {
     if (userFilter === 'both') {
@@ -599,13 +650,38 @@ export default function FinanceScreen() {
               )}
             </View>
 
-            {filteredTransactions.map((t, i) => (
-              <MotiView key={t.id} from={{ opacity: 0, translateY: 10 }} animate={{ opacity: 1, translateY: 0 }} transition={{ delay: i < 10 ? i * 50 : 0 }} style={[styles.txCard, { backgroundColor: theme.card }]}>
-                <View style={[styles.txIcon, { backgroundColor: theme.tint + '15' }]}><Text style={{ fontSize: 18 }}>{CATEGORIES.find(c => c.id === t.category)?.icon || '✨'}</Text></View>
-                <View style={styles.txMain}><Text style={[styles.txDesc, { color: theme.text }]} numberOfLines={1}>{t.description || t.category}</Text><Text style={[styles.txDate, { color: theme.tabIconDefault }]}>{format(new Date(t.created_at), 'MMM d, h:mm a')}</Text></View>
-                <View style={styles.txEnd}><Text style={[styles.txAmt, { color: t.type === 'debit' ? '#FF3B30' : '#34C759' }]}>{t.type === 'debit' ? '-' : '+'}₹{t.amount.toLocaleString()}</Text><TouchableOpacity onPress={() => deleteTransaction(t.id)}><Trash2 color={theme.tabIconDefault} size={14} /></TouchableOpacity></View>
-              </MotiView>
-            ))}
+            {filteredTransactions.map((t, i) => {
+              const isDebit = t.type === 'debit';
+              return (
+                <MotiView 
+                  key={t.id} 
+                  from={{ opacity: 0, translateY: 10 }} 
+                  animate={{ opacity: 1, translateY: 0 }} 
+                  transition={{ delay: i < 10 ? i * 50 : 0 }} 
+                  style={[styles.txCard, { backgroundColor: theme.card }]}
+                >
+                  <View style={[styles.txIcon, { backgroundColor: isDebit ? '#FF3B3015' : '#34C75915' }]}>
+                    <Text style={{ fontSize: 18 }}>{CATEGORIES.find(c => c.id === t.category)?.icon || (isDebit ? '💸' : '💰')}</Text>
+                  </View>
+                  <View style={styles.txMain}>
+                    <Text style={[styles.txDesc, { color: theme.text }]} numberOfLines={1}>
+                      {t.description || t.category}
+                    </Text>
+                    <Text style={[styles.txDate, { color: theme.tabIconDefault }]}>
+                      {format(new Date(t.created_at), 'h:mm a')} • {format(new Date(t.created_at), 'MMM d')}
+                    </Text>
+                  </View>
+                  <View style={styles.txEnd}>
+                    <Text style={[styles.txAmt, { color: isDebit ? '#FF3B30' : '#34C759' }]}>
+                      {isDebit ? '-' : '+'}₹{t.amount.toLocaleString()}
+                    </Text>
+                    <TouchableOpacity onPress={() => deleteTransaction(t.id)}>
+                      <Trash2 color={theme.tabIconDefault} size={14} />
+                    </TouchableOpacity>
+                  </View>
+                </MotiView>
+              );
+            })}
           </ScrollView>
         </View>
 
