@@ -68,35 +68,11 @@ export default function SettingsScreen() {
   const [isDietSettingsVisible, setIsDietSettingsVisible] = useState(false);
   const [isDietUnitsVisible, setIsDietUnitsVisible] = useState(false);
 
-  // Diet Metrics State
-  const [dietMetrics, setDietMetrics] = useState<any[]>([]);
-  const [newMetricName, setNewMetricName] = useState('');
-  const [newMetricUnit, setNewMetricUnit] = useState('');
-
-  // Diet Units State
-  const [dietUnits, setDietUnits] = useState<any[]>([]);
-  const [newUnitName, setNewUnitName] = useState('');
-
-  // Chill Categories State
-  const [chillCats, setChillCats] = useState<any[]>([]);
-  const [editingCat, setEditingCat] = useState<any | null>(null);
-  const [catForm, setCatForm] = useState({ name: '', color: '#5AC8FA', image_url: null as string | null });
-  const [loadingCats, setLoadingCats] = useState(false);
-
-  // Wardrobe Categories State
-  const [wardrobeCats, setWardrobeCats] = useState<any[]>([]);
-  const [newWardrobeCat, setNewWardrobeCat] = useState('');
-
-  // Tools State
-  const [waNumber, setWaNumber] = useState('');
-  const [timeEntries, setTimeEntries] = useState([new Date(), new Date()]);
-  const [totalCalculatedTime, setTotalCalculatedTime] = useState<string | null>(null);
-  const [pickerIndex, setPickerIndex] = useState<number | null>(null);
-
   // Groq API Key State
-  const [isGroqModalVisible, setIsGroqModalVisible] = useState(false);
   const [groqKey, setGroqKey] = useState('');
   const [isSavingGroq, setIsSavingGroq] = useState(false);
+
+  // Diet Metrics State
 
   useEffect(() => {
     fetchProfile();
@@ -127,7 +103,6 @@ export default function SettingsScreen() {
       
       if (!error) {
         Alert.alert("Success", "Groq API Key updated successfully!");
-        setIsGroqModalVisible(false);
       } else {
         throw error;
       }
@@ -780,39 +755,6 @@ export default function SettingsScreen() {
                 </View>
               )} 
             />
-          </BlurView>
-        </View>
-      </Modal>
-
-      {/* 🤖 GROQ API MODAL */}
-      <Modal visible={isGroqModalVisible} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <BlurView intensity={100} tint={colorScheme} style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: theme.text }]}>Groq AI Engine</Text>
-              <TouchableOpacity onPress={() => setIsGroqModalVisible(false)}><X size={24} color={theme.text} /></TouchableOpacity>
-            </View>
-            <Text style={{ color: theme.tabIconDefault, marginBottom: 10 }}>Update Groq API key. Syncs to Supabase and used for all AI features.</Text>
-            
-            <TextInput 
-              style={[styles.input, { backgroundColor: theme.background, color: theme.text }]} 
-              placeholder="gsk_..." 
-              placeholderTextColor={theme.tabIconDefault}
-              value={groqKey} 
-              onChangeText={setGroqKey}
-              autoCapitalize="none"
-              autoCorrect={false}
-              secureTextEntry={true}
-            />
-
-            <TouchableOpacity 
-              onPress={updateGroqKey} 
-              disabled={isSavingGroq}
-              style={[styles.saveBtn, { backgroundColor: theme.tint, opacity: isSavingGroq ? 0.6 : 1 }]}
-            >
-              {isSavingGroq ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>SAVE API KEY</Text>}
-            </TouchableOpacity>
-            <Text style={{ color: '#888', fontSize: 10, textAlign: 'center', marginTop: 10 }}>Stored securely in public.system_config</Text>
           </BlurView>
         </View>
       </Modal>

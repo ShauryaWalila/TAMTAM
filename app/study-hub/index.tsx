@@ -147,36 +147,12 @@ export default function StudyHubDashboard() {
     }
   };
 
-  const updateGroqKey = async () => {
-    if (currentUser !== 'pratishth') return;
-    setIsSavingGroq(true);
-    try {
-      db.runSync(`INSERT OR REPLACE INTO system_config (key, value, updated_at) VALUES ('groq_api_key', ?, CURRENT_TIMESTAMP)`, [groqKey]);
-      queueSyncOperation('system_config', 'groq_api_key', 'UPDATE', { value: groqKey });
-      
-      // Also sync to Supabase immediately if online
-      const { error } = await supabase.from('system_config').upsert({ key: 'groq_api_key', value: groqKey, updated_at: new Date().toISOString() });
-      
-      if (!error) {
-        Alert.alert("Success", "Groq API Key updated successfully!");
-        setIsGroqModalVisible(false);
-      } else {
-        throw error;
-      }
-    } catch (e: any) {
-      Alert.alert("Error", "Failed to update API Key: " + e.message);
-    } finally {
-      setIsSavingGroq(false);
-    }
-  };
-
   const fetchAIBoost = async (uid: string) => {
     setLoadingBoost(true);
     const boost = await getMotivationalBoost(uid);
     setAiBoost(boost);
     setLoadingBoost(false);
   };
-
   const refreshData = () => { if (currentUser) fetchData(currentUser); };
 
   const refreshFromSQLite = () => {
@@ -528,17 +504,6 @@ export default function StudyHubDashboard() {
           </View>
           <View style={styles.syllabusProgressBar}><View style={[styles.syllabusProgressFill, { width: `${syllabusProgress}%`, backgroundColor: '#AF52DE' }]} /></View>
         </TouchableOpacity>
-
-        {currentUser === 'pratishth' && (
-          <TouchableOpacity style={[styles.buddyCard, { backgroundColor: theme.card, borderLeftWidth: 4, borderLeftColor: '#34C759' }]} onPress={() => setIsGroqModalVisible(true)}>
-            <View style={styles.buddyHeader}>
-              <View style={[styles.buddyAvatar, { backgroundColor: '#34C75915' }]}><BrainCircuit size={24} color="#34C759" /></View>
-              <View style={{ flex: 1 }}><Text style={[styles.cardTitle, { color: theme.text, marginBottom: 2 }]}>Groq API Engine</Text><Text style={styles.buddyStatus}>Dynamic Key Management</Text></View>
-              <Repeat size={18} color="#34C759" />
-            </View>
-            <View style={styles.buddyFooter}><Text style={[styles.buddyAction, { color: '#34C759' }]}>UPDATE API KEY</Text><ChevronRight size={14} color="#34C759" /></View>
-          </TouchableOpacity>
-        )}
 
         {/* STUDY ROUTINE SECTION */}
         <View style={styles.sectionHeader}>
