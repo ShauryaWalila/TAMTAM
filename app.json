@@ -4,11 +4,11 @@
     "slug": "TAMTAM",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/icon.jpeg",
     "scheme": "tamtam",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/images/splash-icon.png",
+      "image": "./assets/images/icon.jpeg",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
