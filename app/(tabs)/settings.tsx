@@ -73,6 +73,27 @@ export default function SettingsScreen() {
   const [isSavingGroq, setIsSavingGroq] = useState(false);
 
   // Diet Metrics State
+  const [dietMetrics, setDietMetrics] = useState<any[]>([]);
+  const [dietUnits, setDietUnits] = useState<any[]>([]);
+  const [newUnitName, setNewUnitName] = useState('');
+  const [newMetricName, setNewMetricName] = useState('');
+  const [newMetricUnit, setNewMetricUnit] = useState('');
+
+  // Chill Categories State
+  const [chillCats, setChillCats] = useState<any[]>([]);
+  const [catForm, setCatForm] = useState({ name: '', color: '#5AC8FA', image_url: null as string | null });
+  const [editingCat, setEditingCat] = useState<any>(null);
+  const [loadingCats, setLoadingCats] = useState(false);
+
+  // Wardrobe Categories State
+  const [wardrobeCats, setWardrobeCats] = useState<any[]>([]);
+  const [newWardrobeCat, setNewWardrobeCat] = useState('');
+
+  // Tools State
+  const [waNumber, setWaNumber] = useState('');
+  const [timeEntries, setTimeEntries] = useState<Date[]>([new Date(), new Date()]);
+  const [pickerIndex, setPickerIndex] = useState<number | null>(null);
+  const [totalCalculatedTime, setTotalCalculatedTime] = useState<string | null>(null);
 
   useEffect(() => {
     fetchProfile();

@@ -1,0 +1,37 @@
+# FIX FOR EXPO PREBUILD ON MAC (M1/M2/M3)
+# Error: Failed to match "/resource_bundle_target.build_configurations.each do |config|/"
+
+Run this command inside the TAMTAM folder on your Mac Terminal:
+
+cat << 'EOF' > node_modules/@bittingz/expo-widgets/plugin/build/ios/withPodfile.js
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.withPodfile = void 0;
+const generateCode_1 = require("@expo/config-plugins/build/utils/generateCode");
+const fs = require("fs");
+const path = require("path");
+const logger_1 = require("../utils/logger");
+const target_1 = require("./xcode/target");
+const withPodfile = (config, options) => {
+    const targetName = `${(0, target_1.getTargetName)(config, options)}`;
+    const podFilePath = path.join(config.modRequest.platformProjectRoot, "Podfile");
+    let podFileContent = fs.readFileSync(podFilePath).toString();
+    const podInstaller = "\ntarget '" + targetName + "' do\n  use_expo_modules!\n  config = use_native_modules!\n  use_frameworks! :linkage => podfile_properties['ios.useFrameworks'].to_sym if podfile_properties['ios.useFrameworks']\n  use_frameworks! :linkage => ENV['USE_FRAMEWORKS'].to_sym if ENV['USE_FRAMEWORKS']\n  use_react_native!(\n    :path => config[:reactNativePath],\n    :hermes_enabled => podfile_properties['expo.jsEngine'] == nil || podfile_properties['expo.jsEngine'] == 'hermes',\n    :app_path => \"#{Pod::Config.instance.installation_root}/..\",\n    :privacy_file_aggregation_enabled => podfile_properties['apple.privacyManifestAggregationEnabled'] != 'false',\n  )\nend\n";
+    const withAppExtFix = { contents: podFileContent };
+    const withAppExtFixPt2 = (0, generateCode_1.mergeContents)({
+        tag: 'fix2',
+        src: withAppExtFix.contents,
+        newSrc: " installer.pods_project.targets.each do |target|\n        target.build_configurations.each do |config|\n          config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'\n          config.build_settings['APPLICATION_EXTENSION_API_ONLY'] = target.name == 'Sentry' ? 'YES' : 'No' \n        end\n      end",
+        anchor: /post_install do \|installer\|/,
+        offset: 1,
+        comment: "#",
+    });
+    logger_1.Logging.logger.debug('Updating podfile');
+    fs.writeFileSync(podFilePath, [withAppExtFixPt2.contents, podInstaller].join('\n'));
+    return config;
+};
+exports.withPodfile = withPodfile;
+EOF
+
+# AFTER RUNNING THE ABOVE, RUN:
+# npx expo prebuild
