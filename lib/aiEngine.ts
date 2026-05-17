@@ -67,7 +67,7 @@ export const transcribeAudio = async (uri: string) => {
 
     const response = await fetch(GROQ_AUDIO_URL, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${GROQ_KEY.trim()}` },
+      headers: { 'Authorization': `Bearer ${apiKey.trim()}` },
       body: formData
     });
     const data = await response.json();
@@ -93,7 +93,7 @@ export const askAIStudyBuddy = async (userPrompt: string, userId: string, histor
     } catch (e) { return "I couldn't even queue that one, doc. Check your local storage."; }
   }
 
-  if (!GROQ_KEY) return "🔑 API Key Missing";
+  if (!getGroqKey()) return "🔑 API Key Missing";
   
   try {
     const hybridKnowledge = await getHybridContext(userPrompt, userId);
@@ -137,7 +137,7 @@ export const getAIQueryResults = (userId: string) => {
 
 // 5. REVISION BATTLE ENGINE
 export const startRevisionBattle = async (userId: string, type: 'vignette' | 'rapidfire') => {
-  if (!GROQ_KEY) return null;
+  if (!getGroqKey()) return null;
   try {
     const syllabus = db.getAllSync(`SELECT title FROM study_syllabus WHERE user_id = ? LIMIT 5`, [userId]) as any[];
     const topics = syllabus.length > 0 ? syllabus.map(s => s.title).join(", ") : "Anatomy";
@@ -149,7 +149,7 @@ export const startRevisionBattle = async (userId: string, type: 'vignette' | 'ra
 
 // 6. REASONING EVALUATOR
 export const evaluateBattleReasoning = async (userAnswer: string, correctAnswer: string, caseContext: string) => {
-  if (!GROQ_KEY) return null;
+  if (!getGroqKey()) return null;
   try {
     const prompt = `Evaluate medical reasoning. Case: "${caseContext}". Correct: "${correctAnswer}". User: "${userAnswer}". Return JSON ONLY: {"score": 0, "feedback": "...", "practical_tip": "..."}`;
     const result = await callGroq("llama-3.1-8b-instant", [{ role: "system", content: "Medical mentor." }, { role: "user", content: prompt }]);
@@ -159,7 +159,7 @@ export const evaluateBattleReasoning = async (userAnswer: string, correctAnswer:
 
 // 7. AUTONOMOUS INBOX PROCESSING
 export const processInboxWithAI = async (userId: string) => {
-  if (!GROQ_KEY) return false;
+  if (!getGroqKey()) return false;
   try {
     const rawItems = db.getAllSync(`SELECT * FROM study_brain_dump WHERE is_processed = 0 AND user_id = ?`, [userId]) as any[];
     if (rawItems.length === 0) return false;
@@ -181,7 +181,7 @@ export const processInboxWithAI = async (userId: string) => {
 
 // 8. MOTIVATIONAL GENERATOR
 export const getMotivationalBoost = async (userId: string) => {
-  if (!GROQ_KEY) return "Keep going, Doctor! 🩺";
+  if (!getGroqKey()) return "Keep going, Doctor! 🩺";
   try {
     const stats = db.getFirstSync(`SELECT SUM(focus_minutes) as focus FROM focus_sessions WHERE user_id = ?`, [userId]) as any;
     return await callGroq("llama-3.1-8b-instant", [{ role: "system", content: "You are a sweet medical mentor." }, { role: "user", content: `Generate a 1-sentence motivation for a student who studied ${stats?.focus || 0}m today. Be very supportive and call them 'Doctor'.` }]);
@@ -199,7 +199,7 @@ export const processVoiceCommand = async (text: string, userId: string) => {
 
 // 10. WHITEBOARD VISION
 export const analyzeWhiteboardDrawing = async (base64Image: string, boardTitle: string, userId: string) => {
-  if (!GROQ_KEY) throw new Error("API Key missing");
+  if (!getGroqKey()) throw new Error("API Key missing");
   try {
     const prompt = `Analyze medical whiteboard: "${boardTitle}". Return JSON: {"summary":"...", "subject": "...", "cards":[{"front":"Q", "back":"A"}]}`;
     const messages = [{ role: "user", content: [{ type: "text", text: prompt }, { type: "image_url", image_url: { url: `data:image/png;base64,${base64Image}` } }] }];

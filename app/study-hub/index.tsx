@@ -4,7 +4,7 @@ import { Text, View as ThemedView } from '@/components/Themed';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { db, queueSyncOperation, generateUUID } from '@/lib/db';
 import * as SecureStore from 'expo-secure-store';
@@ -107,6 +107,15 @@ export default function StudyHubDashboard() {
 
   const [isNapping, setIsNapping] = useState(false);
   const [napStartTime, setNapStartTime] = useState<Date | null>(null);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      if (currentUser) {
+        refreshFromSQLite();
+        fetchActiveSessions();
+      }
+    }, [currentUser])
+  );
 
   useEffect(() => {
     init();
@@ -499,7 +508,7 @@ export default function StudyHubDashboard() {
 
         <TouchableOpacity style={[styles.syllabusCard, { backgroundColor: theme.card }]} onPress={() => router.push('/study-hub/syllabus')}>
           <View style={styles.syllabusHeader}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}><View style={[styles.statIcon, { backgroundColor: '#AF52DE15' }]}><ListChecks size={24} color="#AF52DE" /></View><View><Text style={[styles.cardTitle, { color: theme.text, marginBottom: 2 }]}>Syllabus Mastery</Text><Text style={cardSub}>{syllabus.length} topics tracked</Text></View></View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}><View style={[styles.statIcon, { backgroundColor: '#AF52DE15' }]}><ListChecks size={24} color="#AF52DE" /></View><View><Text style={[styles.cardTitle, { color: theme.text, marginBottom: 2 }]}>Syllabus Mastery</Text><Text style={styles.cardSub}>{syllabus.length} topics tracked</Text></View></View>
             <View style={styles.progressCircle}><Text style={[styles.progressText, { color: theme.text }]}>{syllabusProgress}%</Text></View>
           </View>
           <View style={styles.syllabusProgressBar}><View style={[styles.syllabusProgressFill, { width: `${syllabusProgress}%`, backgroundColor: '#AF52DE' }]} /></View>
