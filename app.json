@@ -78,7 +78,12 @@
           "ios": {
             "appGroupIdentifier": "group.com.pratishth.ourlink",
             "targetName": "TAMTAMWidget",
-            "bundleIdentifier": "com.pratishth.ourlink.widget"
+            "bundleIdentifier": "com.pratishth.ourlink.widget",
+            "xcode": {
+              "configOverrides": {
+                "SWIFT_VERSION": "5.0"
+              }
+            }
           }
         }
       ]

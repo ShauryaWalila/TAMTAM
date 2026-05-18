@@ -34,6 +34,15 @@ const deps = [
   "  pod 'RCT-Folly', :podspec => '../node_modules/react-native/third-party-podspecs/RCT-Folly.podspec'"
 ];
 
+// 3. Fix Swift version mismatch by forcing all targets to 5.0
+const swiftFix = `
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |config|
+        config.build_settings['SWIFT_VERSION'] = '5.0'
+      end
+    end
+`;
+
 const lines = content.split('\n');
 const newLines = [];
 
@@ -42,14 +51,18 @@ for (let line of lines) {
   // Match target 'Name' do
   if (line.trim().startsWith("target '") && line.trim().endsWith(" do")) {
     deps.forEach(dep => {
-      // Avoid duplicates
       const depName = dep.match(/'([^']+)'/)[1];
       if (!content.includes(`pod '${depName}'`)) {
         newLines.push(dep);
       }
     });
   }
+  
+  // Match post_install do |installer|
+  if (line.trim().startsWith("post_install do |installer|")) {
+    newLines.push(swiftFix);
+  }
 }
 
 fs.writeFileSync(podfilePath, newLines.join('\n'));
-console.log('Successfully patched Podfile with local dependencies.');
+console.log('Successfully patched Podfile with local dependencies and Swift version fix.');
