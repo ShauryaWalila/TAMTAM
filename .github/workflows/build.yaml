@@ -28,17 +28,22 @@ jobs:
           rm -rf ios
           npx expo prebuild --platform ios --no-install --clean
 
-      - name: Fix Podfile Sources and Folly
+      - name: Fix Podfile Sources and Dependencies
         working-directory: ios
         run: |
-          # 1. Force the CocoaPods Git repo
+          # 1. Force the CocoaPods Git repo as fallback
           echo "source 'https://github.com/CocoaPods/Specs.git'" > Podfile.tmp
           cat Podfile >> Podfile.tmp
           mv Podfile.tmp Podfile
           
-          # 2. Add local path for RCT-Folly (often needed for worklets/reanimated on New Arch)
+          # 2. Add local paths for ALL common third-party dependencies
+          # This is critical for New Arch on CI when CDN fails
           sed -i '' '/use_expo_modules!/a \
             pod "RCT-Folly", :podspec => "../node_modules/react-native/third-party-podspecs/RCT-Folly.podspec" \
+            pod "fast_float", :podspec => "../node_modules/react-native/third-party-podspecs/fast_float.podspec" \
+            pod "fmt", :podspec => "../node_modules/react-native/third-party-podspecs/fmt.podspec" \
+            pod "DoubleConversion", :podspec => "../node_modules/react-native/third-party-podspecs/DoubleConversion.podspec" \
+            pod "glog", :podspec => "../node_modules/react-native/third-party-podspecs/glog.podspec" \
           ' Podfile
           
           cat Podfile # Log for debugging
