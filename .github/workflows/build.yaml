@@ -18,11 +18,9 @@ jobs:
           cache: 'npm'
 
       - name: Install Dependencies
-        working-directory: TAMTAM
         run: npm install --legacy-peer-deps
 
       - name: Patch Expo Widgets Plugin (Fix Regex Bug)
-        working-directory: TAMTAM
         run: |
           node -e '
             const fs = require("fs");
@@ -30,38 +28,33 @@ jobs:
             if (fs.existsSync(file)) {
               console.log("Patching " + file);
               let content = fs.readFileSync(file, "utf8");
-              // Use a more global regex to find and replace the problematic anchor
-              // This handles cases where it might be slightly different or commented out
               const problematicRegex = /anchor:\s*\/resource_bundle_target\.build_configurations\.each do \|config\|/;
               if (problematicRegex.test(content)) {
                 content = content.replace(problematicRegex, "anchor: /post_install do \\|installer\\|/");
                 fs.writeFileSync(file, content);
                 console.log("Successfully patched plugin logic.");
               } else {
-                console.log("Regex not found in file content, checking for alternative patterns...");
-                // Fallback: If the exact regex is not found, try to replace any mention of resource_bundle_target as anchor
+                console.log("Regex not found, applying fallback...");
                 content = content.replace(/anchor:.*resource_bundle_target.*/g, "anchor: /post_install do \\|installer\\|/");
                 fs.writeFileSync(file, content);
-                console.log("Applied fallback patch.");
               }
             } else {
               console.log("Plugin file not found at: " + file);
-              process.exit(1); // Fail the build if we cant find the file to patch
+              process.exit(1);
             }
           '
 
       - name: Expo Prebuild
-        working-directory: TAMTAM
         run: |
           rm -rf ios
           npx expo prebuild --platform ios --no-install --clean
 
       - name: Install CocoaPods
-        working-directory: TAMTAM/ios
+        working-directory: ios
         run: pod install
 
       - name: Build App Bundle (Unsigned)
-        working-directory: TAMTAM/ios
+        working-directory: ios
         run: |
           xcodebuild build \
             -workspace TAMTAM.xcworkspace \
@@ -75,10 +68,8 @@ jobs:
             AD_HOC_CODE_SIGNING_ALLOWED=YES
 
       - name: Package IPA
-        working-directory: TAMTAM
         run: |
           mkdir -p Payload
-          # Find the .app file and move it to Payload
           find ./ios/build/Build/Products/Release-iphoneos -name "*.app" -exec cp -r {} ./Payload/ \;
           zip -r TAMTAM.ipa Payload
 
@@ -86,4 +77,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: TAMTAM-Sideload-IPA
-          path: TAMTAM/TAMTAM.ipa
+          path: TAMTAM.ipa
