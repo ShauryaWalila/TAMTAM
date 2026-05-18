@@ -71,28 +71,9 @@
       "expo-location",
       "expo-notifications",
       "expo-task-manager"
-      ],
-      "extra": {},
-      "router": {},
+    ],
+    "extra": {
       "eas": {
-        "build": {
-          "experimental": {
-            "ios": {
-              "appExtensions": [
-                {
-                  "targetName": "TAMTAMWidgetExtension",
-                  "bundleIdentifier": "com.pratishth.ourlink.TAMTAMWidgetExtension",
-                  "entitlements": {
-                    "com.apple.security.application-groups": [
-                      "group.com.pratishth.ourlink.expowidgets"
-                    ],
-                    "aps-environment": "production"
-                  }
-                }
-              ]
-            }
-          }
-        },
         "projectId": "f06a1fe6-a139-4470-a5c2-e1298f488019"
       }
     },
