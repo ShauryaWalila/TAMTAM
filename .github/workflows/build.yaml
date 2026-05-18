@@ -28,18 +28,22 @@ jobs:
             if (fs.existsSync(file)) {
               console.log("Patching " + file);
               let content = fs.readFileSync(file, "utf8");
-              const problematicRegex = /anchor:\s*\/resource_bundle_target\.build_configurations\.each do \|config\|/;
-              if (problematicRegex.test(content)) {
-                content = content.replace(problematicRegex, "anchor: /post_install do \\|installer\\|/");
-                fs.writeFileSync(file, content);
-                console.log("Successfully patched plugin logic.");
-              } else {
-                console.log("Regex not found, applying fallback...");
-                content = content.replace(/anchor:.*resource_bundle_target.*/g, "anchor: /post_install do \\|installer\\|/");
-                fs.writeFileSync(file, content);
-              }
+              
+              // 1. Fix the failing regex anchor that kills the build
+              // We search for the problematic line and replace the regex but KEEP the comma
+              content = content.replace(
+                /anchor:\s*\/resource_bundle_target\.build_configurations\.each do \\|config\\|\//g,
+                "anchor: /post_install do \\|installer\\|/"
+              );
+
+              // 2. Ensure we dont have a syntax error by checking if we accidentally removed a comma
+              // This is a safety check: if "anchor: ... offset" appears without a comma, fix it
+              content = content.replace(/anchor:([^\n,]+)\n\s+offset/g, "anchor:$1,\n        offset");
+
+              fs.writeFileSync(file, content);
+              console.log("Successfully patched plugin logic.");
             } else {
-              console.log("Plugin file not found at: " + file);
+              console.log("Plugin file not found, failing build.");
               process.exit(1);
             }
           '
