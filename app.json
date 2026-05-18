@@ -23,7 +23,21 @@
         "NSLocationWhenInUseUsageDescription": "TAMTAM needs location access to show you on the map and find shared places.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "TAMTAM needs background location to alert you when you are near shared memories and wishlist spots.",
         "NSLocationAlwaysUsageDescription": "TAMTAM needs background location to alert you when you are near shared memories.",
-        "UIBackgroundModes": ["location", "fetch"]
+        "UIBackgroundModes": [
+          "location",
+          "fetch",
+          "location",
+          "fetch"
+        ],
+        "NSSupportsLiveActivities": false,
+        "NSSupportsLiveActivitiesFrequentUpdates": false,
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "entitlements": {
+        "com.apple.security.application-groups": [
+          "group.com.pratishth.ourlink.expowidgets"
+        ],
+        "aps-environment": "production"
       }
     },
     "android": {
@@ -38,7 +52,9 @@
         "ACCESS_FINE_LOCATION",
         "ACCESS_BACKGROUND_LOCATION",
         "FOREGROUND_SERVICE",
-        "FOREGROUND_SERVICE_LOCATION"
+        "FOREGROUND_SERVICE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ]
     },
     "web": {
@@ -68,8 +84,27 @@
       ]
     ],
     "extra": {
+      "router": {},
       "eas": {
-        "projectId": "77777777-7777-7777-7777-777777777777"
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "targetName": "TAMTAMWidgetExtension",
+                  "bundleIdentifier": "com.pratishth.ourlink.TAMTAMWidgetExtension",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.pratishth.ourlink.expowidgets"
+                    ],
+                    "aps-environment": "production"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "projectId": "f06a1fe6-a139-4470-a5c2-e1298f488019"
       }
     },
     "experiments": {

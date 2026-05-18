@@ -1,0 +1,54 @@
+name: Build TamTam IPA (Sideload Ready)
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Expo Prebuild
+        run: npx expo prebuild --platform ios --no-install
+
+      - name: Install CocoaPods
+        working-directory: ios
+        run: pod install
+
+      - name: Build App Bundle (Unsigned)
+        run: |
+          xcodebuild build \
+            -workspace ios/TAMTAM.xcworkspace \
+            -scheme TAMTAM \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath ./build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            AD_HOC_CODE_SIGNING_ALLOWED=YES
+
+      - name: Package IPA
+        run: |
+          mkdir -p Payload
+          # Find the .app file and move it to Payload
+          find ./build/Build/Products/Release-iphoneos -name "*.app" -exec cp -r {} ./Payload/ \;
+          zip -r TAMTAM.ipa Payload
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TAMTAM-Sideload-IPA
+          path: TAMTAM.ipa
