@@ -20,35 +20,8 @@ jobs:
       - name: Install Dependencies
         run: npm install --legacy-peer-deps
 
-      - name: Patch Expo Widgets Plugin (Fix Regex Bug)
-        run: |
-          node -e '
-            const fs = require("fs");
-            const file = "node_modules/@bittingz/expo-widgets/plugin/build/ios/withPodfile.js";
-            if (fs.existsSync(file)) {
-              console.log("Patching " + file);
-              let content = fs.readFileSync(file, "utf8");
-              
-              // Use split/join to avoid regex and escaping issues
-              const searchStr = "anchor: /resource_bundle_target.build_configurations.each do |config|/";
-              const replaceStr = "anchor: /post_install do |installer|/";
-              
-              if (content.includes(searchStr)) {
-                content = content.split(searchStr).join(replaceStr);
-                fs.writeFileSync(file, content);
-                console.log("Successfully patched plugin logic.");
-              } else {
-                console.log("Search string not found. The file might already be patched or corrupted. Attempting to repair...");
-                // Emergency repair: if my previous failed patch left a mess, we try to fix it
-                content = content.replace(/anchor:.*installer.*/g, replaceStr);
-                fs.writeFileSync(file, content);
-                console.log("Repair patch applied.");
-              }
-            } else {
-              console.log("Plugin file not found, failing build.");
-              process.exit(1);
-            }
-          '
+      - name: Patch Expo Widgets Plugin (Deep Fix)
+        run: node scripts/fix-widgets-plugin.js
 
       - name: Expo Prebuild
         run: |
