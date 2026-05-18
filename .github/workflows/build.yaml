@@ -18,9 +18,11 @@ jobs:
           cache: 'npm'
 
       - name: Install Dependencies
+        working-directory: TAMTAM
         run: npm install --legacy-peer-deps
 
       - name: Patch Expo Widgets Plugin (Fix Regex Bug)
+        working-directory: TAMTAM
         run: |
           node -e '
             const fs = require("fs");
@@ -28,32 +30,41 @@ jobs:
             if (fs.existsSync(file)) {
               console.log("Patching " + file);
               let content = fs.readFileSync(file, "utf8");
-              // surgical fix: find the active mergeContents call and replace its anchor to prevent failure
-              // The error is: Failed to match "/resource_bundle_target.build_configurations.each do |config|/"
-              content = content.replace(
-                /anchor:\s*\/resource_bundle_target\.build_configurations\.each do \|config\|/,
-                "anchor: /post_install do \\|installer\\|/"
-              );
-              fs.writeFileSync(file, content);
-              console.log("Successfully patched plugin logic.");
+              // Use a more global regex to find and replace the problematic anchor
+              // This handles cases where it might be slightly different or commented out
+              const problematicRegex = /anchor:\s*\/resource_bundle_target\.build_configurations\.each do \|config\|/;
+              if (problematicRegex.test(content)) {
+                content = content.replace(problematicRegex, "anchor: /post_install do \\|installer\\|/");
+                fs.writeFileSync(file, content);
+                console.log("Successfully patched plugin logic.");
+              } else {
+                console.log("Regex not found in file content, checking for alternative patterns...");
+                // Fallback: If the exact regex is not found, try to replace any mention of resource_bundle_target as anchor
+                content = content.replace(/anchor:.*resource_bundle_target.*/g, "anchor: /post_install do \\|installer\\|/");
+                fs.writeFileSync(file, content);
+                console.log("Applied fallback patch.");
+              }
             } else {
-              console.log("Plugin file not found, skipping patch.");
+              console.log("Plugin file not found at: " + file);
+              process.exit(1); // Fail the build if we cant find the file to patch
             }
           '
 
       - name: Expo Prebuild
+        working-directory: TAMTAM
         run: |
           rm -rf ios
           npx expo prebuild --platform ios --no-install --clean
 
       - name: Install CocoaPods
-        working-directory: ios
+        working-directory: TAMTAM/ios
         run: pod install
 
       - name: Build App Bundle (Unsigned)
+        working-directory: TAMTAM/ios
         run: |
           xcodebuild build \
-            -workspace ios/TAMTAM.xcworkspace \
+            -workspace TAMTAM.xcworkspace \
             -scheme TAMTAM \
             -configuration Release \
             -sdk iphoneos \
@@ -64,14 +75,15 @@ jobs:
             AD_HOC_CODE_SIGNING_ALLOWED=YES
 
       - name: Package IPA
+        working-directory: TAMTAM
         run: |
           mkdir -p Payload
           # Find the .app file and move it to Payload
-          find ./build/Build/Products/Release-iphoneos -name "*.app" -exec cp -r {} ./Payload/ \;
+          find ./ios/build/Build/Products/Release-iphoneos -name "*.app" -exec cp -r {} ./Payload/ \;
           zip -r TAMTAM.ipa Payload
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
           name: TAMTAM-Sideload-IPA
-          path: TAMTAM.ipa
+          path: TAMTAM/TAMTAM.ipa
