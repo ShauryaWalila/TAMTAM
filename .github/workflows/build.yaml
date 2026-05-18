@@ -23,6 +23,18 @@ jobs:
       - name: Patch Expo Widgets Plugin (Deep Fix)
         run: node scripts/fix-widgets-plugin.js
 
+      - name: Fix Folly Podspec
+        run: |
+          # The default RCT-Folly podspec in RN 0.81.x is missing synchronization headers in source_files
+          PODSPEC="node_modules/react-native/third-party-podspecs/RCT-Folly.podspec"
+          if [ -f "$PODSPEC" ]; then
+            # Insert the missing header path right after 'folly/*.h'
+            sed -i '' "s|'folly\/\*\.h',|'folly\/\*\.h',\n                      'folly\/synchronization\/\*\.h',|g" "$PODSPEC"
+            echo "Successfully patched RCT-Folly.podspec"
+          else
+            echo "Warning: RCT-Folly.podspec not found"
+          fi
+
       - name: Expo Prebuild
         run: |
           rm -rf ios
