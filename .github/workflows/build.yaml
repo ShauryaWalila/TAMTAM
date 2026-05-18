@@ -14,7 +14,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: 'npm'
 
       - name: Install Dependencies
@@ -27,6 +27,16 @@ jobs:
         run: |
           rm -rf ios
           npx expo prebuild --platform ios --no-install --clean
+
+      - name: Fix Podfile Sources
+        working-directory: ios
+        run: |
+          # Prepend the git source to the Podfile to ensure RCT-Folly can be found
+          # The CDN (default) often fails for New Arch dependencies on CI
+          echo "source 'https://github.com/CocoaPods/Specs.git'" > Podfile.tmp
+          cat Podfile >> Podfile.tmp
+          mv Podfile.tmp Podfile
+          cat Podfile # Log it for debugging
 
       - name: Install CocoaPods
         working-directory: ios
