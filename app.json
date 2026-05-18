@@ -70,15 +70,7 @@
       "@react-native-community/datetimepicker",
       "expo-location",
       "expo-notifications",
-      "expo-task-manager",
-      [
-        "expo-build-properties",
-        {
-          "ios": {
-            "newArchEnabled": true
-          }
-        }
-      ]
+      "expo-task-manager"
     ],
     "extra": {
       "eas": {
