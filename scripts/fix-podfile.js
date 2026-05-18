@@ -34,11 +34,13 @@ const deps = [
   "  pod 'RCT-Folly', :podspec => '../node_modules/react-native/third-party-podspecs/RCT-Folly.podspec'"
 ];
 
-// 3. Fix Swift version mismatch by forcing all targets to 5.0
-const swiftFix = `
+// 3. Fix Swift version mismatch and disable signing for ALL pods
+const podPostInstallFix = `
     installer.pods_project.targets.each do |target|
       target.build_configurations.each do |config|
         config.build_settings['SWIFT_VERSION'] = '5.0'
+        config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
+        config.build_settings['CODE_SIGNING_REQUIRED'] = 'NO'
       end
     end
 `;
@@ -60,7 +62,7 @@ for (let line of lines) {
   
   // Match post_install do |installer|
   if (line.trim().startsWith("post_install do |installer|")) {
-    newLines.push(swiftFix);
+    newLines.push(podPostInstallFix);
   }
 }
 
