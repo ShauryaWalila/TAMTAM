@@ -35,6 +35,7 @@ const deps = [
 ];
 
 // 3. Fix Swift version mismatch and disable signing for ALL pods
+// We also patch AIRMapMarker.m here to ensure it survives pod install
 const podPostInstallFix = `
     installer.pods_project.targets.each do |target|
       target.build_configurations.each do |config|
@@ -42,6 +43,16 @@ const podPostInstallFix = `
         config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
         config.build_settings['CODE_SIGNING_REQUIRED'] = 'NO'
       end
+    end
+    
+    # Patch react-native-maps for App Extension compilation
+    maps_marker = File.join(installer.sandbox.root, 'react-native-maps', 'ios', 'AirMaps', 'AIRMapMarker.m')
+    if File.exist?(maps_marker)
+      text = File.read(maps_marker)
+      text = text.gsub("UIWindow* win = [[[UIApplication sharedApplication] windows] firstObject];", 
+                       "#if !TARGET_OS_APP_EXTENSION\\n            UIWindow* win = [[[UIApplication sharedApplication] windows] firstObject];\\n#else\\n            UIWindow* win = nil;\\n#endif")
+      File.write(maps_marker, text)
+      puts "Successfully patched AIRMapMarker.m for App Extension"
     end
 `;
 
