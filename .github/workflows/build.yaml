@@ -20,6 +20,27 @@ jobs:
       - name: Install Dependencies
         run: npm install --legacy-peer-deps
 
+      - name: Patch Expo Widgets Plugin (Fix Regex Bug)
+        run: |
+          node -e '
+            const fs = require("fs");
+            const file = "node_modules/@bittingz/expo-widgets/plugin/build/ios/withPodfile.js";
+            if (fs.existsSync(file)) {
+              console.log("Patching " + file);
+              let content = fs.readFileSync(file, "utf8");
+              // surgical fix: find the active mergeContents call and replace its anchor to prevent failure
+              // The error is: Failed to match "/resource_bundle_target.build_configurations.each do |config|/"
+              content = content.replace(
+                /anchor:\s*\/resource_bundle_target\.build_configurations\.each do \|config\|/,
+                "anchor: /post_install do \\|installer\\|/"
+              );
+              fs.writeFileSync(file, content);
+              console.log("Successfully patched plugin logic.");
+            } else {
+              console.log("Plugin file not found, skipping patch.");
+            }
+          '
+
       - name: Expo Prebuild
         run: |
           rm -rf ios
