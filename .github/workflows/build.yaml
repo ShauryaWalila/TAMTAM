@@ -22,11 +22,17 @@ jobs:
 
       - name: Fix Folly Podspec
         run: |
-          # The default RCT-Folly podspec in RN 0.81.x is missing synchronization headers in source_files
+          # The default RCT-Folly podspec in RN 0.81.x is missing synchronization and coro headers in source_files
           PODSPEC="node_modules/react-native/third-party-podspecs/RCT-Folly.podspec"
           if [ -f "$PODSPEC" ]; then
-            # Insert the missing header path right after 'folly/*.h'
-            sed -i '' "s|'folly\/\*\.h',|'folly\/\*\.h',\n                      'folly\/synchronization\/\*\.h',|g" "$PODSPEC"
+            echo "Patching RCT-Folly.podspec..."
+            
+            # Add missing subdirectories to source_files
+            sed -i '' "s|'folly/system/\*\.h',|'folly/system/*.h',\n                      'folly/synchronization/*.h',\n                      'folly/synchronization/detail/*.h',\n                      'folly/futures/*.h',\n                      'folly/futures/detail/*.h',\n                      'folly/coro/*.h',\n                      'folly/coro/detail/*.h',\n                      'folly/executor/*.h',\n                      'folly/executor/detail/*.h',\n                      'folly/io/*.h',\n                      'folly/io/async/*.h',|g" "$PODSPEC"
+            
+            # Add missing subdirectories to preserve_paths
+            sed -i '' "s|'folly/system/\*\.h'|'folly/system/*.h',\n                        'folly/synchronization/*.h',\n                        'folly/synchronization/detail/*.h',\n                        'folly/futures/*.h',\n                        'folly/futures/detail/*.h',\n                        'folly/coro/*.h',\n                        'folly/coro/detail/*.h',\n                        'folly/executor/*.h',\n                        'folly/executor/detail/*.h',\n                        'folly/io/*.h',\n                        'folly/io/async/*.h'|g" "$PODSPEC"
+            
             echo "Successfully patched RCT-Folly.podspec"
           else
             echo "Warning: RCT-Folly.podspec not found"
