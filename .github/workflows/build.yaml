@@ -30,7 +30,7 @@ jobs:
 
       - name: Install CocoaPods
         working-directory: ios
-        run: pod install
+        run: pod install --repo-update
 
       - name: Build App Bundle (Unsigned)
         working-directory: ios
