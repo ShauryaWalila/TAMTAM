@@ -35,6 +35,16 @@ jobs:
             echo "Warning: RCT-Folly.podspec not found"
           fi
 
+      - name: Patch React Native Maps for App Extension
+        run: |
+          # React Native Maps uses UIApplication.sharedApplication which is banned in widgets.
+          # We wrap it in a compiler check to ignore it when building for extensions.
+          MAP_MARKER="node_modules/react-native-maps/ios/AirMaps/AIRMapMarker.m"
+          if [ -f "$MAP_MARKER" ]; then
+            sed -i '' 's/UIWindow\* win = \[\[\[UIApplication sharedApplication\] windows\] firstObject\];/#if !TARGET_OS_APP_EXTENSION\n            UIWindow* win = [[[UIApplication sharedApplication] windows] firstObject];\n#else\n            UIWindow* win = nil;\n#endif/g' "$MAP_MARKER"
+            echo "Successfully patched react-native-maps AIRMapMarker.m"
+          fi
+
       - name: Expo Prebuild
         run: |
           rm -rf ios
