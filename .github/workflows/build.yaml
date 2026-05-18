@@ -20,23 +20,32 @@ jobs:
       - name: Install Dependencies
         run: npm install --legacy-peer-deps
 
-      - name: Fix Folly Podspec
+      - name: Fix Folly and Reanimated
         run: |
-          # The default RCT-Folly podspec in RN 0.81.x is missing synchronization and coro headers in source_files
+          # 1. Fix RCT-Folly podspec in RN 0.81.x (missing synchronization and coro headers)
           PODSPEC="node_modules/react-native/third-party-podspecs/RCT-Folly.podspec"
           if [ -f "$PODSPEC" ]; then
             echo "Patching RCT-Folly.podspec..."
-            
-            # Add missing subdirectories to source_files
-            sed -i '' "s|'folly/system/\*\.h',|'folly/system/*.h',\n                      'folly/synchronization/*.h',\n                      'folly/synchronization/detail/*.h',\n                      'folly/futures/*.h',\n                      'folly/futures/detail/*.h',\n                      'folly/coro/*.h',\n                      'folly/coro/detail/*.h',\n                      'folly/executor/*.h',\n                      'folly/executor/detail/*.h',\n                      'folly/io/*.h',\n                      'folly/io/async/*.h',|g" "$PODSPEC"
-            
-            # Add missing subdirectories to preserve_paths
-            sed -i '' "s|'folly/system/\*\.h'|'folly/system/*.h',\n                        'folly/synchronization/*.h',\n                        'folly/synchronization/detail/*.h',\n                        'folly/futures/*.h',\n                        'folly/futures/detail/*.h',\n                        'folly/coro/*.h',\n                        'folly/coro/detail/*.h',\n                        'folly/executor/*.h',\n                        'folly/executor/detail/*.h',\n                        'folly/io/*.h',\n                        'folly/io/async/*.h'|g" "$PODSPEC"
-            
-            echo "Successfully patched RCT-Folly.podspec"
-          else
-            echo "Warning: RCT-Folly.podspec not found"
+            # Use a more robust sed approach to add headers to source_files and preserve_paths
+            sed -i '' "s|'folly/system/\*\.h',|'folly/system/*.h', 'folly/synchronization/*.h', 'folly/synchronization/detail/*.h', 'folly/futures/*.h', 'folly/futures/detail/*.h', 'folly/coro/*.h', 'folly/coro/detail/*.h', 'folly/executor/*.h', 'folly/executor/detail/*.h', 'folly/io/*.h', 'folly/io/async/*.h',|g" "$PODSPEC"
+            sed -i '' "s|'folly/system/\*\.h'|'folly/system/*.h', 'folly/synchronization/*.h', 'folly/synchronization/detail/*.h', 'folly/futures/*.h', 'folly/futures/detail/*.h', 'folly/coro/*.h', 'folly/coro/detail/*.h', 'folly/executor/*.h', 'folly/executor/detail/*.h', 'folly/io/*.h', 'folly/io/async/*.h'|g" "$PODSPEC"
           fi
+
+          # 2. Fix RNReanimated ReanimatedMountHook (type mismatch in RN 0.81.x)
+          # UIManagerMountHook::shadowTreeDidMount changed its second parameter from 'double' to 'HighResTimeStamp'
+          REA_HOOK_H="node_modules/react-native-reanimated/Common/cpp/reanimated/Fabric/ReanimatedMountHook.h"
+          REA_HOOK_CPP="node_modules/react-native-reanimated/Common/cpp/reanimated/Fabric/ReanimatedMountHook.cpp"
+
+          if [ -f "$REA_HOOK_H" ]; then
+            echo "Patching ReanimatedMountHook.h..."
+            sed -i '' "s/double mountTime) noexcept override;/facebook::react::HighResTimeStamp mountTime) noexcept override;/g" "$REA_HOOK_H"
+          fi
+
+          if [ -f "$REA_HOOK_CPP" ]; then
+            echo "Patching ReanimatedMountHook.cpp..."
+            sed -i '' "s/double) noexcept {/facebook::react::HighResTimeStamp) noexcept {/g" "$REA_HOOK_CPP"
+          fi
+
 
       - name: Expo Prebuild
         run: |

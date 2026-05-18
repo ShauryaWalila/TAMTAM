@@ -13,9 +13,10 @@ xcodebuild build \
     COMPILER_INDEX_STORE_ENABLE=NO \
     -quiet || (echo "Build failed, showing last 100 lines of error log:" && xcodebuild build -workspace TAMTAM.xcworkspace -scheme TAMTAM -configuration Release -sdk iphoneos -derivedDataPath ./build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" AD_HOC_CODE_SIGNING_ALLOWED=YES CODE_SIGN_STYLE=Manual PROVISIONING_PROFILE_SPECIFIER="" COMPILER_INDEX_STORE_ENABLE=NO | grep -A 5 "error:" | tail -n 100 && exit 1)
   shell: /bin/bash -e {0}
+  
 --- xcodebuild: WARNING: Using the first of multiple matching destinations:
 { platform:iOS, id:dvtdevice-DVTiPhonePlaceholder-iphoneos:placeholder, name:Any iOS Device }
-{ platform:macOS, arch:arm64, variant:Designed for [iPad,iPhone], id:e48c457ab3cdc3cd3fc6cfa5f9018fcb5cc30152, name:My Mac }
+{ platform:macOS, arch:arm64, variant:Designed for [iPad,iPhone], id:c85832e3c541d5a17818e66fb8ead40e865b11b8, name:My Mac }
 { platform:iOS Simulator, id:dvtdevice-DVTiOSDeviceSimulatorPlaceholder-iphonesimulator:placeholder, name:Any iOS Simulator Device }
 /Users/runner/work/TAMTAM/TAMTAM/node_modules/@react-native-community/netinfo/ios/RNCNetInfo.m:153:33: warning: 'subscriberCellularProvider' is deprecated: first deprecated in iOS 12.0 [-Wdeprecated-declarations]
   153 |   CTCarrier *carrier = [netinfo subscriberCellularProvider];
@@ -401,6 +402,14 @@ In module 'UIKit' imported from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Target
   725 |                 self.defaultCompassButton = subview2;
       |                                           ^ ~~~~~~~~
 3 warnings generated.
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-safe-area-context/common/cpp/react/renderer/components/safeareacontext/RNCSafeAreaViewShadowNode.cpp:3:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/components/view/conversions.h:17:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-renderercss/react/renderer/css/CSSAngle.h:13:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-renderercss/react/renderer/css/CSSDataType.h:15:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-renderercss/react/renderer/css/CSSSyntaxParser.h:150:13: warning: parameter '<ReturnT>' not found in the function declaration [-Wdocumentation]
+  150 |    * @param <ReturnT> caller-specified return type of visitors. This type will
+      |             ^~~~~~~~~
+1 warning generated.
 /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-webview/apple/RNCWebView.mm:329:17: warning: implicit conversion loses integer precision: 'WKDataDetectorTypes' (aka 'unsigned long') to 'RNCWebViewDataDetectorTypesMask' (aka 'unsigned int') [-Wshorten-64-to-32]
   329 |             if (dataDetectorTypes & RNCWebViewDataDetectorTypes::Address) {
       |                 ^~~~~~~~~~~~~~~~~ ~
@@ -453,14 +462,6 @@ In file included from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/
    94 |       #define nil nullptr
       |                   ^~~~~~~
 11 warnings generated.
-In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-safe-area-context/common/cpp/react/renderer/components/safeareacontext/RNCSafeAreaViewShadowNode.cpp:3:
-In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/components/view/conversions.h:17:
-In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-renderercss/react/renderer/css/CSSAngle.h:13:
-In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-renderercss/react/renderer/css/CSSDataType.h:15:
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-renderercss/react/renderer/css/CSSSyntaxParser.h:150:13: warning: parameter '<ReturnT>' not found in the function declaration [-Wdocumentation]
-  150 |    * @param <ReturnT> caller-specified return type of visitors. This type will
-      |             ^~~~~~~~~
-1 warning generated.
 /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-pager-view/ios/Fabric/RNCPagerViewComponentView.mm:370:144: warning: implicit conversion loses integer precision: 'NSInteger' (aka 'long') to 'int' [-Wshorten-64-to-32]
   370 |     NSDictionary *userInfo = [NSDictionary dictionaryWithObjectsAndKeys:[[RCTOnPageScrollEvent alloc] initWithReactTag:[NSNumber numberWithInt:self.tag] position:@(position) offset:@(interpolatedOffset)], @"event", nil];
       |                                                                                                                        ~                       ^~~~~~~~
@@ -718,1531 +719,1276 @@ In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/R
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTViewManager.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTShadowView.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTBridgeConstants.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTEventDispatcherProtocol.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTObjcExecutor.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'UIView+ComponentViewProtocol.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTPackagerClient.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTParagraphComponentAccessibilityProvider.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTURLRequestHandler.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSafeAreaViewComponentView.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSurfacePresenterBridgeAdapter.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTLocalizationProvider.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTDevToolsRuntimeSettingsModule.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTCxxInspectorWebSocketAdapter.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTPackagerConnection.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTTextInputComponentView.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTShadowView+Internal.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'Props.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTScrollContentShadowView.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSafeAreaView.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTInspectorDevServerHelper.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTCxxConvert.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTComponentViewDescriptor.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTPullToRefreshViewComponentView.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTViewUtils.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTUtils.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTErrorInfo.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTConvert+Transform.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTCallInvoker.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTConstants.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTLayoutAnimationGroup.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTMountingManager.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTBridge.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTManagedPointer.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTBridgeModule.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTColorSpaceUtils.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTJavaScriptExecutor.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTModalManager.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTImageResponseObserverProxy.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'PlatformRunLoopObserver.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTInspector.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTMultipartDataTask.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTFont.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSurfaceSizeMeasureMode.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTBorderCurve.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'ComponentDescriptors.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTMountingManagerDelegate.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTRefreshControlManager.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTPerformanceLogger.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTAppearance.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTDebuggingOverlayComponentView.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTUnimplementedViewComponentView.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTViewAccessibilityElement.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSurfaceRegistry.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTInspectorNetworkHelper.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTMultipartStreamReader.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'NSDataBigString.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTUtilsUIOverride.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSurfaceRootView.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTCustomPullToRefreshViewProtocol.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'FBReactNativeSpec.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTHermesInstanceFactory.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTClipboard.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTRefreshControl.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTTouchEvent.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTViewComponentView.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTUIManager.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTPrimitives.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTParagraphComponentView.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSurfaceProtocol.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTConvert+CoreLocation.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTModalHostViewComponentView.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTRootViewInternal.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSurfaceDelegate.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTReactTaggedView.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTDefaultCxxLogFunction.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTInputAccessoryContentView.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTNativeModule.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTPlatform.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTLegacyViewManagerInteropComponentView.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTComponent.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTTiming.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTParserUtils.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTRootViewDelegate.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTPerformanceLoggerLabels.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTModuleMethod.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTJSIExecutorRuntimeInstaller.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTLocalizedString.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTBundleURLProvider.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTReconnectingWebSocket.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTBoxShadow.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSafeAreaViewLocalData.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTGradientUtils.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSwitchManager.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTBridgeDelegate.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTBridge+Inspector.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTModalHostViewManager.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTURLRequestDelegate.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSwitchComponentView.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTCxxMethod.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTDevSettings.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTEventDispatcher.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTJavaScriptLoader.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTLayoutAnimation.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTModuleData.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTDebuggingOverlayManager.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTAccessibilityElement.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTAnimationType.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTRootComponentView.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTConvert.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTMessageThread.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTCxxInspectorPackagerConnection.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTRootShadowView.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTPointerEvents.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTImageResponseDelegate.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTBundleManager.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTCursor.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTNullability.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTVersion.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSurfacePresenterStub.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTComponentViewClassDescriptor.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTProfile.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTKeyboardObserver.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTRedBoxSetEnabled.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'ShadowNodes.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'EventEmitters.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTPLTag.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTComponentEvent.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTComponentViewProtocol.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTStatusBarManager.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTLinearGradient.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTInvalidating.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTLayout.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTBridgeModuleDecorator.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTCxxBridgeDelegate.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTMountingTransactionObserverCoordinator.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTEnhancedScrollView.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTReloadCommand.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTTouchHandler.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'CoreModulesPlugins.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSurface.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTView.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTBorderStyle.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTInputAccessoryComponentView.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSafeAreaShadowView.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTMockDef.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTFPSGraph.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTScrollEvent.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTActionSheetManager.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'UIView+React.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTCxxInspectorPackagerConnectionDelegate.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTAccessibilityManager+Internal.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTMacros.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTWrapperViewController.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTModalHostViewController.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTTouchableComponentViewProtocol.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTDisplayLink.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTBridgeMethod.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTMountingTransactionObserving.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTDevLoadingViewSetEnabled.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTIdentifierPool.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'FBReactNativeSpecJSI.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTCallInvokerModule.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTBorderDrawing.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTDevLoadingViewProtocol.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTScrollView.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTLogBox.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTExceptionsManager.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTModalHostView.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTActivityIndicatorViewComponentView.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTInitializing.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSurfaceView.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSurfaceHostingProxyRootView.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTUIManagerUtils.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTAccessibilityManager.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTRootContentView.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTJSStackFrame.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTDevLoadingView.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTUnimplementedNativeComponentView.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTScrollContentViewManager.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSourceCode.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTDebuggingOverlay.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTFrameUpdate.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTBridge+Private.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTShadowView+Layout.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTLogBoxView.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTConversions.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'States.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTWebSocketModule.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTComponentData.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTTurboModuleRegistry.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTRootView.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTScrollViewManager.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTBridgeProxy.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTInspectorPackagerConnection.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTPausedInDebuggerOverlayController.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTI18nManager.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTErrorCustomizer.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTJSThread.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTLog.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSurfacePresenter.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTFabricSurface.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTRadialGradient.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTFabricModalHostViewController.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTScrollViewComponentView.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTRefreshableProtocol.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTLegacyViewManagerInteropCoordinatorAdapter.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSurfaceRootShadowViewDelegate.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSurfaceRootShadowView.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTAlertManager.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTRedBox.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTScrollableProtocol.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTI18nUtil.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'DispatchMessageQueueThread.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTAutoInsetsProtocol.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'AppleEventBeat.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSurfacePointerHandler.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTScrollContentView.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTCxxUtils.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTFabricComponentsPlugins.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTDefines.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSwitch.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTVirtualViewComponentView.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSurfaceStage.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTScheduler.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'UIView+Private.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTBridgeProxy+Cxx.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSurfaceHostingView.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTTextInputNativeCommands.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTDeviceInfo.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTAssert.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTActivityIndicatorViewManager.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTActivityIndicatorView.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTComponentViewHelpers.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTCxxModule.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTImageComponentView.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTTextInputUtils.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSurfaceTouchHandler.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTAlertController.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTComponentViewFactory.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTUIManagerObserverCoordinator.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSafeAreaViewManager.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTKeyCommands.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTRedBoxExtraDataViewController.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTFollyConvert.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTAppState.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTDevMenu.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTInspectorUtils.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSurfaceView+Internal.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTImageSource.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTComponentViewRegistry.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'FBXXHashUtils.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTTextDecorationLineType.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTGenericDelegateSplitter.h'
-
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTEventEmitter.h'
-
 ^
 /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicDataType.swift:14:17: warning: cast from 'any AnyDynamicType' to unrelated type 'Data.Type' always fails
     return type is Data.Type
@@ -2553,11 +2299,6 @@ In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/R
 /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/mounting/ShadowViewMutation.h:83:7: warning: declaration is marked with '@deprecated' command but does not have a deprecation attribute [-Wdocumentation-deprecated-sync]
    83 |    * @deprecated Pass parentTag instead of parentShadowView.
       |      ~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/mounting/ShadowViewMutation.h:85:3: note: add a deprecation attribute to the declaration to silence this warning
-   85 |   static ShadowViewMutation UpdateMutation(
-      |   ^
-      |   FMT_DEPRECATED 
-3 warnings generated.
 In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/RNSScreen.mm:13:
 In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-RCTFabric/React/RCTScrollViewComponentView.h:12:
 In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-RCTFabric/React/RCTMountingTransactionObserving.h:10:
@@ -3202,19 +2943,64 @@ In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native
   239 |   NSUInteger values = count * 5;
       |              ^
 1 warning generated.
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/Fabric/ShadowTreeCloner.cpp:10:13: warning: 'Unshared' is deprecated: Use std::shared_ptr<ShadowNode> instead [-Wdeprecated-declarations]
+   10 | ShadowNode::Unshared cloneShadowTreeWithNewPropsRecursive(
+      |             ^
 In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/Fabric/ShadowTreeCloner.cpp:3:
 In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/Fabric/ShadowTreeCloner.h:5:
-In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/uimanager/UIManager.h:10:
-In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/ReactNativeDependencies/folly/dynamic.h:17:
-In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/ReactNativeDependencies/folly/json/dynamic.h:70:
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/ReactNativeDependencies/folly/Expected.h:1587:10: fatal error: 'folly/coro/Coroutine.h' file not found
- 1587 | #include <folly/coro/Coroutine.h>
-      |          ^~~~~~~~~~~~~~~~~~~~~~~~
-1 error generated.
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/uimanager/UIManager.h:16:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/componentregistry/ComponentDescriptorRegistry.h:14:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/componentregistry/ComponentDescriptorProvider.h:10:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/ComponentDescriptor.h:15:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/ShadowNode.h:42:20: note: 'Unshared' has been explicitly marked deprecated here
+   42 |   using Unshared [[deprecated("Use std::shared_ptr<ShadowNode> instead")]] =
+      |                    ^
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/Fabric/ShadowTreeCloner.cpp:40:37: warning: 'ListOfShared' is deprecated: Use std::vector<std::shared_ptr<const ShadowNode>> instead [-Wdeprecated-declarations]
+   40 |        std::make_shared<ShadowNode::ListOfShared>(children),
+      |                                     ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/Fabric/ShadowTreeCloner.cpp:3:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/Fabric/ShadowTreeCloner.h:5:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/uimanager/UIManager.h:16:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/componentregistry/ComponentDescriptorRegistry.h:14:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/componentregistry/ComponentDescriptorProvider.h:10:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/ComponentDescriptor.h:15:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/ShadowNode.h:45:24: note: 'ListOfShared' has been explicitly marked deprecated here
+   45 |   using ListOfShared [[deprecated(
+      |                        ^
+2 warnings generated.
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/Fabric/ReanimatedMountHook.cpp:4:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/Fabric/ReanimatedMountHook.h:4:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/Fabric/PropsRegistry.h:20:33: warning: 'Shared' is deprecated: Use std::shared_ptr<const ShadowNode> instead [-Wdeprecated-declarations]
+   20 |   void update(const ShadowNode::Shared &shadowNode, folly::dynamic &&props);
+      |                                 ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/Fabric/ReanimatedMountHook.cpp:3:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/Fabric/ReanimatedCommitShadowNode.h:4:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/ShadowNode.h:36:18: note: 'Shared' has been explicitly marked deprecated here
+   36 |   using Shared [[deprecated("Use std::shared_ptr<const ShadowNode> instead")]] =
+      |                  ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/Fabric/ReanimatedMountHook.cpp:4:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/Fabric/ReanimatedMountHook.h:4:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/Fabric/PropsRegistry.h:49:49: warning: 'Shared' is deprecated: Use std::shared_ptr<const ShadowNode> instead [-Wdeprecated-declarations]
+   49 |   std::unordered_map<Tag, std::pair<ShadowNode::Shared, folly::dynamic>> map_;
+      |                                                 ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/Fabric/ReanimatedMountHook.cpp:3:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/Fabric/ReanimatedCommitShadowNode.h:4:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/ShadowNode.h:36:18: note: 'Shared' has been explicitly marked deprecated here
+   36 |   using Shared [[deprecated("Use std::shared_ptr<const ShadowNode> instead")]] =
+      |                  ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/Fabric/ReanimatedMountHook.cpp:4:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/Fabric/ReanimatedMountHook.h:24:34: error: non-virtual member function marked 'override' hides virtual member function
+   24 |       double mountTime) noexcept override;
+      |                                  ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/Fabric/ReanimatedMountHook.cpp:4:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/Fabric/ReanimatedMountHook.h:7:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/uimanager/UIManagerMountHook.h:27:16: note: hidden overloaded virtual function 'facebook::react::UIManagerMountHook::shadowTreeDidMount' declared here: type mismatch at 2nd parameter ('HighResTimeStamp' vs 'double')
+   27 |   virtual void shadowTreeDidMount(
+      |                ^
+2 warnings and 1 error generated.
 note: Using codesigning identity override: 
 ** BUILD FAILED **
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'hermes-engine' from project 'Pods')
-
 warning: Run script build phase '[CP-User] [Hermes] Replace Hermes for the right configuration, if needed' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'hermes-engine' from project 'Pods')
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'ReactNativeDependencies' from project 'Pods')
 note: Run script build phase '[CP-User] [RNDeps] Replace React Native Dependencies for the right configuration, if needed' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'ReactNativeDependencies' from project 'Pods')
@@ -3226,8 +3012,6 @@ note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEV
 note: Run script build phase '[Expo] Configure project' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'TAMTAM' from project 'TAMTAM')
 note: Run script build phase 'Bundle React Native code and images' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'TAMTAM' from project 'TAMTAM')
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'Pods-TAMTAM' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'ExpoSQLite' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'ExpoPrint' from project 'Pods')
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'react-native-webview' from project 'Pods')
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'react-native-skia' from project 'Pods')
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'react-native-safe-area-context' from project 'Pods')
@@ -3268,6 +3052,8 @@ note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEV
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'ExpoSpeech' from project 'Pods')
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'ExpoSharing' from project 'Pods')
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'ExpoSecureStore' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'ExpoSQLite' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'ExpoPrint' from project 'Pods')
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'ExpoModulesCore' from project 'Pods')
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'ExpoMediaLibrary-ExpoMediaLibrary_privacy' from project 'Pods')
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'ExpoMediaLibrary' from project 'Pods')
@@ -3302,73 +3088,73 @@ note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEV
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'EXApplication' from project 'Pods')
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'EXAV' from project 'Pods')
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'DoubleConversion' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-cxxreact' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTNetwork' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-renderercss' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-ImageManager' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-NativeModulesApple' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'boost' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTAnimation' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-runtimescheduler' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-jsinspectortracing' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-jsinspector' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-featureflagsnativemodule' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RuntimeHermes' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTText' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'ReactCommon' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTLinking' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'fast_float' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-callinvoker' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-microtasksnativemodule' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RuntimeApple' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-jsitracing' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-rendererconsistency' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-jsi' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-Mapbuffer' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-Fabric' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-utils' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-debug' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'FBLazyVector' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-defaultsnativemodule' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'RCTTypeSafety' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-timing' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-graphics' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-domnativemodule' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTImage' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-perflogger' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-oscompat' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-CoreModules' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-featureflags' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-performancetimeline' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-jsinspectorcdp' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-logger' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-FabricComponents' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RuntimeCore' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTFabric' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-idlecallbacksnativemodule' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'RCTRequired' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'Yoga' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-runtimeexecutor' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTAppDelegate' from project 'Pods')
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-jserrorhandler' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-jsitracing' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-Mapbuffer' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-performancetimeline' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTText' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-microtasksnativemodule' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTAppDelegate' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-defaultsnativemodule' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTLinking' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-logger' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-jsinspectortracing' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'FBLazyVector' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-utils' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTFabric' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTVibration' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-NativeModulesApple' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RuntimeCore' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-CoreModules' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTNetwork' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-runtimescheduler' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-debug' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-graphics' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RuntimeHermes' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'Yoga' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-hermes' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-jsiexecutor' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTAnimation' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-ImageManager' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTRuntime' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-timing' from project 'Pods')
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'RCTDeprecation' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'RCTTypeSafety' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-idlecallbacksnativemodule' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-FabricImage' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'boost' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-FabricComponents' from project 'Pods')
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-jsitooling' from project 'Pods')
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-Core' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-jsiexecutor' from project 'Pods')
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-rendererdebug' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-hermes' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTActionSheet' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-callinvoker' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-perflogger' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'fast_float' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-Fabric' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-oscompat' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTImage' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-jsi' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RuntimeApple' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'ReactCommon' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'RCTRequired' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-cxxreact' from project 'Pods')
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTBlob' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTVibration' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-FabricImage' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-renderercss' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-jsinspectorcdp' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-featureflagsnativemodule' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-jsinspector' from project 'Pods')
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-jsinspectornetwork' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTRuntime' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTActionSheet' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-rendererconsistency' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-runtimeexecutor' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-domnativemodule' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-featureflags' from project 'Pods')
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTSettings' from project 'Pods')
 Build failed, showing last 100 lines of error log:
 --- xcodebuild: WARNING: Using the first of multiple matching destinations:
 { platform:iOS, id:dvtdevice-DVTiPhonePlaceholder-iphoneos:placeholder, name:Any iOS Device }
-{ platform:macOS, arch:arm64, variant:Designed for [iPad,iPhone], id:e48c457ab3cdc3cd3fc6cfa5f9018fcb5cc30152, name:My Mac }
+{ platform:macOS, arch:arm64, variant:Designed for [iPad,iPhone], id:c85832e3c541d5a17818e66fb8ead40e865b11b8, name:My Mac }
 { platform:iOS Simulator, id:dvtdevice-DVTiOSDeviceSimulatorPlaceholder-iphonesimulator:placeholder, name:Any iOS Simulator Device }
 { platform:visionOS Simulator, arch:arm64, variant:Designed for [iPad,iPhone], id:60B3BAF2-290B-4695-B686-2396CCB96138, OS:2.3, name:Apple Vision Pro }
 { platform:visionOS Simulator, arch:arm64, variant:Designed for [iPad,iPhone], id:DABA7DF4-7BC2-4C4B-990D-0EEBBF570262, OS:2.4, name:Apple Vision Pro }
@@ -3562,15 +3348,14 @@ Build failed, showing last 100 lines of error log:
 { platform:iOS Simulator, arch:arm64, id:7631B9C5-26B8-47DC-AE96-B2D87F4D54B2, OS:26.2, name:iPhone SE (3rd generation) }
 { platform:iOS Simulator, arch:x86_64, id:7631B9C5-26B8-47DC-AE96-B2D87F4D54B2, OS:26.2, name:iPhone SE (3rd generation) }
 ** BUILD FAILED **
-
-
 The following build commands failed:
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/ReactNativeDependencies/folly/Expected.h:1587:10: fatal error: 'folly/coro/Coroutine.h' file not found
-	CompileC /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/RNReanimated.build/Objects-normal/arm64/ShadowTreeCloner.o /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/Fabric/ShadowTreeCloner.cpp normal arm64 c++ com.apple.compilers.llvm.clang.1_0.compiler (in target 'RNReanimated' from project 'Pods')
- 1587 | #include <folly/coro/Coroutine.h>
+	CompileC /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/RNReanimated.build/Objects-normal/arm64/ReanimatedMountHook.o /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/Fabric/ReanimatedMountHook.cpp normal arm64 c++ com.apple.compilers.llvm.clang.1_0.compiler (in target 'RNReanimated' from project 'Pods')
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/Fabric/ReanimatedMountHook.h:24:34: error: non-virtual member function marked 'override' hides virtual member function
 	Building workspace TAMTAM with scheme TAMTAM and configuration Release
-      |          ^~~~~~~~~~~~~~~~~~~~~~~~
+   24 |       double mountTime) noexcept override;
 (2 failures)
-1 error generated.
-
-CompileC /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/RNReanimated.build/Objects-normal/arm64/ReanimatedWorkletRuntimeDecorator.o /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/RuntimeDecorators/ReanimatedWorkletRuntimeDecorator.cpp normal arm64 c++ com.apple.compilers.llvm.clang.1_0.compiler (in target 'RNReanimated' from project 'Pods')
+      |                                  ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/Fabric/ReanimatedMountHook.cpp:4:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/Fabric/ReanimatedMountHook.h:7:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/uimanager/UIManagerMountHook.h:27:16: note: hidden overloaded virtual function 'facebook::react::UIManagerMountHook::shadowTreeDidMount' declared here: type mismatch at 2nd parameter ('HighResTimeStamp' vs 'double')
+Error: Process completed with exit code 1.
