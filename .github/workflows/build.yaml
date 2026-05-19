@@ -20,6 +20,23 @@ jobs:
       - name: Install Dependencies
         run: npm install --legacy-peer-deps
 
+      - name: Patch RCT-Folly podspec
+        run: |
+          node -e "
+            const fs = require('fs');
+            const path = require('path');
+            const podspecPath = path.join(process.cwd(), 'node_modules/react-native/third-party-podspecs/RCT-Folly.podspec');
+            if (fs.existsSync(podspecPath)) {
+              let content = fs.readFileSync(podspecPath, 'utf8');
+              content = content.replace(/'folly\\/system\\/\\*\\.h',/g, \"'folly/system/*.h', 'folly/synchronization/*.h', 'folly/synchronization/detail/*.h', 'folly/futures/*.h', 'folly/futures/detail/*.h', 'folly/coro/*.h', 'folly/coro/detail/*.h', 'folly/executor/*.h', 'folly/executor/detail/*.h', 'folly/io/*.h', 'folly/io/async/*.h',\")
+                               .replace(/'folly\\/system\\/\\*\\.h'/g, \"'folly/system/*.h', 'folly/synchronization/*.h', 'folly/synchronization/detail/*.h', 'folly/futures/*.h', 'folly/futures/detail/*.h', 'folly/coro/*.h', 'folly/coro/detail/*.h', 'folly/executor/*.h', 'folly/executor/detail/*.h', 'folly/io/*.h', 'folly/io/async/*.h'\");
+              fs.writeFileSync(podspecPath, content);
+              console.log('Patched RCT-Folly.podspec');
+            } else {
+              console.log('RCT-Folly.podspec not found, skipping patch.');
+            }
+          "
+
       - name: Expo Prebuild
         run: |
           rm -rf ios
