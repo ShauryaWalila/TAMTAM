@@ -20,71 +20,60 @@ jobs:
       - name: Install Dependencies
         run: npm install --legacy-peer-deps
 
-      - name: Fix Folly and Reanimated
+      - name: Patch Dependencies for RN 0.81
         run: |
-          # 1. Fix RCT-Folly podspec in RN 0.81.x (missing synchronization and coro headers)
-          PODSPEC="node_modules/react-native/third-party-podspecs/RCT-Folly.podspec"
-          if [ -f "$PODSPEC" ]; then
-            echo "Patching RCT-Folly.podspec..."
-            # Use a more robust sed approach to add headers to source_files and preserve_paths
-            sed -i '' "s|'folly/system/\*\.h',|'folly/system/*.h', 'folly/synchronization/*.h', 'folly/synchronization/detail/*.h', 'folly/futures/*.h', 'folly/futures/detail/*.h', 'folly/coro/*.h', 'folly/coro/detail/*.h', 'folly/executor/*.h', 'folly/executor/detail/*.h', 'folly/io/*.h', 'folly/io/async/*.h',|g" "$PODSPEC"
-            sed -i '' "s|'folly/system/\*\.h'|'folly/system/*.h', 'folly/synchronization/*.h', 'folly/synchronization/detail/*.h', 'folly/futures/*.h', 'folly/futures/detail/*.h', 'folly/coro/*.h', 'folly/coro/detail/*.h', 'folly/executor/*.h', 'folly/executor/detail/*.h', 'folly/io/*.h', 'folly/io/async/*.h'|g" "$PODSPEC"
-          fi
+          node -e "
+            const fs = require('fs');
+            const path = require('path');
 
-          # 2. Fix RNReanimated ReanimatedMountHook (type mismatch in RN 0.81.x)
-          # UIManagerMountHook::shadowTreeDidMount changed its second parameter from 'double' to 'HighResTimeStamp'
-          REA_HOOK_H="node_modules/react-native-reanimated/Common/cpp/reanimated/Fabric/ReanimatedMountHook.h"
-          REA_HOOK_CPP="node_modules/react-native-reanimated/Common/cpp/reanimated/Fabric/ReanimatedMountHook.cpp"
+            function patchFile(relPath, patchFn) {
+              const fullPath = path.join(process.cwd(), relPath);
+              if (!fs.existsSync(fullPath)) {
+                console.log('Skipping missing file:', relPath);
+                return;
+              }
+              console.log('Patching:', relPath);
+              let content = fs.readFileSync(fullPath, 'utf8');
+              content = patchFn(content);
+              fs.writeFileSync(fullPath, content);
+            }
 
-          if [ -f "$REA_HOOK_H" ]; then
-            echo "Patching ReanimatedMountHook.h..."
-            sed -i '' "s/double mountTime) noexcept override;/facebook::react::HighResTimeStamp mountTime) noexcept override;/g" "$REA_HOOK_H"
-          fi
+            // 1. Fix RCT-Folly podspec
+            patchFile('node_modules/react-native/third-party-podspecs/RCT-Folly.podspec', c => {
+              return c.replace(/'folly\/system\/\*\\.h',/g, \"'folly/system/*.h', 'folly/synchronization/*.h', 'folly/synchronization/detail/*.h', 'folly/futures/*.h', 'folly/futures/detail/*.h', 'folly/coro/*.h', 'folly/coro/detail/*.h', 'folly/executor/*.h', 'folly/executor/detail/*.h', 'folly/io/*.h', 'folly/io/async/*.h',\")
+                      .replace(/'folly\/system\/\*\\.h'/g, \"'folly/system/*.h', 'folly/synchronization/*.h', 'folly/synchronization/detail/*.h', 'folly/futures/*.h', 'folly/futures/detail/*.h', 'folly/coro/*.h', 'folly/coro/detail/*.h', 'folly/executor/*.h', 'folly/executor/detail/*.h', 'folly/io/*.h', 'folly/io/async/*.h'\");
+            });
 
-          if [ -f "$REA_HOOK_CPP" ]; then
-            echo "Patching ReanimatedMountHook.cpp..."
-            sed -i '' "s/double) noexcept {/facebook::react::HighResTimeStamp) noexcept {/g" "$REA_HOOK_CPP"
-          fi
+            // 2. Fix ReanimatedMountHook (Type mismatch)
+            patchFile('node_modules/react-native-reanimated/Common/cpp/reanimated/Fabric/ReanimatedMountHook.h', c => 
+              c.replace(/double mountTime\) noexcept override;/g, 'facebook::react::HighResTimeStamp mountTime) noexcept override;')
+            );
+            patchFile('node_modules/react-native-reanimated/Common/cpp/reanimated/Fabric/ReanimatedMountHook.cpp', c => 
+              c.replace(/double\) noexcept {/g, 'facebook::react::HighResTimeStamp) noexcept {')
+            );
 
-          # 3. Fix REAModule.h & REAModule.mm (RCTRuntimeExecutorModule removed in RN 0.81.x)
-          REA_MODULE_H="node_modules/react-native-reanimated/apple/reanimated/apple/REAModule.h"
-          REA_MODULE_MM="node_modules/react-native-reanimated/apple/reanimated/apple/REAModule.mm"
-          if [ -f "$REA_MODULE_H" ]; then
-            echo "Patching REAModule.h..."
-            # Wrap RCTRuntimeExecutorModule usage with version check < 81
-            sed -i '' "s/#if REACT_NATIVE_MINOR_VERSION >= 74/#if REACT_NATIVE_MINOR_VERSION >= 74 \&\& REACT_NATIVE_MINOR_VERSION < 81/g" "$REA_MODULE_H"
-          fi
-          if [ -f "$REA_MODULE_MM" ]; then
-            echo "Patching REAModule.mm..."
-            # Apply same version check to implementation
-            sed -i '' "s/#if REACT_NATIVE_MINOR_VERSION >= 74/#if REACT_NATIVE_MINOR_VERSION >= 74 \&\& REACT_NATIVE_MINOR_VERSION < 81/g" "$REA_MODULE_MM"
-          fi
+            // 3. Fix REAModule (Missing runtimeExecutor)
+            const vCheck = '#if REACT_NATIVE_MINOR_VERSION >= 74 && REACT_NATIVE_MINOR_VERSION < 81';
+            patchFile('node_modules/react-native-reanimated/apple/reanimated/apple/REAModule.h', c => 
+              c.replace(/#if REACT_NATIVE_MINOR_VERSION >= 74/g, vCheck)
+            );
+            patchFile('node_modules/react-native-reanimated/apple/reanimated/apple/REAModule.mm', c => 
+              c.replace(/#if REACT_NATIVE_MINOR_VERSION >= 74/g, vCheck)
+            );
 
-          # 4. Fix NativeReanimatedModule.cpp (RN 0.81.x breaking changes)
-          REA_NATIVE_CPP="node_modules/react-native-reanimated/Common/cpp/reanimated/NativeModules/NativeReanimatedModule.cpp"
-          if [ -f "$REA_NATIVE_CPP" ]; then
-            echo "Patching NativeReanimatedModule.cpp..."
-            
-            # Force REACT_NATIVE_MINOR_VERSION to 81 and add required include
-            # Using a temporary file to prepend content cleanly
-            echo -e "#undef REACT_NATIVE_MINOR_VERSION\n#define REACT_NATIVE_MINOR_VERSION 81\n#include <react/renderer/bridging/bridging.h>\n" > reanimated_prefix.cpp
-            cat "$REA_NATIVE_CPP" >> reanimated_prefix.cpp
-            mv reanimated_prefix.cpp "$REA_NATIVE_CPP"
-
-            # Define shadowNodeFromValue helper if missing
-            sed -i '' "/using namespace facebook;/a \\
-            namespace reanimated { inline static std::shared_ptr<const facebook::react::ShadowNode> shadowNodeFromValue(facebook::jsi::Runtime \&rt, const facebook::jsi::Value \&value) { return facebook::react::Bridging<std::shared_ptr<const facebook::react::ShadowNode>>::fromJs(rt, value); } }
-            " "$REA_NATIVE_CPP"
-
-            # Remove .shouldYield from ShadowTree::commit options (it's gone in RN 0.81)
-            # We match the specific block in NativeReanimatedModule.cpp
-            sed -i '' "/\.shouldYield =/,/}/d" "$REA_NATIVE_CPP"
-            # The previous sed might leave a trailing comma or break the struct closure, let's fix the specific call site
-            sed -i '' "s/\/\* \.mountSynchronously = \*\/ true,/\/\* \.mountSynchronously = \*\/ true/g" "$REA_NATIVE_CPP"
-            
-            # Fix CoreFeatures version check (already handled in previous turn but keeping it consolidated)
-            sed -i '' "s/#if REACT_NATIVE_MINOR_VERSION >= 73/#if REACT_NATIVE_MINOR_VERSION >= 73 \&\& REACT_NATIVE_MINOR_VERSION < 81/g" "$REA_NATIVE_CPP"
-          fi
+            // 4. Fix NativeReanimatedModule.cpp (CoreFeatures, shadowNodeFromValue, ShadowTree::commit)
+            patchFile('node_modules/react-native-reanimated/Common/cpp/reanimated/NativeModules/NativeReanimatedModule.cpp', c => {
+              // Force version and add headers
+              c = '#define REACT_NATIVE_MINOR_VERSION 81\n#include <react/renderer/bridging/bridging.h>\n' + c;
+              // Fix CoreFeatures inclusion
+              c = c.replace(/#if REACT_NATIVE_MINOR_VERSION >= 73/g, '#if REACT_NATIVE_MINOR_VERSION >= 73 && REACT_NATIVE_MINOR_VERSION < 81');
+              // Inject shadowNodeFromValue helper
+              c = c.replace('using namespace facebook;', 'using namespace facebook;\nnamespace reanimated { inline static std::shared_ptr<const facebook::react::ShadowNode> shadowNodeFromValue(facebook::jsi::Runtime &rt, const facebook::jsi::Value &v) { return facebook::react::Bridging<std::shared_ptr<const facebook::react::ShadowNode>>::fromJs(rt, v); } }');
+              // Fix ShadowTree::commit options (remove .shouldYield)
+              c = c.replace(/\{\/\* \.enableStateReconciliation = \*\/[\s\S]*?\.shouldYield = [\s\S]*?\}\s*\}\s*\);/g, '{/* .enableStateReconciliation = */ false, /* .mountSynchronously = */ true });');
+              return c;
+            });
+          "
 
 
       - name: Expo Prebuild
