@@ -46,12 +46,18 @@ jobs:
             sed -i '' "s/double) noexcept {/facebook::react::HighResTimeStamp) noexcept {/g" "$REA_HOOK_CPP"
           fi
 
-          # 3. Fix REAModule.h (RCTRuntimeExecutorModule removed in RN 0.81.x)
+          # 3. Fix REAModule.h & REAModule.mm (RCTRuntimeExecutorModule removed in RN 0.81.x)
           REA_MODULE_H="node_modules/react-native-reanimated/apple/reanimated/apple/REAModule.h"
+          REA_MODULE_MM="node_modules/react-native-reanimated/apple/reanimated/apple/REAModule.mm"
           if [ -f "$REA_MODULE_H" ]; then
             echo "Patching REAModule.h..."
             # Wrap RCTRuntimeExecutorModule usage with version check < 81
             sed -i '' "s/#if REACT_NATIVE_MINOR_VERSION >= 74/#if REACT_NATIVE_MINOR_VERSION >= 74 \&\& REACT_NATIVE_MINOR_VERSION < 81/g" "$REA_MODULE_H"
+          fi
+          if [ -f "$REA_MODULE_MM" ]; then
+            echo "Patching REAModule.mm..."
+            # Apply same version check to implementation
+            sed -i '' "s/#if REACT_NATIVE_MINOR_VERSION >= 74/#if REACT_NATIVE_MINOR_VERSION >= 74 \&\& REACT_NATIVE_MINOR_VERSION < 81/g" "$REA_MODULE_MM"
           fi
 
 
