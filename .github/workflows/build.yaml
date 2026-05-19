@@ -61,7 +61,7 @@ jobs:
               c.replace(/#if REACT_NATIVE_MINOR_VERSION >= 74/g, vCheck)
             );
 
-            // 4. Fix NativeReanimatedModule.cpp (CoreFeatures, shadowNodeFromValue, ShadowTree::commit)
+            // 4. Fix NativeReanimatedModule.cpp (CoreFeatures, shadowNodeFromValue, ShadowTree::commit, RawEvent)
             patchFile('node_modules/react-native-reanimated/Common/cpp/reanimated/NativeModules/NativeReanimatedModule.cpp', c => {
               // Force version and add headers
               c = '#define REACT_NATIVE_MINOR_VERSION 81\n#include <react/renderer/bridging/bridging.h>\n' + c;
@@ -71,6 +71,11 @@ jobs:
               c = c.replace('using namespace facebook;', 'using namespace facebook;\nnamespace reanimated { inline static std::shared_ptr<const facebook::react::ShadowNode> shadowNodeFromValue(facebook::jsi::Runtime &rt, const facebook::jsi::Value &v) { return facebook::react::Bridging<std::shared_ptr<const facebook::react::ShadowNode>>::fromJs(rt, v); } }');
               // Fix ShadowTree::commit options (remove .shouldYield)
               c = c.replace(/\{\/\* \.enableStateReconciliation = \*\/[\s\S]*?\.shouldYield = [\s\S]*?\}\s*\}\s*\);/g, '{/* .enableStateReconciliation = */ false, /* .mountSynchronously = */ true });');
+              
+              // Direct RawEvent patch to avoid version macro issues
+              c = c.replace(/const auto &payloadFactory = rawEvent\.payloadFactory;/g, 'const auto &eventPayload = rawEvent.eventPayload;');
+              c = c.replace(/jsi::Value payload = payloadFactory\(rt\);/g, 'jsi::Value payload = eventPayload->asJSIValue(rt);');
+              
               return c;
             });
           "
