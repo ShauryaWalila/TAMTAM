@@ -37,7 +37,7 @@ const deps = [
 const podPostInstallFix = `
     installer.pods_project.targets.each do |target|
       target.build_configurations.each do |config|
-        config.build_settings['SWIFT_VERSION'] = '5.10'
+        config.build_settings['SWIFT_VERSION'] = '6.0'
         config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
         config.build_settings['CODE_SIGNING_REQUIRED'] = 'NO'
         config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
