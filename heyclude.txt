@@ -16,7 +16,7 @@ xcodebuild build \
   
 --- xcodebuild: WARNING: Using the first of multiple matching destinations:
 { platform:iOS, id:dvtdevice-DVTiPhonePlaceholder-iphoneos:placeholder, name:Any iOS Device }
-{ platform:macOS, arch:arm64, variant:Designed for [iPad,iPhone], id:07cec604557fc61f26e5891811311133647efac4, name:My Mac }
+{ platform:macOS, arch:arm64, variant:Designed for [iPad,iPhone], id:615ecd8a944ad40226cc8410282f13516bbd8332, name:My Mac }
 { platform:iOS Simulator, id:dvtdevice-DVTiOSDeviceSimulatorPlaceholder-iphonesimulator:placeholder, name:Any iOS Simulator Device }
 /Users/runner/work/TAMTAM/TAMTAM/node_modules/@react-native-community/netinfo/ios/RNCNetInfo.m:153:33: warning: 'subscriberCellularProvider' is deprecated: first deprecated in iOS 12.0 [-Wdeprecated-declarations]
   153 |   CTCarrier *carrier = [netinfo subscriberCellularProvider];
@@ -144,106 +144,6 @@ In module 'CoreTelephony' imported from /Users/runner/work/TAMTAM/TAMTAM/node_mo
    33 |         [_target performSelector:_selector withObject:timer];
       |                  ^
 /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRWeakTimerReference.m:33:34: note: used here
-   33 |         [_target performSelector:_selector withObject:timer];
-      |                                  ^
-1 warning generated.
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapWMSTile.m:38:26: warning: incompatible pointer types assigning to 'AIRMapUrlTileCachedOverlay *' from 'AIRMapWMSTileOverlay *' [-Wincompatible-pointer-types]
-   38 |         self.tileOverlay = [[AIRMapWMSTileOverlay alloc] initWithURLTemplate:self.urlTemplate];
-      |                          ^ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-1 warning generated.
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTileCachedOverlay.m:80:134: warning: null passed to a callee that requires a non-null argument [-Wnonnull]
-   80 |         NSData *finalImage = [_ciContext PNGRepresentationOfImage:scaledCIImage format:kCIFormatABGR8 colorSpace:_colorspace options:nil];
-      |                                                                                                                                      ^~~
-In module 'UIKit' imported from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Target Support Files/react-native-maps/react-native-maps-prefix.pch:2:
-In module 'Foundation' imported from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIKit.h:8:
-In module 'CoreFoundation' imported from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks/Foundation.framework/Headers/Foundation.h:6:
-In module 'Darwin' imported from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/CoreFoundation.framework/Headers/CFBase.h:75:
-/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/usr/include/MacTypes.h:96:19: note: expanded from macro 'nil'
-   96 |       #define nil __DARWIN_NULL
-      |                   ^~~~~~~~~~~~~
-In module 'UIKit' imported from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Target Support Files/react-native-maps/react-native-maps-prefix.pch:2:
-In module 'Foundation' imported from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIKit.h:8:
-In module 'CoreFoundation' imported from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks/Foundation.framework/Headers/Foundation.h:6:
-In module 'sys_types' imported from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks/CoreFoundation.framework/Headers/CoreFoundation.h:18:
-In module 'DarwinFoundation' imported from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/usr/include/sys/types.h:72:
-/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/usr/include/sys/_types.h:52:23: note: expanded from macro '__DARWIN_NULL'
-   52 | #define __DARWIN_NULL NULL
-      |                       ^~~~
-In module 'UIKit' imported from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Target Support Files/react-native-maps/react-native-maps-prefix.pch:2:
-In module 'Foundation' imported from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIKit.h:8:
-In module 'CoreFoundation' imported from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks/Foundation.framework/Headers/Foundation.h:6:
-In module 'sys_types' imported from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks/CoreFoundation.framework/Headers/CoreFoundation.h:18:
-In module 'DarwinFoundation' imported from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/usr/include/sys/types.h:72:
-In module '_Builtin_stddef' imported from /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/stddef.h:93:
-/Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/__stddef_null.h:26:14: note: expanded from macro 'NULL'
-   26 | #define NULL ((void*)0)
-      |              ^~~~~~~~~~
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTileCachedOverlay.m:80:31: warning: block implicitly retains 'self'; explicitly mention 'self' to indicate this is intended behavior [-Wimplicit-retain-self]
-   80 |         NSData *finalImage = [_ciContext PNGRepresentationOfImage:scaledCIImage format:kCIFormatABGR8 colorSpace:_colorspace options:nil];
-      |                               ^
-      |                               self->
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTileCachedOverlay.m:80:114: warning: block implicitly retains 'self'; explicitly mention 'self' to indicate this is intended behavior [-Wimplicit-retain-self]
-   80 |         NSData *finalImage = [_ciContext PNGRepresentationOfImage:scaledCIImage format:kCIFormatABGR8 colorSpace:_colorspace options:nil];
-      |                                                                                                                  ^
-      |                                                                                                                  self->
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTileCachedOverlay.m:141:57: warning: values of type 'NSInteger' should not be used as format arguments; add an explicit cast to 'long' instead [-Wformat]
-  141 |         NSLog(@"tileCache HIT, with max age set at %d", self.tileCacheMaxAge);
-      |                                                    ~~   ^~~~~~~~~~~~~~~~~~~~
-      |                                                    %ld  (long)
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTileCachedOverlay.m:202:22: warning: block implicitly retains 'self'; explicitly mention 'self' to indicate this is intended behavior [-Wimplicit-retain-self]
-  202 |                 if (!_urlSession) [self createURLSession];
-      |                      ^
-      |                      self->
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTileCachedOverlay.m:204:19: warning: block implicitly retains 'self'; explicitly mention 'self' to indicate this is intended behavior [-Wimplicit-retain-self]
-  204 |                 [[_urlSession dataTaskWithURL:[self URLForTilePath:path]
-      |                   ^
-      |                   self->
-6 warnings generated.
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.m:142:26: warning: incompatible pointer types assigning to 'AIRMapUrlTileCachedOverlay *' from 'MKTileOverlay *' [-Wincompatible-pointer-types]
-  142 |         self.tileOverlay = [[MKTileOverlay alloc] initWithURLTemplate:self.urlTemplate];
-      |                          ^ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.m:24:1: warning: writable atomic property 'maximumZ' cannot pair a synthesized getter with a user defined setter [-Watomic-property-with-user-defined-accessor]
-   24 | - (void)setMaximumZ:(NSInteger)maximumZ
-      | ^
-In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.m:9:
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.h:36:21: note: setter and getter must both be synthesized, or both be user defined, or the property must be nonatomic
-   36 | @property NSInteger maximumZ;
-      |                     ^
-      |           (nonatomic) 
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.h:36:21: note: property declared here
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.m:33:1: warning: writable atomic property 'maximumNativeZ' cannot pair a synthesized getter with a user defined setter [-Watomic-property-with-user-defined-accessor]
-   33 | - (void)setMaximumNativeZ:(NSInteger)maximumNativeZ
-      | ^
-In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.m:9:
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.h:37:21: note: setter and getter must both be synthesized, or both be user defined, or the property must be nonatomic
-   37 | @property NSInteger maximumNativeZ;
-      |                     ^
-      |           (nonatomic) 
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.h:37:21: note: property declared here
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.m:45:1: warning: writable atomic property 'minimumZ' cannot pair a synthesized getter with a user defined setter [-Watomic-property-with-user-defined-accessor]
-   45 | - (void)setMinimumZ:(NSInteger)minimumZ
-      | ^
-In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.m:9:
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.h:38:21: note: setter and getter must both be synthesized, or both be user defined, or the property must be nonatomic
-   38 | @property NSInteger minimumZ;
-      |                     ^
-      |           (nonatomic) 
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.h:38:21: note: property declared here
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.m:54:1: warning: writable atomic property 'flipY' cannot pair a synthesized getter with a user defined setter [-Watomic-property-with-user-defined-accessor]
-   54 | - (void)setFlipY:(BOOL)flipY
-      | ^
-In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.m:9:
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.h:39:16: note: setter and getter must both be synthesized, or both be user defined, or the property must be nonatomic
-   39 | @property BOOL flipY;
-      |                ^
-      |           (nonatomic) 
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.h:39:16: note: property declared here
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.m:15:1: warning: writable atomic property 'shouldReplaceMapContent' cannot pair a synthesized getter with a user defined setter [-Watomic-property-with-user-defined-accessor]
-   15 | - (void)setShouldReplaceMapContent:(BOOL)shouldReplaceMapContent
-      | ^
-In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.m:9:
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.h:40:16: note: setter and getter must both be synthesized, or both be user defined, or the property must be nonatomic
-   40 | @property BOOL shouldReplaceMapContent;
       |                ^
       |           (nonatomic) 
 /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.h:40:16: note: property declared here
@@ -344,6 +244,106 @@ In module 'Darwin' imported from /Applications/Xcode_16.4.app/Contents/Developer
       |                   ^~~~~~~~~~~~~
 In module 'Foundation' imported from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapCallout.h:6:
 In module 'CoreFoundation' imported from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks/Foundation.framework/Headers/Foundation.h:6:
+   33 |         [_target performSelector:_selector withObject:timer];
+      |                                  ^
+1 warning generated.
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapWMSTile.m:38:26: warning: incompatible pointer types assigning to 'AIRMapUrlTileCachedOverlay *' from 'AIRMapWMSTileOverlay *' [-Wincompatible-pointer-types]
+   38 |         self.tileOverlay = [[AIRMapWMSTileOverlay alloc] initWithURLTemplate:self.urlTemplate];
+      |                          ^ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1 warning generated.
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTileCachedOverlay.m:80:134: warning: null passed to a callee that requires a non-null argument [-Wnonnull]
+   80 |         NSData *finalImage = [_ciContext PNGRepresentationOfImage:scaledCIImage format:kCIFormatABGR8 colorSpace:_colorspace options:nil];
+      |                                                                                                                                      ^~~
+In module 'UIKit' imported from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Target Support Files/react-native-maps/react-native-maps-prefix.pch:2:
+In module 'Foundation' imported from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIKit.h:8:
+In module 'CoreFoundation' imported from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks/Foundation.framework/Headers/Foundation.h:6:
+In module 'Darwin' imported from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/CoreFoundation.framework/Headers/CFBase.h:75:
+/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/usr/include/MacTypes.h:96:19: note: expanded from macro 'nil'
+   96 |       #define nil __DARWIN_NULL
+      |                   ^~~~~~~~~~~~~
+In module 'UIKit' imported from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Target Support Files/react-native-maps/react-native-maps-prefix.pch:2:
+In module 'Foundation' imported from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIKit.h:8:
+In module 'CoreFoundation' imported from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks/Foundation.framework/Headers/Foundation.h:6:
+In module 'sys_types' imported from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks/CoreFoundation.framework/Headers/CoreFoundation.h:18:
+In module 'DarwinFoundation' imported from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/usr/include/sys/types.h:72:
+/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/usr/include/sys/_types.h:52:23: note: expanded from macro '__DARWIN_NULL'
+   52 | #define __DARWIN_NULL NULL
+      |                       ^~~~
+In module 'UIKit' imported from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Target Support Files/react-native-maps/react-native-maps-prefix.pch:2:
+In module 'Foundation' imported from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIKit.h:8:
+In module 'CoreFoundation' imported from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks/Foundation.framework/Headers/Foundation.h:6:
+In module 'sys_types' imported from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks/CoreFoundation.framework/Headers/CoreFoundation.h:18:
+In module 'DarwinFoundation' imported from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/usr/include/sys/types.h:72:
+In module '_Builtin_stddef' imported from /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/stddef.h:93:
+/Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/__stddef_null.h:26:14: note: expanded from macro 'NULL'
+   26 | #define NULL ((void*)0)
+      |              ^~~~~~~~~~
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTileCachedOverlay.m:80:31: warning: block implicitly retains 'self'; explicitly mention 'self' to indicate this is intended behavior [-Wimplicit-retain-self]
+   80 |         NSData *finalImage = [_ciContext PNGRepresentationOfImage:scaledCIImage format:kCIFormatABGR8 colorSpace:_colorspace options:nil];
+      |                               ^
+      |                               self->
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTileCachedOverlay.m:80:114: warning: block implicitly retains 'self'; explicitly mention 'self' to indicate this is intended behavior [-Wimplicit-retain-self]
+   80 |         NSData *finalImage = [_ciContext PNGRepresentationOfImage:scaledCIImage format:kCIFormatABGR8 colorSpace:_colorspace options:nil];
+      |                                                                                                                  ^
+      |                                                                                                                  self->
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTileCachedOverlay.m:141:57: warning: values of type 'NSInteger' should not be used as format arguments; add an explicit cast to 'long' instead [-Wformat]
+  141 |         NSLog(@"tileCache HIT, with max age set at %d", self.tileCacheMaxAge);
+      |                                                    ~~   ^~~~~~~~~~~~~~~~~~~~
+      |                                                    %ld  (long)
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTileCachedOverlay.m:202:22: warning: block implicitly retains 'self'; explicitly mention 'self' to indicate this is intended behavior [-Wimplicit-retain-self]
+  202 |                 if (!_urlSession) [self createURLSession];
+      |                      ^
+      |                      self->
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTileCachedOverlay.m:204:19: warning: block implicitly retains 'self'; explicitly mention 'self' to indicate this is intended behavior [-Wimplicit-retain-self]
+  204 |                 [[_urlSession dataTaskWithURL:[self URLForTilePath:path]
+      |                   ^
+      |                   self->
+6 warnings generated.
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.m:142:26: warning: incompatible pointer types assigning to 'AIRMapUrlTileCachedOverlay *' from 'MKTileOverlay *' [-Wincompatible-pointer-types]
+  142 |         self.tileOverlay = [[MKTileOverlay alloc] initWithURLTemplate:self.urlTemplate];
+      |                          ^ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.m:24:1: warning: writable atomic property 'maximumZ' cannot pair a synthesized getter with a user defined setter [-Watomic-property-with-user-defined-accessor]
+   24 | - (void)setMaximumZ:(NSInteger)maximumZ
+      | ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.m:9:
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.h:36:21: note: setter and getter must both be synthesized, or both be user defined, or the property must be nonatomic
+   36 | @property NSInteger maximumZ;
+      |                     ^
+      |           (nonatomic) 
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.h:36:21: note: property declared here
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.m:33:1: warning: writable atomic property 'maximumNativeZ' cannot pair a synthesized getter with a user defined setter [-Watomic-property-with-user-defined-accessor]
+   33 | - (void)setMaximumNativeZ:(NSInteger)maximumNativeZ
+      | ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.m:9:
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.h:37:21: note: setter and getter must both be synthesized, or both be user defined, or the property must be nonatomic
+   37 | @property NSInteger maximumNativeZ;
+      |                     ^
+      |           (nonatomic) 
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.h:37:21: note: property declared here
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.m:45:1: warning: writable atomic property 'minimumZ' cannot pair a synthesized getter with a user defined setter [-Watomic-property-with-user-defined-accessor]
+   45 | - (void)setMinimumZ:(NSInteger)minimumZ
+      | ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.m:9:
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.h:38:21: note: setter and getter must both be synthesized, or both be user defined, or the property must be nonatomic
+   38 | @property NSInteger minimumZ;
+      |                     ^
+      |           (nonatomic) 
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.h:38:21: note: property declared here
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.m:54:1: warning: writable atomic property 'flipY' cannot pair a synthesized getter with a user defined setter [-Watomic-property-with-user-defined-accessor]
+   54 | - (void)setFlipY:(BOOL)flipY
+      | ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.m:9:
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.h:39:16: note: setter and getter must both be synthesized, or both be user defined, or the property must be nonatomic
+   39 | @property BOOL flipY;
+      |                ^
+      |           (nonatomic) 
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.h:39:16: note: property declared here
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.m:15:1: warning: writable atomic property 'shouldReplaceMapContent' cannot pair a synthesized getter with a user defined setter [-Watomic-property-with-user-defined-accessor]
+   15 | - (void)setShouldReplaceMapContent:(BOOL)shouldReplaceMapContent
+      | ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.m:9:
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTile.h:40:16: note: setter and getter must both be synthesized, or both be user defined, or the property must be nonatomic
+   40 | @property BOOL shouldReplaceMapContent;
 In module 'sys_types' imported from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks/CoreFoundation.framework/Headers/CoreFoundation.h:18:
 In module 'DarwinFoundation' imported from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/usr/include/sys/types.h:72:
 /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/usr/include/sys/_types.h:52:23: note: expanded from macro '__DARWIN_NULL'
@@ -1571,6 +1571,288 @@ In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/R
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTInitializing.h'
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSurfaceView.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSurfaceHostingProxyRootView.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTUIManagerUtils.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTAccessibilityManager.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTRootContentView.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTJSStackFrame.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTDevLoadingView.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTUnimplementedNativeComponentView.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTScrollContentViewManager.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSourceCode.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTDebuggingOverlay.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTFrameUpdate.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTBridge+Private.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTShadowView+Layout.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTLogBoxView.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTConversions.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'States.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTWebSocketModule.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTComponentData.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTTurboModuleRegistry.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTRootView.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTScrollViewManager.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTBridgeProxy.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTInspectorPackagerConnection.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTPausedInDebuggerOverlayController.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTI18nManager.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTErrorCustomizer.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTJSThread.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTLog.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSurfacePresenter.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTFabricSurface.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTRadialGradient.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTFabricModalHostViewController.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTScrollViewComponentView.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTRefreshableProtocol.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTLegacyViewManagerInteropCoordinatorAdapter.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSurfaceRootShadowViewDelegate.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSurfaceRootShadowView.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTAlertManager.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTRedBox.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTScrollableProtocol.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTI18nUtil.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'DispatchMessageQueueThread.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTAutoInsetsProtocol.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'AppleEventBeat.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSurfacePointerHandler.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTScrollContentView.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTCxxUtils.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTFabricComponentsPlugins.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTDefines.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSwitch.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTVirtualViewComponentView.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSurfaceStage.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTScheduler.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'UIView+Private.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTBridgeProxy+Cxx.h'
+^
+<module-includes>:1:9: note: in file included from <module-includes>:1:
+#import "Headers/React_Core/React_Core-umbrella.h"
+        ^
 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSurfaceHostingView.h'
 ^
 <module-includes>:1:9: note: in file included from <module-includes>:1:
@@ -2941,14 +3223,602 @@ In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/
    78 |     [REAUtils swizzleMethod:@selector(flushUIBlocksWithCompletion:)
       |                              ^
 14 warnings generated.
+      |                                    ^                   
+      |                                                         _Nonnull 
+9 warnings generated.
 In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/apple/reanimated/apple/REANodesManager.mm:3:
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REAModule.h:4:9: fatal error: 'React/RCTRuntimeExecutorModule.h' file not found
-    4 | #import <React/RCTRuntimeExecutorModule.h>
-      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REAModule.h:4:9: note: did not find header 'RCTRuntimeExecutorModule.h' in framework 'React' (loaded from '/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt')
-1 error generated.
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REAModule.h:17:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/LayoutReanimation/REAAnimationsManager.h:5:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:12:55: warning: pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified) [-Wnullability-completeness]
+   12 | typedef void (^REAOnAnimationCallback)(READisplayLink *displayLink);
+      |                                                       ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:12:55: note: insert '_Nullable' if the pointer may be null
+   12 | typedef void (^REAOnAnimationCallback)(READisplayLink *displayLink);
+      |                                                       ^
+      |                                                         _Nullable 
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:12:55: note: insert '_Nonnull' if the pointer should never be null
+   12 | typedef void (^REAOnAnimationCallback)(READisplayLink *displayLink);
+      |                                                       ^
+      |                                                         _Nonnull 
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:31:51: warning: pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified) [-Wnullability-completeness]
+   31 | - (nonnull instancetype)initWithModule:(REAModule *)reanimatedModule
+      |                                                   ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:31:51: note: insert '_Nullable' if the pointer may be null
+   31 | - (nonnull instancetype)initWithModule:(REAModule *)reanimatedModule
+      |                                                   ^
+      |                                                    _Nullable
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:31:51: note: insert '_Nonnull' if the pointer should never be null
+   31 | - (nonnull instancetype)initWithModule:(REAModule *)reanimatedModule
+      |                                                   ^
+      |                                                    _Nonnull
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:32:51: warning: pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified) [-Wnullability-completeness]
+   32 |                                 bridge:(RCTBridge *)bridge
+      |                                                   ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:32:51: note: insert '_Nullable' if the pointer may be null
+   32 |                                 bridge:(RCTBridge *)bridge
+      |                                                   ^
+      |                                                    _Nullable
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:32:51: note: insert '_Nonnull' if the pointer should never be null
+   32 |                                 bridge:(RCTBridge *)bridge
+      |                                                   ^
+      |                                                    _Nonnull
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:33:41: warning: pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified) [-Wnullability-completeness]
+   33 |                       surfacePresenter:(id<RCTSurfacePresenterStub>)surfacePresenter;
+      |                                         ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:33:67: note: insert '_Nullable' if the pointer may be null
+   33 |                       surfacePresenter:(id<RCTSurfacePresenterStub>)surfacePresenter;
+      |                                                                   ^
+      |                                                                    _Nullable
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:33:67: note: insert '_Nonnull' if the pointer should never be null
+   33 |                       surfacePresenter:(id<RCTSurfacePresenterStub>)surfacePresenter;
+      |                                                                   ^
+      |                                                                    _Nonnull
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:40:26: warning: block pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified) [-Wnullability-completeness]
+   40 | - (void)postOnAnimation:(REAOnAnimationCallback)clb;
+      |                          ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:40:26: note: insert '_Nullable' if the block pointer may be null
+   40 | - (void)postOnAnimation:(REAOnAnimationCallback)clb;
+      |                          ^                     
+      |                                                 _Nullable 
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:40:26: note: insert '_Nonnull' if the block pointer should never be null
+   40 | - (void)postOnAnimation:(REAOnAnimationCallback)clb;
+      |                          ^                     
+      |                                                 _Nonnull 
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:41:31: warning: block pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified) [-Wnullability-completeness]
+   41 | - (void)registerEventHandler:(REAEventHandler)eventHandler;
+      |                               ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:41:31: note: insert '_Nullable' if the block pointer may be null
+   41 | - (void)registerEventHandler:(REAEventHandler)eventHandler;
+      |                               ^              
+      |                                               _Nullable 
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:41:31: note: insert '_Nonnull' if the block pointer should never be null
+   41 | - (void)registerEventHandler:(REAEventHandler)eventHandler;
+      |                               ^              
+      |                                               _Nonnull 
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:42:24: warning: pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified) [-Wnullability-completeness]
+   42 | - (void)dispatchEvent:(id<RCTEvent>)event;
+      |                        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:42:35: note: insert '_Nullable' if the pointer may be null
+   42 | - (void)dispatchEvent:(id<RCTEvent>)event;
+      |                                   ^
+      |                                    _Nullable
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:42:35: note: insert '_Nonnull' if the pointer should never be null
+   42 | - (void)dispatchEvent:(id<RCTEvent>)event;
+      |                                   ^
+      |                                    _Nonnull
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:45:30: warning: pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified) [-Wnullability-completeness]
+   45 | - (void)setSurfacePresenter:(id<RCTSurfacePresenterStub>)surfacePresenter;
+      |                              ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:45:56: note: insert '_Nullable' if the pointer may be null
+   45 | - (void)setSurfacePresenter:(id<RCTSurfacePresenterStub>)surfacePresenter;
+      |                                                        ^
+      |                                                         _Nullable
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:45:56: note: insert '_Nonnull' if the pointer should never be null
+   45 | - (void)setSurfacePresenter:(id<RCTSurfacePresenterStub>)surfacePresenter;
+      |                                                        ^
+      |                                                         _Nonnull
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:46:36: warning: block pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified) [-Wnullability-completeness]
+   46 | - (void)registerPerformOperations:(REAPerformOperations)performOperations;
+      |                                    ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:46:36: note: insert '_Nullable' if the block pointer may be null
+   46 | - (void)registerPerformOperations:(REAPerformOperations)performOperations;
+      |                                    ^                   
+      |                                                         _Nullable 
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:46:36: note: insert '_Nonnull' if the block pointer should never be null
+   46 | - (void)registerPerformOperations:(REAPerformOperations)performOperations;
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:46:36: note: insert '_Nonnull' if the block pointer should never be null
+   46 | - (void)registerPerformOperations:(REAPerformOperations)performOperations;
+      |                                    ^                   
+      |                                                         _Nonnull 
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/apple/reanimated/apple/REAModule.mm:19:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/RuntimeDecorators/RNRuntimeDecorator.h:3:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/NativeModules/NativeReanimatedModule.h:10:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/Fabric/PropsRegistry.h:20:33: warning: 'Shared' is deprecated: Use std::shared_ptr<const ShadowNode> instead [-Wdeprecated-declarations]
+   20 |   void update(const ShadowNode::Shared &shadowNode, folly::dynamic &&props);
+      |                                 ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/apple/reanimated/apple/REAModule.mm:4:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-RCTFabric/React/RCTFabricSurface.h:9:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/scheduler/SurfaceHandler.h:15:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/LayoutContext.h:12:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/LayoutableShadowNode.h:17:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/ShadowNode.h:36:18: note: 'Shared' has been explicitly marked deprecated here
+   36 |   using Shared [[deprecated("Use std::shared_ptr<const ShadowNode> instead")]] =
+      |                  ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/apple/reanimated/apple/REAModule.mm:19:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/RuntimeDecorators/RNRuntimeDecorator.h:3:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/NativeModules/NativeReanimatedModule.h:10:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/Fabric/PropsRegistry.h:49:49: warning: 'Shared' is deprecated: Use std::shared_ptr<const ShadowNode> instead [-Wdeprecated-declarations]
+   49 |   std::unordered_map<Tag, std::pair<ShadowNode::Shared, folly::dynamic>> map_;
+      |                                                 ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/apple/reanimated/apple/REAModule.mm:4:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-RCTFabric/React/RCTFabricSurface.h:9:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/scheduler/SurfaceHandler.h:15:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/LayoutContext.h:12:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/LayoutableShadowNode.h:17:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/ShadowNode.h:36:18: note: 'Shared' has been explicitly marked deprecated here
+   36 |   using Shared [[deprecated("Use std::shared_ptr<const ShadowNode> instead")]] =
+      |                  ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/apple/reanimated/apple/REAModule.mm:19:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/RuntimeDecorators/RNRuntimeDecorator.h:3:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/NativeModules/NativeReanimatedModule.h:145:25: warning: 'Shared' is deprecated: Use std::shared_ptr<const ShadowNode> instead [-Wdeprecated-declarations]
+  145 |       const ShadowNode::Shared &shadowNode);
+      |                         ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/apple/reanimated/apple/REAModule.mm:4:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-RCTFabric/React/RCTFabricSurface.h:9:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/scheduler/SurfaceHandler.h:15:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/LayoutContext.h:12:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/LayoutableShadowNode.h:17:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/ShadowNode.h:36:18: note: 'Shared' has been explicitly marked deprecated here
+   36 |   using Shared [[deprecated("Use std::shared_ptr<const ShadowNode> instead")]] =
+      |                  ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/apple/reanimated/apple/REAModule.mm:19:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/RuntimeDecorators/RNRuntimeDecorator.h:3:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/NativeModules/NativeReanimatedModule.h:225:37: warning: 'Shared' is deprecated: Use std::shared_ptr<const ShadowNode> instead [-Wdeprecated-declarations]
+  225 |   std::vector<std::pair<ShadowNode::Shared, std::unique_ptr<jsi::Value>>>
+      |                                     ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/apple/reanimated/apple/REAModule.mm:4:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-RCTFabric/React/RCTFabricSurface.h:9:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/scheduler/SurfaceHandler.h:15:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/LayoutContext.h:12:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/LayoutableShadowNode.h:17:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/ShadowNode.h:36:18: note: 'Shared' has been explicitly marked deprecated here
+   36 |   using Shared [[deprecated("Use std::shared_ptr<const ShadowNode> instead")]] =
+      |                  ^
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/apple/reanimated/apple/REAModule.mm:41:23: warning: duplicate definition of category 'RCTTurboModule' on interface 'RCTBridge' [-Wobjc-duplicate-category-definition]
+   41 | @interface RCTBridge (RCTTurboModule)
+      |                       ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/apple/reanimated/apple/REAModule.mm:16:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/Fabric/REAInitializerRCTFabricSurface.h:4:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REAModule.h:7:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/ReactCodegen/rnreanimated/rnreanimated.h:29:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-NativeModulesApple/ReactCommon/RCTTurboModule.h:208:12: note: previous definition is here
+  208 | @interface RCTBridge (RCTTurboModule)
+      |            ^
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/apple/reanimated/apple/REAModule.mm:52:17: warning: class 'REAModule' does not conform to protocol 'RCTInitializing' [-Wprotocol]
+   52 | @implementation REAModule {
+      |                 ^
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/apple/reanimated/apple/REAModule.mm:52:17: note: add stubs for missing protocol requirements
+   52 | @implementation REAModule {
+      |                 ^
+15 warnings generated.
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/apple/reanimated/apple/keyboardObserver/REAKeyboardEventObserver.mm:369:68: warning: 'windows' is deprecated: first deprecated in iOS 15.0 - Use UIWindowScene.windows on a relevant window scene instead [-Wdeprecated-declarations]
+  369 |   NSArray<UIWindow *> *windows = [UIApplication sharedApplication].windows;
+      |                                                                    ^
+In file included from <built-in>:1:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Target Support Files/RNReanimated/RNReanimated-prefix.pch:2:
+In file included from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIKit.h:9:
+In file included from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIKitCore.h:34:
+In file included from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibility.h:20:
+In file included from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibilityElement.h:12:
+In file included from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibilityIdentification.h:13:
+In file included from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAlertController.h:9:
+In file included from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIViewController.h:12:
+/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIApplication.h:109:62: note: 'windows' has been explicitly marked deprecated here
+  109 | @property(nonatomic,readonly) NSArray<__kindof UIWindow *>  *windows API_DEPRECATED("Use UIWindowScene.windows on a relevant window scene instead", ios(2.0, 15.0), visionos(1.0, 1.0)) API_UNAVAILABLE(watchos);
+      |                                                              ^
+1 warning generated.
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/apple/reanimated/apple/Fabric/REAInitializerRCTFabricSurface.mm:5:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/Fabric/REAInitializerRCTFabricSurface.h:4:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REAModule.h:17:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/LayoutReanimation/REAAnimationsManager.h:5:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:12:55: warning: pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified) [-Wnullability-completeness]
+   12 | typedef void (^REAOnAnimationCallback)(READisplayLink *displayLink);
+      |                                                       ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:12:55: note: insert '_Nullable' if the pointer may be null
+   12 | typedef void (^REAOnAnimationCallback)(READisplayLink *displayLink);
+      |                                                       ^
+      |                                                         _Nullable 
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:12:55: note: insert '_Nonnull' if the pointer should never be null
+   12 | typedef void (^REAOnAnimationCallback)(READisplayLink *displayLink);
+      |                                                       ^
+      |                                                         _Nonnull 
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:31:51: warning: pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified) [-Wnullability-completeness]
+   31 | - (nonnull instancetype)initWithModule:(REAModule *)reanimatedModule
+      |                                                   ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:31:51: note: insert '_Nullable' if the pointer may be null
+   31 | - (nonnull instancetype)initWithModule:(REAModule *)reanimatedModule
+      |                                                   ^
+      |                                                    _Nullable
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:31:51: note: insert '_Nonnull' if the pointer should never be null
+   31 | - (nonnull instancetype)initWithModule:(REAModule *)reanimatedModule
+      |                                                   ^
+      |                                                    _Nonnull
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:32:51: warning: pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified) [-Wnullability-completeness]
+   32 |                                 bridge:(RCTBridge *)bridge
+      |                                                   ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:32:51: note: insert '_Nullable' if the pointer may be null
+   32 |                                 bridge:(RCTBridge *)bridge
+      |                                                   ^
+      |                                                    _Nullable
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:32:51: note: insert '_Nonnull' if the pointer should never be null
+   32 |                                 bridge:(RCTBridge *)bridge
+      |                                                   ^
+      |                                                    _Nonnull
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:33:41: warning: pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified) [-Wnullability-completeness]
+   33 |                       surfacePresenter:(id<RCTSurfacePresenterStub>)surfacePresenter;
+      |                                         ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:33:67: note: insert '_Nullable' if the pointer may be null
+   33 |                       surfacePresenter:(id<RCTSurfacePresenterStub>)surfacePresenter;
+      |                                                                   ^
+      |                                                                    _Nullable
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:33:67: note: insert '_Nonnull' if the pointer should never be null
+   33 |                       surfacePresenter:(id<RCTSurfacePresenterStub>)surfacePresenter;
+      |                                                                   ^
+      |                                                                    _Nonnull
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:40:26: warning: block pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified) [-Wnullability-completeness]
+   40 | - (void)postOnAnimation:(REAOnAnimationCallback)clb;
+      |                          ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:40:26: note: insert '_Nullable' if the block pointer may be null
+   40 | - (void)postOnAnimation:(REAOnAnimationCallback)clb;
+      |                          ^                     
+      |                                                 _Nullable 
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:40:26: note: insert '_Nonnull' if the block pointer should never be null
+   40 | - (void)postOnAnimation:(REAOnAnimationCallback)clb;
+      |                          ^                     
+      |                                                 _Nonnull 
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:41:31: warning: block pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified) [-Wnullability-completeness]
+   41 | - (void)registerEventHandler:(REAEventHandler)eventHandler;
+      |                               ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:41:31: note: insert '_Nullable' if the block pointer may be null
+   41 | - (void)registerEventHandler:(REAEventHandler)eventHandler;
+      |                               ^              
+      |                                               _Nullable 
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:41:31: note: insert '_Nonnull' if the block pointer should never be null
+   41 | - (void)registerEventHandler:(REAEventHandler)eventHandler;
+      |                               ^              
+      |                                               _Nonnull 
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:42:24: warning: pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified) [-Wnullability-completeness]
+   42 | - (void)dispatchEvent:(id<RCTEvent>)event;
+      |                        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:42:35: note: insert '_Nullable' if the pointer may be null
+   42 | - (void)dispatchEvent:(id<RCTEvent>)event;
+      |                                   ^
+      |                                    _Nullable
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:42:35: note: insert '_Nonnull' if the pointer should never be null
+   42 | - (void)dispatchEvent:(id<RCTEvent>)event;
+      |                                   ^
+      |                                    _Nonnull
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:45:30: warning: pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified) [-Wnullability-completeness]
+   45 | - (void)setSurfacePresenter:(id<RCTSurfacePresenterStub>)surfacePresenter;
+      |                              ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:45:56: note: insert '_Nullable' if the pointer may be null
+   45 | - (void)setSurfacePresenter:(id<RCTSurfacePresenterStub>)surfacePresenter;
+      |                                                        ^
+      |                                                         _Nullable
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:45:56: note: insert '_Nonnull' if the pointer should never be null
+   45 | - (void)setSurfacePresenter:(id<RCTSurfacePresenterStub>)surfacePresenter;
+      |                                                        ^
+      |                                                         _Nonnull
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:46:36: warning: block pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified) [-Wnullability-completeness]
+   46 | - (void)registerPerformOperations:(REAPerformOperations)performOperations;
+      |                                    ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:46:36: note: insert '_Nullable' if the block pointer may be null
+   46 | - (void)registerPerformOperations:(REAPerformOperations)performOperations;
+      |                                    ^                   
+      |                                                         _Nullable 
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:46:36: note: insert '_Nonnull' if the block pointer should never be null
+   46 | - (void)registerPerformOperations:(REAPerformOperations)performOperations;
+      |                                    ^                   
+      |                                                         _Nonnull 
+9 warnings generated.
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/Fabric/PropsRegistry.cpp:3:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/Fabric/PropsRegistry.h:20:33: warning: 'Shared' is deprecated: Use std::shared_ptr<const ShadowNode> instead [-Wdeprecated-declarations]
+   20 |   void update(const ShadowNode::Shared &shadowNode, folly::dynamic &&props);
+      |                                 ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/Fabric/PropsRegistry.cpp:3:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/Fabric/PropsRegistry.h:4:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/components/root/RootShadowNode.h:12:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/components/root/RootProps.h:14:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/LayoutContext.h:12:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/LayoutableShadowNode.h:17:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/ShadowNode.h:36:18: note: 'Shared' has been explicitly marked deprecated here
+   36 |   using Shared [[deprecated("Use std::shared_ptr<const ShadowNode> instead")]] =
+      |                  ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/Fabric/PropsRegistry.cpp:3:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/Fabric/PropsRegistry.h:49:49: warning: 'Shared' is deprecated: Use std::shared_ptr<const ShadowNode> instead [-Wdeprecated-declarations]
+   49 |   std::unordered_map<Tag, std::pair<ShadowNode::Shared, folly::dynamic>> map_;
+      |                                                 ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/Fabric/PropsRegistry.cpp:3:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/Fabric/PropsRegistry.h:4:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/components/root/RootShadowNode.h:12:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/components/root/RootProps.h:14:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/LayoutContext.h:12:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/LayoutableShadowNode.h:17:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/ShadowNode.h:36:18: note: 'Shared' has been explicitly marked deprecated here
+   36 |   using Shared [[deprecated("Use std::shared_ptr<const ShadowNode> instead")]] =
+      |                  ^
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/Fabric/PropsRegistry.cpp:12:23: warning: 'Shared' is deprecated: Use std::shared_ptr<const ShadowNode> instead [-Wdeprecated-declarations]
+   12 |     const ShadowNode::Shared &shadowNode,
+      |                       ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/Fabric/PropsRegistry.cpp:3:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/Fabric/PropsRegistry.h:4:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/components/root/RootShadowNode.h:12:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/components/root/RootProps.h:14:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/LayoutContext.h:12:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/LayoutableShadowNode.h:17:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/ShadowNode.h:36:18: note: 'Shared' has been explicitly marked deprecated here
+   36 |   using Shared [[deprecated("Use std::shared_ptr<const ShadowNode> instead")]] =
+      |                  ^
+3 warnings generated.
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/NativeModules/NativeReanimatedModule.cpp:3:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/NativeModules/NativeReanimatedModule.h:10:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/Fabric/PropsRegistry.h:20:33: warning: 'Shared' is deprecated: Use std::shared_ptr<const ShadowNode> instead [-Wdeprecated-declarations]
+   20 |   void update(const ShadowNode::Shared &shadowNode, folly::dynamic &&props);
+      |                                 ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/NativeModules/NativeReanimatedModule.cpp:2:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/bridging/bridging.h:12:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/ShadowNode.h:36:18: note: 'Shared' has been explicitly marked deprecated here
+   36 |   using Shared [[deprecated("Use std::shared_ptr<const ShadowNode> instead")]] =
+      |                  ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/NativeModules/NativeReanimatedModule.cpp:3:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/NativeModules/NativeReanimatedModule.h:10:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/Fabric/PropsRegistry.h:49:49: warning: 'Shared' is deprecated: Use std::shared_ptr<const ShadowNode> instead [-Wdeprecated-declarations]
+   49 |   std::unordered_map<Tag, std::pair<ShadowNode::Shared, folly::dynamic>> map_;
+      |                                                 ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/NativeModules/NativeReanimatedModule.cpp:2:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/bridging/bridging.h:12:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/ShadowNode.h:36:18: note: 'Shared' has been explicitly marked deprecated here
+   36 |   using Shared [[deprecated("Use std::shared_ptr<const ShadowNode> instead")]] =
+      |                  ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/NativeModules/NativeReanimatedModule.cpp:3:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/NativeModules/NativeReanimatedModule.h:145:25: warning: 'Shared' is deprecated: Use std::shared_ptr<const ShadowNode> instead [-Wdeprecated-declarations]
+  145 |       const ShadowNode::Shared &shadowNode);
+      |                         ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/NativeModules/NativeReanimatedModule.cpp:2:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/bridging/bridging.h:12:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/ShadowNode.h:36:18: note: 'Shared' has been explicitly marked deprecated here
+   36 |   using Shared [[deprecated("Use std::shared_ptr<const ShadowNode> instead")]] =
+      |                  ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/NativeModules/NativeReanimatedModule.cpp:3:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/NativeModules/NativeReanimatedModule.h:225:37: warning: 'Shared' is deprecated: Use std::shared_ptr<const ShadowNode> instead [-Wdeprecated-declarations]
+  225 |   std::vector<std::pair<ShadowNode::Shared, std::unique_ptr<jsi::Value>>>
+      |                                     ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/NativeModules/NativeReanimatedModule.cpp:2:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/bridging/bridging.h:12:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/ShadowNode.h:36:18: note: 'Shared' has been explicitly marked deprecated here
+   36 |   using Shared [[deprecated("Use std::shared_ptr<const ShadowNode> instead")]] =
+      |                  ^
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/NativeModules/NativeReanimatedModule.cpp:320:23: warning: 'Shared' is deprecated: Use std::shared_ptr<const ShadowNode> instead [-Wdeprecated-declarations]
+  320 |     const ShadowNode::Shared &shadowNode) {
+      |                       ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/NativeModules/NativeReanimatedModule.cpp:2:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/bridging/bridging.h:12:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/ShadowNode.h:36:18: note: 'Shared' has been explicitly marked deprecated here
+   36 |   using Shared [[deprecated("Use std::shared_ptr<const ShadowNode> instead")]] =
+      |                  ^
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/NativeModules/NativeReanimatedModule.cpp:370:31: warning: implicit capture of 'this' with a capture default of '=' is deprecated [-Wdeprecated-this-capture]
+  370 |     jsi::Runtime &uiRuntime = uiWorkletRuntime_->getJSIRuntime();
+      |                               ^
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/NativeModules/NativeReanimatedModule.cpp:369:31: note: add an explicit capture of 'this' to capture '*this' by reference
+  369 |   uiScheduler_->scheduleOnUI([=]() {
+      |                               ^
+      |                                , this
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/NativeModules/NativeReanimatedModule.cpp:787:15: warning: 'Shared' is deprecated: Use std::shared_ptr<const ShadowNode> instead [-Wdeprecated-declarations]
+  787 |   ShadowNode::Shared shadowNode = shadowNodeFromValue(rt, shadowNodeValue);
+      |               ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/NativeModules/NativeReanimatedModule.cpp:2:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/bridging/bridging.h:12:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/ShadowNode.h:36:18: note: 'Shared' has been explicitly marked deprecated here
+   36 |   using Shared [[deprecated("Use std::shared_ptr<const ShadowNode> instead")]] =
+      |                  ^
+7 warnings generated.
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/apple/reanimated/apple/native/NativeProxy.mm:2:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/NativeModules/NativeReanimatedModule.h:10:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/Fabric/PropsRegistry.h:20:33: warning: 'Shared' is deprecated: Use std::shared_ptr<const ShadowNode> instead [-Wdeprecated-declarations]
+   20 |   void update(const ShadowNode::Shared &shadowNode, folly::dynamic &&props);
+      |                                 ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/apple/reanimated/apple/native/NativeProxy.mm:2:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/NativeModules/NativeReanimatedModule.h:10:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/Fabric/PropsRegistry.h:4:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/components/root/RootShadowNode.h:12:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/components/root/RootProps.h:14:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/LayoutContext.h:12:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/LayoutableShadowNode.h:17:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/ShadowNode.h:36:18: note: 'Shared' has been explicitly marked deprecated here
+   36 |   using Shared [[deprecated("Use std::shared_ptr<const ShadowNode> instead")]] =
+      |                  ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/apple/reanimated/apple/native/NativeProxy.mm:2:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/NativeModules/NativeReanimatedModule.h:10:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/Fabric/PropsRegistry.h:49:49: warning: 'Shared' is deprecated: Use std::shared_ptr<const ShadowNode> instead [-Wdeprecated-declarations]
+   49 |   std::unordered_map<Tag, std::pair<ShadowNode::Shared, folly::dynamic>> map_;
+      |                                                 ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/apple/reanimated/apple/native/NativeProxy.mm:2:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/NativeModules/NativeReanimatedModule.h:10:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/Fabric/PropsRegistry.h:4:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/components/root/RootShadowNode.h:12:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/components/root/RootProps.h:14:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/LayoutContext.h:12:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/LayoutableShadowNode.h:17:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/ShadowNode.h:36:18: note: 'Shared' has been explicitly marked deprecated here
+   36 |   using Shared [[deprecated("Use std::shared_ptr<const ShadowNode> instead")]] =
+      |                  ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/apple/reanimated/apple/native/NativeProxy.mm:2:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/NativeModules/NativeReanimatedModule.h:145:25: warning: 'Shared' is deprecated: Use std::shared_ptr<const ShadowNode> instead [-Wdeprecated-declarations]
+  145 |       const ShadowNode::Shared &shadowNode);
+      |                         ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/apple/reanimated/apple/native/NativeProxy.mm:2:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/NativeModules/NativeReanimatedModule.h:10:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/Fabric/PropsRegistry.h:4:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/components/root/RootShadowNode.h:12:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/components/root/RootProps.h:14:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/LayoutContext.h:12:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/LayoutableShadowNode.h:17:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/ShadowNode.h:36:18: note: 'Shared' has been explicitly marked deprecated here
+   36 |   using Shared [[deprecated("Use std::shared_ptr<const ShadowNode> instead")]] =
+      |                  ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/apple/reanimated/apple/native/NativeProxy.mm:2:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/NativeModules/NativeReanimatedModule.h:225:37: warning: 'Shared' is deprecated: Use std::shared_ptr<const ShadowNode> instead [-Wdeprecated-declarations]
+  225 |   std::vector<std::pair<ShadowNode::Shared, std::unique_ptr<jsi::Value>>>
+      |                                     ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/apple/reanimated/apple/native/NativeProxy.mm:2:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/NativeModules/NativeReanimatedModule.h:10:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/Fabric/PropsRegistry.h:4:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/components/root/RootShadowNode.h:12:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/components/root/RootProps.h:14:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/LayoutContext.h:12:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/LayoutableShadowNode.h:17:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/ShadowNode.h:36:18: note: 'Shared' has been explicitly marked deprecated here
+   36 |   using Shared [[deprecated("Use std::shared_ptr<const ShadowNode> instead")]] =
+      |                  ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/apple/reanimated/apple/native/NativeProxy.mm:4:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/LayoutReanimation/REAAnimationsManager.h:5:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:12:55: warning: pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified) [-Wnullability-completeness]
+   12 | typedef void (^REAOnAnimationCallback)(READisplayLink *displayLink);
+      |                                                       ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:12:55: note: insert '_Nullable' if the pointer may be null
+   12 | typedef void (^REAOnAnimationCallback)(READisplayLink *displayLink);
+      |                                                       ^
+      |                                                         _Nullable 
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:12:55: note: insert '_Nonnull' if the pointer should never be null
+   12 | typedef void (^REAOnAnimationCallback)(READisplayLink *displayLink);
+      |                                                       ^
+      |                                                         _Nonnull 
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:31:51: warning: pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified) [-Wnullability-completeness]
+   31 | - (nonnull instancetype)initWithModule:(REAModule *)reanimatedModule
+      |                                                   ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:31:51: note: insert '_Nullable' if the pointer may be null
+   31 | - (nonnull instancetype)initWithModule:(REAModule *)reanimatedModule
+      |                                                   ^
+      |                                                    _Nullable
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:31:51: note: insert '_Nonnull' if the pointer should never be null
+   31 | - (nonnull instancetype)initWithModule:(REAModule *)reanimatedModule
+      |                                                   ^
+      |                                                    _Nonnull
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:32:51: warning: pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified) [-Wnullability-completeness]
+   32 |                                 bridge:(RCTBridge *)bridge
+      |                                                   ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:32:51: note: insert '_Nullable' if the pointer may be null
+   32 |                                 bridge:(RCTBridge *)bridge
+      |                                                   ^
+      |                                                    _Nullable
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:32:51: note: insert '_Nonnull' if the pointer should never be null
+   32 |                                 bridge:(RCTBridge *)bridge
+      |                                                   ^
+      |                                                    _Nonnull
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:33:41: warning: pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified) [-Wnullability-completeness]
+   33 |                       surfacePresenter:(id<RCTSurfacePresenterStub>)surfacePresenter;
+      |                                         ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:33:67: note: insert '_Nullable' if the pointer may be null
+   33 |                       surfacePresenter:(id<RCTSurfacePresenterStub>)surfacePresenter;
+      |                                                                   ^
+      |                                                                    _Nullable
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:33:67: note: insert '_Nonnull' if the pointer should never be null
+   33 |                       surfacePresenter:(id<RCTSurfacePresenterStub>)surfacePresenter;
+      |                                                                   ^
+      |                                                                    _Nonnull
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:40:26: warning: block pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified) [-Wnullability-completeness]
+   40 | - (void)postOnAnimation:(REAOnAnimationCallback)clb;
+      |                          ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:40:26: note: insert '_Nullable' if the block pointer may be null
+   40 | - (void)postOnAnimation:(REAOnAnimationCallback)clb;
+      |                          ^                     
+      |                                                 _Nullable 
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:40:26: note: insert '_Nonnull' if the block pointer should never be null
+   40 | - (void)postOnAnimation:(REAOnAnimationCallback)clb;
+      |                          ^                     
+      |                                                 _Nonnull 
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:41:31: warning: block pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified) [-Wnullability-completeness]
+   41 | - (void)registerEventHandler:(REAEventHandler)eventHandler;
+      |                               ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:41:31: note: insert '_Nullable' if the block pointer may be null
+   41 | - (void)registerEventHandler:(REAEventHandler)eventHandler;
+      |                               ^              
+      |                                               _Nullable 
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:41:31: note: insert '_Nonnull' if the block pointer should never be null
+   41 | - (void)registerEventHandler:(REAEventHandler)eventHandler;
+      |                               ^              
+      |                                               _Nonnull 
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:42:24: warning: pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified) [-Wnullability-completeness]
+   42 | - (void)dispatchEvent:(id<RCTEvent>)event;
+      |                        ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:42:35: note: insert '_Nullable' if the pointer may be null
+   42 | - (void)dispatchEvent:(id<RCTEvent>)event;
+      |                                   ^
+      |                                    _Nullable
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:42:35: note: insert '_Nonnull' if the pointer should never be null
+   42 | - (void)dispatchEvent:(id<RCTEvent>)event;
+      |                                   ^
+      |                                    _Nonnull
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:45:30: warning: pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified) [-Wnullability-completeness]
+   45 | - (void)setSurfacePresenter:(id<RCTSurfacePresenterStub>)surfacePresenter;
+      |                              ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:45:56: note: insert '_Nullable' if the pointer may be null
+   45 | - (void)setSurfacePresenter:(id<RCTSurfacePresenterStub>)surfacePresenter;
+      |                                                        ^
+      |                                                         _Nullable
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:45:56: note: insert '_Nonnull' if the pointer should never be null
+   45 | - (void)setSurfacePresenter:(id<RCTSurfacePresenterStub>)surfacePresenter;
+      |                                                        ^
+      |                                                         _Nonnull
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:46:36: warning: block pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified) [-Wnullability-completeness]
+   46 | - (void)registerPerformOperations:(REAPerformOperations)performOperations;
+      |                                    ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:46:36: note: insert '_Nullable' if the block pointer may be null
+   46 | - (void)registerPerformOperations:(REAPerformOperations)performOperations;
+      |                                    ^                   
+      |                                                         _Nullable 
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REANodesManager.h:46:36: note: insert '_Nonnull' if the block pointer should never be null
+   46 | - (void)registerPerformOperations:(REAPerformOperations)performOperations;
+      |                                    ^                   
+      |                                                         _Nonnull 
+13 warnings generated.
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/LayoutAnimations/LayoutAnimationsUtils.cpp:2:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/LayoutAnimations/LayoutAnimationsUtils.h:3:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/Fabric/PropsRegistry.h:20:33: warning: 'Shared' is deprecated: Use std::shared_ptr<const ShadowNode> instead [-Wdeprecated-declarations]
+   20 |   void update(const ShadowNode::Shared &shadowNode, folly::dynamic &&props);
+      |                                 ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/LayoutAnimations/LayoutAnimationsUtils.cpp:2:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/LayoutAnimations/LayoutAnimationsUtils.h:3:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/Fabric/PropsRegistry.h:4:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/components/root/RootShadowNode.h:12:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/components/root/RootProps.h:14:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/LayoutContext.h:12:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/LayoutableShadowNode.h:17:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/ShadowNode.h:36:18: note: 'Shared' has been explicitly marked deprecated here
+   36 |   using Shared [[deprecated("Use std::shared_ptr<const ShadowNode> instead")]] =
+      |                  ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/LayoutAnimations/LayoutAnimationsUtils.cpp:2:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/LayoutAnimations/LayoutAnimationsUtils.h:3:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/Fabric/PropsRegistry.h:49:49: warning: 'Shared' is deprecated: Use std::shared_ptr<const ShadowNode> instead [-Wdeprecated-declarations]
+   49 |   std::unordered_map<Tag, std::pair<ShadowNode::Shared, folly::dynamic>> map_;
+      |                                                 ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/LayoutAnimations/LayoutAnimationsUtils.cpp:2:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/LayoutAnimations/LayoutAnimationsUtils.h:3:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/Fabric/PropsRegistry.h:4:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/components/root/RootShadowNode.h:12:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/components/root/RootProps.h:14:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/LayoutContext.h:12:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/LayoutableShadowNode.h:17:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/ShadowNode.h:36:18: note: 'Shared' has been explicitly marked deprecated here
+   36 |   using Shared [[deprecated("Use std::shared_ptr<const ShadowNode> instead")]] =
+      |                  ^
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/LayoutAnimations/LayoutAnimationsUtils.cpp:34:23: error: no member named 'parentShadowView' in 'facebook::react::ShadowViewMutation'
+   34 |   if (tag != mutation.parentShadowView.tag) {
+      |              ~~~~~~~~ ^
+2 warnings and 1 error generated.
 note: Using codesigning identity override: 
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'hermes-engine' from project 'Pods')
+** BUILD FAILED **
 warning: Run script build phase '[CP-User] [Hermes] Replace Hermes for the right configuration, if needed' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'hermes-engine' from project 'Pods')
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'ReactNativeDependencies' from project 'Pods')
 note: Run script build phase '[CP-User] [RNDeps] Replace React Native Dependencies for the right configuration, if needed' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'ReactNativeDependencies' from project 'Pods')
@@ -3023,10 +3893,10 @@ note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEV
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'ExpoBlur' from project 'Pods')
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'ExpoAsset' from project 'Pods')
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'Expo' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'EXNotifications' from project 'Pods')
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'EXTaskManager-ExpoTaskManager_privacy' from project 'Pods')
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'EXTaskManager' from project 'Pods')
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'EXNotifications-ExpoNotifications_privacy' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'EXNotifications' from project 'Pods')
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'EXImageLoader' from project 'Pods')
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'EXConstants-ExpoConstants_privacy' from project 'Pods')
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'EXConstants-EXConstants' from project 'Pods')
@@ -3036,74 +3906,73 @@ note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEV
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'EXApplication' from project 'Pods')
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'EXAV' from project 'Pods')
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'DoubleConversion' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-Mapbuffer' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-performancetimeline' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTFabric' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTBlob' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-timing' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'fast_float' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTImage' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-debug' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-defaultsnativemodule' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-CoreModules' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-idlecallbacksnativemodule' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'RCTRequired' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-domnativemodule' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTAppDelegate' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-jsitooling' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'RCTTypeSafety' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-FabricComponents' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RuntimeCore' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTLinking' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-jsitracing' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-FabricImage' from project 'Pods')
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-runtimescheduler' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-renderercss' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RuntimeApple' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RuntimeHermes' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-microtasksnativemodule' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-logger' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'ReactCommon' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-Fabric' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-jsi' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTRuntime' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-oscompat' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-utils' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-jsinspectortracing' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-NativeModulesApple' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-idlecallbacksnativemodule' from project 'Pods')
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTVibration' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'RCTDeprecation' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'FBLazyVector' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-jsinspector' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-Core' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-perflogger' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-featureflags' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTAnimation' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'Yoga' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTActionSheet' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTSettings' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-jsinspectornetwork' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-cxxreact' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-callinvoker' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-runtimeexecutor' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-rendererconsistency' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTNetwork' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-rendererdebug' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-ImageManager' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'boost' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'fast_float' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-microtasksnativemodule' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'RCTRequired' from project 'Pods')
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-jsinspectorcdp' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-hermes' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTText' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-Core' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RuntimeCore' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-timing' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RuntimeApple' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-renderercss' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-logger' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'FBLazyVector' from project 'Pods')
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-featureflagsnativemodule' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTAnimation' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTBlob' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-callinvoker' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-jsinspector' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-performancetimeline' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-jsinspectortracing' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'ReactCommon' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-utils' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'RCTDeprecation' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-NativeModulesApple' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTActionSheet' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-oscompat' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTNetwork' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-cxxreact' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-Fabric' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-domnativemodule' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'Yoga' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'RCTTypeSafety' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-CoreModules' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-jsi' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-FabricImage' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-debug' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'boost' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-hermes' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTAppDelegate' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-graphics' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-jsitooling' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTLinking' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-rendererdebug' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-perflogger' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-ImageManager' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTImage' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTSettings' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTText' from project 'Pods')
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-jsiexecutor' from project 'Pods')
 note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-jserrorhandler' from project 'Pods')
-note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-graphics' from project 'Pods')
-** BUILD FAILED **
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-runtimeexecutor' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-defaultsnativemodule' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-FabricComponents' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-jsitracing' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTFabric' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-featureflags' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-jsinspectornetwork' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RCTRuntime' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-rendererconsistency' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-Mapbuffer' from project 'Pods')
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'React-RuntimeHermes' from project 'Pods')
 Build failed, showing last 100 lines of error log:
 --- xcodebuild: WARNING: Using the first of multiple matching destinations:
 { platform:iOS, id:dvtdevice-DVTiPhonePlaceholder-iphoneos:placeholder, name:Any iOS Device }
-{ platform:macOS, arch:arm64, variant:Designed for [iPad,iPhone], id:07cec604557fc61f26e5891811311133647efac4, name:My Mac }
+{ platform:macOS, arch:arm64, variant:Designed for [iPad,iPhone], id:615ecd8a944ad40226cc8410282f13516bbd8332, name:My Mac }
 { platform:iOS Simulator, id:dvtdevice-DVTiOSDeviceSimulatorPlaceholder-iphonesimulator:placeholder, name:Any iOS Simulator Device }
 { platform:visionOS Simulator, arch:arm64, variant:Designed for [iPad,iPhone], id:60B3BAF2-290B-4695-B686-2396CCB96138, OS:2.3, name:Apple Vision Pro }
 { platform:visionOS Simulator, arch:arm64, variant:Designed for [iPad,iPhone], id:DABA7DF4-7BC2-4C4B-990D-0EEBBF570262, OS:2.4, name:Apple Vision Pro }
@@ -3298,12 +4167,11 @@ Build failed, showing last 100 lines of error log:
 { platform:iOS Simulator, arch:x86_64, id:7631B9C5-26B8-47DC-AE96-B2D87F4D54B2, OS:26.2, name:iPhone SE (3rd generation) }
 ** BUILD FAILED **
 The following build commands failed:
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REAModule.h:4:9: fatal error: 'React/RCTRuntimeExecutorModule.h' file not found
-	CompileC /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/RNReanimated.build/Objects-normal/arm64/REANodesManager.o /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/apple/reanimated/apple/REANodesManager.mm normal arm64 objective-c++ com.apple.compilers.llvm.clang.1_0.compiler (in target 'RNReanimated' from project 'Pods')
-    4 | #import <React/RCTRuntimeExecutorModule.h>
+	CompileC /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/RNReanimated.build/Objects-normal/arm64/LayoutAnimationsUtils.o /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/LayoutAnimations/LayoutAnimationsUtils.cpp normal arm64 c++ com.apple.compilers.llvm.clang.1_0.compiler (in target 'RNReanimated' from project 'Pods')
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/LayoutAnimations/LayoutAnimationsUtils.cpp:34:23: error: no member named 'parentShadowView' in 'facebook::react::ShadowViewMutation'
 	Building workspace TAMTAM with scheme TAMTAM and configuration Release
-      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   34 |   if (tag != mutation.parentShadowView.tag) {
 (2 failures)
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNReanimated/reanimated/apple/REAModule.h:4:9: note: did not find header 'RCTRuntimeExecutorModule.h' in framework 'React' (loaded from '/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt')
-1 error generated.
-Error: Process completed with exit code 1
+      |              ~~~~~~~~ ^
+2 warnings and 1 error generated.
+CompileC /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/RNReanimated.build/Objects-normal/arm64/LayoutAnimationsProxy.o /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/LayoutAnimations/LayoutAnimationsProxy.cpp normal arm64 c++ com.apple.compilers.llvm.clang.1_0.compiler (in target 'RNReanimated' from project 'Pods')
