@@ -60,6 +60,13 @@ jobs:
             sed -i '' "s/#if REACT_NATIVE_MINOR_VERSION >= 74/#if REACT_NATIVE_MINOR_VERSION >= 74 \&\& REACT_NATIVE_MINOR_VERSION < 81/g" "$REA_MODULE_MM"
           fi
 
+          # 4. Fix NativeReanimatedModule.cpp (CoreFeatures.h removed in RN 0.81.x)
+          REA_NATIVE_CPP="node_modules/react-native-reanimated/Common/cpp/reanimated/NativeModules/NativeReanimatedModule.cpp"
+          if [ -f "$REA_NATIVE_CPP" ]; then
+            echo "Patching NativeReanimatedModule.cpp..."
+            sed -i '' "s/#if REACT_NATIVE_MINOR_VERSION >= 73/#if REACT_NATIVE_MINOR_VERSION >= 73 \&\& REACT_NATIVE_MINOR_VERSION < 81/g" "$REA_NATIVE_CPP"
+          fi
+
 
       - name: Expo Prebuild
         run: |
