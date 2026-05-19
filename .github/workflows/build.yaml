@@ -60,10 +60,29 @@ jobs:
             sed -i '' "s/#if REACT_NATIVE_MINOR_VERSION >= 74/#if REACT_NATIVE_MINOR_VERSION >= 74 \&\& REACT_NATIVE_MINOR_VERSION < 81/g" "$REA_MODULE_MM"
           fi
 
-          # 4. Fix NativeReanimatedModule.cpp (CoreFeatures.h removed in RN 0.81.x)
+          # 4. Fix NativeReanimatedModule.cpp (RN 0.81.x breaking changes)
           REA_NATIVE_CPP="node_modules/react-native-reanimated/Common/cpp/reanimated/NativeModules/NativeReanimatedModule.cpp"
           if [ -f "$REA_NATIVE_CPP" ]; then
             echo "Patching NativeReanimatedModule.cpp..."
+            
+            # Force REACT_NATIVE_MINOR_VERSION to 81 and add required include
+            # Using a temporary file to prepend content cleanly
+            echo -e "#undef REACT_NATIVE_MINOR_VERSION\n#define REACT_NATIVE_MINOR_VERSION 81\n#include <react/renderer/bridging/bridging.h>\n" > reanimated_prefix.cpp
+            cat "$REA_NATIVE_CPP" >> reanimated_prefix.cpp
+            mv reanimated_prefix.cpp "$REA_NATIVE_CPP"
+
+            # Define shadowNodeFromValue helper if missing
+            sed -i '' "/using namespace facebook;/a \\
+            namespace reanimated { inline static std::shared_ptr<const facebook::react::ShadowNode> shadowNodeFromValue(facebook::jsi::Runtime \&rt, const facebook::jsi::Value \&value) { return facebook::react::Bridging<std::shared_ptr<const facebook::react::ShadowNode>>::fromJs(rt, value); } }
+            " "$REA_NATIVE_CPP"
+
+            # Remove .shouldYield from ShadowTree::commit options (it's gone in RN 0.81)
+            # We match the specific block in NativeReanimatedModule.cpp
+            sed -i '' "/\.shouldYield =/,/}/d" "$REA_NATIVE_CPP"
+            # The previous sed might leave a trailing comma or break the struct closure, let's fix the specific call site
+            sed -i '' "s/\/\* \.mountSynchronously = \*\/ true,/\/\* \.mountSynchronously = \*\/ true/g" "$REA_NATIVE_CPP"
+            
+            # Fix CoreFeatures version check (already handled in previous turn but keeping it consolidated)
             sed -i '' "s/#if REACT_NATIVE_MINOR_VERSION >= 73/#if REACT_NATIVE_MINOR_VERSION >= 73 \&\& REACT_NATIVE_MINOR_VERSION < 81/g" "$REA_NATIVE_CPP"
           fi
 
