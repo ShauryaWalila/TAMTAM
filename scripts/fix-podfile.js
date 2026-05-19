@@ -34,14 +34,16 @@ const deps = [
   "  pod 'RCT-Folly', :podspec => '../node_modules/react-native/third-party-podspecs/RCT-Folly.podspec'"
 ];
 
-// 3. Fix Swift version mismatch and disable signing for ALL pods
-// We also patch AIRMapMarker.m here to ensure it survives pod install
 const podPostInstallFix = `
     installer.pods_project.targets.each do |target|
       target.build_configurations.each do |config|
-        config.build_settings['SWIFT_VERSION'] = '5.0'
+        config.build_settings['SWIFT_VERSION'] = '5.10'
         config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
         config.build_settings['CODE_SIGNING_REQUIRED'] = 'NO'
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
+        # Fix for @MainActor errors in ExpoModulesCore with Xcode 16+
+        config.build_settings['OTHER_SWIFT_FLAGS'] = '$(inherited) -D EXPO_SWIFT_6_MIGRATION'
+        config.build_settings['SWIFT_STRICT_CONCURRENCY'] = 'minimal'
       end
     end
     
@@ -56,26 +58,33 @@ const podPostInstallFix = `
     end
 `;
 
-const lines = content.split('\n');
-const newLines = [];
-
-for (let line of lines) {
-  newLines.push(line);
-  // Match target 'Name' do
-  if (line.trim().startsWith("target '") && line.trim().endsWith(" do")) {
-    deps.forEach(dep => {
-      const depName = dep.match(/'([^']+)'/)[1];
-      if (!content.includes(`pod '${depName}'`)) {
-        newLines.push(dep);
-      }
-    });
-  }
-  
-  // Match post_install do |installer|
-  if (line.trim().startsWith("post_install do |installer|")) {
-    newLines.push(podPostInstallFix);
-  }
+// Use a more robust way to find and inject into post_install
+if (content.includes('post_install do |installer|')) {
+  content = content.replace('post_install do |installer|', `post_install do |installer|\n${podPostInstallFix}`);
+} else {
+  // If no post_install exists, add one at the end
+  content += `\npost_install do |installer|\n${podPostInstallFix}\nend\n`;
 }
 
-fs.writeFileSync(podfilePath, newLines.join('\n'));
+// Inject pods into targets
+const targetMatch = /target '([^']+)' do/g;
+let match;
+const targetPositions = [];
+while ((match = targetMatch.exec(content)) !== null) {
+  targetPositions.push({ name: match[1], index: match.index + match[0].length });
+}
+
+// Sort in reverse to not mess up indices
+targetPositions.reverse().forEach(pos => {
+  let insertion = "";
+  deps.forEach(dep => {
+    const depName = dep.match(/'([^']+)'/)[1];
+    if (!content.includes(`pod '${depName}'`)) {
+      insertion += `\n${dep}`;
+    }
+  });
+  content = content.slice(0, pos.index) + insertion + content.slice(pos.index);
+});
+
+fs.writeFileSync(podfilePath, content);
 console.log('Successfully patched Podfile with local dependencies and Swift version fix.');
