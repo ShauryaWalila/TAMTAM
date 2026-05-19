@@ -90,9 +90,15 @@ jobs:
 
             patchFile('node_modules/react-native-reanimated/Common/cpp/reanimated/LayoutAnimations/LayoutAnimationsProxy.cpp', c => {
               c = c.replace(/mutation\.parentShadowView\.tag/g, 'mutation.parentTag')
-                   .replace(/mutation\.parentShadowView/g, 'mutation.parentTag')
+                   .replace(/auto parentView = std::make_shared<ShadowView>\(mutation\.parentShadowView\);/g, 'Tag parentTag = mutation.parentTag;')
+                   .replace(/auto parent = std::make_shared<ShadowView>\(mutation\.parentShadowView\);/g, 'Tag parentTag = mutation.parentTag;')
+                   .replace(/LayoutAnimation\{finalView, currentView, parentView, {}, count\}/g, 'LayoutAnimation{finalView, currentView, parentTag, {}, count}')
+                   .replace(/LayoutAnimation\{finalView, current, parent, opacity\}/g, 'LayoutAnimation{finalView, current, parentTag, opacity}')
                    .replace(/\*layoutAnimation\.parentView/g, 'layoutAnimation.parentTag')
-                   .replace(/LayoutAnimation\{finalView, currentView, parentView, {}, count\}/g, 'LayoutAnimation{finalView, currentView, parentTag, {}, count}');
+                   .replace(/\[finalView, current, parent, mutation,/g, '[finalView, current, parentTag, mutation,');
+              
+              // Handle remaining mutation.parentShadowView.layoutMetrics access (unlikely to work well but must compile)
+              c = c.replace(/mutation\.parentShadowView/g, 'mutation.parentTag');
               
               // Special case for maybeUpdateWindowDimensions which uses layoutMetrics
               c = c.replace(/surfaceManager\.updateWindow\([\s\S]*?\);/g, '// Updated via surfaceId directly in 0.81');
