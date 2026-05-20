@@ -37,13 +37,19 @@ const deps = [
 const podPostInstallFix = `
     installer.pods_project.targets.each do |target|
       target.build_configurations.each do |config|
-        config.build_settings['SWIFT_VERSION'] = '6.0'
+        # Most pods need Swift 5.0
+        config.build_settings['SWIFT_VERSION'] = '5.0'
         config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
         config.build_settings['CODE_SIGNING_REQUIRED'] = 'NO'
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
-        # Fix for @MainActor errors in ExpoModulesCore with Xcode 16+
-        config.build_settings['OTHER_SWIFT_FLAGS'] = '$(inherited) -D EXPO_SWIFT_6_MIGRATION'
+        
+        # Disable strict concurrency checking for all pods to avoid Swift 6 errors
         config.build_settings['SWIFT_STRICT_CONCURRENCY'] = 'minimal'
+        
+        # Specific fixes for Expo modules
+        if target.name.start_with?('Expo')
+          config.build_settings['SWIFT_VERSION'] = '5.9'
+          config.build_settings['OTHER_SWIFT_FLAGS'] = '$(inherited) -D EXPO_SWIFT_6_MIGRATION'
+        end
       end
     end
     
