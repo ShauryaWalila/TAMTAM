@@ -10,19 +10,21 @@ if (!fs.existsSync(podfilePath)) {
 
 let content = fs.readFileSync(podfilePath, 'utf8');
 
-// 1. Add sources to the top if they don't exist
+// 1. Add standard CDN source if it doesn't exist
 const sources = [
-  "source 'https://github.com/CocoaPods/Specs.git'",
   "source 'https://cdn.cocoapods.org/'"
 ];
 
-let topLines = content.split('\n');
-sources.reverse().forEach(src => {
+let lines = content.split('\n');
+// Remove any GitHub Specs repo source as it causes duplicate spec errors with the CDN
+lines = lines.filter(line => !line.includes('github.com/CocoaPods/Specs.git'));
+content = lines.join('\n');
+
+sources.forEach(src => {
   if (!content.includes(src)) {
-    topLines.unshift(src);
+    content = src + '\n' + content;
   }
 });
-content = topLines.join('\n');
 
 // 2. Inject local paths for dependencies into EVERY target block
 const deps = [

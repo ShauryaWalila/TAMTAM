@@ -1,25 +1,464 @@
-** BUILD FAILED **
-
-
-The following build commands failed:
-	CompileSwift normal arm64 (in target 'ExpoModulesCore' from project 'Pods')
-	SwiftCompile normal arm64 Compiling\ AnyArgument.swift,\ AnyArrayBuffer.swift,\ AnyChild.swift,\ AnyClassDefinitionElement.swift,\ AnyDefinition.swift,\ AnyDynamicType.swift,\ AnyExpoView.swift,\ AnyField.swift,\ AnyFunctionDefinition.swift,\ AnyModule.swift,\ AnyTypedArray.swift,\ AnyViewDefinition.swift,\ AnyViewProp.swift,\ AppCodeSignEntitlements.swift,\ AppContext.swift,\ AppContextConfig.swift,\ AppContextFactory.swift,\ AppleView.swift,\ ArrayBuffer.swift,\ ArrayBufferExtensions.swift,\ AsyncFunctionDefinition.swift,\ AsyncFunctionFactories.swift,\ AutoSizingStack.swift,\ Callback.swift,\ CdpNetworkTypes.swift,\ ChainableException.swift,\ ClassComponentBuilder.swift,\ ClassDefinition.swift,\ ClassFactories.swift,\ ClassRegistry.swift,\ CodedError.swift,\ CommonExceptions.swift,\ ConcreteArrayBuffers.swift,\ ConcreteTypedArrays.swift,\ ConcreteViewProp.swift,\ ConcurrentFunctionDefinition.swift,\ ConcurrentFunctionFactories.swift,\ ConstantDefinition.swift,\ ConstantFactories.swift,\ ConstantsProvider.swift,\ Conversions.swift,\ Convertible.swift,\ Convertibles.swift,\ Convertibles+CMTime.swift,\ Convertibles+Color.swift,\ Convertibles+SwiftUI.swift,\ CoreModule.swift,\ DynamicArrayBufferType.swift,\ DynamicArrayType.swift,\ DynamicBoolType.swift,\ DynamicConvertibleType.swift,\ DynamicDataType.swift,\ DynamicDictionaryType.swift,\ DynamicEitherType.swift,\ DynamicEncodableType.swift,\ DynamicEnumType.swift,\ DynamicJavaScriptType.swift,\ DynamicNumberType.swift,\ DynamicOptionalType.swift,\ DynamicRawType.swift,\ DynamicSerializableType.swift,\ DynamicSharedObjectType.swift,\ DynamicStringType.swift,\ DynamicSwiftUIViewType.swift,\ DynamicType.swift,\ DynamicTypedArrayType.swift,\ DynamicValueOrUndefinedType.swift,\ DynamicViewType.swift,\ DynamicVoidType.swift,\ DynamicWorkletType.swift,\ Either.swift,\ Enumerable.swift,\ EventDispatcher.swift,\ EventListener.swift,\ EventListenersFactories.swift,\ EventObservingDefinition.swift,\ Exception.swift,\ ExceptionOrigin.swift,\ Exceptions.swift,\ ExpoAppDelegateSubscriber.swift,\ ExpoAppDelegateSubscriberManager.swift,\ ExpoAppDelegateSubscriberRepository.swift,\ ExpoFabricView.swift,\ ExpoReactDelegate.swift,\ ExpoReactDelegateHandler.swift,\ ExpoReactNativeFactoryProtocol.swift,\ ExpoRequestCdpInterceptor.swift,\ ExpoRequestInterceptorProtocol.swift,\ ExpoRuntime.swift,\ ExpoSwiftUI.swift,\ ExpoSystemColors.swift,\ ExpoView.swift,\ Field.swift,\ FieldExtensions.swift,\ FieldOption.swift,\ FileSystemManager.swift,\ FileSystemUtilities.swift,\ FormattedRecord.swift,\ Formatter.swift,\ GenericException.swift,\ GenericTypedArray.swift,\ JavaScriptActor.swift,\ JavaScriptFunction.swift,\ JavaScriptObjectBuilder.swift,\ JavaScriptRuntime.swift,\ JavaScriptUtils.swift,\ JavaScriptValue.swift,\ JSLoggerModule.swift,\ JSValueEncoder.swift,\ LegacyEventEmitterCompat.swift,\ LegacyModuleRegistry.swift,\ Logger.swift,\ LoggerTimer.swift,\ LogHandlers.swift,\ LogType.swift,\ MainValueConverter.swift,\ Module.swift,\ ModuleDefinition.swift,\ ModuleDefinitionBuilder.swift,\ ModuleDefinitionEncoder.swift,\ ModuleFactories.swift,\ ModuleHolder.swift,\ ModulePriorities.swift,\ ModuleRegistry.swift,\ ModulesProvider.swift,\ NativeModulesProxyModule.swift,\ NSLabel.swift,\ ObjectDefinition.swift,\ ObjectDefinitionBuilder.swift,\ ObjectFactories.swift,\ PersistentFileLog.swift,\ Platform.swift,\ Promise.swift,\ PropertyDefinition.swift,\ PropertyFactories.swift,\ Record.swift,\ Serializable.swift,\ SharedObject.swift,\ SharedObjectRegistry.swift,\ SharedRef.swift,\ StaticFunctionDefinition.swift,\ StaticFunctionFactories.swift,\ SwiftUIHostingView.swift,\ SwiftUILayoutMetrics.swift,\ SwiftUIShadowNodeProxy.swift,\ SwiftUIViewDefinition.swift,\ SwiftUIViewDefinitionBuilder.swift,\ SwiftUIViewDefinitionDefaultProps.swift,\ SwiftUIViewFrameObserver.swift,\ SwiftUIViewHost.swift,\ SwiftUIViewProps.swift,\ SwiftUIVirtualView.swift,\ SyncFunctionDefinition.swift,\ SyncFunctionFactories.swift,\ TypedArray.swift,\ UnexpectedException.swift,\ UnimplementedExpoView.swift,\ URLAuthenticationChallengeForwardSender.swift,\ URLRequest+httpBodyData.swift,\ URLSessionSessionDelegateProxy.swift,\ Utilities.swift,\ Uuidv5.swift,\ ValueOrUndefined.swift,\ View+Modifiers.swift,\ ViewDefinition.swift,\ ViewDefinitionBuilder.swift,\ ViewFactories.swift,\ ViewLifecycleMethod.swift,\ ViewModuleWrapper.swift,\ Worklet.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Arguments/AnyArgument.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/ArrayBuffers/AnyArrayBuffer.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/AnyChild.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Classes/AnyClassDefinitionElement.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Protocols/AnyDefinition.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/AnyDynamicType.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Protocols/AnyExpoView.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Records/AnyField.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Functions/AnyFunctionDefinition.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Protocols/AnyModule.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/TypedArrays/AnyTypedArray.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Protocols/AnyViewDefinition.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/AnyViewProp.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/AppCodeSignEntitlements.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/AppContext.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/AppContextConfig.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/AppContextFactory.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/AppleView.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/ArrayBuffers/ArrayBuffer.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/ArrayBuffers/ArrayBufferExtensions.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Functions/AsyncFunctionDefinition.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Api/Factories/AsyncFunctionFactories.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/AutoSizingStack.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Events/Callback.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/DevTools/CdpNetworkTypes.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Exceptions/ChainableException.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Api/Builders/ClassComponentBuilder.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Classes/ClassDefinition.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Api/Factories/ClassFactories.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Classes/ClassRegistry.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Exceptions/CodedError.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Exceptions/CommonExceptions.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/ArrayBuffers/ConcreteArrayBuffers.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/TypedArrays/ConcreteTypedArrays.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/ConcreteViewProp.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Functions/ConcurrentFunctionDefinition.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Api/Factories/ConcurrentFunctionFactories.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Objects/ConstantDefinition.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Api/Factories/ConstantFactories.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Utilities/ConstantsProvider.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Conversions.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Arguments/Convertible.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Arguments/Convertibles.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Convertibles/Convertibles+CMTime.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Convertibles/Convertibles+Color.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/Convertibles+SwiftUI.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Modules/CoreModule.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicArrayBufferType.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicArrayType.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicBoolType.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicConvertibleType.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicDataType.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicDictionaryType.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicEitherType.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicEncodableType.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicEnumType.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicJavaScriptType.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicNumberType.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicOptionalType.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicRawType.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicSerializableType.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicSharedObjectType.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicStringType.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicSwiftUIViewType.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicType.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicTypedArrayType.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicValueOrUndefinedType.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicViewType.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicVoidType.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicWorkletType.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Arguments/Either.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Arguments/Enumerable.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Events/EventDispatcher.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/EventListener.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Api/Factories/EventListenersFactories.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Events/EventObservingDefinition.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Exceptions/Exception.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Exceptions/ExceptionOrigin.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Uuidv5/Exceptions.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/AppDelegates/ExpoAppDelegateSubscriber.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/AppDelegates/ExpoAppDelegateSubscriberManager.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/AppDelegates/ExpoAppDelegateSubscriberRepository.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Fabric/ExpoFabricView.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/ReactDelegates/ExpoReactDelegate.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/ReactDelegates/ExpoReactDelegateHandler.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/AppDelegates/ExpoReactNativeFactoryProtocol.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/DevTools/ExpoRequestCdpInterceptor.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/DevTools/ExpoRequestInterceptorProtocol.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/ExpoRuntime.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/ExpoSwiftUI.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/ExpoSystemColors.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/ExpoView.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Records/Field.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Records/FieldExtensions.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Records/FieldOption.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/FileSystemUtilities/FileSystemManager.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/FileSystemUtilities/FileSystemUtilities.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Records/FormattedRecord.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Records/Formatter.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Exceptions/GenericException.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/TypedArrays/GenericTypedArray.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/JS/JavaScriptActor.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/JavaScriptFunction.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Objects/JavaScriptObjectBuilder.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/JS/JavaScriptRuntime.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/JavaScriptUtils.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/JS/JavaScriptValue.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Modules/JSLoggerModule.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/JSValueEncoder.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Events/LegacyEventEmitterCompat.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Legacy/LegacyModuleRegistry.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Logging/Logger.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Logging/LoggerTimer.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Logging/LogHandlers.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Logging/LogType.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/MainValueConverter.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Modules/Module.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Modules/ModuleDefinition.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Modules/ModuleDefinitionBuilder.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/DevTools/ModuleDefinitionEncoder.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Api/Factories/ModuleFactories.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/ModuleHolder.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/AppDelegates/ModulePriorities.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/ModuleRegistry.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/ModulesProvider.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Legacy/NativeModulesProxy/NativeModulesProxyModule.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Platform/NSLabel.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Objects/ObjectDefinition.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Api/Builders/ObjectDefinitionBuilder.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Api/Factories/ObjectFactories.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Logging/PersistentFileLog.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Platform/Platform.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Promise.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Objects/PropertyDefinition.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Api/Factories/PropertyFactories.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Records/Record.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Worklets/Serializable.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/SharedObjects/SharedObject.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/SharedObjects/SharedObjectRegistry.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/SharedObjects/SharedRef.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Functions/StaticFunctionDefinition.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Api/Factories/StaticFunctionFactories.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIHostingView.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUILayoutMetrics.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIShadowNodeProxy.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIViewDefinition.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIViewDefinitionBuilder.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIViewDefinitionDefaultProps.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIViewFrameObserver.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIViewHost.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIViewProps.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Functions/SyncFunctionDefinition.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Api/Factories/SyncFunctionFactories.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/TypedArrays/TypedArray.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Exceptions/UnexpectedException.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/UnimplementedExpoView.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/DevTools/URLAuthenticationChallengeForwardSender.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/DevTools/URLRequest+httpBodyData.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/DevTools/URLSessionSessionDelegateProxy.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Utilities/Utilities.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Uuidv5/Uuidv5.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Arguments/ValueOrUndefined.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/View+Modifiers.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/ViewDefinition.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Api/Builders/ViewDefinitionBuilder.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Api/Factories/ViewFactories.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/ViewLifecycleMethod.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/ViewModuleWrapper.swift /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Worklets/Worklet.swift (in target 'ExpoModulesCore' from project 'Pods')
-	Building workspace TAMTAM with scheme TAMTAM and configuration Release
-(3 failures)
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIHostingView.swift:45:89: error: unknown attribute 'MainActor'
-  public final class HostingView<Props: ViewProps, ContentView: View<Props>>: ExpoView, @MainActor AnyExpoSwiftUIHostingView {
-                                                                                        ^
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:196:43: error: unknown attribute 'MainActor'
-extension ExpoSwiftUI.SwiftUIVirtualView: @MainActor ExpoSwiftUI.ViewWrapper {
-                                          ^
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Exceptions/UnexpectedException.swift:6:14: warning: class 'UnexpectedException' must restate inherited '@unchecked Sendable' conformance
-public class UnexpectedException: Exception {
-             ^
---
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/ViewDefinition.swift:121:19: error: unknown attribute 'MainActor'
-extension UIView: @MainActor AnyArgument {
-                  ^
-
-Failed frontend command:
-/Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift-frontend -frontend -c -filelist /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/ExpoModulesCore.build/Objects-normal/arm64/sources-1 -supplementary-output-file-map /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/ExpoModulesCore.build/Objects-normal/arm64/supplementaryOutputs-1 -target arm64-apple-ios15.1 -Xllvm -aarch64-use-tbi -enable-objc-interop -stack-check -sdk /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk -I /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/ExpoModulesCore -I /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/RCTSwiftUI -F /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/ExpoModulesCore -F /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/React-Core-prebuilt -F /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/ReactNativeDependencies/framework/packages/react-native -F /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/hermes-engine/destroot/Library/Frameworks/universal -F /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt -F /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/ReactNativeDependencies -F /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/hermes-engine/Pre-built -no-color-diagnostics -g -debug-info-format\=dwarf -dwarf-version\=4 -import-underlying-module -module-cache-path /Users/runner/work/TAMTAM/TAMTAM/ios/build/ModuleCache.noindex -swift-version 5 -enforce-exclusivity\=checked -O -D COCOAPODS -D RCT_NEW_ARCH_ENABLED -D EXPO_SWIFT_6_MIGRATION -serialize-debugging-options -const-gather-protocols-file /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/ExpoModulesCore.build/Objects-normal/arm64/ExpoModulesCore_const_extract_protocols.json -enable-experimental-feature DebugDescriptionMacro -enable-bare-slash-regex -empty-abi-descriptor -validate-clang-modules-once -clang-build-session-file /Users/runner/work/TAMTAM/TAMTAM/ios/build/ModuleCache.noindex/Session.modulevalidation -Xcc -working-directory -Xcc /Users/runner/work/TAMTAM/TAMTAM/ios/Pods -resource-dir /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift -file-compilation-dir /Users/runner/work/TAMTAM/TAMTAM/ios/Pods -Xcc -fmodule-map-file\=/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/RCTSwiftUI/RCTSwiftUI.modulemap -Xcc -fmodule-map-file\=/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/ExpoModulesJSI/ExpoModulesJSI.modulemap -Xcc -fmodule-map-file\=/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/RNWorklets/RNWorklets.modulemap -Xcc -fmodule-map-file\=/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/ReactCodegen/ReactCodegen.modulemap -Xcc -fmodule-map-file\=/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/ExpoModulesCore/ExpoModulesCore.modulemap -Xcc -ivfsstatcache -Xcc /Users/runner/work/TAMTAM/TAMTAM/ios/build/SDKStatCaches.noindex/iphoneos18.5-22F76-a529daf784b3616c7c04a36aeb7f5c05.sdkstatcache -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/ExpoModulesCore.build/swift-overrides.hmap -Xcc -iquote -Xcc /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/ExpoModulesCore.build/ExpoModulesCore-generated-files.hmap -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/ExpoModulesCore.build/ExpoModulesCore-own-target-headers.hmap -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/ExpoModulesCore.build/ExpoModulesCore-all-non-framework-target-headers.hmap -Xcc -ivfsoverlay -Xcc /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/Pods-8699adb1dd336b26511df848a716bd42-VFS-iphoneos/all-product-headers.yaml -Xcc -iquote -Xcc /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/ExpoModulesCore.build/ExpoModulesCore-project-headers.hmap -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/ExpoModulesCore/include -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/ExpoModulesCore -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/ExpoModulesCore -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/ExpoModulesJSI -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/FBLazyVector -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/RCTRequired -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/RCTSwiftUIWrapper -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/RCTTypeSafety -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/RNWorklets -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Core -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Core-prebuilt -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-CoreModules -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-FabricComponents -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-FabricImage -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-ImageManager -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Mapbuffer -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-NativeModulesApple -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-RCTAnimation -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-RCTBlob -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-RCTFBReactNativeSpec -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-RCTFabric -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-RCTImage -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-RCTRuntime -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-RCTText -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-RuntimeApple -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-RuntimeCore -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-RuntimeHermes -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-callinvoker -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-cxxreact -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-debug -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-defaultsnativemodule -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-domnativemodule -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-featureflags -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-featureflagsnativemodule -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-graphics -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-hermes -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-idlecallbacksnativemodule -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-intersectionobservernativemodule -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-jserrorhandler -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-jsi -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-jsiexecutor -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-jsinspector -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-jsinspectorcdp -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-jsinspectornetwork -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-jsinspectortracing -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-jsitooling -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-logger -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-microtasksnativemodule -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-networking -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-oscompat -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-perflogger -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-performancecdpmetrics -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-performancetimeline -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-rendererconsistency -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-renderercss -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-rendererdebug -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-runtimeexecutor -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-runtimescheduler -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-timing -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-utils -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-webperformancenativemodule -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/ReactCodegen -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/ReactCommon -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/ReactNativeDependencies -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/Yoga -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/hermes-engine -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/React-jsinspector -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/Yoga -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/ExpoModulesCore.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/ExpoModulesCore.build/DerivedSources/arm64 -Xcc -I/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/ExpoModulesCore.build/DerivedSources -Xcc -DPOD_CONFIGURATION_RELEASE\=1 -Xcc -DCOCOAPODS\=1 -Xcc -DPOD_CONFIGURATION_RELEASE\=1 -Xcc -DWORKLETS_ENABLED\=1 -Xcc -DREACT_NATIVE_MINOR_VERSION\=83 -Xcc -DEXPO_MODULES_CORE_VERSION\=55.0.25 -module-name ExpoModulesCore -frontend-parseable-output -disable-clang-spi -target-sdk-version 18.5 -target-sdk-name iphoneos18.5 -external-plugin-path /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins\#/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server -external-plugin-path /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/local/lib/swift/host/plugins\#/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server -in-process-plugin-server-path /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/libSwiftInProcPluginServer.dylib -plugin-path /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins -plugin-path /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/local/lib/swift/host/plugins -enable-default-cmo -num-threads 3 -output-filelist /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/ExpoModulesCore.build/Objects-normal/arm64/outputs-1 -index-unit-output-path-filelist /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/ExpoModulesCore.build/Objects-normal/arm64/index-unit-outputs-1
+pod install --repo-update
+  shell: /bin/bash -e {0}
+  
+Using Expo modules
+[Expo] Enabling modular headers for pod ExpoModulesCore
+[Expo] Enabling modular headers for pod React-RCTAppDelegate
+[Expo] Enabling modular headers for pod React-RCTFabric
+[Expo] Enabling modular headers for pod ReactAppDependencyProvider
+[Expo] Enabling modular headers for pod React-Core
+[Expo] Enabling modular headers for pod ReactCodegen
+[Expo] Enabling modular headers for pod RCTRequired
+[Expo] Enabling modular headers for pod RCTTypeSafety
+[Expo] Enabling modular headers for pod ReactCommon
+[Expo] Enabling modular headers for pod React-NativeModulesApple
+[Expo] Enabling modular headers for pod Yoga
+[Expo] Enabling modular headers for pod React-Fabric
+[Expo] Enabling modular headers for pod React-graphics
+[Expo] Enabling modular headers for pod React-utils
+[Expo] Enabling modular headers for pod React-featureflags
+[Expo] Enabling modular headers for pod React-debug
+[Expo] Enabling modular headers for pod React-ImageManager
+[Expo] Enabling modular headers for pod React-rendererdebug
+[Expo] Enabling modular headers for pod React-jsi
+[Expo] Enabling modular headers for pod React-renderercss
+[Expo] Enabling modular headers for pod hermes-engine
+[Expo] Enabling modular headers for pod glog
+[Expo] Enabling modular headers for pod boost
+[Expo] Enabling modular headers for pod DoubleConversion
+[Expo] Enabling modular headers for pod fast_float
+[Expo] Enabling modular headers for pod fmt
+[Expo] Enabling modular headers for pod RCT-Folly
+[Expo] Enabling modular headers for pod SocketRocket
+[Expo] Enabling modular headers for pod ZXingObjC
+[Expo] Enabling modular headers for pod SDWebImage
+[Expo] Enabling modular headers for pod SDWebImageAVIFCoder
+[Expo] Enabling modular headers for pod SDWebImageSVGCoder
+[Expo] Enabling modular headers for pod SDWebImageWebPCoder
+[Expo] Enabling modular headers for pod libavif
+[Expo] Enabling modular headers for pod RNScreens
+SK_GRAPHITE: OFF (Graphite symbols not found in libskia)
+[Lottie React Native] Using install_modules_dependencies
+[react-native-maps] Thank you for using react-native-maps ❤️! 
+[react-native-maps] to help keep it maintained, please consider sponsoring at https://github.com/sponsors/salah-ghanim
+[RNScreens] Gamma project enabled. Including source files.
+Found 16 modules for target `TAMTAM`
+link_native_modules! {:ios_packages=>[{:configurations=>[], :name=>"@react-native-async-storage/async-storage", :root=>"/Users/runner/work/TAMTAM/TAMTAM/node_modules/@react-native-async-storage/async-storage", :path=>"../node_modules/@react-native-async-storage/async-storage", :podspec_path=>"/Users/runner/work/TAMTAM/TAMTAM/node_modules/@react-native-async-storage/async-storage/RNCAsyncStorage.podspec", :script_phases=>[]}, {:configurations=>[], :name=>"@react-native-community/datetimepicker", :root=>"/Users/runner/work/TAMTAM/TAMTAM/node_modules/@react-native-community/datetimepicker", :path=>"../node_modules/@react-native-community/datetimepicker", :podspec_path=>"/Users/runner/work/TAMTAM/TAMTAM/node_modules/@react-native-community/datetimepicker/RNDateTimePicker.podspec", :script_phases=>[]}, {:configurations=>[], :name=>"@react-native-community/netinfo", :root=>"/Users/runner/work/TAMTAM/TAMTAM/node_modules/@react-native-community/netinfo", :path=>"../node_modules/@react-native-community/netinfo", :pods
+SK_GRAPHITE: OFF (Graphite symbols not found in libskia)
+[Lottie React Native] Using install_modules_dependencies
+[react-native-maps] Thank you for using react-native-maps ❤️! 
+[react-native-maps] to help keep it maintained, please consider sponsoring at https://github.com/sponsors/salah-ghanim
+[RNScreens] Gamma project enabled. Including source files.
+Auto-linking React Native modules for target `TAMTAM`: RNCAsyncStorage, RNDateTimePicker, RNGestureHandler, RNReanimated, RNSVG, RNScreens, RNWorklets, lottie-react-native, react-native-get-random-values, react-native-maps, react-native-netinfo, react-native-pager-view, react-native-safe-area-context, react-native-skia, and react-native-webview
+Framework build type is static library
+[ReactNativeDependencies] Setting up ReactNativeDependencies...
+[ReactNativeDependencies] Building from source: false
+[ReactNativeDependencies] Using tarball from URL: https://repo1.maven.org/maven2/com/facebook/react/react-native-artifacts/0.83.1/react-native-artifacts-0.83.1-reactnative-dependencies-debug.tar.gz
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+100 18.3M  100 18.3M    0     0   110M      0 --:--:-- --:--:-- --:--:--  111M
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+100  9.9M  100  9.9M    0     0   109M      0 --:--:-- --:--:-- --:--:--  109M
+[ReactNativeDependencies] Source: {:http=>"file:///Users/runner/work/TAMTAM/TAMTAM/ios/Pods/ReactNativeDependencies-artifacts/reactnative-dependencies-0.83.1-debug.tar.gz"}
+[ReactNativeCore] Setting up ReactNativeCore...
+[ReactNativeCore] Building from source: false
+Configuring the target with the New Architecture
+[ReactNativeCore] Using React Native Core and React Native Dependencies prebuilt versions.
+[Codegen] Analyzing /Users/runner/work/TAMTAM/TAMTAM/package.json
+[Codegen] Searching for codegen-enabled libraries in the app.
+[Codegen] The "codegenConfig" field is not defined in package.json. Assuming there is nothing to generate at the app level.
+[Codegen] Searching for codegen-enabled libraries in react-native.config.js
+[Codegen] Found @react-native-async-storage/async-storage
+[Codegen] Found @react-native-community/datetimepicker
+[Codegen] Found @shopify/react-native-skia
+[Codegen] Found lottie-react-native
+[Codegen] Found react-native-gesture-handler
+[Codegen] Found react-native-maps
+[Codegen] Found react-native-pager-view
+[Codegen] Found react-native-reanimated
+[Codegen] Found react-native-worklets
+[Codegen] Found react-native-safe-area-context
+[Codegen] Found react-native-screens
+[Codegen] Found react-native-svg
+[Codegen] Found react-native-webview
+[Codegen] Processing rnasyncstorage
+[Codegen] Searching for podspec in the project dependencies.
+[Codegen] Supported Apple platforms: ios, macos, tvos, visionos for rnasyncstorage
+[Codegen] Processing RNDateTimePickerCGen
+[Codegen] Searching for podspec in the project dependencies.
+[Codegen] Supported Apple platforms: ios, visionos for RNDateTimePickerCGen
+[Codegen] Processing rnskia
+[Codegen] Searching for podspec in the project dependencies.
+[Codegen] Supported Apple platforms: ios, macos, tvos for rnskia
+[Codegen] Processing lottiereactnative
+[Codegen] Searching for podspec in the project dependencies.
+[Codegen] Supported Apple platforms: ios, macos, tvos, visionos for lottiereactnative
+[Codegen] Processing rngesturehandler_codegen
+[Codegen] Searching for podspec in the project dependencies.
+[Codegen] Supported Apple platforms: ios, macos, tvos, visionos for rngesturehandler_codegen
+[Codegen] Processing RNMapsSpecs
+[Codegen] Searching for podspec in the project dependencies.
+[Codegen] Supported Apple platforms: ios for RNMapsSpecs
+[Codegen] Processing pagerview
+[Codegen] Searching for podspec in the project dependencies.
+[Codegen] Supported Apple platforms: ios, visionos for pagerview
+[Codegen] Processing rnreanimated
+[Codegen] Searching for podspec in the project dependencies.
+[Codegen] Supported Apple platforms: ios, macos, tvos, visionos for rnreanimated
+[Codegen] Processing rnworklets
+[Codegen] Searching for podspec in the project dependencies.
+[Codegen] Supported Apple platforms: ios, macos, tvos, visionos for rnworklets
+[Codegen] Processing safeareacontext
+[Codegen] Searching for podspec in the project dependencies.
+[Codegen] Supported Apple platforms: ios, macos, tvos, visionos for safeareacontext
+[Codegen] Processing rnscreens
+[Codegen] Searching for podspec in the project dependencies.
+[Codegen] Supported Apple platforms: ios, tvos, visionos for rnscreens
+[Codegen] Processing rnsvg
+[Codegen] Searching for podspec in the project dependencies.
+[Codegen] Supported Apple platforms: ios, macos, tvos, visionos for rnsvg
+[Codegen] Processing RNCWebViewSpec
+[Codegen] Searching for podspec in the project dependencies.
+[Codegen] Supported Apple platforms: ios, macos, visionos for RNCWebViewSpec
+[Codegen] Generating Native Code for rnasyncstorage - ios
+[Codegen] Generated artifacts: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios/ReactCodegen
+[Codegen] Generating Native Code for RNDateTimePickerCGen - ios
+[Codegen] Generated artifacts: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios/ReactCodegen
+[Codegen] Generating Native Code for rnskia - ios
+[Codegen] Generated artifacts: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios/ReactCodegen
+[Codegen] Generating Native Code for lottiereactnative - ios
+[Codegen] Generated artifacts: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios/ReactCodegen
+[Codegen] Generating Native Code for rngesturehandler_codegen - ios
+[Codegen] Generated artifacts: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios/ReactCodegen
+[Codegen] Generating Native Code for pagerview - ios
+[Codegen] Generated artifacts: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios/ReactCodegen
+[Codegen] Generating Native Code for rnreanimated - ios
+[Codegen] Generated artifacts: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios/ReactCodegen
+[Codegen] Generating Native Code for rnworklets - ios
+[Codegen] Generated artifacts: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios/ReactCodegen
+[Codegen] Generating Native Code for safeareacontext - ios
+[Codegen] Generated artifacts: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios/ReactCodegen
+[Codegen] Generating Native Code for rnscreens - ios
+[Codegen] Generated artifacts: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios/ReactCodegen
+[Codegen] Generating Native Code for rnsvg - ios
+[Codegen] Generated artifacts: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios/ReactCodegen
+[Codegen] Generating Native Code for RNCWebViewSpec - ios
+[Codegen] Generated artifacts: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios/ReactCodegen
+[Codegen] Generating RCTThirdPartyComponentsProvider.h
+[Codegen] Generated artifact: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios/ReactCodegen/RCTThirdPartyComponentsProvider.h
+[Codegen] Generating RCTThirdPartyComponentsProvider.mm
+[Codegen] Crawling @shopify/react-native-skia library for components
+[Codegen] Match found SkiaPictureView -> SkiaPictureView
+[Codegen] [DEPRECATED] @shopify/react-native-skia should add the 'ios.componentProvider' property in their codegenConfig
+[Codegen] Generated artifact: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios/ReactCodegen/RCTThirdPartyComponentsProvider.mm
+[Codegen] Generating RCTModulesProvider.h
+[Codegen] Generated artifact: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios/ReactCodegen/RCTModuleProviders.h
+[Codegen] Generating RCTModuleProviders.mm
+[Codegen] Generated artifact: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios/ReactCodegen/RCTModuleProviders.mm
+[Codegen] Generating RCTAppDependencyProvider
+[Codegen] Generated artifact: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios/ReactAppDependencyProvider/RCTAppDependencyProvider.h
+[Codegen] Generated artifact: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios/ReactAppDependencyProvider/RCTAppDependencyProvider.mm
+[Codegen] Generated podspec: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios/ReactAppDependencyProvider/ReactAppDependencyProvider.podspec
+[Codegen] Generated podspec: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios/ReactCodegen/ReactCodegen.podspec
+[Codegen] Generating Package.swift
+[Codegen] Generated artifact: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios/Package.swift
+[Codegen] Done.
+Updating local specs repositories
+Cloning spec repo `cocoapods` from `https://github.com/CocoaPods/Specs.git`
+Adding spec repo `trunk` with CDN `https://cdn.cocoapods.org/`
+  $ /opt/homebrew/bin/git -C /Users/runner/.cocoapods/repos/cocoapods fetch origin --progress
+  remote: Enumerating objects: 15, done.        
+  remote: Counting objects:   6% (1/15)        
+  remote: Counting objects:  13% (2/15)        
+  remote: Counting objects:  20% (3/15)        
+  remote: Counting objects:  26% (4/15)        
+  remote: Counting objects:  33% (5/15)        
+  remote: Counting objects:  40% (6/15)        
+  remote: Counting objects:  46% (7/15)        
+  remote: Counting objects:  53% (8/15)        
+  remote: Counting objects:  60% (9/15)        
+  remote: Counting objects:  66% (10/15)        
+  remote: Counting objects:  73% (11/15)        
+  remote: Counting objects:  80% (12/15)        
+  remote: Counting objects:  86% (13/15)        
+  remote: Counting objects:  93% (14/15)        
+  remote: Counting objects: 100% (15/15)        
+  remote: Counting objects: 100% (15/15), done.        
+  remote: Compressing objects:  11% (1/9)        
+  remote: Compressing objects:  22% (2/9)        
+  remote: Compressing objects:  33% (3/9)        
+  remote: Compressing objects:  44% (4/9)        
+  remote: Compressing objects:  55% (5/9)        
+  remote: Compressing objects:  66% (6/9)        
+  remote: Compressing objects:  77% (7/9)        
+  remote: Compressing objects:  88% (8/9)        
+  remote: Compressing objects: 100% (9/9)        
+  remote: Compressing objects: 100% (9/9), done.        
+  remote: Total 9 (delta 6), reused 0 (delta 0), pack-reused 0 (from 0)        
+  From https://github.com/CocoaPods/Specs
+     e3cee8fcddc6..e3a85bded13e  master     -> origin/master
+  $ /opt/homebrew/bin/git -C /Users/runner/.cocoapods/repos/cocoapods rev-parse --abbrev-ref HEAD
+  master
+  $ /opt/homebrew/bin/git -C /Users/runner/.cocoapods/repos/cocoapods reset --hard origin/master
+  HEAD is now at e3a85bded13e [Add] TaurusxAdsSDK 1.17.0
+Analyzing dependencies
+Fetching podspec for `DoubleConversion` from `../node_modules/react-native/third-party-podspecs/DoubleConversion.podspec`
+Fetching podspec for `RCT-Folly` from `../node_modules/react-native/third-party-podspecs/RCT-Folly.podspec`
+[RNScreens] Gamma project enabled. Including source files.
+Fetching podspec for `React-Core-prebuilt` from `../node_modules/react-native/React-Core-prebuilt.podspec`
+[ReactNativeCore] Downloading ReactNativeCore-prebuilt debug tarball from https://repo1.maven.org/maven2/com/facebook/react/react-native-artifacts/0.83.1/react-native-artifacts-0.83.1-reactnative-core-debug.tar.gz to ../../ios/Pods/ReactNativeCore-artifacts/reactnative-core-0.83.1-debug.tar.gz
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+ 92 87.2M   92 80.9M    0     0   106M      0 --:--:-- --:--:-- --:--:--  106M
+100 87.2M  100 87.2M    0     0   108M      0 --:--:-- --:--:-- --:--:--  108M
+[ReactNativeCore] Downloading ReactNativeCore-prebuilt release tarball from https://repo1.maven.org/maven2/com/facebook/react/react-native-artifacts/0.83.1/react-native-artifacts-0.83.1-reactnative-core-release.tar.gz to ../../ios/Pods/ReactNativeCore-artifacts/reactnative-core-0.83.1-release.tar.gz
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+100 27.7M  100 27.7M    0     0  92.2M      0 --:--:-- --:--:-- --:--:-- 92.5M
+[ReactNativeCore] Resolved stable ReactNativeCore-prebuilt version:
+[ReactNativeCore]   ../../ios/Pods/ReactNativeCore-artifacts/reactnative-core-0.83.1-debug.tar.gz
+[ReactNativeCore]   ../../ios/Pods/ReactNativeCore-artifacts/reactnative-core-0.83.1-release.tar.gz
+Fetching podspec for `ReactNativeDependencies` from `../node_modules/react-native/third-party-podspecs/ReactNativeDependencies.podspec`
+[ReactNativeDependencies] Using tarball from URL: https://repo1.maven.org/maven2/com/facebook/react/react-native-artifacts/0.83.1/react-native-artifacts-0.83.1-reactnative-dependencies-debug.tar.gz
+Fetching podspec for `boost` from `../node_modules/react-native/third-party-podspecs/boost.podspec`
+Fetching podspec for `fast_float` from `../node_modules/react-native/third-party-podspecs/fast_float.podspec`
+Fetching podspec for `fmt` from `../node_modules/react-native/third-party-podspecs/fmt.podspec`
+Fetching podspec for `glog` from `../node_modules/react-native/third-party-podspecs/glog.podspec`
+Fetching podspec for `hermes-engine` from `../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec`
+[Hermes] Using release tarball from URL: https://repo1.maven.org/maven2/com/facebook/hermes/hermes-ios/0.14.0/hermes-ios-0.14.0-hermes-ios-debug.tar.gz
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+ 50 30.8M   50 15.7M    0     0  85.8M      0 --:--:-- --:--:-- --:--:-- 85.4M
+100 30.8M  100 30.8M    0     0  99.9M      0 --:--:-- --:--:-- --:--:-- 99.9M
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+100 21.9M  100 21.9M    0     0   108M      0 --:--:-- --:--:-- --:--:--  108M
+[Lottie React Native] Using install_modules_dependencies
+[react-native-maps] Thank you for using react-native-maps ❤️! 
+[react-native-maps] to help keep it maintained, please consider sponsoring at https://github.com/sponsors/salah-ghanim
+SK_GRAPHITE: OFF (Graphite symbols not found in libskia)
+[!] Unable to find a specification for `react-native-maps-generated` depended upon by `react-native-maps`
+[!] Found multiple specifications for `ZXingObjC (3.6.9)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.6.9/ZXingObjC.podspec.json
+You have either:
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.6.9/ZXingObjC.podspec.json
+ * mistyped the name or version.
+ * not added the source repo that hosts the Podspec to your Podfile.
+[!] Found multiple specifications for `ZXingObjC (3.6.8)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.6.8/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.6.8/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.6.5)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.6.5/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.6.5/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.6.4)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.6.4/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.6.4/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.6.3)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.6.3/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.6.3/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.6.2)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.6.2/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.6.2/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.6.1)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.6.1/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.6.1/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.6.0)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.6.0/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.6.0/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.5.0)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.5.0/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.5.0/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.4.3)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.4.3/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.4.3/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.4.2)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.4.2/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.4.2/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.4.1)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.4.1/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.4.1/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.4.0)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.4.0/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.4.0/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.2.2)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.2.2/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.2.2/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.2.1)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.2.1/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.2.1/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.1.0)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.1.0/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.1.0/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.0.4)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.0.4/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.0.4/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.0.3)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.0.3/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.0.3/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.0.2)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.0.2/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.0.2/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.0.1)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.0.1/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.0.1/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.0.0)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.0.0/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.0.0/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (2.2.8)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/2.2.8/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/2.2.8/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (2.2.7)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/2.2.7/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/2.2.7/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (2.2.6)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/2.2.6/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/2.2.6/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (2.2.5)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/2.2.5/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/2.2.5/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (2.2.4)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/2.2.4/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/2.2.4/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (2.2.3)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/2.2.3/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/2.2.3/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (2.2.2)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/2.2.2/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/2.2.2/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (2.2.1)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/2.2.1/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/2.2.1/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (2.2.0)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/2.2.0/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/2.2.0/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (2.1.0)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/2.1.0/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/2.1.0/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (2.0.2)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/2.0.2/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/2.0.2/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (2.0.1)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/2.0.1/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/2.0.1/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (1.7)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/1.7/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/1.7/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (0.0.1)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/0.0.1/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/0.0.1/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.6.9)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.6.9/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.6.9/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.6.8)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.6.8/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.6.8/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.6.5)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.6.5/ZXingObjC.podspec.json
 Error: Process completed with exit code 1.
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.6.5/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.6.4)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.6.4/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.6.4/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.6.3)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.6.3/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.6.3/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.6.2)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.6.2/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.6.2/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.6.1)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.6.1/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.6.1/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.6.0)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.6.0/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.6.0/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.5.0)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.5.0/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.5.0/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.4.3)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.4.3/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.4.3/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.4.2)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.4.2/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.4.2/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.4.1)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.4.1/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.4.1/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.4.0)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.4.0/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.4.0/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.2.2)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.2.2/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.2.2/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.2.1)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.2.1/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.2.1/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.1.0)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.1.0/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.1.0/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.0.4)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.0.4/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.0.4/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.0.3)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.0.3/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.0.3/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.0.2)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.0.2/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.0.2/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.0.1)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.0.1/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.0.1/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (3.0.0)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/3.0.0/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/3.0.0/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (2.2.8)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/2.2.8/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/2.2.8/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (2.2.7)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/2.2.7/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/2.2.7/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (2.2.6)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/2.2.6/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/2.2.6/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (2.2.5)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/2.2.5/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/2.2.5/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (2.2.4)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/2.2.4/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/2.2.4/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (2.2.3)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/2.2.3/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/2.2.3/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (2.2.2)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/2.2.2/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/2.2.2/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (2.2.1)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/2.2.1/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/2.2.1/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (2.2.0)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/2.2.0/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/2.2.0/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (2.1.0)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/2.1.0/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/2.1.0/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (2.0.2)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/2.0.2/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/2.0.2/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (2.0.1)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/2.0.1/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/2.0.1/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (1.7)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/1.7/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/1.7/ZXingObjC.podspec.json
+[!] Found multiple specifications for `ZXingObjC (0.0.1)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/f/3/c/ZXingObjC/0.0.1/ZXingObjC.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/f/3/c/ZXingObjC/0.0.1/ZXingObjC.podspec.json
+[!] Found multiple specifications for `lottie-ios (4.6.0)`:
+- /Users/runner/.cocoapods/repos/cocoapods/Specs/7/1/d/lottie-ios/4.6.0/lottie-ios.podspec.json
+- /Users/runner/.cocoapods/repos/trunk/Specs/7/1/d/lottie-ios/4.6.0/lottie-ios.podspec.json

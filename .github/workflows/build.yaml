@@ -49,7 +49,9 @@ jobs:
 
       - name: Install CocoaPods
         working-directory: ios
-        run: pod install --repo-update
+        run: |
+          rm -rf ~/.cocoapods/repos
+          pod install --repo-update
 
       - name: Build App Bundle (Unsigned)
         working-directory: ios
