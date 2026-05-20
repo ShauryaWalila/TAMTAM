@@ -45,13 +45,25 @@ const settingsOverride = `
       config.build_settings['SWIFT_STRICT_CONCURRENCY'] = 'off'
       
       # Targeted Swift Versioning
-      # We target Swift 6.0 ONLY for core Expo infrastructure.
-      # Other modules (RNScreens, Lottie) are failing with thousands of concurrency errors.
-      if target.name == 'ExpoModulesCore' || target.name == 'Expo' || target.name == 'EXOpenSSL'
+      # Expo 55 (RN 0.83+) infrastructure often needs Swift 6 for Xcode 16 compatibility.
+      # However, community libs (RNScreens, Lottie) are not ready for Swift 6 strictness.
+      swift6_modules = [
+        'ExpoModulesCore', 
+        'Expo', 
+        'EXOpenSSL', 
+        'ExpoKeepAwake', 
+        'ExpoFileSystem', 
+        'ExpoConstants',
+        'ExpoDevice',
+        'ExpoSplashScreen',
+        'ExpoFont'
+      ]
+      
+      if swift6_modules.include?(target.name)
         config.build_settings['SWIFT_VERSION'] = '6.0'
         config.build_settings['OTHER_SWIFT_FLAGS'] = '$(inherited) -D EXPO_SWIFT_6_MIGRATION'
       else
-        # Fallback to 5.0 for maximum compatibility with community libs
+        # Fallback to 5.0 for maximum compatibility with community libs (RNScreens, Lottie, etc.)
         config.build_settings['SWIFT_VERSION'] = '5.0'
       end
     end
