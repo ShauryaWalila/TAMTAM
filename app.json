@@ -7,11 +7,6 @@
     "icon": "./assets/images/icon.jpeg",
     "scheme": "tamtam",
     "userInterfaceStyle": "automatic",
-    "splash": {
-      "image": "./assets/images/icon.jpeg",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.pratishth.ourlink",

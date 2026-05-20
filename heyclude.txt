@@ -30,59 +30,59 @@ set -o pipefail
 ▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/lottie-react-native/Lottie_React_Native_Privacy.bundle/PrivacyInfo.xcprivacy
 ▸ Processing ResourceBundle-LottiePrivacyInfo-lottie-ios-Info.plist
 ▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/lottie-ios/LottiePrivacyInfo.bundle/PrivacyInfo.xcprivacy
+▸ Touching ReactNativeMapsPrivacy.bundle (in target 'react-native-maps-ReactNativeMapsPrivacy' from project 'Pods')
+▸ Touching Lottie_React_Native_Privacy.bundle (in target 'lottie-react-native-Lottie_React_Native_Privacy' from project 'Pods')
+▸ Touching LottiePrivacyInfo.bundle (in target 'lottie-ios-LottiePrivacyInfo' from project 'Pods')
 ▸ Processing ResourceBundle-glog_privacy-glog-Info.plist
 ▸ Processing ResourceBundle-boost_privacy-boost-Info.plist
+▸ Touching glog_privacy.bundle (in target 'glog-glog_privacy' from project 'Pods')
+▸ Running script '[CP-User] [RNDeps] Replace React Native Core for the right configuration, if needed'
+▸ Touching boost_privacy.bundle (in target 'boost-boost_privacy' from project 'Pods')
 ▸ Processing ResourceBundle-SDWebImage-SDWebImage-Info.plist
 ▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/SDWebImage/SDWebImage.bundle/PrivacyInfo.xcprivacy
 ▸ Processing ResourceBundle-React-cxxreact_privacy-React-cxxreact-Info.plist
 ▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/React-cxxreact/React-cxxreact_privacy.bundle/PrivacyInfo.xcprivacy
 ▸ Processing ResourceBundle-React-Core_privacy-React-Core-Info.plist
 ▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/React-Core/React-Core_privacy.bundle/PrivacyInfo.xcprivacy
+▸ Touching SDWebImage.bundle (in target 'SDWebImage-SDWebImage' from project 'Pods')
+▸ Touching React-cxxreact_privacy.bundle (in target 'React-cxxreact-React-cxxreact_privacy' from project 'Pods')
 ▸ Processing ResourceBundle-RNSVGFilters-RNSVG-Info.plist
 ▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/RNSVG/RNSVGFilters.bundle/RNSVGCompositeXor.iphoneos.metallib
 ▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/RNSVG/RNSVGFilters.bundle/RNSVGArithmeticFilter.iphoneos.metallib
+▸ Touching React-Core_privacy.bundle (in target 'React-Core-React-Core_privacy' from project 'Pods')
 ▸ Processing ResourceBundle-RNCAsyncStorage_resources-RNCAsyncStorage-Info.plist
 ▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/RNCAsyncStorage/RNCAsyncStorage_resources.bundle/PrivacyInfo.xcprivacy
+▸ Touching RNSVGFilters.bundle (in target 'RNSVG-RNSVGFilters' from project 'Pods')
 ▸ Processing ResourceBundle-RCT-Folly_privacy-RCT-Folly-Info.plist
+▸ Touching RNCAsyncStorage_resources.bundle (in target 'RNCAsyncStorage-RNCAsyncStorage_resources' from project 'Pods')
 ▸ Processing ResourceBundle-ExpoMediaLibrary_privacy-ExpoMediaLibrary-Info.plist
 ▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/ExpoMediaLibrary/ExpoMediaLibrary_privacy.bundle/PrivacyInfo.xcprivacy
+▸ Touching RCT-Folly_privacy.bundle (in target 'RCT-Folly-RCT-Folly_privacy' from project 'Pods')
 ▸ Processing ResourceBundle-ExpoFileSystem_privacy-ExpoFileSystem-Info.plist
 ▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/ExpoFileSystem/ExpoFileSystem_privacy.bundle/PrivacyInfo.xcprivacy
+▸ Touching ExpoMediaLibrary_privacy.bundle (in target 'ExpoMediaLibrary-ExpoMediaLibrary_privacy' from project 'Pods')
 ▸ Processing ResourceBundle-ExpoDevice_privacy-ExpoDevice-Info.plist
 ▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/ExpoDevice/ExpoDevice_privacy.bundle/PrivacyInfo.xcprivacy
+▸ Touching ExpoFileSystem_privacy.bundle (in target 'ExpoFileSystem-ExpoFileSystem_privacy' from project 'Pods')
 ▸ Processing ResourceBundle-ExpoTaskManager_privacy-EXTaskManager-Info.plist
 ▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/EXTaskManager/ExpoTaskManager_privacy.bundle/PrivacyInfo.xcprivacy
+▸ Touching ExpoDevice_privacy.bundle (in target 'ExpoDevice-ExpoDevice_privacy' from project 'Pods')
 ▸ Processing ResourceBundle-ExpoNotifications_privacy-EXNotifications-Info.plist
 ▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/EXNotifications/ExpoNotifications_privacy.bundle/PrivacyInfo.xcprivacy
+▸ Touching ExpoTaskManager_privacy.bundle (in target 'EXTaskManager-ExpoTaskManager_privacy' from project 'Pods')
 ▸ Processing ResourceBundle-ExpoConstants_privacy-EXConstants-Info.plist
 ▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/EXConstants/ExpoConstants_privacy.bundle/PrivacyInfo.xcprivacy
+▸ Touching ExpoNotifications_privacy.bundle (in target 'EXNotifications-ExpoNotifications_privacy' from project 'Pods')
 ▸ Processing ResourceBundle-EXConstants-EXConstants-Info.plist
+▸ Touching ExpoConstants_privacy.bundle (in target 'EXConstants-ExpoConstants_privacy' from project 'Pods')
 ▸ Processing ResourceBundle-ExpoApplication_privacy-EXApplication-Info.plist
 ▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/EXApplication/ExpoApplication_privacy.bundle/PrivacyInfo.xcprivacy
-▸ Running script '[CP-User] [RNDeps] Replace React Native Core for the right configuration, if needed'
-▸ Touching ReactNativeMapsPrivacy.bundle (in target 'react-native-maps-ReactNativeMapsPrivacy' from project 'Pods')
-▸ Touching Lottie_React_Native_Privacy.bundle (in target 'lottie-react-native-Lottie_React_Native_Privacy' from project 'Pods')
-▸ Touching LottiePrivacyInfo.bundle (in target 'lottie-ios-LottiePrivacyInfo' from project 'Pods')
-▸ Touching glog_privacy.bundle (in target 'glog-glog_privacy' from project 'Pods')
-▸ Touching boost_privacy.bundle (in target 'boost-boost_privacy' from project 'Pods')
-▸ Touching SDWebImage.bundle (in target 'SDWebImage-SDWebImage' from project 'Pods')
-▸ Touching React-cxxreact_privacy.bundle (in target 'React-cxxreact-React-cxxreact_privacy' from project 'Pods')
-▸ Touching React-Core_privacy.bundle (in target 'React-Core-React-Core_privacy' from project 'Pods')
-▸ Touching RNSVGFilters.bundle (in target 'RNSVG-RNSVGFilters' from project 'Pods')
-▸ Touching RNCAsyncStorage_resources.bundle (in target 'RNCAsyncStorage-RNCAsyncStorage_resources' from project 'Pods')
-▸ Touching RCT-Folly_privacy.bundle (in target 'RCT-Folly-RCT-Folly_privacy' from project 'Pods')
-▸ Touching ExpoMediaLibrary_privacy.bundle (in target 'ExpoMediaLibrary-ExpoMediaLibrary_privacy' from project 'Pods')
-▸ Touching ExpoFileSystem_privacy.bundle (in target 'ExpoFileSystem-ExpoFileSystem_privacy' from project 'Pods')
-▸ Touching ExpoDevice_privacy.bundle (in target 'ExpoDevice-ExpoDevice_privacy' from project 'Pods')
-▸ Touching ExpoTaskManager_privacy.bundle (in target 'EXTaskManager-ExpoTaskManager_privacy' from project 'Pods')
-▸ Touching ExpoNotifications_privacy.bundle (in target 'EXNotifications-ExpoNotifications_privacy' from project 'Pods')
-▸ Touching ExpoConstants_privacy.bundle (in target 'EXConstants-ExpoConstants_privacy' from project 'Pods')
 ▸ Touching EXConstants.bundle (in target 'EXConstants-EXConstants' from project 'Pods')
 ▸ Touching ExpoApplication_privacy.bundle (in target 'EXApplication-ExpoApplication_privacy' from project 'Pods')
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/Controls/AnimatedSwitch.swift:263:19: main actor-isolated default value in a nonisolated context; this is an error in the Swift 6 language mode
   fileprivate let impact = UIImpactFeedbackGenerator(style: .light)
                   ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/Controls/AnimatedSwitch.swift:258:12: call to main actor-isolated instance method 'impactOccurred()' in a synchronous nonisolated context; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/Controls/AnimatedSwitch.swift:258:12: call to main actor-isolated instance method 'impactOccurred()' in a synchronous nonisolated context
     impact.impactOccurred()
            ^
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/ZipFoundation/Archive+ZIP64.swift:166:5: var 'maxUInt32' is not concurrency-safe because it is nonisolated global shared mutable state; this is an error in the Swift 6 language mode
@@ -91,13 +91,13 @@ var maxUInt32 = UInt32.max
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/ZipFoundation/Archive+ZIP64.swift:167:5: var 'maxUInt16' is not concurrency-safe because it is nonisolated global shared mutable state; this is an error in the Swift 6 language mode
 var maxUInt16 = UInt16.max
     ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/Utility/Helpers/Binding+Map.swift:12:7: capture of 'transform' with non-sendable type '(Value) -> Transformed' in a '@Sendable' closure
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/Utility/Helpers/Binding+Map.swift:12:7: capture of 'transform' with non-Sendable type '(Value) -> Transformed' in a '@Sendable' closure
       transform(wrappedValue)
     ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/Utility/Helpers/Binding+Map.swift:12:17: capture of 'self' with non-sendable type 'Binding<Value>' in a '@Sendable' closure
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/Utility/Helpers/Binding+Map.swift:12:17: capture of 'self' with non-Sendable type 'Binding<Value>' in a '@Sendable' closure
       transform(wrappedValue)
       ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/Utility/Helpers/Binding+Map.swift:15:7: capture of 'self' with non-sendable type 'Binding<Value>' in a '@Sendable' closure
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/Utility/Helpers/Binding+Map.swift:15:7: capture of 'self' with non-Sendable type 'Binding<Value>' in a '@Sendable' closure
       self.wrappedValue = newValue
                 ^
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieConfiguration.swift:54:21: static property 'imageProvider' is not concurrency-safe because non-'Sendable' type 'DotLottieConfigurationComponents' may have shared mutable state; this is an error in the Swift 6 language mode
@@ -115,76 +115,76 @@ var maxUInt16 = UInt16.max
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieConfiguration.swift:68:21: static property 'none' is not concurrency-safe because non-'Sendable' type 'DotLottieConfigurationComponents' may have shared mutable state; this is an error in the Swift 6 language mode
   public static let none: DotLottieConfigurationComponents = []
                     ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:159:9: capture of 'handleResult' with non-sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:159:9: capture of 'handleResult' with non-Sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure
         handleResult(result)
                     ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:159:9: capture of 'handleResult' with non-sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:159:9: capture of 'handleResult' with non-Sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure
         handleResult(result)
         ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:196:9: capture of 'handleResult' with non-sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:196:9: capture of 'handleResult' with non-Sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure
         handleResult(result)
         ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:196:9: capture of 'handleResult' with non-sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:196:9: capture of 'handleResult' with non-Sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure
         handleResult(result)
         ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:241:11: capture of 'handleResult' with non-sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:241:11: capture of 'handleResult' with non-Sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure
           handleResult(.success(lottie))
         ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:241:11: capture of 'handleResult' with non-sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure
-          handleResult(.success(lottie))
-          ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:254:11: capture of 'handleResult' with non-sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:241:11: capture of 'handleResult' with non-Sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure
           handleResult(.success(lottie))
           ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:259:11: capture of 'handleResult' with non-sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:254:11: capture of 'handleResult' with non-Sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure
+          handleResult(.success(lottie))
+          ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:259:11: capture of 'handleResult' with non-Sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure
           handleResult(.failure(error))
           ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:286:7: capture of 'cancelTask' with non-sendable type '() -> Void?' in a '@Sendable' closure; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:286:7: capture of 'cancelTask' with non-Sendable type '() -> Void?' in a '@Sendable' closure; this is an error in the Swift 6 language mode
       cancelTask()
           ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:320:13: capture of 'handleResult' with non-sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:320:13: capture of 'handleResult' with non-Sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure; this is an error in the Swift 6 language mode
             handleResult(.success(lottie))
       ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:320:13: capture of 'handleResult' with non-sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:320:13: capture of 'handleResult' with non-Sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure
             handleResult(.success(lottie))
             ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:324:13: capture of 'handleResult' with non-sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:324:13: capture of 'handleResult' with non-Sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure
             handleResult(.failure(error))
             ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:350:11: capture of 'handleResult' with non-sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:350:11: capture of 'handleResult' with non-Sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure
           handleResult(.success(dotLottie))
             ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:350:11: capture of 'handleResult' with non-sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:350:11: capture of 'handleResult' with non-Sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure
           handleResult(.success(dotLottie))
           ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:354:11: capture of 'handleResult' with non-sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:354:11: capture of 'handleResult' with non-Sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure
           handleResult(.failure(error))
           ^
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/Model/LayerEffects/EffectValues/EffectValue.swift:21:14: static property 'discriminator' is not concurrency-safe because it is nonisolated global shared mutable state; this is an error in the Swift 6 language mode
   static var discriminator = Discriminator.type
           ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/EpoxyableView+SwiftUIView.swift:31:5: call to main actor-isolated initializer 'init(storage:makeContent:)' in a synchronous nonisolated context; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/EpoxyableView+SwiftUIView.swift:31:5: call to main actor-isolated initializer 'init(storage:makeContent:)' in a synchronous nonisolated context
     SwiftUIView(storage: (content: content, style: style)) {
              ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/EpoxyableView+SwiftUIView.swift:45:27: call to main actor-isolated instance method 'invalidateIntrinsicContentSize()' in a synchronous nonisolated context; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/EpoxyableView+SwiftUIView.swift:45:27: call to main actor-isolated instance method 'invalidateIntrinsicContentSize()' in a synchronous nonisolated context
         context.container.invalidateIntrinsicContentSize()
               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/EpoxyableView+SwiftUIView.swift:78:5: call to main actor-isolated initializer 'init(storage:makeContent:)' in a synchronous nonisolated context; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/EpoxyableView+SwiftUIView.swift:78:5: call to main actor-isolated initializer 'init(storage:makeContent:)' in a synchronous nonisolated context
     SwiftUIView(storage: content) {
                 ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/EpoxyableView+SwiftUIView.swift:79:18: call to main actor-isolated initializer 'init()' in a synchronous nonisolated context; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/EpoxyableView+SwiftUIView.swift:79:18: call to main actor-isolated initializer 'init()' in a synchronous nonisolated context
       let view = Self()
               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/EpoxyableView+SwiftUIView.swift:87:27: call to main actor-isolated instance method 'invalidateIntrinsicContentSize()' in a synchronous nonisolated context; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/EpoxyableView+SwiftUIView.swift:87:27: call to main actor-isolated instance method 'invalidateIntrinsicContentSize()' in a synchronous nonisolated context
         context.container.invalidateIntrinsicContentSize()
 ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/EpoxyableView+SwiftUIView.swift:121:5: call to main actor-isolated initializer 'init(storage:makeContent:)' in a synchronous nonisolated context; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/EpoxyableView+SwiftUIView.swift:121:5: call to main actor-isolated initializer 'init(storage:makeContent:)' in a synchronous nonisolated context
     SwiftUIView(storage: style) {
                 ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/EpoxyableView+SwiftUIView.swift:159:5: call to main actor-isolated initializer 'init(makeContent:)' in a synchronous nonisolated context; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/EpoxyableView+SwiftUIView.swift:159:5: call to main actor-isolated initializer 'init(makeContent:)' in a synchronous nonisolated context
     SwiftUIView {
               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/EpoxyableView+SwiftUIView.swift:160:7: call to main actor-isolated initializer 'init()' in a synchronous nonisolated context; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/EpoxyableView+SwiftUIView.swift:160:7: call to main actor-isolated initializer 'init()' in a synchronous nonisolated context
       Self()
               ^
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/Logging/EpoxyLogger.swift:63:14: static property 'shared' is not concurrency-safe because it is nonisolated global shared mutable state; this is an error in the Swift 6 language mode
@@ -205,23 +205,23 @@ var maxUInt16 = UInt16.max
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/AnimationCache/LottieAnimationCache.swift:14:21: static property 'shared' is not concurrency-safe because it is nonisolated global shared mutable state; this is an error in the Swift 6 language mode
   public static var shared: AnimationCacheProvider? = DefaultAnimationCache.sharedCache
              ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/Animation/LottieAnimationHelpers.swift:189:7: capture of 'cancelTask' with non-sendable type '() -> Void?' in a '@Sendable' closure; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/Animation/LottieAnimationHelpers.swift:189:7: capture of 'cancelTask' with non-Sendable type '() -> Void?' in a '@Sendable' closure; this is an error in the Swift 6 language mode
       cancelTask()
                     ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/Animation/LottieAnimationHelpers.swift:215:13: capture of 'closure' with non-sendable type 'LottieAnimation.DownloadClosure' (aka '(Optional<LottieAnimation>) -> ()') in a '@Sendable' closure; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/Animation/LottieAnimationHelpers.swift:215:13: capture of 'closure' with non-Sendable type 'LottieAnimation.DownloadClosure' (aka '(Optional<LottieAnimation>) -> ()') in a '@Sendable' closure; this is an error in the Swift 6 language mode
             closure(nil)
       ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/Animation/LottieAnimationHelpers.swift:215:13: capture of 'closure' with non-sendable type 'LottieAnimation.DownloadClosure' (aka '(Optional<LottieAnimation>) -> ()') in a '@Sendable' closure
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/Animation/LottieAnimationHelpers.swift:215:13: capture of 'closure' with non-Sendable type 'LottieAnimation.DownloadClosure' (aka '(Optional<LottieAnimation>) -> ()') in a '@Sendable' closure
             closure(nil)
             ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/Animation/LottieAnimationHelpers.swift:223:13: capture of 'closure' with non-sendable type 'LottieAnimation.DownloadClosure' (aka '(Optional<LottieAnimation>) -> ()') in a '@Sendable' closure
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/Animation/LottieAnimationHelpers.swift:223:13: capture of 'closure' with non-Sendable type 'LottieAnimation.DownloadClosure' (aka '(Optional<LottieAnimation>) -> ()') in a '@Sendable' closure
             closure(animation)
             ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/Animation/LottieAnimationHelpers.swift:227:13: capture of 'closure' with non-sendable type 'LottieAnimation.DownloadClosure' (aka '(Optional<LottieAnimation>) -> ()') in a '@Sendable' closure
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/Animation/LottieAnimationHelpers.swift:227:13: capture of 'closure' with non-Sendable type 'LottieAnimation.DownloadClosure' (aka '(Optional<LottieAnimation>) -> ()') in a '@Sendable' closure
             closure(nil)
             ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/Controls/LottieButton.swift:111:7: main actor-isolated property 'configurations' cannot be used to satisfy nonisolated requirement from protocol 'UIViewConfiguringSwiftUIView'; this is an error in the Swift 6 language mode
-  var configurations = [SwiftUIView<AnimatedButton, Void>.Configuration]()
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/Controls/LottieButton.swift:8:29: conformance of 'LottieButton' to protocol 'UIViewConfiguringSwiftUIView' crosses into main actor-isolated code and can cause data races; this is an error in the Swift 6 language mode
+public struct LottieButton: UIViewConfiguringSwiftUIView {
             ^
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/Configuration/LottieConfiguration.swift:28:21: static property 'shared' is not concurrency-safe because it is nonisolated global shared mutable state; this is an error in the Swift 6 language mode
   public static var shared = LottieConfiguration()
@@ -232,76 +232,79 @@ var maxUInt16 = UInt16.max
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/Logging/LottieLogger.swift:75:21: static property 'shared' is not concurrency-safe because it is nonisolated global shared mutable state; this is an error in the Swift 6 language mode
   public static var shared = LottieLogger()
                     ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/Controls/LottieSwitch.swift:135:7: main actor-isolated property 'configurations' cannot be used to satisfy nonisolated requirement from protocol 'UIViewConfiguringSwiftUIView'; this is an error in the Swift 6 language mode
-  var configurations = [SwiftUIView<AnimatedSwitch, Void>.Configuration]()
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/Controls/LottieSwitch.swift:8:29: conformance of 'LottieSwitch' to protocol 'UIViewConfiguringSwiftUIView' crosses into main actor-isolated code and can cause data races; this is an error in the Swift 6 language mode
+public struct LottieSwitch: UIViewConfiguringSwiftUIView {
                     ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/Animation/LottieView.swift:491:7: main actor-isolated property 'configurations' cannot be used to satisfy nonisolated requirement from protocol 'UIViewConfiguringSwiftUIView'; this is an error in the Swift 6 language mode
-  var configurations = [SwiftUIView<LottieAnimationView, Void>.Configuration]()
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/Animation/LottieView.swift:10:46: conformance of 'LottieView<Placeholder>' to protocol 'UIViewConfiguringSwiftUIView' crosses into main actor-isolated code and can cause data races; this is an error in the Swift 6 language mode
+public struct LottieView<Placeholder: View>: UIViewConfiguringSwiftUIView {
       ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/LRUCache/LRUCache.swift:72:7: capture of 'self' with non-sendable type 'LRUCache<Key, Value>?' in a '@Sendable' closure
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/LRUCache/LRUCache.swift:72:7: capture of 'self' with non-Sendable type 'LRUCache<Key, Value>?' in a '@Sendable' closure
       self?.removeAllValues()
       ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/LRUCache/LRUCache.swift:72:11: capture of non-Sendable type 'Key.Type' in an isolated closure
+      self?.removeAllValues()
+            ^
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/Model/Providers/MakeViewProviding.swift:57:21: converting function value of type '@MainActor () -> Self.View' to 'Self.MakeView' (aka '() -> Self.View') loses global actor 'MainActor'; this is an error in the Swift 6 language mode
       defaultValue: View.init,
-            ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/MeasuringViewRepresentable.swift:52:12: main actor-isolated property 'strategy' can not be mutated from a nonisolated context; this is an error in the Swift 6 language mode
+          ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/MeasuringViewRepresentable.swift:52:12: main actor-isolated property 'strategy' can not be mutated from a nonisolated context
     uiView.strategy = sizing
                     ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/MeasuringViewRepresentable.swift:59:12: main actor-isolated property 'proposedSize' can not be mutated from a nonisolated context; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/MeasuringViewRepresentable.swift:59:12: main actor-isolated property 'proposedSize' can not be mutated from a nonisolated context
     uiView.proposedSize = .init(
        ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/MeasuringViewRepresentable.swift:60:84: main actor-isolated class property 'noIntrinsicMetric' can not be referenced from a nonisolated autoclosure; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/MeasuringViewRepresentable.swift:60:84: main actor-isolated class property 'noIntrinsicMetric' can not be referenced from a nonisolated autoclosure
       width: children.first { $0.label == "width" }?.value as? CGFloat ?? ViewType.noIntrinsicMetric,
        ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/MeasuringViewRepresentable.swift:61:86: main actor-isolated class property 'noIntrinsicMetric' can not be referenced from a nonisolated autoclosure; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/MeasuringViewRepresentable.swift:61:86: main actor-isolated class property 'noIntrinsicMetric' can not be referenced from a nonisolated autoclosure
       height: children.first { $0.label == "height" }?.value as? CGFloat ?? ViewType.noIntrinsicMetric
                            ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/MeasuringViewRepresentable.swift:64:19: main actor-isolated property 'measuredFittingSize' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/MeasuringViewRepresentable.swift:64:19: main actor-isolated property 'measuredFittingSize' can not be referenced from a nonisolated context
     size = uiView.measuredFittingSize
                            ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/MeasuringViewRepresentable.swift:74:12: main actor-isolated property 'strategy' can not be mutated from a nonisolated context; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/MeasuringViewRepresentable.swift:74:12: main actor-isolated property 'strategy' can not be mutated from a nonisolated context
     uiView.strategy = sizing
        ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/MeasuringViewRepresentable.swift:77:12: main actor-isolated property 'proposedSize' can not be mutated from a nonisolated context; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/MeasuringViewRepresentable.swift:77:12: main actor-isolated property 'proposedSize' can not be mutated from a nonisolated context
     uiView.proposedSize = .init(
        ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/MeasuringViewRepresentable.swift:78:41: main actor-isolated class property 'noIntrinsicMetric' can not be referenced from a nonisolated autoclosure; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/MeasuringViewRepresentable.swift:78:41: main actor-isolated class property 'noIntrinsicMetric' can not be referenced from a nonisolated autoclosure
       width: proposal.width ?? ViewType.noIntrinsicMetric,
        ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/MeasuringViewRepresentable.swift:79:43: main actor-isolated class property 'noIntrinsicMetric' can not be referenced from a nonisolated autoclosure; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/MeasuringViewRepresentable.swift:79:43: main actor-isolated class property 'noIntrinsicMetric' can not be referenced from a nonisolated autoclosure
       height: proposal.height ?? ViewType.noIntrinsicMetric
                            ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/MeasuringViewRepresentable.swift:82:19: main actor-isolated property 'measuredFittingSize' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/MeasuringViewRepresentable.swift:82:19: main actor-isolated property 'measuredFittingSize' can not be referenced from a nonisolated context
     return uiView.measuredFittingSize
                            ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/Configuration/ReducedMotionOption.swift:109:24: main actor-isolated static property 'isReduceMotionEnabled' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/Configuration/ReducedMotionOption.swift:109:24: main actor-isolated static property 'isReduceMotionEnabled' can not be referenced from a nonisolated context
     if UIAccessibility.isReduceMotionEnabled {
        ^
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/Model/ShapeItems/ShapeItem.swift:36:14: static property 'discriminator' is not concurrency-safe because it is nonisolated global shared mutable state; this is an error in the Swift 6 language mode
   static var discriminator = Discriminator.type
                                ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/SwiftUIMeasurementContainer.swift:458:27: main actor-isolated class property 'noIntrinsicMetric' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/SwiftUIMeasurementContainer.swift:458:27: main actor-isolated class property 'noIntrinsicMetric' can not be referenced from a nonisolated context
     .init(width: ViewType.noIntrinsicMetric, height: ViewType.noIntrinsicMetric)
              ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/SwiftUIMeasurementContainer.swift:458:63: main actor-isolated class property 'noIntrinsicMetric' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/SwiftUIMeasurementContainer.swift:458:63: main actor-isolated class property 'noIntrinsicMetric' can not be referenced from a nonisolated context
     .init(width: ViewType.noIntrinsicMetric, height: ViewType.noIntrinsicMetric)
                            ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/SwiftUIMeasurementContainer.swift:465:32: main actor-isolated class property 'noIntrinsicMetric' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/SwiftUIMeasurementContainer.swift:465:32: main actor-isolated class property 'noIntrinsicMetric' can not be referenced from a nonisolated context
       width: width == ViewType.noIntrinsicMetric ? fallback.width : width,
                            ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/SwiftUIMeasurementContainer.swift:466:34: main actor-isolated class property 'noIntrinsicMetric' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/SwiftUIMeasurementContainer.swift:466:34: main actor-isolated class property 'noIntrinsicMetric' can not be referenced from a nonisolated context
       height: height == ViewType.noIntrinsicMetric ? fallback.height : height
                    ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/SwiftUIView.swift:37:7: main actor-isolated property 'configurations' cannot be used to satisfy nonisolated requirement from protocol 'UIViewConfiguringSwiftUIView'; this is an error in the Swift 6 language mode
-  var configurations = [Configuration]()
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/SwiftUIView.swift:16:3: conformance of 'SwiftUIView<Content, Storage>' to protocol 'UIViewConfiguringSwiftUIView' crosses into main actor-isolated code and can cause data races; this is an error in the Swift 6 language mode
+  UIViewConfiguringSwiftUIView
                    ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/SwiftUIView.swift:119:23: main actor-isolated property 'content' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/SwiftUIView.swift:119:23: main actor-isolated property 'content' can not be referenced from a nonisolated context
       get { container.content }
       ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/SwiftUIView.swift:120:35: main actor-isolated property 'content' can not be mutated from a nonisolated context; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/SwiftUIView.swift:120:35: main actor-isolated property 'content' can not be mutated from a nonisolated context
       nonmutating set { container.content = newValue }
       ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/SwiftUIView.swift:125:32: main actor-isolated property 'transaction' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/SwiftUIView.swift:125:32: main actor-isolated property 'transaction' can not be referenced from a nonisolated context
       viewRepresentableContext.transaction.animation != nil
       ^
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/Utility/Debugging/TestHelpers.swift:6:14: static property 'snapshotTestsAreRunning' is not concurrency-safe because it is nonisolated global shared mutable state; this is an error in the Swift 6 language mode
@@ -310,7 +313,7 @@ var maxUInt16 = UInt16.max
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/Utility/Debugging/TestHelpers.swift:9:14: static property 'performanceTestsAreRunning' is not concurrency-safe because it is nonisolated global shared mutable state; this is an error in the Swift 6 language mode
   static var performanceTestsAreRunning = false
              ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/UIView+SwiftUIView.swift:29:5: call to main actor-isolated initializer 'init(makeContent:)' in a synchronous nonisolated context; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/UIView+SwiftUIView.swift:29:5: call to main actor-isolated initializer 'init(makeContent:)' in a synchronous nonisolated context
     SwiftUIView(makeContent: makeView)
              ^
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/EpoxyableView+SwiftUIView.swift:31:5: sending value of non-Sendable type '(content: Self.Content, style: Self.Style)' risks causing data races; this is an error in the Swift 6 language mode
@@ -379,22 +382,22 @@ var maxUInt16 = UInt16.max
 ▸ Compiling bignum-dtoa.cc
 ▸ Compiling yuv_sse41.c
 ▸ Compiling yuv_sse2.c
-▸ Compiling yuv_mips_dsp_r2.c
 ▸ Compiling yuv_mips32.c
+▸ Compiling yuv_mips_dsp_r2.c
 ▸ Compiling upsampling_sse41.c
 ▸ Compiling upsampling_sse2.c
-▸ Compiling yuv_neon.c
+▸ Compiling upsampling_msa.c
+▸ Compiling upsampling_mips_dsp_r2.c
+▸ Compiling upsampling.c
 ▸ Compiling yuv.c
 ▸ Compiling webp_enc.c
+▸ Compiling yuv_neon.c
 ▸ Compiling webp_dec.c
 ▸ Compiling vp8l_enc.c
 ▸ Compiling vp8l_dec.c
 ▸ Compiling vp8_dec.c
 ▸ Compiling utils.c
 ▸ Compiling upsampling_neon.c
-▸ Compiling upsampling_msa.c
-▸ Compiling upsampling_mips_dsp_r2.c
-▸ Compiling upsampling.c
 ▸ Compiling tree_enc.c
 ▸ Compiling tree_dec.c
 ▸ Compiling token_enc.c
@@ -409,9 +412,9 @@ var maxUInt16 = UInt16.max
 ▸ Compiling sharpyuv_csp.c
 ▸ Compiling sharpyuv_cpu.c
 ▸ Compiling rescaler_sse2.c
+▸ Compiling rescaler_neon.c
 ▸ Compiling sharpyuv.c
 ▸ Compiling rescaler_utils.c
-▸ Compiling rescaler_neon.c
 ▸ Compiling rescaler_msa.c
 ▸ Compiling rescaler_mips_dsp_r2.c
 ▸ Compiling rescaler_mips32.c
@@ -491,30 +494,30 @@ var maxUInt16 = UInt16.max
 ▸ Compiling buffer_dec.c
 ▸ Compiling bit_writer_utils.c
 ▸ Compiling bit_reader_utils.c
+▸ Compiling libwebp-dummy.m
 ▸ Compiling backward_references_enc.c
 ▸ Compiling backward_references_cost_enc.c
-▸ Compiling libwebp-dummy.m
-▸ Compiling anim_decode.c
 ▸ Compiling anim_encode.c
+▸ Compiling anim_decode.c
 ▸ Compiling analysis_enc.c
 ▸ Compiling alpha_processing_sse41.c
 ▸ Compiling alpha_processing_sse2.c
 ▸ Compiling alpha_processing_neon.c
-▸ Compiling alpha_processing_mips_dsp_r2.c
 ▸ Compiling alpha_processing.c
+▸ Compiling alpha_processing_mips_dsp_r2.c
 ▸ Compiling alpha_enc.c
 ▸ Compiling alpha_dec.c
 ▸ Building library liblibwebp.a
 ▸ Compiling wedge.c
 ▸ Compiling tables.c
 ▸ Compiling scan.c
-▸ Compiling qm.c
 ▸ Compiling warpmv.c
 ▸ Compiling thread_task.c
 ▸ Compiling refmvs.c
 ▸ Compiling ref.c
 ▸ Compiling recon_tmpl_16.c
 ▸ Compiling recon_tmpl.c
+▸ Compiling qm.c
 ▸ Compiling picture.c
 ▸ Compiling obu.c
 ▸ Compiling msac.c
@@ -531,8 +534,8 @@ var maxUInt16 = UInt16.max
 ▸ Compiling lib.c
 ▸ Compiling lf_mask.c
 ▸ Compiling lf_apply_tmpl_16.c
-▸ Compiling lf_apply_tmpl.c
 ▸ Compiling libdav1d-dummy.m
+▸ Compiling lf_apply_tmpl.c
 ▸ Compiling itx_tmpl_16.c
 ▸ Compiling itx_tmpl.c
 ▸ Compiling itx_1d.c
@@ -540,8 +543,8 @@ var maxUInt16 = UInt16.max
 ▸ Compiling ipred_tmpl.c
 ▸ Compiling ipred_prepare_tmpl_16.c
 ▸ Compiling ipred_prepare_tmpl.c
-▸ Compiling intra_edge.c
 ▸ Compiling getbits.c
+▸ Compiling intra_edge.c
 ▸ Compiling filmgrain_tmpl_16.c
 ▸ Compiling filmgrain_tmpl.c
 ▸ Compiling fg_apply_tmpl_16.c
@@ -549,25 +552,25 @@ var maxUInt16 = UInt16.max
 ▸ Compiling dequant_tables.c
 ▸ Compiling data.c
 ▸ Compiling cpu.c
-▸ Compiling cdf.c
 ▸ Compiling decode.c
-▸ Compiling cdef_tmpl_16.c
+▸ Compiling cdf.c
 ▸ Compiling cpu.c
+▸ Compiling cdef_tmpl_16.c
 ▸ Compiling cdef_tmpl.c
 ▸ Compiling cdef_apply_tmpl_16.c
 ▸ Compiling cdef_apply_tmpl.c
 ▸ Building library liblibdav1d.a
+▸ Compiling write.c
+▸ Compiling utils.c
 ▸ Compiling scale.c
 ▸ Compiling reformat_libyuv.c
 ▸ Compiling reformat_libsharpyuv.c
-▸ Compiling write.c
-▸ Compiling utils.c
-▸ Compiling reformat.c
-▸ Compiling stream.c
 ▸ Compiling rawdata.c
-▸ Compiling read.c
 ▸ Compiling obu.c
+▸ Compiling reformat.c
 ▸ Compiling mem.c
+▸ Compiling stream.c
+▸ Compiling read.c
 ▸ Compiling io.c
 ▸ Compiling exif.c
 ▸ Compiling diag.c
@@ -576,12 +579,12 @@ var maxUInt16 = UInt16.max
 ▸ Compiling avif.c
 ▸ Compiling alpha.c
 ▸ Compiling libavif-dummy.m
+▸ Compiling ZXingObjC-dummy.m
 ▸ Compiling glog-dummy.m
 ▸ Compiling fmt-dummy.m
+▸ Compiling ZXWifiResultParser.m
 ▸ Building library libglog.a
 ▸ Building library libfmt.a
-▸ Compiling ZXingObjC-dummy.m
-▸ Compiling ZXWifiResultParser.m
 ▸ Compiling ZXWifiParsedResult.m
 ▸ Compiling ZXWhiteRectangleDetector.m
 ▸ Compiling ZXVINResultParser.m
@@ -646,8 +649,8 @@ var maxUInt16 = UInt16.max
 ▸ Compiling ZXPDF417DetectorResult.m
 ▸ Compiling ZXPDF417Detector.m
 ▸ Compiling ZXPDF417DetectionResultRowIndicatorColumn.m
-▸ Compiling ZXPDF417DetectionResult.m
 ▸ Compiling ZXPDF417DetectionResultColumn.m
+▸ Compiling ZXPDF417DetectionResult.m
 ▸ Compiling ZXPDF417DecodedBitStreamParser.m
 ▸ Compiling ZXPDF417Common.m
 ▸ Compiling ZXPDF417CodewordDecoder.m
@@ -655,8 +658,8 @@ var maxUInt16 = UInt16.max
 ▸ Compiling ZXPDF417BoundingBox.m
 ▸ Compiling ZXPDF417BarcodeValue.m
 ▸ Compiling ZXPDF417BarcodeRow.m
-▸ Compiling ZXPDF417BarcodeMetadata.m
 ▸ Compiling ZXPDF417BarcodeMatrix.m
+▸ Compiling ZXPDF417BarcodeMetadata.m
 ▸ Compiling ZXPDF417.m
 ▸ Compiling ZXOneDimensionalCodeWriter.m
 ▸ Compiling ZXOneDReader.m
@@ -688,23 +691,23 @@ var maxUInt16 = UInt16.max
 ▸ Compiling ZXExpandedProductParsedResult.m
 ▸ Compiling ZXErrors.m
 ▸ Compiling ZXEncodeHints.m
-▸ Compiling ZXEmailAddressResultParser.m
 ▸ Compiling ZXEmailDoCoMoResultParser.m
+▸ Compiling ZXEmailAddressResultParser.m
 ▸ Compiling ZXEmailAddressParsedResult.m
 ▸ Compiling ZXEANManufacturerOrgSupport.m
 ▸ Compiling ZXEAN8Writer.m
 ▸ Compiling ZXEAN8Reader.m
-▸ Compiling ZXEAN13Reader.m
 ▸ Compiling ZXEAN13Writer.m
+▸ Compiling ZXEAN13Reader.m
 ▸ Compiling ZXDimension.m
 ▸ Compiling ZXDetectorResult.m
 ▸ Compiling ZXDefaultGridSampler.m
 ▸ Compiling ZXDecoderResult.m
 ▸ Compiling ZXDecodeHints.m
-▸ Compiling ZXCode93Writer.m
 ▸ Compiling ZXDecimal.m
-▸ Compiling ZXCode39Writer.m
+▸ Compiling ZXCode93Writer.m
 ▸ Compiling ZXCode93Reader.m
+▸ Compiling ZXCode39Writer.m
 ▸ Compiling ZXCode39Reader.m
 ▸ Compiling ZXCode128Writer.m
 ▸ Compiling ZXCode128Reader.m
@@ -730,8 +733,8 @@ var maxUInt16 = UInt16.max
 ▸ Compiling ZXAnyAIDecoder.m
 ▸ Compiling ZXAddressBookParsedResult.m
 ▸ Compiling ZXAddressBookDoCoMoResultParser.m
-▸ Compiling ZXAbstractRSSReader.m
 ▸ Compiling ZXAddressBookAUResultParser.m
+▸ Compiling ZXAbstractRSSReader.m
 ▸ Compiling ZXAbstractExpandedDecoder.m
 ▸ Compiling ZXAbstractDoCoMoResultParser.m
 ▸ Compiling ZXAI01weightDecoder.m
@@ -743,41 +746,41 @@ var maxUInt16 = UInt16.max
 ▸ Compiling ZXAI01392xDecoder.m
 ▸ Compiling ZXAI01320xDecoder.m
 ▸ Compiling ZXAI013103decoder.m
-▸ Compiling UMAppLoader-dummy.m
 ▸ Building library libZXingObjC.a
 ▸ Compiling UMAppLoaderProvider.m
+▸ Compiling UMAppLoader-dummy.m
 ▸ Building library libUMAppLoader.a
 ▸ Compiling SDWebImageSVGCoderDefine.m
 ▸ Compiling SDWebImageSVGCoder-dummy.m
 ▸ Compiling SDImageSVGCoder.m
 ▸ Compiling SDWebImageAVIFCoder-dummy.m
-▸ Compiling UIView+WebCacheState.m
 ▸ Compiling SDImageAVIFCoder.m
 ▸ Compiling Conversion.m
 ▸ Compiling ColorSpace.m
+▸ Compiling UIView+WebCacheState.m
 ▸ Compiling UIView+WebCacheOperation.m
-▸ Compiling UIImageView+WebCache.m
 ▸ Compiling UIView+WebCache.m
+▸ Compiling UIImageView+WebCache.m
+▸ Compiling UIImageView+HighlightedWebCache.m
+▸ Compiling UIImage+Transform.m
+▸ Compiling UIImage+MultiFormat.m
 ▸ Compiling UIImage+WebP.m
 ▸ Compiling SDWebImageWebPCoderDefine.m
 ▸ Compiling SDWebImageWebPCoder-dummy.m
 ▸ Compiling SDImageWebPCoder.m
-▸ Compiling UIImageView+HighlightedWebCache.m
-▸ Compiling UIImage+Transform.m
-▸ Compiling UIImage+MultiFormat.m
 ▸ Compiling UIImage+Metadata.m
 ▸ Compiling UIImage+MemoryCacheCost.m
 ▸ Compiling UIImage+GIF.m
 ▸ Compiling UIImage+ForceDecode.m
 ▸ Compiling UIImage+ExtendedCacheData.m
 ▸ Compiling UIColor+SDHexString.m
-▸ Compiling SDWebImageTransition.m
 ▸ Compiling UIButton+WebCache.m
+▸ Compiling SDWebImageTransition.m
 ▸ Compiling SDWebImagePrefetcher.m
 ▸ Compiling SDWebImageOptionsProcessor.m
 ▸ Compiling SDWebImageOperation.m
-▸ Compiling SDWebImageManager.m
 ▸ Compiling SDWebImageIndicator.m
+▸ Compiling SDWebImageManager.m
 ▸ Compiling SDWebImageError.m
 ▸ Compiling SDWebImageDownloaderResponseModifier.m
 ▸ Compiling SDWebImageDownloaderRequestModifier.m
@@ -818,12 +821,12 @@ var maxUInt16 = UInt16.max
 ▸ Compiling SDFileAttributeHelper.m
 ▸ Compiling SDDisplayLink.m
 ▸ Compiling SDDeviceHelper.m
-▸ Compiling SDDiskCache.m
 ▸ Compiling SDCallbackQueue.m
+▸ Compiling SDDiskCache.m
 ▸ Compiling SDAsyncBlockOperation.m
 ▸ Compiling SDAssociatedObject.m
-▸ Compiling SDAnimatedImageView+WebCache.m
 ▸ Compiling SDAnimatedImageView.m
+▸ Compiling SDAnimatedImageView+WebCache.m
 ▸ Compiling SDAnimatedImageRep.m
 ▸ Compiling SDAnimatedImagePlayer.m
 ▸ Compiling SDAnimatedImage.m
@@ -831,47 +834,20 @@ var maxUInt16 = UInt16.max
 ▸ Compiling NSData+ImageContentType.m
 ▸ Compiling NSButton+WebCache.m
 ▸ Compiling NSBezierPath+SDRoundedCorners.m
-▸ Compiling RCT-Folly-dummy.m
 ▸ Building library libSDWebImage.a
 ▸ Compiling DoubleConversion-dummy.m
+▸ Compiling RCT-Folly-dummy.m
 ▸ Building library libDoubleConversion.a
 ▸ Running script '[CP] Copy XCFrameworks'
 ▸ Compiling RCTSwiftUI-dummy.m
 ▸ Building library libRCTSwiftUI.a
-▸ Running script 'Copy generated compatibility header'
 ▸ Building library liblibavif.a
-▸ Building library libSDWebImageWebPCoder.a
-▸ Building library libSDWebImageSVGCoder.a
-▸ Compiling RCTSwiftUIWrapper-dummy.m
-▸ Building library libRCT-Folly.a
-▸ Compiling RCTSwiftUIContainerViewWrapper.m
-▸ Building library libSDWebImageAVIFCoder.a
+▸ Running script 'Copy generated compatibility header'
 ▸ Running script '[CP-User] [RN]Check FBReactNativeSpec'
-▸ Compiling TypedArray.cpp
-▸ Compiling ObjectDeallocator.cpp
-▸ Building library libRCTSwiftUIWrapper.a
-▸ Compiling lottie-ios-dummy.m
-▸ Compiling MemoryBuffer.cpp
-▸ Building library liblottie-ios.a
-▸ Compiling MainThreadInvoker.mm
-▸ Compiling JSIUtils.cpp
-▸ Compiling EXStringUtils.cpp
-▸ Compiling EXRawJavaScriptFunction.mm
-▸ Compiling EXRawJavaScriptArrayBuffer.mm
-▸ Compiling EXNativeArrayBuffer.mm
-▸ Compiling EXJavaScriptWeakObject.mm
-▸ Compiling EXJavaScriptValue.mm
-▸ Compiling EXJavaScriptTypedArray.mm
-▸ Compiling EXJavaScriptRuntime.mm
-▸ Compiling EXJavaScriptObjectBinding.mm
-▸ Compiling EXJavaScriptObject.mm
-▸ Compiling EXJSIUtils.mm
-▸ Compiling EXJSIConversions.mm
-▸ Compiling EXArrayBuffer.mm
 ▸ Compiling react-native-netinfo-dummy.m
 ▸ Compiling RNCConnectionStateWatcher.m
-▸ Compiling RNCConnectionState.m
 ▸ Compiling RNCNetInfo.m
+▸ Compiling RNCConnectionState.m
 ▸ Building library libreact-native-netinfo.a
 ▸ Compiling react-native-maps-dummy.m
 ▸ Compiling SMCalloutView.m
@@ -891,8 +867,8 @@ var maxUInt16 = UInt16.max
 ▸ Compiling AIRMapPolygon.m
 ▸ Compiling AIRMapOverlayRenderer.m
 ▸ Compiling AIRMapOverlayManager.m
-▸ Compiling AIRMapMarkerManager.m
 ▸ Compiling AIRMapOverlay.m
+▸ Compiling AIRMapMarkerManager.m
 ▸ Compiling AIRMapMarker.m
 ▸ Compiling AIRMapManager.m
 ▸ Compiling AIRMapLocalTileOverlay.m
@@ -906,18 +882,41 @@ var maxUInt16 = UInt16.max
 ▸ Compiling AIRMapCalloutManager.m
 ▸ Compiling AIRMapCallout.m
 ▸ Compiling AIRMap.m
+▸ Building library libreact-native-maps.a
 ▸ Compiling react-native-get-random-values-dummy.m
 ▸ Compiling RNGetRandomValues.m
+▸ Building library libSDWebImageWebPCoder.a
 ▸ Building library libreact-native-get-random-values.a
-▸ Running script 'Copy generated compatibility header'
-▸ Compiling ExpoRedBoxSwap.mm
-▸ Building library libreact-native-maps.a
+▸ Building library libSDWebImageSVGCoder.a
+▸ Building library libSDWebImageAVIFCoder.a
+▸ Compiling RCTSwiftUIWrapper-dummy.m
+▸ Compiling TypedArray.cpp
+▸ Compiling ObjectDeallocator.cpp
+▸ Compiling RCTSwiftUIContainerViewWrapper.m
+▸ Compiling MemoryBuffer.cpp
+▸ Compiling MainThreadInvoker.mm
+▸ Compiling JSIUtils.cpp
+▸ Compiling EXStringUtils.cpp
+▸ Compiling EXRawJavaScriptFunction.mm
+▸ Compiling EXRawJavaScriptArrayBuffer.mm
+▸ Compiling EXNativeArrayBuffer.mm
+▸ Compiling EXJavaScriptWeakObject.mm
+▸ Compiling EXJavaScriptValue.mm
+▸ Compiling EXJavaScriptTypedArray.mm
+▸ Compiling EXJavaScriptRuntime.mm
+▸ Compiling EXJavaScriptObjectBinding.mm
+▸ Compiling EXJavaScriptObject.mm
+▸ Compiling EXJSIUtils.mm
+▸ Compiling EXJSIConversions.mm
+▸ Compiling EXArrayBuffer.mm
+▸ Building library libRCTSwiftUIWrapper.a
 ▸ Compiling ExpoModulesJSI-dummy.m
 ▸ Building library libExpoModulesJSI.a
-▸ Compiling ExpoLogBox-dummy.m
 ▸ Running script '[CP-User] Generate Specs'
-▸ Building library libExpoLogBox.a
+▸ Compiling lottie-ios-dummy.m
+▸ Building library liblottie-ios.a
 ▸ Running script 'Copy generated compatibility header'
+▸ Building library libRCT-Folly.a
 ▸ Compiling safeareacontext-generated.mm
 ▸ Compiling rnworklets-generated.mm
 ▸ Compiling rnsvg-generated.mm
@@ -977,39 +976,54 @@ var maxUInt16 = UInt16.max
 ▸ Compiling ComponentDescriptors.cpp
 ▸ Compiling ComponentDescriptors.cpp
 ▸ Compiling ComponentDescriptors.cpp
+▸ Compiling ReactCodegen-dummy.m
+▸ Compiling ExpoRedBoxSwap.mm
+▸ Compiling ExpoLogBox-dummy.m
 ▸ Compiling RNCWebViewModule.mm
 ▸ Compiling RNCWebViewManager.mm
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/ios/AirMaps/AIRMap.m:725:43: incompatible pointer types assigning to 'MKCompassButton *' from 'UIView *' [-Wincompatible-pointer-types]
+▸ Building library libExpoLogBox.a
+▸ Building library libReactCodegen.a
+▸ Compiling RNCWebView.mm
+▸ Compiling react-native-webview-dummy.m
+▸ Compiling RNCSafeAreaViewState.cpp
+▸ Compiling RNCSafeAreaViewShadowNode.cpp
+▸ Compiling RNCSafeAreaViewComponentView.mm
+▸ Compiling RNCSafeAreaProviderComponentView.mm
+▸ Compiling RNCSafeAreaContext.mm
+▸ Compiling react-native-safe-area-context-dummy.m
+▸ Compiling RNCPagerViewComponentView.mm
+▸ Compiling react-native-pager-view-dummy.m
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-pager-view/ios/Fabric/RNCPagerViewComponentView.mm:21:17: class 'RNCPagerViewComponentView' does not conform to protocol 'RCTRNCViewPagerViewProtocol' [-Wprotocol]
 #import "lottie-react-native-umbrella.h"
         ^
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/Fabric/LottieContainerView.h:10:46: pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified)
 - (void)onAnimationFailureWithError:(NSString*)error;
         ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/AnimationViewManagerModule.swift:18:16: call to main actor-isolated initializer 'init()' in a synchronous nonisolated context; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/AnimationViewManagerModule.swift:18:16: call to main actor-isolated initializer 'init()' in a synchronous nonisolated context
         return ContainerView()
                                              ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/AnimationViewManagerModule.swift:36:22: call to main actor-isolated instance method 'play(fromFrame:toFrame:)' in a synchronous nonisolated context; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/AnimationViewManagerModule.swift:36:22: call to main actor-isolated instance method 'play(fromFrame:toFrame:)' in a synchronous nonisolated context
                 view.play(fromFrame: AnimationFrameTime(truncating: startFrame), toFrame: AnimationFrameTime(truncating: endFrame))
 ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/AnimationViewManagerModule.swift:38:22: call to main actor-isolated instance method 'play()' in a synchronous nonisolated context; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/AnimationViewManagerModule.swift:38:22: call to main actor-isolated instance method 'play()' in a synchronous nonisolated context
                 view.play()
          ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/AnimationViewManagerModule.swift:53:18: call to main actor-isolated instance method 'reset()' in a synchronous nonisolated context; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/AnimationViewManagerModule.swift:53:18: call to main actor-isolated instance method 'reset()' in a synchronous nonisolated context
             view.reset()
                ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/AnimationViewManagerModule.swift:67:18: call to main actor-isolated instance method 'pause()' in a synchronous nonisolated context; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/AnimationViewManagerModule.swift:67:18: call to main actor-isolated instance method 'pause()' in a synchronous nonisolated context
             view.pause()
                ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/AnimationViewManagerModule.swift:81:18: call to main actor-isolated instance method 'resume()' in a synchronous nonisolated context; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/AnimationViewManagerModule.swift:81:18: call to main actor-isolated instance method 'resume()' in a synchronous nonisolated context
             view.resume()
                ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/ContainerView.swift:368:22: main actor-isolated property 'failureCallback' can not be referenced from a Sendable closure; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/ContainerView.swift:368:22: main actor-isolated property 'failureCallback' can not be referenced from a Sendable closure
                 self.failureCallback("Unable to fetch the Lottie animation from the URL: \(error.localizedDescription)")
                ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/ContainerView.swift:373:22: main actor-isolated property 'failureCallback' can not be referenced from a Sendable closure; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/ContainerView.swift:373:22: main actor-isolated property 'failureCallback' can not be referenced from a Sendable closure
                 self.failureCallback("No data received for the Lottie animation from the URL.")
               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/ContainerView.swift:391:22: main actor-isolated property 'failureCallback' can not be referenced from a Sendable closure; this is an error in the Swift 6 language mode
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/ContainerView.swift:391:22: main actor-isolated property 'failureCallback' can not be referenced from a Sendable closure
                 self.failureCallback("Unable to decode the Lottie animation object from the fetched URL source: \(error.localizedDescription)")
               ^
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/AnimationViewManagerModule.swift:30:27: will never be executed
@@ -1024,201 +1038,50 @@ var maxUInt16 = UInt16.max
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/AnimationViewManagerModule.swift:76:27: will never be executed
                     print("Invalid view returned from registry, expecting ContainerView")
                              ^
-▸ Compiling RNCWebView.mm
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-webview/apple/RNCWebView.mm:329:17: implicit conversion loses integer precision: 'WKDataDetectorTypes' (aka 'unsigned long') to 'RNCWebViewDataDetectorTypesMask' (aka 'unsigned int') [-Wshorten-64-to-32]
-  329 |             if (dataDetectorTypes & RNCWebViewDataDetectorTypes::Address) {
-                             ^
-▸ Compiling RNCSafeAreaViewState.cpp
-▸ Compiling RNCSafeAreaViewShadowNode.cpp
-▸ Compiling RNCSafeAreaViewComponentView.mm
-▸ Compiling RNCSafeAreaProviderComponentView.mm
-▸ Compiling RNCSafeAreaContext.mm
-▸ Compiling RNCPagerViewComponentView.mm
-▸ Compiling ReactCodegen-dummy.m
-▸ Building library libReactCodegen.a
-▸ Compiling react-native-webview-dummy.m
-▸ Compiling react-native-safe-area-context-dummy.m
-▸ Compiling react-native-pager-view-dummy.m
+▸ Compiling RNCSafeAreaViewMode.m
+▸ Compiling RNCSafeAreaViewManager.m
+▸ Compiling RNCSafeAreaViewLocalData.m
+▸ Compiling RNCSafeAreaViewEdges.m
+▸ Compiling RNCSafeAreaViewEdgeMode.m
+▸ Compiling RNCSafeAreaView.m
+▸ Compiling RNCSafeAreaUtils.m
+▸ Compiling RNCSafeAreaShadowView.m
+▸ Compiling RNCSafeAreaProviderManager.m
+▸ Compiling RNCSafeAreaProvider.m
+▸ Compiling RNCOnInsetsChangeEvent.m
+▸ Compiling UIViewController+CreateExtension.m
+▸ Compiling UIView+isHorizontalRtlLayout.m
+▸ Compiling RNCPagerViewShadowView.m
+▸ Compiling RNCPagerViewManager.m
+▸ Compiling RNCPagerView.m
+▸ Compiling RCTOnPageSelected.m
+▸ Compiling RCTOnPageScrollStateChanged.m
+▸ Compiling RCTOnPageScrollEvent.m
+▸ Compiling RCTConvert+UIPageViewControllerNavigationOrientation.m
 ▸ Compiling LottieAnimationViewComponentView.mm
-▸ Compiling RCTAppDependencyProvider.mm
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/Fabric/LottieContainerView.h:10:46: pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified) [-Wnullability-completeness]
-#import "RNScreens-umbrella.h"
-        ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/RNScreens/RNSScreenStackHeaderConfig.h:144:4: pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified)
-- (instancetype)initWithInsets:(NSDirectionalEdgeInsets)insets NS_DESIGNATED_INITIALIZER;
-        ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:31:17: value 'self' was defined but never used; consider replacing with boolean test
-      guard let self = self
-   ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:36:27: call to main actor-isolated instance method 'refreshSecondaryNavBar()' in a synchronous nonisolated context; this is an error in the Swift 6 language mode
-      splitViewController.refreshSecondaryNavBar()
-            ~~~~^~~~~~~
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:66:25: main actor-isolated property 'displayModeButtonVisibility' can not be mutated from a nonisolated context; this is an error in the Swift 6 language mode
-    splitViewController.displayModeButtonVisibility = splitView.displayModeButtonVisibility
-              ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:66:65: main actor-isolated property 'displayModeButtonVisibility' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode
-    splitViewController.displayModeButtonVisibility = splitView.displayModeButtonVisibility
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:67:25: main actor-isolated property 'preferredSplitBehavior' can not be mutated from a nonisolated context; this is an error in the Swift 6 language mode
-    splitViewController.preferredSplitBehavior = splitView.preferredSplitBehavior
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:67:60: main actor-isolated property 'preferredSplitBehavior' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode
-    splitViewController.preferredSplitBehavior = splitView.preferredSplitBehavior
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:68:25: main actor-isolated property 'presentsWithGesture' can not be mutated from a nonisolated context; this is an error in the Swift 6 language mode
-    splitViewController.presentsWithGesture = splitView.presentsWithGesture
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:68:57: main actor-isolated property 'presentsWithGesture' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode
-    splitViewController.presentsWithGesture = splitView.presentsWithGesture
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:69:25: main actor-isolated property 'primaryEdge' can not be mutated from a nonisolated context; this is an error in the Swift 6 language mode
-    splitViewController.primaryEdge = splitView.primaryEdge
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:69:49: main actor-isolated property 'primaryEdge' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode
-    splitViewController.primaryEdge = splitView.primaryEdge
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:70:25: main actor-isolated property 'showsSecondaryOnlyButton' can not be mutated from a nonisolated context; this is an error in the Swift 6 language mode
-    splitViewController.showsSecondaryOnlyButton = splitView.showSecondaryToggleButton
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:70:62: main actor-isolated property 'showSecondaryToggleButton' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode
-    splitViewController.showsSecondaryOnlyButton = splitView.showSecondaryToggleButton
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:74:27: main actor-isolated property 'minimumPrimaryColumnWidth' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode
-      minWidth: splitView.minimumPrimaryColumnWidth,
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:75:27: main actor-isolated property 'maximumPrimaryColumnWidth' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode
-      maxWidth: splitView.maximumPrimaryColumnWidth)
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:78:27: main actor-isolated property 'minimumSupplementaryColumnWidth' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode
-      minWidth: splitView.minimumSupplementaryColumnWidth,
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:79:27: main actor-isolated property 'maximumSupplementaryColumnWidth' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode
-      maxWidth: splitView.maximumSupplementaryColumnWidth)
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:90:18: main actor-isolated property 'minimumPrimaryColumnWidth' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode
-    if splitView.minimumPrimaryColumnWidth >= 0 {
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:91:27: main actor-isolated property 'minimumPrimaryColumnWidth' can not be mutated from a nonisolated context; this is an error in the Swift 6 language mode
-      splitViewController.minimumPrimaryColumnWidth = splitView.minimumPrimaryColumnWidth
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:91:65: main actor-isolated property 'minimumPrimaryColumnWidth' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode
-      splitViewController.minimumPrimaryColumnWidth = splitView.minimumPrimaryColumnWidth
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:94:18: main actor-isolated property 'maximumPrimaryColumnWidth' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode
-    if splitView.maximumPrimaryColumnWidth >= 0 {
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:95:27: main actor-isolated property 'maximumPrimaryColumnWidth' can not be mutated from a nonisolated context; this is an error in the Swift 6 language mode
-      splitViewController.maximumPrimaryColumnWidth = splitView.maximumPrimaryColumnWidth
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:95:65: main actor-isolated property 'maximumPrimaryColumnWidth' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode
-      splitViewController.maximumPrimaryColumnWidth = splitView.maximumPrimaryColumnWidth
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:98:18: main actor-isolated property 'preferredPrimaryColumnWidthOrFraction' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode
-    if splitView.preferredPrimaryColumnWidthOrFraction >= 0
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:99:20: main actor-isolated property 'preferredPrimaryColumnWidthOrFraction' can not be referenced from a nonisolated autoclosure; this is an error in the Swift 6 language mode
-      && splitView.preferredPrimaryColumnWidthOrFraction < 1
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:101:27: main actor-isolated property 'preferredPrimaryColumnWidthFraction' can not be mutated from a nonisolated context; this is an error in the Swift 6 language mode
-      splitViewController.preferredPrimaryColumnWidthFraction =
-                                       ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:102:19: main actor-isolated property 'preferredPrimaryColumnWidthOrFraction' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode
-        splitView.preferredPrimaryColumnWidthOrFraction
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:103:25: main actor-isolated property 'preferredPrimaryColumnWidthOrFraction' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode
-    } else if splitView.preferredPrimaryColumnWidthOrFraction >= 1 {
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:104:27: main actor-isolated property 'preferredPrimaryColumnWidth' can not be mutated from a nonisolated context; this is an error in the Swift 6 language mode
-      splitViewController.preferredPrimaryColumnWidth =
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:105:19: main actor-isolated property 'preferredPrimaryColumnWidthOrFraction' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode
-        splitView.preferredPrimaryColumnWidthOrFraction
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:108:18: main actor-isolated property 'minimumSupplementaryColumnWidth' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode
-    if splitView.minimumSupplementaryColumnWidth >= 0 {
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:109:27: main actor-isolated property 'minimumSupplementaryColumnWidth' can not be mutated from a nonisolated context; this is an error in the Swift 6 language mode
-      splitViewController.minimumSupplementaryColumnWidth =
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:110:19: main actor-isolated property 'minimumSupplementaryColumnWidth' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode
-        splitView.minimumSupplementaryColumnWidth
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:113:18: main actor-isolated property 'maximumSupplementaryColumnWidth' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode
-    if splitView.maximumSupplementaryColumnWidth >= 0 {
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:114:27: main actor-isolated property 'maximumSupplementaryColumnWidth' can not be mutated from a nonisolated context; this is an error in the Swift 6 language mode
-      splitViewController.maximumSupplementaryColumnWidth =
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:115:19: main actor-isolated property 'maximumSupplementaryColumnWidth' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode
-        splitView.maximumSupplementaryColumnWidth
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:118:18: main actor-isolated property 'preferredSupplementaryColumnWidthOrFraction' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode
-    if splitView.preferredSupplementaryColumnWidthOrFraction >= 0
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:119:20: main actor-isolated property 'preferredSupplementaryColumnWidthOrFraction' can not be referenced from a nonisolated autoclosure; this is an error in the Swift 6 language mode
-      && splitView.preferredSupplementaryColumnWidthOrFraction < 1
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:121:27: main actor-isolated property 'preferredSupplementaryColumnWidthFraction' can not be mutated from a nonisolated context; this is an error in the Swift 6 language mode
-      splitViewController.preferredSupplementaryColumnWidthFraction =
-                                       ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:122:19: main actor-isolated property 'preferredSupplementaryColumnWidthOrFraction' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode
-        splitView.preferredSupplementaryColumnWidthOrFraction
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:123:25: main actor-isolated property 'preferredSupplementaryColumnWidthOrFraction' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode
-    } else if splitView.preferredSupplementaryColumnWidthOrFraction >= 1 {
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:124:27: main actor-isolated property 'preferredSupplementaryColumnWidth' can not be mutated from a nonisolated context; this is an error in the Swift 6 language mode
-      splitViewController.preferredSupplementaryColumnWidth =
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:125:19: main actor-isolated property 'preferredSupplementaryColumnWidthOrFraction' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode
-        splitView.preferredSupplementaryColumnWidthOrFraction
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:165:25: call to main actor-isolated instance method 'toggleSplitViewInspector' in a synchronous nonisolated context; this is an error in the Swift 6 language mode
-    splitViewController.toggleSplitViewInspector(splitView.showInspector)
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:165:60: main actor-isolated property 'showInspector' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode
-    splitViewController.toggleSplitViewInspector(splitView.showInspector)
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:182:25: main actor-isolated property 'preferredDisplayMode' can not be mutated from a nonisolated context; this is an error in the Swift 6 language mode
-    splitViewController.preferredDisplayMode = splitView.preferredDisplayMode
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:182:58: main actor-isolated property 'preferredDisplayMode' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode
-    splitViewController.preferredDisplayMode = splitView.preferredDisplayMode
-       ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewHostController.swift:224:15: main actor-isolated instance method 'reactMountingTransactionWillMount()' cannot be used to satisfy nonisolated requirement from protocol 'ReactMountingTransactionObserving'; this is an error in the Swift 6 language mode
-  public func reactMountingTransactionWillMount() {
-       ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewHostController.swift:234:15: main actor-isolated instance method 'reactMountingTransactionDidMount()' cannot be used to satisfy nonisolated requirement from protocol 'ReactMountingTransactionObserving'; this is an error in the Swift 6 language mode
-  public func reactMountingTransactionDidMount() {
-       ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewHostController.swift:242:15: main actor-isolated instance method 'evaluateOrientation()' cannot be used to satisfy nonisolated requirement from protocol 'RNSOrientationProvidingSwift'; this is an error in the Swift 6 language mode
-  public func evaluateOrientation() -> RNSOrientationSwift {
-       ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewHostController.swift:365:8: main actor-isolated instance method 'splitViewNavCtrlViewDidChangeFrameOrigin' cannot be used to satisfy nonisolated requirement from protocol 'RNSSplitViewNavigationControllerViewFrameObserver'; this is an error in the Swift 6 language mode
-  func splitViewNavCtrlViewDidChangeFrameOrigin(
-       ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewNavigationController.swift:38:15: call to main actor-isolated instance method 'onViewOriginChange()' in a synchronous nonisolated context; this is an error in the Swift 6 language mode
-        self?.onViewOriginChange()
-       ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewScreenController.swift:231:15: main actor-isolated instance method 'register(forFrameCorrection:)' cannot be used to satisfy nonisolated requirement from protocol 'RNSFrameCorrectionProvider'; this is an error in the Swift 6 language mode
-  public func register(forFrameCorrection view: UIView) {
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewScreenController.swift:236:15: main actor-isolated instance method 'unregister(fromFrameCorrection:)' cannot be used to satisfy nonisolated requirement from protocol 'RNSFrameCorrectionProvider'; this is an error in the Swift 6 language mode
-  public func unregister(fromFrameCorrection view: UIView) {
-                                        ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/stack/RNSStackController.swift:57:15: main actor-isolated instance method 'reactMountingTransactionWillMount()' cannot be used to satisfy nonisolated requirement from protocol 'ReactMountingTransactionObserving'; this is an error in the Swift 6 language mode
-  public func reactMountingTransactionWillMount() {
-              ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/stack/RNSStackController.swift:62:15: main actor-isolated instance method 'reactMountingTransactionDidMount()' cannot be used to satisfy nonisolated requirement from protocol 'ReactMountingTransactionObserving'; this is an error in the Swift 6 language mode
-  public func reactMountingTransactionDidMount() {
-       ^
+   10 | - (void)onAnimationFailureWithError:(NSString*)error;
+                             ^
+▸ Compiling RNCWebViewImpl.m
+▸ Compiling RNCWebViewDecisionManager.m
+▸ Compiling RNCWKProcessPoolManager.m
+▸ Compiling RCTConvert+WKDataDetectorTypes.m
+▸ Compiling lottie-react-native-dummy.m
+▸ Compiling RCTConvert+Lottie.m
+▸ Compiling LRNAnimationViewManagerObjC.m
+▸ Running script 'Copy generated compatibility header'
+▸ Compiling RCTAppDependencyProvider.mm
+▸ Compiling ReactAppDependencyProvider-dummy.m
+▸ Building library libreact-native-webview.a
+▸ Running script '[CP] Copy XCFrameworks'
+▸ Building library libreact-native-safe-area-context.a
+▸ Building library libreact-native-pager-view.a
+▸ Building library libReactAppDependencyProvider.a
 ▸ Compiling WorkletsVersion.cpp
 ▸ Compiling WorkletsModuleProxy.cpp
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/mounting/ShadowViewMutation.h:46:7: declaration is marked with '@deprecated' command but does not have a deprecation attribute [-Wdocumentation-deprecated-sync]
-   46 |    * @deprecated Pass parentTag instead of parentShadowView.
-       ^
 ▸ Compiling WorkletsModule.mm
 ▸ Compiling WorkletsMessageThread.mm
+▸ Building library liblottie-react-native.a
 ▸ Compiling WorkletsJSIUtils.cpp
 ▸ Compiling WorkletRuntimeRegistry.cpp
 ▸ Compiling WorkletRuntimeDecorator.cpp
@@ -1251,9 +1114,273 @@ var maxUInt16 = UInt16.max
 ▸ Compiling AsyncQueueImpl.cpp
 ▸ Compiling AnimationFrameQueue.mm
 ▸ Compiling AnimationFrameBatchinator.cpp
+▸ Compiling base64.cpp
+▸ Running script 'Copy generated compatibility header'
+▸ Compiling ViewScreenshotService.mm
+▸ Compiling SkottieUtils.cpp
+▸ Compiling SkiaUIView.mm
+▸ Compiling SkiaPictureViewManager.mm
+▸ Compiling SkiaPictureView.mm
+▸ Compiling SkiaManager.mm
+▸ Compiling SkiaCVPixelBufferUtils.mm
+▸ Compiling SkJSONReader.cpp
+▸ Compiling RuntimeLifecycleMonitor.cpp
+▸ Compiling RuntimeAwareCache.cpp
+▸ Compiling RNSkiaModule.mm
+▸ Compiling RNSkMetalCanvasProvider.mm
+▸ Compiling RNSkManager.cpp
+▸ Compiling RNSkAppleView.mm
+▸ Compiling RNSkAppleVideo.mm
+▸ Compiling RNSkApplePlatformContext.mm
+▸ Compiling MetalWindowContext.mm
+▸ Compiling MetalContext.mm
+▸ Compiling JsiSkDispatcher.cpp
+▸ Compiling JsiPromises.cpp
+▸ Compiling JsiHostObject.cpp
+▸ Compiling CSSColorParser.cpp
 ▸ Compiling RNSVGViewBox.mm
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/@shopify/react-native-skia/cpp/skia/include/gpu/ganesh/mtl/SkSurfaceMetal.h:56:12: parameter 'layer' not found in the function declaration [-Wdocumentation]
+#import "RNScreens-umbrella.h"
+        ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/RNScreens/RNSScreenStackHeaderConfig.h:144:4: pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified)
+- (instancetype)initWithInsets:(NSDirectionalEdgeInsets)insets NS_DESIGNATED_INITIALIZER;
+        ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:31:17: value 'self' was defined but never used; consider replacing with boolean test
+      guard let self = self
+   ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:36:27: call to main actor-isolated instance method 'refreshSecondaryNavBar()' in a synchronous nonisolated context
+      splitViewController.refreshSecondaryNavBar()
+            ~~~~^~~~~~~
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:66:25: main actor-isolated property 'displayModeButtonVisibility' can not be mutated from a nonisolated context
+    splitViewController.displayModeButtonVisibility = splitView.displayModeButtonVisibility
+              ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:66:65: main actor-isolated property 'displayModeButtonVisibility' can not be referenced from a nonisolated context
+    splitViewController.displayModeButtonVisibility = splitView.displayModeButtonVisibility
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:67:25: main actor-isolated property 'preferredSplitBehavior' can not be mutated from a nonisolated context
+    splitViewController.preferredSplitBehavior = splitView.preferredSplitBehavior
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:67:60: main actor-isolated property 'preferredSplitBehavior' can not be referenced from a nonisolated context
+    splitViewController.preferredSplitBehavior = splitView.preferredSplitBehavior
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:68:25: main actor-isolated property 'presentsWithGesture' can not be mutated from a nonisolated context
+    splitViewController.presentsWithGesture = splitView.presentsWithGesture
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:68:57: main actor-isolated property 'presentsWithGesture' can not be referenced from a nonisolated context
+    splitViewController.presentsWithGesture = splitView.presentsWithGesture
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:69:25: main actor-isolated property 'primaryEdge' can not be mutated from a nonisolated context
+    splitViewController.primaryEdge = splitView.primaryEdge
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:69:49: main actor-isolated property 'primaryEdge' can not be referenced from a nonisolated context
+    splitViewController.primaryEdge = splitView.primaryEdge
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:70:25: main actor-isolated property 'showsSecondaryOnlyButton' can not be mutated from a nonisolated context
+    splitViewController.showsSecondaryOnlyButton = splitView.showSecondaryToggleButton
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:70:62: main actor-isolated property 'showSecondaryToggleButton' can not be referenced from a nonisolated context
+    splitViewController.showsSecondaryOnlyButton = splitView.showSecondaryToggleButton
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:74:27: main actor-isolated property 'minimumPrimaryColumnWidth' can not be referenced from a nonisolated context
+      minWidth: splitView.minimumPrimaryColumnWidth,
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:75:27: main actor-isolated property 'maximumPrimaryColumnWidth' can not be referenced from a nonisolated context
+      maxWidth: splitView.maximumPrimaryColumnWidth)
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:78:27: main actor-isolated property 'minimumSupplementaryColumnWidth' can not be referenced from a nonisolated context
+      minWidth: splitView.minimumSupplementaryColumnWidth,
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:79:27: main actor-isolated property 'maximumSupplementaryColumnWidth' can not be referenced from a nonisolated context
+      maxWidth: splitView.maximumSupplementaryColumnWidth)
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:84:31: main actor-isolated property 'minimumInspectorColumnWidth' can not be referenced from a nonisolated context
+          minWidth: splitView.minimumInspectorColumnWidth,
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:85:31: main actor-isolated property 'maximumInspectorColumnWidth' can not be referenced from a nonisolated context
+          maxWidth: splitView.maximumInspectorColumnWidth)
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:90:18: main actor-isolated property 'minimumPrimaryColumnWidth' can not be referenced from a nonisolated context
+    if splitView.minimumPrimaryColumnWidth >= 0 {
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:91:27: main actor-isolated property 'minimumPrimaryColumnWidth' can not be mutated from a nonisolated context
+      splitViewController.minimumPrimaryColumnWidth = splitView.minimumPrimaryColumnWidth
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:91:65: main actor-isolated property 'minimumPrimaryColumnWidth' can not be referenced from a nonisolated context
+      splitViewController.minimumPrimaryColumnWidth = splitView.minimumPrimaryColumnWidth
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:94:18: main actor-isolated property 'maximumPrimaryColumnWidth' can not be referenced from a nonisolated context
+    if splitView.maximumPrimaryColumnWidth >= 0 {
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:95:27: main actor-isolated property 'maximumPrimaryColumnWidth' can not be mutated from a nonisolated context
+      splitViewController.maximumPrimaryColumnWidth = splitView.maximumPrimaryColumnWidth
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:95:65: main actor-isolated property 'maximumPrimaryColumnWidth' can not be referenced from a nonisolated context
+      splitViewController.maximumPrimaryColumnWidth = splitView.maximumPrimaryColumnWidth
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:98:18: main actor-isolated property 'preferredPrimaryColumnWidthOrFraction' can not be referenced from a nonisolated context
+    if splitView.preferredPrimaryColumnWidthOrFraction >= 0
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:99:20: main actor-isolated property 'preferredPrimaryColumnWidthOrFraction' can not be referenced from a nonisolated autoclosure
+      && splitView.preferredPrimaryColumnWidthOrFraction < 1
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:101:27: main actor-isolated property 'preferredPrimaryColumnWidthFraction' can not be mutated from a nonisolated context
+      splitViewController.preferredPrimaryColumnWidthFraction =
+                                       ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:102:19: main actor-isolated property 'preferredPrimaryColumnWidthOrFraction' can not be referenced from a nonisolated context
+        splitView.preferredPrimaryColumnWidthOrFraction
+               ^
+          && splitView.preferredInspectorColumnWidthOrFraction < 1
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:155:31: main actor-isolated property 'preferredInspectorColumnWidthFraction' can not be mutated from a nonisolated context
+          splitViewController.preferredInspectorColumnWidthFraction =
+                                       ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:156:23: main actor-isolated property 'preferredInspectorColumnWidthOrFraction' can not be referenced from a nonisolated context
+            splitView.preferredInspectorColumnWidthOrFraction
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:157:29: main actor-isolated property 'preferredInspectorColumnWidthOrFraction' can not be referenced from a nonisolated context
+        } else if splitView.preferredInspectorColumnWidthOrFraction >= 1 {
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:158:31: main actor-isolated property 'preferredInspectorColumnWidth' can not be mutated from a nonisolated context
+          splitViewController.preferredInspectorColumnWidth =
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:159:23: main actor-isolated property 'preferredInspectorColumnWidthOrFraction' can not be referenced from a nonisolated context
+            splitView.preferredInspectorColumnWidthOrFraction
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:165:25: call to main actor-isolated instance method 'toggleSplitViewInspector' in a synchronous nonisolated context
+    splitViewController.toggleSplitViewInspector(splitView.showInspector)
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:165:60: main actor-isolated property 'showInspector' can not be referenced from a nonisolated context
+    splitViewController.toggleSplitViewInspector(splitView.showInspector)
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:182:25: main actor-isolated property 'preferredDisplayMode' can not be mutated from a nonisolated context
+    splitViewController.preferredDisplayMode = splitView.preferredDisplayMode
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:182:58: main actor-isolated property 'preferredDisplayMode' can not be referenced from a nonisolated context
+    splitViewController.preferredDisplayMode = splitView.preferredDisplayMode
+       ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewHostController.swift:10:65: conformance of 'RNSSplitViewHostController' to protocol 'ReactMountingTransactionObserving' crosses into main actor-isolated code and can cause data races; this is an error in the Swift 6 language mode
+public class RNSSplitViewHostController: UISplitViewController, ReactMountingTransactionObserving,
+       ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewHostController.swift:11:3: conformance of 'RNSSplitViewHostController' to protocol 'RNSOrientationProvidingSwift' crosses into main actor-isolated code and can cause data races; this is an error in the Swift 6 language mode
+  RNSOrientationProvidingSwift
+              ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewHostController.swift:356:39: conformance of 'RNSSplitViewHostController' to protocol 'RNSSplitViewNavigationControllerViewFrameObserver' crosses into main actor-isolated code and can cause data races; this is an error in the Swift 6 language mode
+extension RNSSplitViewHostController: RNSSplitViewNavigationControllerViewFrameObserver {
+              ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewNavigationController.swift:38:15: call to main actor-isolated instance method 'onViewOriginChange()' in a synchronous nonisolated context
+        self?.onViewOriginChange()
+       ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewScreenController.swift:229:41: conformance of 'RNSSplitViewScreenController' to protocol 'RNSFrameCorrectionProvider' crosses into main actor-isolated code and can cause data races; this is an error in the Swift 6 language mode
+extension RNSSplitViewScreenController: RNSFrameCorrectionProvider {
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/stack/RNSStackController.swift:5:58: conformance of 'RNSStackController' to protocol 'ReactMountingTransactionObserving' crosses into main actor-isolated code and can cause data races; this is an error in the Swift 6 language mode
+public class RNSStackController: UINavigationController, ReactMountingTransactionObserving {
+              ^
 ▸ Compiling RNSVGUseManager.mm
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:103:25: main actor-isolated property 'preferredPrimaryColumnWidthOrFraction' can not be referenced from a nonisolated context
+    } else if splitView.preferredPrimaryColumnWidthOrFraction >= 1 {
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:104:27: main actor-isolated property 'preferredPrimaryColumnWidth' can not be mutated from a nonisolated context
+      splitViewController.preferredPrimaryColumnWidth =
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:105:19: main actor-isolated property 'preferredPrimaryColumnWidthOrFraction' can not be referenced from a nonisolated context
+        splitView.preferredPrimaryColumnWidthOrFraction
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:108:18: main actor-isolated property 'minimumSupplementaryColumnWidth' can not be referenced from a nonisolated context
+    if splitView.minimumSupplementaryColumnWidth >= 0 {
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:109:27: main actor-isolated property 'minimumSupplementaryColumnWidth' can not be mutated from a nonisolated context
+      splitViewController.minimumSupplementaryColumnWidth =
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:110:19: main actor-isolated property 'minimumSupplementaryColumnWidth' can not be referenced from a nonisolated context
+        splitView.minimumSupplementaryColumnWidth
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:113:18: main actor-isolated property 'maximumSupplementaryColumnWidth' can not be referenced from a nonisolated context
+    if splitView.maximumSupplementaryColumnWidth >= 0 {
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:114:27: main actor-isolated property 'maximumSupplementaryColumnWidth' can not be mutated from a nonisolated context
+      splitViewController.maximumSupplementaryColumnWidth =
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:115:19: main actor-isolated property 'maximumSupplementaryColumnWidth' can not be referenced from a nonisolated context
+        splitView.maximumSupplementaryColumnWidth
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:118:18: main actor-isolated property 'preferredSupplementaryColumnWidthOrFraction' can not be referenced from a nonisolated context
+    if splitView.preferredSupplementaryColumnWidthOrFraction >= 0
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:119:20: main actor-isolated property 'preferredSupplementaryColumnWidthOrFraction' can not be referenced from a nonisolated autoclosure
+      && splitView.preferredSupplementaryColumnWidthOrFraction < 1
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:121:27: main actor-isolated property 'preferredSupplementaryColumnWidthFraction' can not be mutated from a nonisolated context
+      splitViewController.preferredSupplementaryColumnWidthFraction =
+                                       ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:122:19: main actor-isolated property 'preferredSupplementaryColumnWidthOrFraction' can not be referenced from a nonisolated context
+        splitView.preferredSupplementaryColumnWidthOrFraction
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:123:25: main actor-isolated property 'preferredSupplementaryColumnWidthOrFraction' can not be referenced from a nonisolated context
+    } else if splitView.preferredSupplementaryColumnWidthOrFraction >= 1 {
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:124:27: main actor-isolated property 'preferredSupplementaryColumnWidth' can not be mutated from a nonisolated context
+      splitViewController.preferredSupplementaryColumnWidth =
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:125:19: main actor-isolated property 'preferredSupplementaryColumnWidthOrFraction' can not be referenced from a nonisolated context
+        splitView.preferredSupplementaryColumnWidthOrFraction
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:130:22: main actor-isolated property 'minimumSecondaryColumnWidth' can not be referenced from a nonisolated context
+        if splitView.minimumSecondaryColumnWidth >= 0 {
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:131:31: main actor-isolated property 'minimumSecondaryColumnWidth' can not be mutated from a nonisolated context
+          splitViewController.minimumSecondaryColumnWidth = splitView.minimumSecondaryColumnWidth
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:131:71: main actor-isolated property 'minimumSecondaryColumnWidth' can not be referenced from a nonisolated context
+          splitViewController.minimumSecondaryColumnWidth = splitView.minimumSecondaryColumnWidth
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:134:22: main actor-isolated property 'preferredSecondaryColumnWidthOrFraction' can not be referenced from a nonisolated context
+        if splitView.preferredSecondaryColumnWidthOrFraction >= 0
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:135:24: main actor-isolated property 'preferredSecondaryColumnWidthOrFraction' can not be referenced from a nonisolated autoclosure
+          && splitView.preferredSecondaryColumnWidthOrFraction < 1
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:137:31: main actor-isolated property 'preferredSecondaryColumnWidthFraction' can not be mutated from a nonisolated context
+          splitViewController.preferredSecondaryColumnWidthFraction =
+                                       ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:138:23: main actor-isolated property 'preferredSecondaryColumnWidthOrFraction' can not be referenced from a nonisolated context
+            splitView.preferredSecondaryColumnWidthOrFraction
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:139:29: main actor-isolated property 'preferredSecondaryColumnWidthOrFraction' can not be referenced from a nonisolated context
+        } else if splitView.preferredSecondaryColumnWidthOrFraction >= 1 {
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:140:31: main actor-isolated property 'preferredSecondaryColumnWidth' can not be mutated from a nonisolated context
+          splitViewController.preferredSecondaryColumnWidth =
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:141:23: main actor-isolated property 'preferredSecondaryColumnWidthOrFraction' can not be referenced from a nonisolated context
+            splitView.preferredSecondaryColumnWidthOrFraction
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:144:22: main actor-isolated property 'minimumInspectorColumnWidth' can not be referenced from a nonisolated context
+        if splitView.minimumInspectorColumnWidth >= 0 {
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:145:31: main actor-isolated property 'minimumInspectorColumnWidth' can not be mutated from a nonisolated context
+          splitViewController.minimumInspectorColumnWidth = splitView.minimumInspectorColumnWidth
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:145:71: main actor-isolated property 'minimumInspectorColumnWidth' can not be referenced from a nonisolated context
+          splitViewController.minimumInspectorColumnWidth = splitView.minimumInspectorColumnWidth
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:148:22: main actor-isolated property 'maximumInspectorColumnWidth' can not be referenced from a nonisolated context
+        if splitView.maximumInspectorColumnWidth >= 0 {
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:149:31: main actor-isolated property 'maximumInspectorColumnWidth' can not be mutated from a nonisolated context
+          splitViewController.maximumInspectorColumnWidth = splitView.maximumInspectorColumnWidth
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:149:71: main actor-isolated property 'maximumInspectorColumnWidth' can not be referenced from a nonisolated context
+          splitViewController.maximumInspectorColumnWidth = splitView.maximumInspectorColumnWidth
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:152:22: main actor-isolated property 'preferredInspectorColumnWidthOrFraction' can not be referenced from a nonisolated context
+        if splitView.preferredInspectorColumnWidthOrFraction >= 0
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:153:24: main actor-isolated property 'preferredInspectorColumnWidthOrFraction' can not be referenced from a nonisolated autoclosure
 ▸ Compiling RNSVGUse.mm
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-svg/apple/Elements/RNSVGUse.mm:71:1: method possibly missing a [super updateProps:oldProps:] call [-Wobjc-missing-super-calls]
+   71 | }
+              ^
 ▸ Compiling RNSVGTopAlignedLabel.ios.mm
 ▸ Compiling RNSVGTextProperties.mm
 ▸ Compiling RNSVGTextPathManager.mm
@@ -1344,68 +1471,10 @@ var maxUInt16 = UInt16.max
 ▸ Compiling RNSVGBezierElement.mm
 ▸ Compiling RNSVGArithmeticFilter.mm
 ▸ Compiling RCTConvert+RNSVG.mm
-▸ Compiling RNNativeViewHandler.mm
-▸ Compiling RNGestureHandlerRootViewComponentView.mm
-▸ Compiling RNGestureHandlerModule.mm
-▸ Compiling RNGestureHandlerManager.mm
-▸ Compiling RNGestureHandlerButtonManager.mm
-▸ Compiling RNGestureHandlerButtonComponentView.mm
-▸ Compiling RNGestureHandlerButton.mm
-▸ Compiling RNGestureHandler.mm
-▸ Compiling ShadowNodes.cpp
-▸ Compiling RNDateTimePickerState.cpp
-▸ Compiling RNDateTimePickerComponentView.mm
-▸ Compiling RNCAsyncStorage.mm
-▸ Compiling lottie-react-native-dummy.m
-▸ Compiling ReactAppDependencyProvider-dummy.m
-▸ Compiling RNCSafeAreaViewManager.m
-▸ Compiling RNCSafeAreaViewMode.m
-▸ Compiling RNCSafeAreaViewLocalData.m
-▸ Compiling RNCSafeAreaViewEdges.m
-▸ Compiling RNCSafeAreaViewEdgeMode.m
-▸ Compiling RNCSafeAreaView.m
-▸ Compiling RNCSafeAreaUtils.m
-▸ Compiling RNCSafeAreaShadowView.m
-▸ Compiling RNCSafeAreaProviderManager.m
-▸ Compiling RNCSafeAreaProvider.m
-▸ Compiling RNCOnInsetsChangeEvent.m
-▸ Compiling UIViewController+CreateExtension.m
-▸ Compiling UIView+isHorizontalRtlLayout.m
-▸ Compiling RNCPagerViewShadowView.m
-▸ Compiling RNCPagerViewManager.m
-▸ Compiling RNCPagerView.m
-▸ Compiling RCTOnPageSelected.m
-▸ Compiling RCTOnPageScrollStateChanged.m
-▸ Compiling RCTOnPageScrollEvent.m
-▸ Compiling RCTConvert+UIPageViewControllerNavigationOrientation.m
-▸ Compiling RCTConvert+Lottie.m
-▸ Compiling LRNAnimationViewManagerObjC.m
-▸ Compiling RNCWebViewImpl.m
-▸ Compiling RNCWebViewDecisionManager.m
-▸ Compiling RNCWKProcessPoolManager.m
-▸ Compiling RCTConvert+WKDataDetectorTypes.m
 ▸ Compiling RNWorklets-dummy.m
-▸ Compiling RNSVG-dummy.m
-▸ Compiling RNTapHandler.m
-▸ Compiling RNRotationHandler.m
-▸ Compiling RNRootViewGestureRecognizer.m
-▸ Compiling RNPinchHandler.m
-▸ Compiling RNPanHandler.m
-▸ Compiling RNManualHandler.m
-▸ Compiling RNManualActivationRecognizer.m
-▸ Compiling RNLongPressHandler.m
-▸ Compiling RNHoverHandler.m
-▸ Compiling RNGestureHandlerRegistry.m
-▸ Compiling RNGestureHandlerPointerTracker.m
-▸ Compiling RNGestureHandlerEvents.m
-▸ Compiling RNGHVector.m
-▸ Compiling RNGHStylusData.m
-▸ Compiling RNForceTouchHandler.m
-▸ Compiling RNFlingHandler.m
-▸ Compiling RNGestureHandler-dummy.m
-▸ Compiling RNDateTimePickerShadowView.m
-▸ Compiling RNDateTimePicker.m
-▸ Compiling RNDateTimePickerManager.m
+▸ Compiling react-native-skia-dummy.m
+▸ Building library libRNWorklets.a
+▸ Building library libreact-native-skia.a
 ▸ Compiling UIWindow+RNScreens.mm
 ▸ Compiling UIViewController+RNScreens.mm
 ▸ Compiling UIView+RNSUtility.mm
@@ -1491,10 +1560,147 @@ var maxUInt16 = UInt16.max
 ▸ Compiling RCTConvert+RNScreens.mm
 ▸ Compiling RCTConvert+RNSBottomTabs.mm
 ▸ Compiling NSString+RNSUtility.mm
-▸ Compiling RNDateTimePicker-dummy.m
-▸ Compiling RNCAsyncStorage-dummy.m
+▸ Compiling RNScreens-dummy.m
 ▸ Compiling vectors.cpp
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/mounting/ShadowViewMutation.h:74:7: declaration is marked with '@deprecated' command but does not have a deprecation attribute [-Wdocumentation-deprecated-sync]
+▸ Compiling translate.cpp
+▸ Compiling steps.cpp
+▸ Compiling skew.cpp
+▸ Building library libRNScreens.a
+▸ Compiling scale.cpp
+▸ Compiling rotate.cpp
+▸ Compiling props.cpp
+▸ Compiling perspective.cpp
+▸ Compiling matrix.cpp
+▸ Compiling linear.cpp
+▸ Compiling interpolators.cpp
+▸ Compiling cubicBezier.cpp
+▸ Compiling common.cpp
+▸ Compiling algorithms.cpp
+▸ Compiling ViewStylesRepository.cpp
+▸ Compiling ValueInterpolator.cpp
+▸ Compiling UpdatesRegistryManager.cpp
+▸ Compiling UpdatesRegistry.cpp
+▸ Compiling UIRuntimeDecorator.cpp
+▸ Compiling TransitionStyleInterpolator.cpp
+▸ Compiling TransitionProgressProvider.cpp
+▸ Compiling TransformsStyleInterpolator.cpp
+▸ Compiling TransformOperationInterpolator.cpp
+▸ Compiling TransformOperation.cpp
+▸ Compiling TransformOp.cpp
+▸ Compiling TransformMatrix3D.cpp
+▸ Compiling TransformMatrix2D.cpp
+▸ Compiling TransformMatrix.cpp
+▸ Compiling StyleOperationInterpolator.cpp
+▸ Compiling StyleOperation.cpp
+▸ Compiling StaticPropsRegistry.cpp
+▸ Compiling SimpleValueInterpolator.cpp
+▸ Compiling SharedTransitions.cpp
+▸ Compiling ShadowTreeCloner.cpp
+▸ Compiling SetGestureState.mm
+▸ Compiling SVGStrokeDashArray.cpp
+▸ Compiling SVGLength.cpp
+▸ Compiling SVGBrush.cpp
+▸ Compiling ResolvableValueInterpolator.cpp
+▸ Compiling RecordPropertiesInterpolator.cpp
+▸ Compiling ReanimatedVersion.cpp
+▸ Compiling ReanimatedMountHook.cpp
+▸ Compiling ReanimatedModuleProxySpec.cpp
+▸ Compiling ReanimatedModuleProxy.cpp
+▸ Compiling ReanimatedModule.mm
+▸ Compiling ReanimatedCommitHook.cpp
+▸ Compiling RawProgressProvider.cpp
+▸ Compiling RNRuntimeDecorator.cpp
+▸ Compiling REASlowAnimations.mm
+▸ Compiling REANodesManager.mm
+▸ Compiling REAKeyboardEventObserver.mm
+▸ Compiling Quaternion.cpp
+▸ Compiling PropsDiffer.cpp
+▸ Compiling PropertyInterpolator.cpp
+▸ Compiling PropValueProcessor.cpp
+▸ Compiling PlatformDepMethodsHolderImpl.mm
+▸ Compiling OperationsStyleInterpolator.cpp
+▸ Compiling NativeProxy.mm
+▸ Compiling LayoutAnimationsUtils.cpp
+▸ Compiling LayoutAnimationsProxy_Legacy.cpp
+▸ Compiling LayoutAnimationsProxy_Experimental.cpp
+▸ Compiling LayoutAnimationsProxyCommon.cpp
+▸ Compiling LayoutAnimationsManager.cpp
+▸ Compiling InterpolatorRegistry.cpp
+▸ Compiling InterpolatorFactory.cpp
+▸ Compiling GroupPropertiesInterpolator.cpp
+▸ Compiling FilterStyleInterpolator.cpp
+▸ Compiling FilterOperationInterpolator.cpp
+▸ Compiling FilterOperation.cpp
+▸ Compiling FilterOp.cpp
+▸ Compiling FeatureFlags.cpp
+▸ Compiling EasingFunctions.cpp
+▸ Compiling DelayedItemsManager.cpp
+▸ Compiling CSSValueVariant.cpp
+▸ Compiling CSSTransitionsRegistry.cpp
+▸ Compiling CSSTransitionConfig.cpp
+▸ Compiling CSSTransition.cpp
+▸ Compiling CSSNumber.cpp
+▸ Compiling CSSLength.cpp
+▸ Compiling CSSKeyword.cpp
+▸ Compiling CSSKeyframesRegistry.cpp
+▸ Compiling CSSKeyframesConfig.cpp
+▸ Compiling CSSDropShadow.cpp
+▸ Compiling CSSDiscreteArray.cpp
+▸ Compiling CSSColor.cpp
+▸ Compiling CSSBoxShadow.cpp
+▸ Compiling CSSBoolean.cpp
+▸ Compiling CSSAnimationsRegistry.cpp
+▸ Compiling CSSAnimationConfig.cpp
+▸ Compiling CSSAnimation.cpp
+▸ Compiling CSSAngle.cpp
+▸ Compiling ArrayPropertiesInterpolator.cpp
+▸ Compiling AnimationProgressProvider.cpp
+▸ Compiling AnimatedSensorModule.cpp
+▸ Compiling AnimatedPropsRegistry.cpp
+▸ Compiling RNSVG-dummy.m
+▸ Running script 'Copy generated compatibility header'
+▸ Building library libRNSVG.a
+▸ Compiling RNNativeViewHandler.mm
+▸ Compiling RNGestureHandlerRootViewComponentView.mm
+▸ Compiling RNGestureHandlerModule.mm
+▸ Compiling ReanimatedSensorContainer.m
+▸ Compiling ReanimatedSensor.m
+▸ Compiling RCTUIView+Reanimated.m
+▸ Compiling RNGestureHandlerManager.mm
+▸ Compiling RNGestureHandlerButtonManager.mm
+▸ Compiling RNGestureHandlerButtonComponentView.mm
+▸ Compiling RNGestureHandlerButton.mm
+▸ Compiling RNGestureHandler.mm
+▸ Compiling RNReanimated-dummy.m
+▸ Building library libRNReanimated.a
+▸ Compiling RNGestureHandler-dummy.m
+▸ Compiling ShadowNodes.cpp
+▸ Compiling RNDateTimePickerState.cpp
+▸ Compiling RNDateTimePickerComponentView.mm
+▸ Compiling RNDateTimePickerShadowView.m
+▸ Compiling RNDateTimePicker.m
+▸ Compiling RNDateTimePickerManager.m
+▸ Compiling RNTapHandler.m
+▸ Compiling RNRotationHandler.m
+▸ Compiling RNRootViewGestureRecognizer.m
+▸ Compiling RNPinchHandler.m
+▸ Compiling RNPanHandler.m
+▸ Compiling RNManualHandler.m
+▸ Compiling RNManualActivationRecognizer.m
+▸ Compiling RNLongPressHandler.m
+▸ Compiling RNHoverHandler.m
+▸ Compiling RNGestureHandlerRegistry.m
+▸ Compiling RNGestureHandlerPointerTracker.m
+▸ Compiling RNGestureHandlerEvents.m
+▸ Compiling RNGHVector.m
+▸ Compiling RNGHStylusData.m
+▸ Compiling RNForceTouchHandler.m
+▸ Compiling RNFlingHandler.m
+▸ Compiling RNDateTimePicker-dummy.m
+▸ Building library libRNGestureHandler.a
+▸ Compiling RNCAsyncStorage.mm
+▸ Building library libRNDateTimePicker.a
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-gesture-handler/apple/RNGHStylusData.h:23:16: unused function 'ghSpherical2tilt' [-Wunused-function]
 #import "ExpoModulesCore-umbrella.h"
         ^
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Legacy/NativeModulesProxy/EXNativeModulesProxy.h:8:40: pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified)
@@ -2089,10 +2295,10 @@ typedef void (^RCTPromiseResolveBlock)(id result);
         ^
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: umbrella header for module 'React' does not include header 'RCTEventEmitter.h'
         ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Functions/AsyncFunctionDefinition.swift:143:23: capture of 'arguments' with non-sendable type '[Any]' in a '@Sendable' closure
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Functions/AsyncFunctionDefinition.swift:143:23: capture of 'arguments' with non-Sendable type '[Any]' in a '@Sendable' closure
         let viewTag = arguments.first as? Int,
 ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Functions/AsyncFunctionDefinition.swift:149:136: capture of 'block' with non-sendable type '() -> Void' in a '@Sendable' closure
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Functions/AsyncFunctionDefinition.swift:149:136: capture of 'block' with non-Sendable type '() -> Void' in a '@Sendable' closure
         self.dispatchOnQueueUntilViewRegisters(appContext: appContext, arguments: arguments, queue: queue, retryCount: retryCount + 1, block)
                       ^
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Exceptions/CommonExceptions.swift:10:22: class 'AppContextLost' must restate inherited '@unchecked Sendable' conformance
@@ -2158,21 +2364,48 @@ typedef void (^RCTPromiseResolveBlock)(id result);
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Arguments/Convertibles.swift:42:16: class 'UrlContainsInvalidCharactersException' must restate inherited '@unchecked Sendable' conformance
 internal class UrlContainsInvalidCharactersException: Exception {
                  ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicArrayBufferType.swift:4:7: stored property 'innerType' of 'Sendable'-conforming struct 'DynamicArrayBufferType' has non-Sendable type 'any AnyArrayBuffer.Type'
+  let innerType: AnyArrayBuffer.Type
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicConvertibleType.swift:7:7: stored property 'innerType' of 'Sendable'-conforming struct 'DynamicConvertibleType' has non-Sendable type 'any Convertible.Type'
+  let innerType: Convertible.Type
+      ^
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicDataType.swift:14:17: cast from 'any AnyDynamicType' to unrelated type 'Data.Type' always fails
     return type is Data.Type
-               ^
+      ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicEitherType.swift:4:7: stored property 'eitherType' of 'Sendable'-conforming generic struct 'DynamicEitherType' has non-Sendable type 'EitherType.Type'
+  let eitherType: EitherType.Type
+           ~~~~ ^  ~~~~~~~~~
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicEnumType.swift:7:7: stored property 'innerType' of 'Sendable'-conforming struct 'DynamicEnumType' has non-Sendable type 'any Enumerable.Type'
+  let innerType: any Enumerable.Type
+      ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicJavaScriptType.swift:7:7: stored property 'innerType' of 'Sendable'-conforming struct 'DynamicJavaScriptType' has non-Sendable type 'any AnyJavaScriptValue.Type'
+  let innerType: AnyJavaScriptValue.Type
+      ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicSerializableType.swift:4:7: stored property 'innerType' of 'Sendable'-conforming struct 'DynamicSerializableType' has non-Sendable type 'any AnySerializable.Type'
+  let innerType: any AnySerializable.Type
+      ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicSharedObjectType.swift:7:7: stored property 'innerType' of 'Sendable'-conforming struct 'DynamicSharedObjectType' has non-Sendable type 'any AnySharedObject.Type'
+  let innerType: AnySharedObject.Type
+      ^
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicSharedObjectType.swift:110:22: class 'NativeSharedObjectNotFoundException' must restate inherited '@unchecked Sendable' conformance
 internal final class NativeSharedObjectNotFoundException: Exception {
-           ~~~~ ^  ~~~~~~~~~
+      ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicTypedArrayType.swift:4:7: stored property 'innerType' of 'Sendable'-conforming struct 'DynamicTypedArrayType' has non-Sendable type 'any AnyTypedArray.Type'
+  let innerType: AnyTypedArray.Type
+                     ^
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicTypedArrayType.swift:47:22: class 'ArrayTypeMismatchException' must restate inherited '@unchecked Sendable' conformance
 internal final class ArrayTypeMismatchException: GenericException<(received: Any.Type, expected: Any.Type)> {
-                     ^
+      ^
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicTypedArrayType.swift:53:22: class 'NotTypedArrayException' must restate inherited '@unchecked Sendable' conformance
 internal final class NotTypedArrayException: GenericException<AnyTypedArray.Type> {
                      ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicValueOrUndefinedType.swift:4:7: stored property 'innerType' of 'Sendable'-conforming generic struct 'DynamicValueOrUndefinedType' has non-Sendable type 'InnerType.Type'
+  let innerType: InnerType.Type = InnerType.self
+                     ^
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicViewType.swift:61:22: class 'InvalidViewTagException' must restate inherited '@unchecked Sendable' conformance
 internal final class InvalidViewTagException: Exception {
-                     ^
+      ^
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicViewType.swift:67:22: class 'NonMainThreadException' must restate inherited '@unchecked Sendable' conformance
 internal final class NonMainThreadException: Exception {
                      ^
@@ -2194,7 +2427,7 @@ internal class InvalidNamespaceException: GenericException<String> {
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Fabric/ExpoFabricView.swift:228:53: use '#selector' instead of explicitly constructing a 'Selector'
     class_replaceMethod(object_getClass(viewClass), Selector("new"), newBlockImp, "@@:")
                  ^
-❌  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/ReactDelegates/ExpoReactDelegate.swift:41:39: call to main actor-isolated initializer 'init()' in a synchronous nonisolated context
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/ReactDelegates/ExpoReactDelegate.swift:41:39: call to main actor-isolated initializer 'init()' in a synchronous nonisolated context
       .first(where: { _ in true }) ?? UIViewController()
                                                     ^~~~~~~~~~~~~~~
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/JavaScriptFunction.swift:64:21: class 'UnexpectedReturnType' must restate inherited '@unchecked Sendable' conformance
@@ -2221,106 +2454,88 @@ internal final class JavaScriptValueConversionException: GenericException<(kind:
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Legacy/NativeModulesProxy/NativeModulesProxyModule.swift:9:5: 'Constants' is deprecated: Use `Constant` or `Property` instead
     Constants { () -> [String: Any?] in
                  ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Legacy/NativeModulesProxy/NativeModulesProxyModule.swift:33:9: capture of 'legacyModule' with non-sendable type 'EXExportedModule' in a '@Sendable' closure
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Legacy/NativeModulesProxy/NativeModulesProxyModule.swift:33:9: capture of 'legacyModule' with non-Sendable type 'EXExportedModule' in a '@Sendable' closure
         legacyModule.callExportedMethod(methodName, withArguments: arguments, resolver: promise.resolver, rejecter: promise.legacyRejecter)
     ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Legacy/NativeModulesProxy/NativeModulesProxyModule.swift:33:68: capture of 'arguments' with non-sendable type '[Any]' in a '@Sendable' closure
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Legacy/NativeModulesProxy/NativeModulesProxyModule.swift:33:68: capture of 'arguments' with non-Sendable type '[Any]' in a '@Sendable' closure
         legacyModule.callExportedMethod(methodName, withArguments: arguments, resolver: promise.resolver, rejecter: promise.legacyRejecter)
            ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Logging/PersistentFileLog.swift:61:7: capture of 'self' with non-sendable type 'PersistentFileLog' in a '@Sendable' closure
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Logging/PersistentFileLog.swift:61:7: capture of 'self' with non-Sendable type 'PersistentFileLog' in a '@Sendable' closure
       self.ensureFileExists()
                                                                    ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Logging/PersistentFileLog.swift:64:9: capture of 'completionHandler' with non-sendable type 'PersistentFileLogCompletionHandler?' (aka 'Optional<(Optional<any Error>) -> ()>') in a '@Sendable' closure
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Logging/PersistentFileLog.swift:64:9: capture of 'completionHandler' with non-Sendable type 'PersistentFileLogCompletionHandler?' (aka 'Optional<(Optional<any Error>) -> ()>') in a '@Sendable' closure
         completionHandler?(nil)
              ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Logging/PersistentFileLog.swift:76:7: capture of 'self' with non-sendable type 'PersistentFileLog' in a '@Sendable' closure
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Logging/PersistentFileLog.swift:76:7: capture of 'self' with non-Sendable type 'PersistentFileLog' in a '@Sendable' closure
       self.ensureFileExists()
         ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Logging/PersistentFileLog.swift:79:54: capture of 'filter' with non-sendable type 'PersistentFileLogFilter' (aka '(String) -> Bool') in a '@Sendable' closure
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Logging/PersistentFileLog.swift:79:54: capture of 'filter' with non-Sendable type 'PersistentFileLogFilter' (aka '(String) -> Bool') in a '@Sendable' closure
         let newcontents = contents.filter { entry in filter(entry) }
              ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Logging/PersistentFileLog.swift:81:9: capture of 'completionHandler' with non-sendable type 'PersistentFileLogCompletionHandler' (aka '(Optional<any Error>) -> ()') in a '@Sendable' closure
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Logging/PersistentFileLog.swift:81:9: capture of 'completionHandler' with non-Sendable type 'PersistentFileLogCompletionHandler' (aka '(Optional<any Error>) -> ()') in a '@Sendable' closure
         completionHandler(nil)
                                                      ^
-❌  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Logging/PersistentFileLog.swift:79:54: capture of 'filter' with non-sendable type 'PersistentFileLogFilter' (aka '(String) -> Bool') in an isolated closure
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Logging/PersistentFileLog.swift:79:54: capture of 'filter' with non-Sendable type 'PersistentFileLogFilter' (aka '(String) -> Bool') in an isolated closure
         let newcontents = contents.filter { entry in filter(entry) }
         ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Logging/PersistentFileLog.swift:94:13: capture of 'self' with non-sendable type 'PersistentFileLog' in a '@Sendable' closure
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Logging/PersistentFileLog.swift:94:13: capture of 'self' with non-Sendable type 'PersistentFileLog' in a '@Sendable' closure
         try self.deleteFileSync()
                                                      ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Logging/PersistentFileLog.swift:95:9: capture of 'completionHandler' with non-sendable type 'PersistentFileLogCompletionHandler' (aka '(Optional<any Error>) -> ()') in a '@Sendable' closure
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Logging/PersistentFileLog.swift:95:9: capture of 'completionHandler' with non-Sendable type 'PersistentFileLogCompletionHandler' (aka '(Optional<any Error>) -> ()') in a '@Sendable' closure
         completionHandler(nil)
              ^
-❌  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIHostingView.swift:45:89: unknown attribute 'MainActor'
-  public final class HostingView<Props: ViewProps, ContentView: View<Props>>: ExpoView, @MainActor AnyExpoSwiftUIHostingView {
-        ^
-❌  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIHostingView.swift:113:26: main actor-isolated instance method 'updateProps' cannot be used to satisfy nonisolated requirement from protocol 'AnyExpoSwiftUIHostingView'
-    public override func updateProps(_ rawProps: [String: Any]) {
-                                                                                        ^
-❌  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIHostingView.swift:135:17: main actor-isolated instance method 'getContentView()' cannot be used to satisfy nonisolated requirement from protocol 'AnyExpoSwiftUIHostingView'
-    public func getContentView() -> any ExpoSwiftUI.View {
-       ^
-❌  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIHostingView.swift:142:17: main actor-isolated instance method 'getProps()' cannot be used to satisfy nonisolated requirement from protocol 'AnyExpoSwiftUIHostingView'
-    public func getProps() -> ExpoSwiftUI.ViewProps {
-       ^
-❌  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIViewFrameObserver.swift:29:38: main actor-isolated property 'frame' can not be referenced from a Sendable closure
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIViewFrameObserver.swift:29:38: main actor-isolated property 'frame' can not be referenced from a Sendable closure
         callback(CGRect(origin: view.frame.origin, size: newValue.size))
-       ^
-❌  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:196:43: unknown attribute 'MainActor'
-extension ExpoSwiftUI.SwiftUIVirtualView: @MainActor ExpoSwiftUI.ViewWrapper {
-                                       ^
-❌  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:197:8: main actor-isolated instance method 'getWrappedView()' cannot be used to satisfy nonisolated requirement from protocol 'ViewWrapper'
-  func getWrappedView() -> Any {
-                                          ^
-❌  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:84:17: main actor-isolated property 'appContext' can not be referenced from a nonisolated context
+        ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:84:17: main actor-isolated property 'appContext' can not be referenced from a nonisolated context
       guard let appContext else {
-         ^
-❌  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:89:13: main actor-isolated property 'props' can not be referenced from a nonisolated context
+                                       ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:89:13: main actor-isolated property 'props' can not be referenced from a nonisolated context
         try props.updateRawProps(rawProps, appContext: appContext)
              ^
-❌  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:130:22: main actor-isolated property 'props' can not be referenced from a nonisolated context
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:130:22: main actor-isolated property 'props' can not be referenced from a nonisolated context
       var children = props.children ?? []
         ^
-❌  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:139:7: main actor-isolated property 'props' can not be referenced from a nonisolated context
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:139:7: main actor-isolated property 'props' can not be referenced from a nonisolated context
       props.children = children
         ^
-❌  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:140:7: main actor-isolated property 'props' can not be referenced from a nonisolated context
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:140:7: main actor-isolated property 'props' can not be referenced from a nonisolated context
       props.objectWillChange.send()
         ^
-❌  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:148:26: call to main actor-isolated instance method 'removeFromSuperview()' in a synchronous nonisolated context
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:148:26: call to main actor-isolated instance method 'removeFromSuperview()' in a synchronous nonisolated context
       childComponentView.removeFromSuperview()
         ^
-❌  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:152:29: main actor-isolated property 'id' can not be referenced from a nonisolated context
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:152:29: main actor-isolated property 'id' can not be referenced from a nonisolated context
         childViewId = child.id
                      ^
-❌  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:157:25: main actor-isolated property 'props' can not be referenced from a nonisolated context
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:157:25: main actor-isolated property 'props' can not be referenced from a nonisolated context
       if let children = props.children {
         ^
-❌  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:158:9: main actor-isolated property 'props' can not be referenced from a nonisolated context
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:158:9: main actor-isolated property 'props' can not be referenced from a nonisolated context
         props.children = children.filter({ $0.id != childViewId })
         ^
-❌  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:158:47: main actor-isolated property 'id' can not be referenced from a nonisolated context
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:158:47: main actor-isolated property 'id' can not be referenced from a nonisolated context
         props.children = children.filter({ $0.id != childViewId })
         ^
-❌  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:162:9: main actor-isolated property 'props' can not be referenced from a nonisolated context
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:162:9: main actor-isolated property 'props' can not be referenced from a nonisolated context
         props.objectWillChange.send()
         ^
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Exceptions/UnexpectedException.swift:6:14: class 'UnexpectedException' must restate inherited '@unchecked Sendable' conformance
 public class UnexpectedException: Exception {
         ^
-❌  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/DevTools/URLAuthenticationChallengeForwardSender.swift:7:7: stored property 'completionHandler' of 'Sendable'-conforming class 'URLAuthenticationChallengeForwardSender' has non-sendable type '(URLSession.AuthChallengeDisposition, URLCredential?) -> Void'
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/DevTools/URLAuthenticationChallengeForwardSender.swift:7:7: stored property 'completionHandler' of 'Sendable'-conforming class 'URLAuthenticationChallengeForwardSender' has non-Sendable type '(URLSession.AuthChallengeDisposition, URLCredential?) -> Void'
   let completionHandler: (URLSession.AuthChallengeDisposition, URLCredential?) -> Void
              ^
-❌  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/DevTools/URLSessionSessionDelegateProxy.swift:8:15: stored property 'delegateMap' of 'Sendable'-conforming class 'URLSessionSessionDelegateProxy' is mutable
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/DevTools/URLSessionSessionDelegateProxy.swift:8:15: stored property 'delegateMap' of 'Sendable'-conforming class 'URLSessionSessionDelegateProxy' is mutable
   private var delegateMap: [AnyHashable: URLSessionDataDelegate] = [:]
       ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/DevTools/URLSessionSessionDelegateProxy.swift:65:28: passing non-sendable parameter 'completionHandler' to function expecting a @Sendable closure
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/DevTools/URLSessionSessionDelegateProxy.swift:65:28: passing non-Sendable parameter 'completionHandler' to function expecting a '@Sendable' closure
         completionHandler: completionHandler)
               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/DevTools/URLSessionSessionDelegateProxy.swift:82:28: passing non-sendable parameter 'completionHandler' to function expecting a @Sendable closure
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/DevTools/URLSessionSessionDelegateProxy.swift:82:28: passing non-Sendable parameter 'completionHandler' to function expecting a '@Sendable' closure
         completionHandler: completionHandler)
     ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/DevTools/URLSessionSessionDelegateProxy.swift:98:28: passing non-sendable parameter 'completionHandler' to function expecting a @Sendable closure
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/DevTools/URLSessionSessionDelegateProxy.swift:98:28: passing non-Sendable parameter 'completionHandler' to function expecting a '@Sendable' closure
         completionHandler: completionHandler)
     ^
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Utilities/Utilities.swift:119:45: 'keyWindow' was deprecated in iOS 13.0: Should not be used for applications that support multiple scenes as it returns a key window across all connected scenes
@@ -2329,221 +2544,100 @@ public class UnexpectedException: Exception {
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Uuidv5/Uuidv5.swift:15:8: result of call to 'withUnsafeBytes' is unused
   data.withUnsafeBytes { (ptr: UnsafeRawBufferPointer) in CC_SHA1(ptr.baseAddress, CC_LONG(data.count), &digest) }
                                             ^
-❌  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/ViewDefinition.swift:121:19: unknown attribute 'MainActor'
-extension UIView: @MainActor AnyArgument {
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/DynamicTypes/DynamicRawType.swift:39:34: sending 'objectBuilder' risks causing data races
+        return try objectBuilder.build(appContext: appContext)
        ^               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-▸ Compiling translate.cpp
-▸ Compiling RNScreens-dummy.m
-▸ Compiling steps.cpp
-▸ Compiling skew.cpp
-▸ Compiling scale.cpp
-▸ Compiling rotate.cpp
-▸ Compiling props.cpp
-▸ Compiling perspective.cpp
-▸ Compiling matrix.cpp
-▸ Compiling linear.cpp
-▸ Compiling interpolators.cpp
-▸ Compiling cubicBezier.cpp
-▸ Compiling common.cpp
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/SharedObjects/SharedObject.swift:85:87: sending 'self' risks causing data races
+      guard let appContext, let runtime = try? appContext.runtime, let jsObject = self?.getJavaScriptObject() else {
+                                  ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/SharedObjects/SharedObject.swift:91:23: sending 'argumentPairs' risks causing data races
+      let arguments = argumentPairs.map { argument, dynamicType in
+                                 ^
+▸ Compiling RNCAsyncStorage-dummy.m
+▸ Building library libRNCAsyncStorage.a
+▸ Compiling WorkletRuntimeFactory.mm
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/RNWorklets/worklets/WorkletRuntime/WorkletRuntime.h:148:8: declaration is marked with '@deprecated' command but does not have a deprecation attribute [-Wdocumentation-deprecated-sync]
+  148 |   /** @deprecated Use `schedule` instead. */
+                                 ^
+▸ Compiling WorkletJSCallInvoker.cpp
+▸ Compiling WorkletExecutor.mm
+▸ Compiling SwiftUIVirtualViewObjC.mm
+▸ Compiling SharedRef.cpp
+▸ Compiling SharedObject.cpp
+▸ Compiling SerializableExtractor.mm
+▸ Compiling NativeModule.cpp
+▸ Compiling LazyObject.cpp
+▸ Compiling ExpoViewShadowNode.cpp
+▸ Compiling ExpoViewProps.cpp
+▸ Compiling ExpoViewEventEmitter.cpp
+▸ Compiling ExpoViewComponentDescriptor.cpp
+▸ Compiling ExpoModulesHostObject.mm
+▸ Compiling ExpoFabricViewObjC.mm
+▸ Compiling ExpoBridgeModule.mm
+▸ Compiling EventEmitter.cpp
+▸ Compiling EXWorkletRuntime.mm
+▸ Compiling EXSharedObjectUtils.mm
+▸ Compiling EXRuntime.mm
+▸ Compiling EXReactNativeAdapter.mm
+▸ Compiling EXReactDelegateWrapper.mm
+▸ Compiling EXNativeModulesProxy.mm
+▸ Compiling EXJavaScriptSerializable.mm
+▸ Compiling EXJSUtils.mm
+▸ Compiling EXJSIInstaller.mm
+▸ Compiling EXHostWrapper.mm
+▸ Compiling ExpoModulesCore-dummy.m
+▸ Compiling EXUtilities.m
+▸ Compiling EXSingletonModule.m
+▸ Compiling EXReactNativeUserNotificationCenterProxy.m
+▸ Compiling EXPermissionsService.m
+▸ Compiling EXPermissionsMethodsDelegate.m
+▸ Compiling EXModuleRegistryProvider.m
+▸ Compiling EXModuleRegistryHolderReactModule.m
+▸ Compiling EXModuleRegistryAdapter.m
+▸ Compiling EXModuleRegistry.m
+▸ Compiling EXImageLoader.m
+▸ Compiling EXExportedModule.m
+▸ Compiling EXAppDefines.m
+▸ Compiling EXAppContextFactoryRegistry.m
+▸ Compiling CoreModuleHelper.m
+▸ Building library libExpoModulesCore.a
+▸ Running script 'Copy generated compatibility header'
+❌  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-splash-screen/ios/SplashScreenManager.swift:6:27: static property 'shared' is not concurrency-safe because non-'Sendable' type 'SplashScreenManager' may have shared mutable state
+  @objc public static let shared = SplashScreenManager()
+                          ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-splash-screen/ios/SplashScreenManager.swift:61:71: call to main actor-isolated instance method 'instantiateInitialViewController()' in a synchronous nonisolated context
+        nonisolated(unsafe) 
+                          ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-splash-screen/ios/SplashScreenManager.swift:61:17: call to main actor-isolated initializer 'init(name:bundle:)' in a synchronous nonisolated context
+    if let vc = UIStoryboard(name: splashScreenFilename, bundle: nil).instantiateInitialViewController() {
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-splash-screen/ios/SplashScreenManager.swift:62:24: main actor-isolated property 'view' can not be referenced from a nonisolated context
+      loadingView = vc.view
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-splash-screen/ios/SplashScreenManager.swift:63:20: main actor-isolated property 'autoresizingMask' can not be mutated from a nonisolated context
+      loadingView?.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-splash-screen/ios/SplashScreenManager.swift:65:38: main actor-isolated property 'bounds' can not be referenced from a nonisolated context
+      if let bounds = self.rootView?.bounds {
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-splash-screen/ios/SplashScreenManager.swift:66:22: main actor-isolated property 'frame' can not be mutated from a nonisolated context
+        loadingView?.frame = bounds
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-splash-screen/ios/SplashScreenManager.swift:67:22: main actor-isolated property 'center' can not be mutated from a nonisolated context
+        loadingView?.center = CGPoint(x: bounds.midX, y: bounds.midY)
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-splash-screen/ios/SplashScreenManager.swift:69:20: main actor-isolated property 'isHidden' can not be mutated from a nonisolated context
+      loadingView?.isHidden = false
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-splash-screen/ios/SplashScreenManager.swift:72:18: call to main actor-isolated instance method 'disableActivityIndicatorAutoHide' in a synchronous nonisolated context
+        hostView.disableActivityIndicatorAutoHide(true)
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-splash-screen/ios/SplashScreenManager.swift:73:18: main actor-isolated property 'loadingView' can not be mutated from a nonisolated context
+        hostView.loadingView = loadingView
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-splash-screen/ios/SplashScreenManager.swift:92:25: main actor-isolated property 'isHidden' can not be referenced from a nonisolated context
+    return !loadingView.isHidden
+               ^
     Run script build phase '[CP-User] [Hermes] Replace Hermes for the right configuration, if needed' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'hermes-engine' from project 'Pods')
 Build errors (last 200 lines around 'error:')
-                  self.failureCallback("No data received for the Lottie animation from the URL.")
-                       ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/ContainerView.swift:42:15: note: property declared here
-      @objc var failureCallback: (_ error: String) -> Void {
-                ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/ContainerView.swift:391:22: warning: main actor-isolated property 'failureCallback' can not be referenced from a Sendable closure; this is an error in the Swift 6 language mode
-                  self.failureCallback("Unable to decode the Lottie animation object from the fetched URL source: \(error.localizedDescription)")
-                       ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/ContainerView.swift:42:15: note: property declared here
-      @objc var failureCallback: (_ error: String) -> Void {
-                ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/AnimationViewManagerModule.swift:30:27: warning: will never be executed
-                      print("Invalid view returned from registry, expecting ContainerView")
-                            ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/AnimationViewManagerModule.swift:29:30: note: condition always evaluates to false
-                  if RCT_DEBUG == 1 {
-                               ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/AnimationViewManagerModule.swift:48:27: warning: will never be executed
-  --
-                                                      ^~~~~~~~~~~~~~~
-                                                      #selector(self.new)
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/ReactDelegates/ExpoReactDelegate.swift:41:39: error: call to main actor-isolated initializer 'init()' in a synchronous nonisolated context
-        .first(where: { _ in true }) ?? UIViewController()
-                                        ^
-  /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/usr/include/objc/NSObject.h:66:1: note: calls to initializer 'init()' from outside of its actor context are implicitly asynchronous
-  - (instancetype)init
-  ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/JavaScriptFunction.swift:64:21: warning: class 'UnexpectedReturnType' must restate inherited '@unchecked Sendable' conformance
-  private final class UnexpectedReturnType: GenericException<String> {
-                      ^
-  --
-          completionHandler(nil)
-          ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Logging/PersistentFileLog.swift:79:54: error: capture of 'filter' with non-sendable type 'PersistentFileLogFilter' (aka '(String) -> Bool') in an isolated closure
-          let newcontents = contents.filter { entry in filter(entry) }
-                                                       ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Logging/PersistentFileLog.swift:79:54: note: a function type must be marked '@Sendable' to conform to 'Sendable'
-          let newcontents = contents.filter { entry in filter(entry) }
-                                                       ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Logging/PersistentFileLog.swift:94:13: warning: capture of 'self' with non-sendable type 'PersistentFileLog' in a '@Sendable' closure
-          try self.deleteFileSync()
-              ^
-  --
-          completionHandler(nil)
-          ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIHostingView.swift:45:89: error: unknown attribute 'MainActor'
-    public final class HostingView<Props: ViewProps, ContentView: View<Props>>: ExpoView, @MainActor AnyExpoSwiftUIHostingView {
-                                                                                          ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIHostingView.swift:113:26: error: main actor-isolated instance method 'updateProps' cannot be used to satisfy nonisolated requirement from protocol 'AnyExpoSwiftUIHostingView'
-      public override func updateProps(_ rawProps: [String: Any]) {
-                           ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIHostingView.swift:113:26: note: add 'nonisolated' to 'updateProps' to make this instance method not isolated to the actor
-      public override func updateProps(_ rawProps: [String: Any]) {
-                           ^
-      nonisolated 
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIHostingView.swift:45:100: note: add '@preconcurrency' to the 'AnyExpoSwiftUIHostingView' conformance to defer isolation checking to run time
-    public final class HostingView<Props: ViewProps, ContentView: View<Props>>: ExpoView, @MainActor AnyExpoSwiftUIHostingView {
-  --
-         ^
-                                                async
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIHostingView.swift:135:17: error: main actor-isolated instance method 'getContentView()' cannot be used to satisfy nonisolated requirement from protocol 'AnyExpoSwiftUIHostingView'
-      public func getContentView() -> any ExpoSwiftUI.View {
-                  ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIHostingView.swift:135:17: note: add 'nonisolated' to 'getContentView()' to make this instance method not isolated to the actor
-      public func getContentView() -> any ExpoSwiftUI.View {
-                  ^
-      nonisolated 
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIHostingView.swift:10:8: note: mark the protocol requirement 'getContentView()' 'async' to allow actor-isolated conformances
-    func getContentView() -> any ExpoSwiftUI.View
-         ^
-                          async
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIHostingView.swift:142:17: error: main actor-isolated instance method 'getProps()' cannot be used to satisfy nonisolated requirement from protocol 'AnyExpoSwiftUIHostingView'
-      public func getProps() -> ExpoSwiftUI.ViewProps {
-                  ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIHostingView.swift:142:17: note: add 'nonisolated' to 'getProps()' to make this instance method not isolated to the actor
-      public func getProps() -> ExpoSwiftUI.ViewProps {
-                  ^
-      nonisolated 
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIHostingView.swift:11:8: note: mark the protocol requirement 'getProps()' 'async' to allow actor-isolated conformances
-    func getProps() -> ExpoSwiftUI.ViewProps
-         ^
-                    async
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIViewFrameObserver.swift:29:38: error: main actor-isolated property 'frame' can not be referenced from a Sendable closure
-          callback(CGRect(origin: view.frame.origin, size: newValue.size))
-                                       ^
-  /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIView.h:185:40: note: property declared here
-  @property(nonatomic) CGRect            frame;
-                                         ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:196:43: error: unknown attribute 'MainActor'
-  extension ExpoSwiftUI.SwiftUIVirtualView: @MainActor ExpoSwiftUI.ViewWrapper {
-                                            ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:197:8: error: main actor-isolated instance method 'getWrappedView()' cannot be used to satisfy nonisolated requirement from protocol 'ViewWrapper'
-    func getWrappedView() -> Any {
-         ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:197:8: note: add 'nonisolated' to 'getWrappedView()' to make this instance method not isolated to the actor
-    func getWrappedView() -> Any {
-         ^
-    nonisolated 
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:196:66: note: add '@preconcurrency' to the 'ViewWrapper' conformance to defer isolation checking to run time
-  extension ExpoSwiftUI.SwiftUIVirtualView: @MainActor ExpoSwiftUI.ViewWrapper {
-  --
-           ^
-                            async
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:84:17: error: main actor-isolated property 'appContext' can not be referenced from a nonisolated context
-        guard let appContext else {
-                  ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:17:14: note: property declared here
-      weak var appContext: AppContext?
-               ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:89:13: error: main actor-isolated property 'props' can not be referenced from a nonisolated context
-          try props.updateRawProps(rawProps, appContext: appContext)
-              ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:28:9: note: property declared here
-      let props: Props
-          ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:130:22: error: main actor-isolated property 'props' can not be referenced from a nonisolated context
-        var children = props.children ?? []
-                       ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:28:9: note: property declared here
-      let props: Props
-          ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:139:7: error: main actor-isolated property 'props' can not be referenced from a nonisolated context
-        props.children = children
-        ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:28:9: note: property declared here
-      let props: Props
-          ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:140:7: error: main actor-isolated property 'props' can not be referenced from a nonisolated context
-        props.objectWillChange.send()
-        ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:28:9: note: property declared here
-      let props: Props
-          ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:148:26: error: call to main actor-isolated instance method 'removeFromSuperview()' in a synchronous nonisolated context
-        childComponentView.removeFromSuperview()
-                           ^
-  UIKit.UIView.removeFromSuperview:2:22: note: calls to instance method 'removeFromSuperview()' from outside of its actor context are implicitly asynchronous
-  @MainActor open func removeFromSuperview()}
-                       ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:152:29: error: main actor-isolated property 'id' can not be referenced from a nonisolated context
-          childViewId = child.id
-                              ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/AnyChild.swift:14:9: note: property declared here
-      var id: ObjectIdentifier { get }
-          ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:157:25: error: main actor-isolated property 'props' can not be referenced from a nonisolated context
-        if let children = props.children {
-                          ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:28:9: note: property declared here
-      let props: Props
-          ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:158:9: error: main actor-isolated property 'props' can not be referenced from a nonisolated context
-          props.children = children.filter({ $0.id != childViewId })
-          ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:28:9: note: property declared here
-      let props: Props
-          ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:158:47: error: main actor-isolated property 'id' can not be referenced from a nonisolated context
-          props.children = children.filter({ $0.id != childViewId })
-                                                ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/AnyChild.swift:14:9: note: property declared here
-      var id: ObjectIdentifier { get }
-          ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:162:9: error: main actor-isolated property 'props' can not be referenced from a nonisolated context
-          props.objectWillChange.send()
-          ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:28:9: note: property declared here
-      let props: Props
-          ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Exceptions/UnexpectedException.swift:6:14: warning: class 'UnexpectedException' must restate inherited '@unchecked Sendable' conformance
-  public class UnexpectedException: Exception {
-               ^
-                                             , @unchecked Sendable
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/DevTools/URLAuthenticationChallengeForwardSender.swift:7:7: error: stored property 'completionHandler' of 'Sendable'-conforming class 'URLAuthenticationChallengeForwardSender' has non-sendable type '(URLSession.AuthChallengeDisposition, URLCredential?) -> Void'
-    let completionHandler: (URLSession.AuthChallengeDisposition, URLCredential?) -> Void
-        ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/DevTools/URLAuthenticationChallengeForwardSender.swift:7:7: note: a function type must be marked '@Sendable' to conform to 'Sendable'
-    let completionHandler: (URLSession.AuthChallengeDisposition, URLCredential?) -> Void
-        ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/DevTools/URLSessionSessionDelegateProxy.swift:8:15: error: stored property 'delegateMap' of 'Sendable'-conforming class 'URLSessionSessionDelegateProxy' is mutable
-    private var delegateMap: [AnyHashable: URLSessionDataDelegate] = [:]
-                ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/DevTools/URLSessionSessionDelegateProxy.swift:65:28: warning: passing non-sendable parameter 'completionHandler' to function expecting a @Sendable closure
-          completionHandler: completionHandler)
-                             ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/DevTools/URLSessionSessionDelegateProxy.swift:58:5: note: parameter 'completionHandler' is implicitly non-sendable
-      completionHandler: @escaping (URLSession.ResponseDisposition) -> Void
-      ^
-  --
-    data.withUnsafeBytes { (ptr: UnsafeRawBufferPointer) in CC_SHA1(ptr.baseAddress, CC_LONG(data.count), &digest) }
-         ^               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/ViewDefinition.swift:121:19: error: unknown attribute 'MainActor'
-  extension UIView: @MainActor AnyArgument {
-                    ^
-  Failed frontend command:
-  /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift-frontend -frontend -c -filelist /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/ExpoModulesCore.build/Objects-normal/arm64/sources-2 -supplementary-output-file-map /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/ExpoModulesCore.build/Objects-normal/arm64/supplementaryOutputs-4 -target arm64-apple-ios15.1 -Xllvm -aarch64-use-tbi -enable-objc-interop -stack-check -sdk /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk -I /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/ExpoModulesCore -I /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/RCTSwiftUI -F /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/ExpoModulesCore -F /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/React-Core-prebuilt -F /U
-  CompileC /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/RNReanimated.build/Objects-normal/arm64/translate.o /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/Common/cpp/reanimated/CSS/interpolation/transforms/operations/translate.cpp normal arm64 c++ com.apple.compilers.llvm.clang.1_0.compiler (in target 'RNReanimated' from project 'Pods')
-      cd /Users/runner/work/TAMTAM/TAMTAM/ios/Pods
-      
 Error: Process completed with exit code 1.

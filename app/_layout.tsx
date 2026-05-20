@@ -2,7 +2,6 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack, useRouter } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
 import * as Notifications from 'expo-notifications';
@@ -34,8 +33,6 @@ Notifications.setNotificationHandler({
   }),
 });
 
-SplashScreen.preventAutoHideAsync();
-
 export default function RootLayout() {
   const router = useRouter();
   const [loaded, error] = useFonts({
@@ -49,19 +46,10 @@ export default function RootLayout() {
   useEffect(() => { if (error) throw error; }, [error]);
 
   useEffect(() => {
-    async function prepare() {
-      if (loaded && !appIsReady) {
-        try {
-          await SplashScreen.hideAsync();
-        } catch (e) {
-          // Fallback if native splash is already gone
-        } finally {
-          setAppIsReady(true);
-          initApp();
-        }
-      }
+    if (loaded && !appIsReady) {
+      setAppIsReady(true);
+      initApp();
     }
-    prepare();
   }, [loaded, appIsReady]);
 
   const initApp = async () => {
