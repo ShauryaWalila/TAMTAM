@@ -91,7 +91,13 @@ jobs:
           node -e "
             const fs = require('fs');
             const path = require('path');
-            const CXX_TOKENS = /#include\s+<(memory|vector|string|functional|optional|unordered_map|unordered_set|map|set|deque|list|array|tuple|chrono|atomic|mutex|thread|future|variant|type_traits|algorithm|iterator|stdexcept|utility|cstdint|cstddef|initializer_list|numeric|limits|cmath|cstdlib|cstdio|cassert|memory_resource|bit|concepts|coroutine|expected|ranges|span|string_view)>/;
+            const CXX_TOKENS = new RegExp([
+              '#include\\s+<(memory|vector|string|functional|optional|unordered_map|unordered_set|map|set|deque|list|array|tuple|chrono|atomic|mutex|thread|future|variant|type_traits|algorithm|iterator|stdexcept|utility|cstdint|cstddef|initializer_list|numeric|limits|cmath|cstdlib|cstdio|cassert|memory_resource|bit|concepts|coroutine|expected|ranges|span|string_view)>',
+              '^\\s*namespace\\s+\\w+\\s*\\{',
+              '^\\s*template\\s*<',
+              '^\\s*using\\s+namespace\\s+\\w',
+              '\\bstd::\\w+'
+            ].join('|'), 'm');
             function walk(dir) {
               if (!fs.existsSync(dir)) return [];
               const out = [];
