@@ -31,11 +31,11 @@ const deps = [
 const podPostInstallFix = `
     puts "TAMTAM: Applying global build settings..."
     installer.pods_project.targets.each do |target|
-      # Only ExpoModulesCore uses Swift 6.2 isolated-conformance syntax (`@MainActor`
-      # on protocol conformances) — it MUST compile in Swift 6 mode. Every other
-      # Expo pod (speech, splash-screen, etc.) was never fully ported to Swift 6
-      # strict concurrency and trips on implicit Sendable inference. Force Swift 5
-      # everywhere else so those errors disappear at the source.
+      # Only ExpoModulesCore uses Swift 6.2 isolated-conformance syntax
+      # (@MainActor on protocol conformances) -- it MUST compile in Swift 6
+      # mode. Every other Expo pod (speech, splash-screen, etc.) was never
+      # fully ported to Swift 6 strict concurrency and trips on implicit
+      # Sendable inference. Force Swift 5 elsewhere to silence those.
       needs_swift6 = (target.name == 'ExpoModulesCore')
       target.build_configurations.each do |config|
         config.build_settings.delete('SWIFT_VERSION')
