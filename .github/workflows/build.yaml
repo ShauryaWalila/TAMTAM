@@ -82,10 +82,12 @@ jobs:
           echo "BaseViewEventEmitter.h present?"
           find Pods -name BaseViewEventEmitter.h 2>/dev/null | head -5
 
-          # Strategy: scan EVERY .h under Pods/ that #includes a C++ stdlib token,
-          # and wrap its body in `#if defined(__cplusplus)`. ObjC parse sees empty
-          # file, C++ parse sees full content. Path-agnostic so it adapts to
-          # whatever pod install actually produced.
+          # Strategy: scan .h under Pods/Headers/Public (the active include path
+          # for clang) that #include a C++ stdlib token. Wrap body in
+          # `#if defined(__cplusplus)`. ObjC parse sees empty file, C++ parse
+          # sees full content. RN 0.83 ships React as prebuilt xcframework -
+          # public headers under Pods/Headers/Public are symlinks; resolve and
+          # chmod writable before patching the real target.
           node -e "
             const fs = require('fs');
             const path = require('path');
@@ -97,26 +99,33 @@ jobs:
               try { ents = fs.readdirSync(dir, { withFileTypes: true }); } catch (e) { return []; }
               for (const ent of ents) {
                 const p = path.join(dir, ent.name);
-                if (ent.isDirectory()) out.push(...walk(p));
-                else if (ent.isFile() && (ent.name.endsWith('.h') || ent.name.endsWith('.hpp'))) out.push(p);
+                let st;
+                try { st = fs.statSync(p); } catch (e) { continue; }
+                if (st.isDirectory()) out.push(...walk(p));
+                else if (st.isFile() && (p.endsWith('.h') || p.endsWith('.hpp'))) out.push(p);
               }
               return out;
             }
-            const root = 'Pods';
-            console.log('TAMTAM: scanning', root, '(cwd=' + process.cwd() + ')');
-            const all = walk(root);
-            console.log('TAMTAM: found', all.length, '.h/.hpp files under Pods');
-            let patched = 0, skipped = 0;
+            const roots = ['Pods/Headers/Public', 'Pods/React-Core-prebuilt'];
+            console.log('TAMTAM: scanning', roots.join(', '), '(cwd=' + process.cwd() + ')');
+            const all = roots.flatMap(r => walk(r));
+            console.log('TAMTAM: found', all.length, '.h/.hpp files');
+            let patched = 0, skipped = 0, errs = 0, seen = new Set();
             for (const file of all) {
+              let real;
+              try { real = fs.realpathSync(file); } catch (e) { continue; }
+              if (seen.has(real)) continue;
+              seen.add(real);
               let s;
-              try { s = fs.readFileSync(file, 'utf8'); } catch (e) { continue; }
+              try { s = fs.readFileSync(real, 'utf8'); } catch (e) { continue; }
               if (!CXX_TOKENS.test(s)) continue;
               if (s.includes('// TAMTAM_CXX_GUARD')) { skipped++; continue; }
               s = '// TAMTAM_CXX_GUARD\n#if defined(__cplusplus)\n' + s + '\n#endif // TAMTAM_CXX_GUARD\n';
-              fs.writeFileSync(file, s);
-              patched++;
+              try { fs.chmodSync(real, 0o644); } catch (e) {}
+              try { fs.writeFileSync(real, s); patched++; }
+              catch (e) { errs++; console.log('  skip (write fail):', real, e.code); }
             }
-            console.log('TAMTAM: wrapped', patched, 'C++ headers; skipped', skipped, 'already wrapped');
+            console.log('TAMTAM: wrapped', patched, 'C++ headers; skipped', skipped, '; errors', errs);
           "
 
       - name: Build App Bundle (Unsigned)
