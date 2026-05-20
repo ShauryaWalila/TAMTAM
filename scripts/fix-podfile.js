@@ -45,25 +45,21 @@ const settingsOverride = `
       config.build_settings['SWIFT_STRICT_CONCURRENCY'] = 'off'
       
       # Robust Targeted Swift Versioning
-      # Expo 55 (RN 0.83+) requires Swift 6 for modern features (@MainActor conformances).
-      # Community libs (RNScreens, Lottie) are NOT ready for Swift 6.
+      # Expo 55 (RN 0.83+) needs @MainActor support and modern Swift features.
+      # Swift 5.10 provides these without the fatal strictness of Swift 6 mode.
       
       target_name = target.name
       
       # Step 1: Force Strict Concurrency OFF for EVERYTHING
       config.build_settings['SWIFT_STRICT_CONCURRENCY'] = 'off'
       
-      # Step 2: Determine Swift Version and Flags
-      if target_name.start_with?('Expo') || target_name.start_with?('EX') || target_name == 'Pods-TAMTAM' || target_name == 'TAMTAM'
-        # Expo Core + Main App Target -> Swift 6.0
-        config.build_settings['SWIFT_VERSION'] = '6.0'
-        # Disable concurrency warnings to handle Swift 6 migration issues in Expo code
-        config.build_settings['OTHER_SWIFT_FLAGS'] = '$(inherited) -D EXPO_SWIFT_6_MIGRATION -Xfrontend -disable-concurrency-warnings'
-      elsif target_name.include?('Lottie') || target_name.include?('Screen') || target_name.include?('PagerView') || target_name.include?('BlurView') || target_name.include?('Haptics')
-        # Community libs that fail on Swift 6 -> Swift 5.0
-        config.build_settings['SWIFT_VERSION'] = '5.0'
+      # Step 2: Determine Swift Version
+      if target_name.include?('Expo') || target_name.include?('EX') || target_name == 'Pods-TAMTAM' || target_name == 'TAMTAM'
+        # Expo infrastructure and main app -> Swift 5.10
+        config.build_settings['SWIFT_VERSION'] = '5.10'
+        config.build_settings['OTHER_SWIFT_FLAGS'] = '$(inherited) -D EXPO_SWIFT_6_MIGRATION'
       else
-        # Fallback to Swift 5.0 for safety
+        # Community libs (Lottie, Screens, etc.) -> Swift 5.0 for stability
         config.build_settings['SWIFT_VERSION'] = '5.0'
       end
     end
