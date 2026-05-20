@@ -45,8 +45,8 @@ const settingsOverride = `
       config.build_settings['SWIFT_STRICT_CONCURRENCY'] = 'off'
       
       # Robust Targeted Swift Versioning
-      # Expo 55 (RN 0.83+) requires Swift 6 for core infrastructure (@MainActor support).
-      # Community libs (RNScreens, Lottie, etc.) are NOT ready for Swift 6.
+      # Expo 55 (RN 0.83+) needs @MainActor support. 
+      # Swift 5.10 provides this without the strict Swift 6 language mode errors.
       
       target_name = target.name
       
@@ -54,15 +54,13 @@ const settingsOverride = `
       config.build_settings['SWIFT_STRICT_CONCURRENCY'] = 'off'
       
       # Step 2: Determine Swift Version
-      if target_name.start_with?('Expo') || target_name.start_with?('EX') || target_name == 'Pods-TAMTAM'
-        # Expo Core + Main App Target -> Swift 6.0
-        config.build_settings['SWIFT_VERSION'] = '6.0'
+      if target_name.include?('Expo') || target_name.include?('EX') || target_name == 'Pods-TAMTAM' || target_name == 'TAMTAM'
+        # Expo infrastructure and main app -> Swift 5.10 (Modern features, but not Swift 6 strict mode)
+        config.build_settings['SWIFT_VERSION'] = '5.10'
+        # Allow some Swift 6 features to be used in 5.10 mode if needed
         config.build_settings['OTHER_SWIFT_FLAGS'] = '$(inherited) -D EXPO_SWIFT_6_MIGRATION'
-      elsif target_name.include?('Lottie') || target_name.include?('Screen') || target_name.include?('PagerView') || target_name.include?('BlurView') || target_name.include?('Haptics')
-        # Community libs that fail on Swift 6 -> Swift 5.0
-        config.build_settings['SWIFT_VERSION'] = '5.0'
       else
-        # Fallback to Swift 5.0 for safety unless it's an Expo module
+        # Community libs (Lottie, Screens, etc.) -> Swift 5.0 for compatibility
         config.build_settings['SWIFT_VERSION'] = '5.0'
       end
     end
