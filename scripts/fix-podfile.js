@@ -37,8 +37,10 @@ const deps = [
 const podPostInstallFix = `
     installer.pods_project.targets.each do |target|
       target.build_configurations.each do |config|
-        # Most pods need Swift 5.0
-        config.build_settings['SWIFT_VERSION'] = '5.0'
+        # Standardize on iOS 15.1 (Expo 55 minimum)
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
+        
+        # Disable signing for ALL pods (required for CI builds)
         config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
         config.build_settings['CODE_SIGNING_REQUIRED'] = 'NO'
         
@@ -46,9 +48,13 @@ const podPostInstallFix = `
         config.build_settings['SWIFT_STRICT_CONCURRENCY'] = 'minimal'
         
         # Specific fixes for Expo modules
-        if target.name.start_with?('Expo')
-          config.build_settings['SWIFT_VERSION'] = '5.9'
+        if target.name.start_with?('Expo') || target.name.start_with?('EX')
+          # Expo 55 requires Swift 6 for @MainActor support in Xcode 16
+          config.build_settings['SWIFT_VERSION'] = '6.0'
           config.build_settings['OTHER_SWIFT_FLAGS'] = '$(inherited) -D EXPO_SWIFT_6_MIGRATION'
+        else
+          # Legacy libraries (like Lottie) need Swift 5.0
+          config.build_settings['SWIFT_VERSION'] = '5.0'
         end
       end
     end
@@ -93,4 +99,4 @@ targetPositions.reverse().forEach(pos => {
 });
 
 fs.writeFileSync(podfilePath, content);
-console.log('Successfully patched Podfile with local dependencies and Swift version fix.');
+console.log('Successfully patched Podfile with local dependencies and unified Swift/iOS version fixes.');
