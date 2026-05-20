@@ -1,680 +1,4 @@
-set -o pipefail
-  xcodebuild build \
-    -workspace TAMTAM.xcworkspace \
-    -scheme TAMTAM \
-    -configuration Release \
-    -sdk iphoneos \
-    -derivedDataPath ./build \
-    CODE_SIGNING_ALLOWED=NO \
-    CODE_SIGNING_REQUIRED=NO \
-    CODE_SIGN_IDENTITY="" \
-    CODE_SIGN_STYLE=Manual \
-    PROVISIONING_PROFILE_SPECIFIER="" \
-    COMPILER_INDEX_STORE_ENABLE=NO \
-    2>&1 | tee xcodebuild.log | (xcpretty || cat) || BUILD_FAILED=1
-  if [ "$BUILD_FAILED" = "1" ]; then
-    echo "::group::Build errors (last 200 lines around 'error:')"
-    grep -B 2 -A 8 "error:" xcodebuild.log | tail -n 200 || true
-    echo "::endgroup::"
-    exit 1
-  fi
-  shell: /bin/bash -e {0}
-  
-▸ Running script '[CP-User] [Hermes] Replace Hermes for the right configuration, if needed'
-▸ Running script '[CP-User] [RNDeps] Replace React Native Dependencies for the right configuration, if needed'
-▸ Processing ResourceBundle-ReactNativeMapsPrivacy-react-native-maps-Info.plist
-▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/react-native-maps/ReactNativeMapsPrivacy.bundle/PrivacyInfo.xcprivacy
-▸ Processing ResourceBundle-Lottie_React_Native_Privacy-lottie-react-native-Info.plist
-▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/lottie-react-native/Lottie_React_Native_Privacy.bundle/PrivacyInfo.xcprivacy
-▸ Processing ResourceBundle-LottiePrivacyInfo-lottie-ios-Info.plist
-▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/lottie-ios/LottiePrivacyInfo.bundle/PrivacyInfo.xcprivacy
-▸ Touching ReactNativeMapsPrivacy.bundle (in target 'react-native-maps-ReactNativeMapsPrivacy' from project 'Pods')
-▸ Touching Lottie_React_Native_Privacy.bundle (in target 'lottie-react-native-Lottie_React_Native_Privacy' from project 'Pods')
-▸ Touching LottiePrivacyInfo.bundle (in target 'lottie-ios-LottiePrivacyInfo' from project 'Pods')
-▸ Running script '[CP] Copy XCFrameworks'
-▸ Processing ResourceBundle-glog_privacy-glog-Info.plist
-▸ Touching glog_privacy.bundle (in target 'glog-glog_privacy' from project 'Pods')
-▸ Processing ResourceBundle-boost_privacy-boost-Info.plist
-▸ Touching boost_privacy.bundle (in target 'boost-boost_privacy' from project 'Pods')
-▸ Processing ResourceBundle-SDWebImage-SDWebImage-Info.plist
-▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/SDWebImage/SDWebImage.bundle/PrivacyInfo.xcprivacy
-▸ Running script '[CP] Copy XCFrameworks'
-▸ Touching SDWebImage.bundle (in target 'SDWebImage-SDWebImage' from project 'Pods')
-▸ Processing ResourceBundle-React-cxxreact_privacy-React-cxxreact-Info.plist
-▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/React-cxxreact/React-cxxreact_privacy.bundle/PrivacyInfo.xcprivacy
-▸ Processing ResourceBundle-React-Core_privacy-React-Core-Info.plist
-▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/React-Core/React-Core_privacy.bundle/PrivacyInfo.xcprivacy
-▸ Running script '[CP-User] [RNDeps] Replace React Native Core for the right configuration, if needed'
-▸ Touching React-cxxreact_privacy.bundle (in target 'React-cxxreact-React-cxxreact_privacy' from project 'Pods')
-▸ Processing ResourceBundle-RNSVGFilters-RNSVG-Info.plist
-▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/RNSVG/RNSVGFilters.bundle/RNSVGCompositeXor.iphoneos.metallib
-▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/RNSVG/RNSVGFilters.bundle/RNSVGArithmeticFilter.iphoneos.metallib
-▸ Touching React-Core_privacy.bundle (in target 'React-Core-React-Core_privacy' from project 'Pods')
-▸ Processing ResourceBundle-RNCAsyncStorage_resources-RNCAsyncStorage-Info.plist
-▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/RNCAsyncStorage/RNCAsyncStorage_resources.bundle/PrivacyInfo.xcprivacy
-▸ Touching RNSVGFilters.bundle (in target 'RNSVG-RNSVGFilters' from project 'Pods')
-▸ Touching RNCAsyncStorage_resources.bundle (in target 'RNCAsyncStorage-RNCAsyncStorage_resources' from project 'Pods')
-▸ Processing ResourceBundle-RCT-Folly_privacy-RCT-Folly-Info.plist
-▸ Touching RCT-Folly_privacy.bundle (in target 'RCT-Folly-RCT-Folly_privacy' from project 'Pods')
-▸ Processing ResourceBundle-ExpoMediaLibrary_privacy-ExpoMediaLibrary-Info.plist
-▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/ExpoMediaLibrary/ExpoMediaLibrary_privacy.bundle/PrivacyInfo.xcprivacy
-▸ Processing ResourceBundle-ExpoFileSystem_privacy-ExpoFileSystem-Info.plist
-▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/ExpoFileSystem/ExpoFileSystem_privacy.bundle/PrivacyInfo.xcprivacy
-▸ Touching ExpoMediaLibrary_privacy.bundle (in target 'ExpoMediaLibrary-ExpoMediaLibrary_privacy' from project 'Pods')
-▸ Processing ResourceBundle-ExpoDevice_privacy-ExpoDevice-Info.plist
-▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/ExpoDevice/ExpoDevice_privacy.bundle/PrivacyInfo.xcprivacy
-▸ Touching ExpoFileSystem_privacy.bundle (in target 'ExpoFileSystem-ExpoFileSystem_privacy' from project 'Pods')
-▸ Processing ResourceBundle-ExpoTaskManager_privacy-EXTaskManager-Info.plist
-▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/EXTaskManager/ExpoTaskManager_privacy.bundle/PrivacyInfo.xcprivacy
-▸ Touching ExpoDevice_privacy.bundle (in target 'ExpoDevice-ExpoDevice_privacy' from project 'Pods')
-▸ Processing ResourceBundle-ExpoNotifications_privacy-EXNotifications-Info.plist
-▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/EXNotifications/ExpoNotifications_privacy.bundle/PrivacyInfo.xcprivacy
-▸ Touching ExpoTaskManager_privacy.bundle (in target 'EXTaskManager-ExpoTaskManager_privacy' from project 'Pods')
-▸ Processing ResourceBundle-ExpoConstants_privacy-EXConstants-Info.plist
-▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/EXConstants/ExpoConstants_privacy.bundle/PrivacyInfo.xcprivacy
-▸ Touching ExpoNotifications_privacy.bundle (in target 'EXNotifications-ExpoNotifications_privacy' from project 'Pods')
-▸ Processing ResourceBundle-EXConstants-EXConstants-Info.plist
-▸ Touching ExpoConstants_privacy.bundle (in target 'EXConstants-ExpoConstants_privacy' from project 'Pods')
-▸ Processing ResourceBundle-ExpoApplication_privacy-EXApplication-Info.plist
-▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/EXApplication/ExpoApplication_privacy.bundle/PrivacyInfo.xcprivacy
-▸ Touching EXConstants.bundle (in target 'EXConstants-EXConstants' from project 'Pods')
-▸ Touching ExpoApplication_privacy.bundle (in target 'EXApplication-ExpoApplication_privacy' from project 'Pods')
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/Controls/AnimatedSwitch.swift:263:19: main actor-isolated default value in a nonisolated context; this is an error in the Swift 6 language mode
-  fileprivate let impact = UIImpactFeedbackGenerator(style: .light)
-                  ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/Controls/AnimatedSwitch.swift:258:12: call to main actor-isolated instance method 'impactOccurred()' in a synchronous nonisolated context
-    impact.impactOccurred()
-           ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/ZipFoundation/Archive+ZIP64.swift:166:5: var 'maxUInt32' is not concurrency-safe because it is nonisolated global shared mutable state; this is an error in the Swift 6 language mode
-var maxUInt32 = UInt32.max
-       ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/ZipFoundation/Archive+ZIP64.swift:167:5: var 'maxUInt16' is not concurrency-safe because it is nonisolated global shared mutable state; this is an error in the Swift 6 language mode
-var maxUInt16 = UInt16.max
-    ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/Utility/Helpers/Binding+Map.swift:12:7: capture of 'transform' with non-Sendable type '(Value) -> Transformed' in a '@Sendable' closure
-      transform(wrappedValue)
-    ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/Utility/Helpers/Binding+Map.swift:12:17: capture of 'self' with non-Sendable type 'Binding<Value>' in a '@Sendable' closure
-      transform(wrappedValue)
-      ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/Utility/Helpers/Binding+Map.swift:15:7: capture of 'self' with non-Sendable type 'Binding<Value>' in a '@Sendable' closure
-      self.wrappedValue = newValue
-                ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieConfiguration.swift:54:21: static property 'imageProvider' is not concurrency-safe because non-'Sendable' type 'DotLottieConfigurationComponents' may have shared mutable state; this is an error in the Swift 6 language mode
-  public static let imageProvider = DotLottieConfigurationComponents(rawValue: 1 << 0)
-      ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieConfiguration.swift:59:21: static property 'loopMode' is not concurrency-safe because non-'Sendable' type 'DotLottieConfigurationComponents' may have shared mutable state; this is an error in the Swift 6 language mode
-  public static let loopMode = DotLottieConfigurationComponents(rawValue: 1 << 1)
-                    ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieConfiguration.swift:64:21: static property 'animationSpeed' is not concurrency-safe because non-'Sendable' type 'DotLottieConfigurationComponents' may have shared mutable state; this is an error in the Swift 6 language mode
-  public static let animationSpeed = DotLottieConfigurationComponents(rawValue: 1 << 2)
-                    ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieConfiguration.swift:66:21: static property 'all' is not concurrency-safe because non-'Sendable' type 'DotLottieConfigurationComponents' may have shared mutable state; this is an error in the Swift 6 language mode
-  public static let all: DotLottieConfigurationComponents = [.imageProvider, .loopMode, .animationSpeed]
-                    ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieConfiguration.swift:68:21: static property 'none' is not concurrency-safe because non-'Sendable' type 'DotLottieConfigurationComponents' may have shared mutable state; this is an error in the Swift 6 language mode
-  public static let none: DotLottieConfigurationComponents = []
-                    ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:159:9: capture of 'handleResult' with non-Sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure
-        handleResult(result)
-                    ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:159:9: capture of 'handleResult' with non-Sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure
-        handleResult(result)
-        ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:196:9: capture of 'handleResult' with non-Sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure
-        handleResult(result)
-        ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:196:9: capture of 'handleResult' with non-Sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure
-        handleResult(result)
-        ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:241:11: capture of 'handleResult' with non-Sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure
-          handleResult(.success(lottie))
-        ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:241:11: capture of 'handleResult' with non-Sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure
-          handleResult(.success(lottie))
-          ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:254:11: capture of 'handleResult' with non-Sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure
-          handleResult(.success(lottie))
-          ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:259:11: capture of 'handleResult' with non-Sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure
-          handleResult(.failure(error))
-          ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:286:7: capture of 'cancelTask' with non-Sendable type '() -> Void?' in a '@Sendable' closure; this is an error in the Swift 6 language mode
-      cancelTask()
-          ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:320:13: capture of 'handleResult' with non-Sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure; this is an error in the Swift 6 language mode
-            handleResult(.success(lottie))
-      ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:320:13: capture of 'handleResult' with non-Sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure
-            handleResult(.success(lottie))
-            ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:324:13: capture of 'handleResult' with non-Sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure
-            handleResult(.failure(error))
-            ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:350:11: capture of 'handleResult' with non-Sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure
-          handleResult(.success(dotLottie))
-            ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:350:11: capture of 'handleResult' with non-Sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure
-          handleResult(.success(dotLottie))
-          ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/DotLottie/DotLottieFileHelpers.swift:354:11: capture of 'handleResult' with non-Sendable type '(Result<DotLottieFile, any Error>) -> Void' in a '@Sendable' closure
-          handleResult(.failure(error))
-          ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/Model/LayerEffects/EffectValues/EffectValue.swift:21:14: static property 'discriminator' is not concurrency-safe because it is nonisolated global shared mutable state; this is an error in the Swift 6 language mode
-  static var discriminator = Discriminator.type
-          ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/EpoxyableView+SwiftUIView.swift:31:5: call to main actor-isolated initializer 'init(storage:makeContent:)' in a synchronous nonisolated context
-    SwiftUIView(storage: (content: content, style: style)) {
-             ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/EpoxyableView+SwiftUIView.swift:45:27: call to main actor-isolated instance method 'invalidateIntrinsicContentSize()' in a synchronous nonisolated context
-        context.container.invalidateIntrinsicContentSize()
-              ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/EpoxyableView+SwiftUIView.swift:78:5: call to main actor-isolated initializer 'init(storage:makeContent:)' in a synchronous nonisolated context
-    SwiftUIView(storage: content) {
-                ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/EpoxyableView+SwiftUIView.swift:79:18: call to main actor-isolated initializer 'init()' in a synchronous nonisolated context
-      let view = Self()
-              ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/EpoxyableView+SwiftUIView.swift:87:27: call to main actor-isolated instance method 'invalidateIntrinsicContentSize()' in a synchronous nonisolated context
-        context.container.invalidateIntrinsicContentSize()
-^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/EpoxyableView+SwiftUIView.swift:121:5: call to main actor-isolated initializer 'init(storage:makeContent:)' in a synchronous nonisolated context
-    SwiftUIView(storage: style) {
-                ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/EpoxyableView+SwiftUIView.swift:159:5: call to main actor-isolated initializer 'init(makeContent:)' in a synchronous nonisolated context
-    SwiftUIView {
-              ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/EpoxyableView+SwiftUIView.swift:160:7: call to main actor-isolated initializer 'init()' in a synchronous nonisolated context
-      Self()
-              ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/Logging/EpoxyLogger.swift:63:14: static property 'shared' is not concurrency-safe because it is nonisolated global shared mutable state; this is an error in the Swift 6 language mode
-  static var shared = EpoxyLogger()
-^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/EpoxySwiftUIIntrinsicContentSizeInvalidator.swift:43:14: static property 'defaultValue' is not concurrency-safe because non-'Sendable' type 'EpoxyIntrinsicContentSizeInvalidator' may have shared mutable state; this is an error in the Swift 6 language mode
-  static let defaultValue = EpoxyIntrinsicContentSizeInvalidator(invalidate: { })
-             ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/Model/LayerEffects/LayerEffect.swift:19:14: static property 'discriminator' is not concurrency-safe because it is nonisolated global shared mutable state; this is an error in the Swift 6 language mode
-  static var discriminator = Discriminator.type
-             ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/Model/Layers/LayerModel.swift:12:14: static property 'discriminator' is not concurrency-safe because it is nonisolated global shared mutable state; this is an error in the Swift 6 language mode
-  static var discriminator = Discriminator.type
-             ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/Model/LayerStyles/LayerStyle.swift:18:14: static property 'discriminator' is not concurrency-safe because it is nonisolated global shared mutable state; this is an error in the Swift 6 language mode
-  static var discriminator = Discriminator.type
-             ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/AnimationCache/LottieAnimationCache.swift:14:21: static property 'shared' is not concurrency-safe because it is nonisolated global shared mutable state; this is an error in the Swift 6 language mode
-  public static var shared: AnimationCacheProvider? = DefaultAnimationCache.sharedCache
-             ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/Animation/LottieAnimationHelpers.swift:189:7: capture of 'cancelTask' with non-Sendable type '() -> Void?' in a '@Sendable' closure; this is an error in the Swift 6 language mode
-      cancelTask()
-                    ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/Animation/LottieAnimationHelpers.swift:215:13: capture of 'closure' with non-Sendable type 'LottieAnimation.DownloadClosure' (aka '(Optional<LottieAnimation>) -> ()') in a '@Sendable' closure; this is an error in the Swift 6 language mode
-            closure(nil)
-      ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/Animation/LottieAnimationHelpers.swift:215:13: capture of 'closure' with non-Sendable type 'LottieAnimation.DownloadClosure' (aka '(Optional<LottieAnimation>) -> ()') in a '@Sendable' closure
-            closure(nil)
-            ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/Animation/LottieAnimationHelpers.swift:223:13: capture of 'closure' with non-Sendable type 'LottieAnimation.DownloadClosure' (aka '(Optional<LottieAnimation>) -> ()') in a '@Sendable' closure
-            closure(animation)
-            ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/Animation/LottieAnimationHelpers.swift:227:13: capture of 'closure' with non-Sendable type 'LottieAnimation.DownloadClosure' (aka '(Optional<LottieAnimation>) -> ()') in a '@Sendable' closure
-            closure(nil)
-            ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/Controls/LottieButton.swift:8:29: conformance of 'LottieButton' to protocol 'UIViewConfiguringSwiftUIView' crosses into main actor-isolated code and can cause data races; this is an error in the Swift 6 language mode
-public struct LottieButton: UIViewConfiguringSwiftUIView {
-            ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/Configuration/LottieConfiguration.swift:28:21: static property 'shared' is not concurrency-safe because it is nonisolated global shared mutable state; this is an error in the Swift 6 language mode
-  public static var shared = LottieConfiguration()
-      ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/Configuration/LottieConfiguration.swift:34:21: static property 'defaultURLSession' is not concurrency-safe because it is nonisolated global shared mutable state; this is an error in the Swift 6 language mode
-  public static var defaultURLSession: LottieURLSession = URLSession.shared
-                    ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/Logging/LottieLogger.swift:75:21: static property 'shared' is not concurrency-safe because it is nonisolated global shared mutable state; this is an error in the Swift 6 language mode
-  public static var shared = LottieLogger()
-                    ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/Controls/LottieSwitch.swift:8:29: conformance of 'LottieSwitch' to protocol 'UIViewConfiguringSwiftUIView' crosses into main actor-isolated code and can cause data races; this is an error in the Swift 6 language mode
-public struct LottieSwitch: UIViewConfiguringSwiftUIView {
-                    ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/Animation/LottieView.swift:10:46: conformance of 'LottieView<Placeholder>' to protocol 'UIViewConfiguringSwiftUIView' crosses into main actor-isolated code and can cause data races; this is an error in the Swift 6 language mode
-public struct LottieView<Placeholder: View>: UIViewConfiguringSwiftUIView {
-      ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/LRUCache/LRUCache.swift:72:7: capture of 'self' with non-Sendable type 'LRUCache<Key, Value>?' in a '@Sendable' closure
-      self?.removeAllValues()
-      ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/LRUCache/LRUCache.swift:72:11: capture of non-Sendable type 'Key.Type' in an isolated closure
-      self?.removeAllValues()
-            ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/Model/Providers/MakeViewProviding.swift:57:21: converting function value of type '@MainActor () -> Self.View' to 'Self.MakeView' (aka '() -> Self.View') loses global actor 'MainActor'; this is an error in the Swift 6 language mode
-      defaultValue: View.init,
-          ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/MeasuringViewRepresentable.swift:52:12: main actor-isolated property 'strategy' can not be mutated from a nonisolated context
-    uiView.strategy = sizing
-                    ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/MeasuringViewRepresentable.swift:59:12: main actor-isolated property 'proposedSize' can not be mutated from a nonisolated context
-    uiView.proposedSize = .init(
-       ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/MeasuringViewRepresentable.swift:60:84: main actor-isolated class property 'noIntrinsicMetric' can not be referenced from a nonisolated autoclosure
-      width: children.first { $0.label == "width" }?.value as? CGFloat ?? ViewType.noIntrinsicMetric,
-       ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/MeasuringViewRepresentable.swift:61:86: main actor-isolated class property 'noIntrinsicMetric' can not be referenced from a nonisolated autoclosure
-      height: children.first { $0.label == "height" }?.value as? CGFloat ?? ViewType.noIntrinsicMetric
-                           ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/MeasuringViewRepresentable.swift:64:19: main actor-isolated property 'measuredFittingSize' can not be referenced from a nonisolated context
-    size = uiView.measuredFittingSize
-                           ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/MeasuringViewRepresentable.swift:74:12: main actor-isolated property 'strategy' can not be mutated from a nonisolated context
-    uiView.strategy = sizing
-       ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/MeasuringViewRepresentable.swift:77:12: main actor-isolated property 'proposedSize' can not be mutated from a nonisolated context
-    uiView.proposedSize = .init(
-       ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/MeasuringViewRepresentable.swift:78:41: main actor-isolated class property 'noIntrinsicMetric' can not be referenced from a nonisolated autoclosure
-      width: proposal.width ?? ViewType.noIntrinsicMetric,
-       ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/MeasuringViewRepresentable.swift:79:43: main actor-isolated class property 'noIntrinsicMetric' can not be referenced from a nonisolated autoclosure
-      height: proposal.height ?? ViewType.noIntrinsicMetric
-                           ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/MeasuringViewRepresentable.swift:82:19: main actor-isolated property 'measuredFittingSize' can not be referenced from a nonisolated context
-    return uiView.measuredFittingSize
-                           ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/Configuration/ReducedMotionOption.swift:109:24: main actor-isolated static property 'isReduceMotionEnabled' can not be referenced from a nonisolated context
-    if UIAccessibility.isReduceMotionEnabled {
-       ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/Model/ShapeItems/ShapeItem.swift:36:14: static property 'discriminator' is not concurrency-safe because it is nonisolated global shared mutable state; this is an error in the Swift 6 language mode
-  static var discriminator = Discriminator.type
-                               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/SwiftUIMeasurementContainer.swift:458:27: main actor-isolated class property 'noIntrinsicMetric' can not be referenced from a nonisolated context
-    .init(width: ViewType.noIntrinsicMetric, height: ViewType.noIntrinsicMetric)
-             ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/SwiftUIMeasurementContainer.swift:458:63: main actor-isolated class property 'noIntrinsicMetric' can not be referenced from a nonisolated context
-    .init(width: ViewType.noIntrinsicMetric, height: ViewType.noIntrinsicMetric)
-                           ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/SwiftUIMeasurementContainer.swift:465:32: main actor-isolated class property 'noIntrinsicMetric' can not be referenced from a nonisolated context
-      width: width == ViewType.noIntrinsicMetric ? fallback.width : width,
-                           ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/LayoutUtilities/SwiftUIMeasurementContainer.swift:466:34: main actor-isolated class property 'noIntrinsicMetric' can not be referenced from a nonisolated context
-      height: height == ViewType.noIntrinsicMetric ? fallback.height : height
-                   ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/SwiftUIView.swift:16:3: conformance of 'SwiftUIView<Content, Storage>' to protocol 'UIViewConfiguringSwiftUIView' crosses into main actor-isolated code and can cause data races; this is an error in the Swift 6 language mode
-  UIViewConfiguringSwiftUIView
-                   ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/SwiftUIView.swift:119:23: main actor-isolated property 'content' can not be referenced from a nonisolated context
-      get { container.content }
-      ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/SwiftUIView.swift:120:35: main actor-isolated property 'content' can not be mutated from a nonisolated context
-      nonmutating set { container.content = newValue }
-      ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/SwiftUIView.swift:125:32: main actor-isolated property 'transaction' can not be referenced from a nonisolated context
-      viewRepresentableContext.transaction.animation != nil
-      ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/Utility/Debugging/TestHelpers.swift:6:14: static property 'snapshotTestsAreRunning' is not concurrency-safe because it is nonisolated global shared mutable state; this is an error in the Swift 6 language mode
-  static var snapshotTestsAreRunning = false
-                                      ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/Utility/Debugging/TestHelpers.swift:9:14: static property 'performanceTestsAreRunning' is not concurrency-safe because it is nonisolated global shared mutable state; this is an error in the Swift 6 language mode
-  static var performanceTestsAreRunning = false
-             ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/UIView+SwiftUIView.swift:29:5: call to main actor-isolated initializer 'init(makeContent:)' in a synchronous nonisolated context
-    SwiftUIView(makeContent: makeView)
-             ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/EpoxyableView+SwiftUIView.swift:31:5: sending value of non-Sendable type '(content: Self.Content, style: Self.Style)' risks causing data races; this is an error in the Swift 6 language mode
-    SwiftUIView(storage: (content: content, style: style)) {
-              ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/EpoxyableView+SwiftUIView.swift:31:5: sending value of non-Sendable type '() -> Self' risks causing data races; this is an error in the Swift 6 language mode
-    SwiftUIView(storage: (content: content, style: style)) {
-    ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/EpoxyableView+SwiftUIView.swift:78:5: sending 'content' risks causing data races; this is an error in the Swift 6 language mode
-    SwiftUIView(storage: content) {
-    ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/EpoxyableView+SwiftUIView.swift:78:5: sending value of non-Sendable type '() -> Self' risks causing data races; this is an error in the Swift 6 language mode
-    SwiftUIView(storage: content) {
-    ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/EpoxyableView+SwiftUIView.swift:121:5: sending 'style' risks causing data races; this is an error in the Swift 6 language mode
-    SwiftUIView(storage: style) {
-    ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/EpoxyableView+SwiftUIView.swift:121:5: sending value of non-Sendable type '() -> Self' risks causing data races; this is an error in the Swift 6 language mode
-    SwiftUIView(storage: style) {
-    ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/UIView+SwiftUIView.swift:29:5: sending 'makeView' risks causing data races; this is an error in the Swift 6 language mode
-    SwiftUIView(makeContent: makeView)
-    ^
-▸ Compiling vlog_is_on.cc
-▸ Compiling utilities.cc
-▸ Compiling symbolize.cc
-▸ Compiling signalhandler.cc
-▸ Compiling raw_logging.cc
-▸ Compiling logging.cc
-▸ Compiling demangle.cc
-▸ Compiling format.cc
-▸ Compiling json_pointer.cpp
-▸ Compiling json.cpp
-▸ Compiling dynamic.cpp
-▸ Compiling UniqueInstance.cpp
-▸ Compiling Unicode.cpp
-▸ Compiling ToAscii.cpp
-▸ Compiling ThreadId.cpp
-▸ Compiling SysUio.cpp
-▸ Compiling String.cpp
-▸ Compiling StaticSingletonManager.cpp
-▸ Compiling SpookyHashV2.cpp
-▸ Compiling SplitStringSimd.cpp
-▸ Compiling ScopeGuard.cpp
-▸ Compiling SanitizeThread.cpp
-▸ Compiling SafeAssert.cpp
-▸ Compiling ReentrantAllocator.cpp
-▸ Compiling NetOps.cpp
-▸ Compiling MallocImpl.cpp
-▸ Compiling Format.cpp
-▸ Compiling FileUtilDetail.cpp
-▸ Compiling FileUtil.cpp
-▸ Compiling F14Table.cpp
-▸ Compiling Exception.cpp
-▸ Compiling Demangle.cpp
-▸ Compiling Conv.cpp
-▸ Compiling CString.cpp
-▸ Compiling AtFork.cpp
-▸ Compiling strtod.cc
-▸ Compiling fixed-dtoa.cc
-▸ Compiling fast-dtoa.cc
-▸ Compiling double-conversion.cc
-▸ Compiling diy-fp.cc
-▸ Compiling cached-powers.cc
-▸ Compiling bignum.cc
-▸ Compiling bignum-dtoa.cc
-▸ Compiling yuv_sse41.c
-▸ Compiling yuv_sse2.c
-▸ Compiling yuv_mips_dsp_r2.c
-▸ Compiling yuv_mips32.c
-▸ Compiling upsampling_sse41.c
-▸ Compiling upsampling_sse2.c
-▸ Compiling upsampling_msa.c
-▸ Compiling upsampling_mips_dsp_r2.c
-▸ Compiling yuv.c
-▸ Compiling webp_enc.c
-▸ Compiling yuv_neon.c
-▸ Compiling webp_dec.c
-▸ Compiling vp8l_enc.c
-▸ Compiling vp8l_dec.c
-▸ Compiling vp8_dec.c
-▸ Compiling utils.c
-▸ Compiling upsampling_neon.c
-▸ Compiling upsampling.c
-▸ Compiling tree_enc.c
-▸ Compiling tree_dec.c
-▸ Compiling token_enc.c
-▸ Compiling thread_utils.c
-▸ Compiling syntax_enc.c
-▸ Compiling ssim_sse2.c
-▸ Compiling ssim.c
-▸ Compiling sharpyuv_sse2.c
-▸ Compiling sharpyuv_neon.c
-▸ Compiling sharpyuv_dsp.c
-▸ Compiling sharpyuv_gamma.c
-▸ Compiling sharpyuv_csp.c
-▸ Compiling sharpyuv_cpu.c
-▸ Compiling rescaler_sse2.c
-▸ Compiling sharpyuv.c
-▸ Compiling rescaler_utils.c
-▸ Compiling rescaler_neon.c
-▸ Compiling rescaler_msa.c
-▸ Compiling rescaler_mips_dsp_r2.c
-▸ Compiling rescaler_mips32.c
-▸ Compiling rescaler.c
-▸ Compiling random_utils.c
-▸ Compiling quant_levels_utils.c
-▸ Compiling quant_levels_dec_utils.c
-▸ Compiling quant_enc.c
-▸ Compiling quant_dec.c
-▸ Compiling predictor_enc.c
-▸ Compiling picture_tools_enc.c
-▸ Compiling picture_rescale_enc.c
-▸ Compiling picture_psnr_enc.c
-▸ Compiling picture_enc.c
-▸ Compiling picture_csp_enc.c
-▸ Compiling palette.c
-▸ Compiling near_lossless_enc.c
-▸ Compiling muxread.c
-▸ Compiling muxinternal.c
-▸ Compiling muxedit.c
-▸ Compiling lossless_sse41.c
-▸ Compiling lossless_sse2.c
-▸ Compiling lossless_neon.c
-▸ Compiling lossless_msa.c
-▸ Compiling lossless_mips_dsp_r2.c
-▸ Compiling lossless_enc_sse41.c
-▸ Compiling lossless_enc_sse2.c
-▸ Compiling lossless_enc_neon.c
-▸ Compiling lossless_enc_msa.c
-▸ Compiling lossless_enc_mips_dsp_r2.c
-▸ Compiling lossless_enc_mips32.c
-▸ Compiling lossless_enc.c
-▸ Compiling lossless.c
-▸ Compiling iterator_enc.c
-▸ Compiling io_dec.c
-▸ Compiling idec_dec.c
-▸ Compiling huffman_utils.c
-▸ Compiling huffman_encode_utils.c
-▸ Compiling histogram_enc.c
-▸ Compiling frame_dec.c
-▸ Compiling frame_enc.c
-▸ Compiling filters_utils.c
-▸ Compiling filters_sse2.c
-▸ Compiling filters_neon.c
-▸ Compiling filters_msa.c
-▸ Compiling filters_mips_dsp_r2.c
-▸ Compiling filters.c
-▸ Compiling filter_enc.c
-▸ Compiling enc_sse41.c
-▸ Compiling enc_sse2.c
-▸ Compiling enc_neon.c
-▸ Compiling enc_msa.c
-▸ Compiling enc_mips_dsp_r2.c
-▸ Compiling enc_mips32.c
-▸ Compiling enc.c
-▸ Compiling demux.c
-▸ Compiling dec_sse41.c
-▸ Compiling dec_sse2.c
-▸ Compiling dec_neon.c
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libwebp/src/dsp/dec_neon.c:1467:38: variable 'sum_left' may be uninitialized when used here [-Wconditional-uninitialized]
- 1467 |     const uint16x8_t sum = vaddq_u16(sum_left, sum_top);
-    ^
-▸ Compiling dec_msa.c
-▸ Compiling dec_mips_dsp_r2.c
-▸ Compiling dec_mips32.c
-▸ Compiling dec_clip_tables.c
-▸ Compiling dec.c
-▸ Compiling cpu.c
-▸ Compiling cost_sse2.c
-▸ Compiling cost_neon.c
-▸ Compiling cost_mips_dsp_r2.c
-▸ Compiling cost_mips32.c
-▸ Compiling cost_enc.c
-▸ Compiling cost.c
-▸ Compiling config_enc.c
-▸ Compiling color_cache_utils.c
-▸ Compiling buffer_dec.c
-▸ Compiling bit_writer_utils.c
-▸ Compiling bit_reader_utils.c
-▸ Compiling backward_references_enc.c
-▸ Compiling libwebp-dummy.m
-▸ Compiling backward_references_cost_enc.c
-▸ Compiling anim_encode.c
-▸ Compiling anim_decode.c
-▸ Compiling analysis_enc.c
-▸ Compiling alpha_processing_sse41.c
-▸ Compiling alpha_processing_sse2.c
-▸ Compiling alpha_processing_neon.c
-▸ Compiling alpha_processing_mips_dsp_r2.c
-▸ Compiling alpha_processing.c
-▸ Compiling alpha_enc.c
-▸ Compiling alpha_dec.c
-▸ Building library liblibwebp.a
-▸ Compiling wedge.c
-▸ Compiling tables.c
-▸ Compiling scan.c
-▸ Compiling qm.c
-▸ Compiling warpmv.c
-▸ Compiling thread_task.c
-▸ Compiling refmvs.c
-▸ Compiling ref.c
-▸ Compiling recon_tmpl_16.c
-▸ Compiling recon_tmpl.c
-▸ Compiling picture.c
-▸ Compiling obu.c
-▸ Compiling msac.c
-▸ Compiling mem.c
-▸ Compiling mc_tmpl_16.c
-▸ Compiling mc_tmpl.c
-▸ Compiling lr_apply_tmpl_16.c
-▸ Compiling lr_apply_tmpl.c
-▸ Compiling looprestoration_tmpl_16.c
-▸ Compiling looprestoration_tmpl.c
-▸ Compiling loopfilter_tmpl_16.c
-▸ Compiling loopfilter_tmpl.c
-▸ Compiling log.c
-▸ Compiling lib.c
-▸ Compiling lf_mask.c
-▸ Compiling libdav1d-dummy.m
-▸ Compiling lf_apply_tmpl_16.c
-▸ Compiling lf_apply_tmpl.c
-▸ Compiling itx_tmpl_16.c
-▸ Compiling itx_tmpl.c
-▸ Compiling itx_1d.c
-▸ Compiling ipred_tmpl_16.c
-▸ Compiling ipred_tmpl.c
-▸ Compiling ipred_prepare_tmpl_16.c
-▸ Compiling ipred_prepare_tmpl.c
-▸ Compiling intra_edge.c
-▸ Compiling getbits.c
-▸ Compiling filmgrain_tmpl_16.c
-▸ Compiling filmgrain_tmpl.c
-▸ Compiling fg_apply_tmpl_16.c
-▸ Compiling fg_apply_tmpl.c
-▸ Compiling dequant_tables.c
-▸ Compiling cpu.c
-▸ Compiling data.c
-▸ Compiling decode.c
-▸ Compiling cdf.c
-▸ Compiling cpu.c
-▸ Compiling cdef_tmpl_16.c
-▸ Compiling cdef_tmpl.c
-▸ Compiling cdef_apply_tmpl_16.c
-▸ Compiling cdef_apply_tmpl.c
-▸ Compiling write.c
-▸ Compiling utils.c
-▸ Building library liblibdav1d.a
-▸ Compiling scale.c
-▸ Compiling reformat_libyuv.c
-▸ Compiling reformat_libsharpyuv.c
-▸ Compiling reformat.c
-▸ Compiling stream.c
-▸ Compiling rawdata.c
-▸ Compiling read.c
-▸ Compiling obu.c
-▸ Compiling mem.c
-▸ Compiling io.c
-▸ Compiling exif.c
-▸ Compiling diag.c
-▸ Compiling colr.c
-▸ Compiling codec_dav1d.c
-▸ Compiling avif.c
-▸ Compiling alpha.c
-▸ Compiling libavif-dummy.m
-▸ Compiling ZXingObjC-dummy.m
-▸ Compiling glog-dummy.m
-▸ Compiling fmt-dummy.m
-▸ Building library libglog.a
-▸ Compiling ZXWifiResultParser.m
-▸ Compiling ZXWifiParsedResult.m
-▸ Building library libfmt.a
-▸ Compiling ZXWhiteRectangleDetector.m
-▸ Compiling ZXVINResultParser.m
-▸ Compiling ZXVINParsedResult.m
-▸ Compiling ZXVEventResultParser.m
-▸ Compiling ZXVCardResultParser.m
-▸ Compiling ZXURLTOResultParser.m
-▸ Compiling ZXURIResultParser.m
-▸ Compiling ZXURIParsedResult.m
-▸ Compiling ZXUPCEWriter.m
-▸ Compiling ZXUPCEReader.m
-▸ Compiling ZXUPCEANWriter.m
-▸ Compiling ZXUPCEANReader.m
-▸ Compiling ZXUPCEANExtensionSupport.m
-▸ Compiling ZXUPCEANExtension5Support.m
-▸ Compiling ZXUPCEANExtension2Support.m
-▸ Compiling ZXUPCAWriter.m
-▸ Compiling ZXTextParsedResult.m
-▸ Compiling ZXUPCAReader.m
-▸ Compiling ZXTelResultParser.m
-▸ Compiling ZXTelParsedResult.m
-▸ Compiling ZXStringUtils.m
-▸ Compiling ZXSMTPResultParser.m
-▸ Compiling ZXSMSTOMMSTOResultParser.m
-▸ Compiling ZXSMSParsedResult.m
-▸ Compiling ZXSMSMMSResultParser.m
-▸ Compiling ZXResultPoint.m
-▸ Compiling ZXResultParser.m
-▸ Compiling ZXResult.m
-▸ Compiling ZXReedSolomonEncoder.m
-▸ Compiling ZXReedSolomonDecoder.m
-▸ Compiling ZXRSSUtils.m
-▸ Compiling ZXRSSPair.m
-▸ Compiling ZXRSSFinderPattern.m
-▸ Compiling ZXRSSExpandedRow.m
-▸ Compiling ZXRSSExpandedReader.m
-▸ Compiling ZXRSSExpandedPair.m
-▸ Compiling ZXRSSExpandedGeneralAppIdDecoder.m
-▸ Compiling ZXRSSExpandedFieldParser.m
-▸ Compiling ZXRSSExpandedDecodedObject.m
-▸ Compiling ZXRSSExpandedDecodedNumeric.m
-▸ Compiling ZXRSSExpandedDecodedInformation.m
-▸ Compiling ZXRSSExpandedDecodedChar.m
-▸ Compiling ZXRSSExpandedCurrentParsingState.m
-▸ Compiling ZXRSSExpandedBlockParsedResult.m
-▸ Compiling ZXRSSDataCharacter.m
-▸ Compiling ZXRSS14Reader.m
-▸ Compiling ZXRGBLuminanceSource.m
-▸ Compiling ZXProductResultParser.m
-▸ Compiling ZXProductParsedResult.m
-▸ Compiling ZXPlanarYUVLuminanceSource.m
-▸ Compiling ZXPerspectiveTransform.m
-▸ Compiling ZXParsedResult.m
-▸ Compiling ZXPDF417Writer.m
-▸ Compiling ZXPDF417ScanningDecoder.m
-▸ Compiling ZXPDF417ResultMetadata.m
-▸ Compiling ZXPDF417Reader.m
-▸ Compiling ZXPDF417HighLevelEncoder.m
-▸ Compiling ZXPDF417ErrorCorrection.m
-▸ Compiling ZXPDF417ECErrorCorrection.m
-▸ Compiling ZXPDF417Dimensions.m
-▸ Compiling ZXPDF417DetectorResult.m
-▸ Compiling ZXPDF417Detector.m
-▸ Compiling ZXPDF417DetectionResultRowIndicatorColumn.m
-▸ Compiling ZXPDF417DetectionResultColumn.m
-▸ Compiling ZXPDF417DetectionResult.m
-▸ Compiling ZXPDF417DecodedBitStreamParser.m
-▸ Compiling ZXPDF417Common.m
-▸ Compiling ZXPDF417CodewordDecoder.m
-▸ Compiling ZXPDF417Codeword.m
-▸ Compiling ZXPDF417BoundingBox.m
-▸ Compiling ZXPDF417BarcodeValue.m
-▸ Compiling ZXPDF417BarcodeRow.m
-▸ Compiling ZXPDF417BarcodeMetadata.m
-▸ Compiling ZXPDF417BarcodeMatrix.m
-▸ Compiling ZXPDF417.m
-▸ Compiling ZXOneDimensionalCodeWriter.m
-▸ Compiling ZXOneDReader.m
-▸ Compiling ZXMultiFormatWriter.m
-▸ Compiling ZXMultiFormatUPCEANReader.m
-▸ Compiling ZXMultiFormatReader.m
-▸ Compiling ZXMultiFormatOneDReader.m
-▸ Compiling ZXMonochromeRectangleDetector.m
-▸ Compiling ZXModulusPoly.m
-▸ Compiling ZXModulusGF.m
-▸ Compiling ZXMathUtils.m
-▸ Compiling ZXLuminanceSource.m
-▸ Compiling ZXInvertedLuminanceSource.m
-▸ Compiling ZXIntArray.m
-▸ Compiling ZXImage.m
+Compiling ZXImage.m
 ▸ Compiling ZXITFWriter.m
 ▸ Compiling ZXITFReader.m
 ▸ Compiling ZXISBNResultParser.m
@@ -685,8 +9,8 @@ public struct LottieView<Placeholder: View>: UIViewConfiguringSwiftUIView {
 ▸ Compiling ZXGeoResultParser.m
 ▸ Compiling ZXGeoParsedResult.m
 ▸ Compiling ZXGenericMultipleBarcodeReader.m
-▸ Compiling ZXGenericGF.m
 ▸ Compiling ZXGenericGFPoly.m
+▸ Compiling ZXGenericGF.m
 ▸ Compiling ZXExpandedProductResultParser.m
 ▸ Compiling ZXExpandedProductParsedResult.m
 ▸ Compiling ZXErrors.m
@@ -726,9 +50,9 @@ public struct LottieView<Placeholder: View>: UIViewConfiguringSwiftUIView {
 ▸ Compiling ZXBitSource.m
 ▸ Compiling ZXBitMatrix.m
 ▸ Compiling ZXBitArrayBuilder.m
+▸ Compiling ZXCapture.m
 ▸ Compiling ZXBitArray.m
 ▸ Compiling ZXBinaryBitmap.m
-▸ Compiling ZXCapture.m
 ▸ Compiling ZXBinarizer.m
 ▸ Compiling ZXAnyAIDecoder.m
 ▸ Compiling ZXAddressBookParsedResult.m
@@ -746,12 +70,12 @@ public struct LottieView<Placeholder: View>: UIViewConfiguringSwiftUIView {
 ▸ Compiling ZXAI01392xDecoder.m
 ▸ Compiling ZXAI01320xDecoder.m
 ▸ Compiling ZXAI013103decoder.m
-▸ Building library libZXingObjC.a
 ▸ Compiling UMAppLoaderProvider.m
 ▸ Compiling UMAppLoader-dummy.m
+▸ Building library libZXingObjC.a
 ▸ Building library libUMAppLoader.a
-▸ Compiling SDWebImageSVGCoder-dummy.m
 ▸ Compiling SDWebImageSVGCoderDefine.m
+▸ Compiling SDWebImageSVGCoder-dummy.m
 ▸ Compiling SDImageSVGCoder.m
 ▸ Compiling SDWebImageAVIFCoder-dummy.m
 ▸ Compiling SDImageAVIFCoder.m
@@ -780,8 +104,8 @@ public struct LottieView<Placeholder: View>: UIViewConfiguringSwiftUIView {
 ▸ Compiling SDWebImageOptionsProcessor.m
 ▸ Compiling SDWebImageOperation.m
 ▸ Compiling SDWebImageManager.m
-▸ Compiling SDWebImageError.m
 ▸ Compiling SDWebImageIndicator.m
+▸ Compiling SDWebImageError.m
 ▸ Compiling SDWebImageDownloaderResponseModifier.m
 ▸ Compiling SDWebImageDownloaderRequestModifier.m
 ▸ Compiling SDWebImageDownloaderOperation.m
@@ -804,8 +128,8 @@ public struct LottieView<Placeholder: View>: UIViewConfiguringSwiftUIView {
 ▸ Compiling SDImageHEICCoder.m
 ▸ Compiling SDImageGraphics.m
 ▸ Compiling SDImageFramePool.m
-▸ Compiling SDImageFrame.m
 ▸ Compiling SDImageGIFCoder.m
+▸ Compiling SDImageFrame.m
 ▸ Compiling SDImageCodersManager.m
 ▸ Compiling SDImageCoderHelper.m
 ▸ Compiling SDImageCoder.m
@@ -820,9 +144,9 @@ public struct LottieView<Placeholder: View>: UIViewConfiguringSwiftUIView {
 ▸ Compiling SDGraphicsImageRenderer.m
 ▸ Compiling SDFileAttributeHelper.m
 ▸ Compiling SDDisplayLink.m
-▸ Compiling SDDiskCache.m
 ▸ Compiling SDDeviceHelper.m
 ▸ Compiling SDCallbackQueue.m
+▸ Compiling SDDiskCache.m
 ▸ Compiling SDAsyncBlockOperation.m
 ▸ Compiling SDAssociatedObject.m
 ▸ Compiling SDAnimatedImageView.m
@@ -838,17 +162,14 @@ public struct LottieView<Placeholder: View>: UIViewConfiguringSwiftUIView {
 ▸ Compiling RCT-Folly-dummy.m
 ▸ Compiling DoubleConversion-dummy.m
 ▸ Building library libDoubleConversion.a
+▸ Building library liblibavif.a
 ▸ Running script '[CP] Copy XCFrameworks'
 ▸ Compiling RCTSwiftUI-dummy.m
 ▸ Building library libRCTSwiftUI.a
-▸ Building library liblibavif.a
 ▸ Running script 'Copy generated compatibility header'
-▸ Building library libSDWebImageWebPCoder.a
-▸ Building library libSDWebImageSVGCoder.a
-▸ Building library libSDWebImageAVIFCoder.a
+▸ Running script '[CP-User] [RN]Check FBReactNativeSpec'
 ▸ Compiling RCTSwiftUIWrapper-dummy.m
 ▸ Compiling RCTSwiftUIContainerViewWrapper.m
-▸ Running script '[CP-User] [RN]Check FBReactNativeSpec'
 ▸ Compiling react-native-netinfo-dummy.m
 ▸ Compiling RNCNetInfo.m
 ▸ Compiling RNCConnectionStateWatcher.m
@@ -882,10 +203,13 @@ public struct LottieView<Placeholder: View>: UIViewConfiguringSwiftUIView {
 ▸ Compiling AIRMapCoordinate.m
 ▸ Compiling AIRMapCircleManager.m
 ▸ Compiling AIRMapCircle.m
-▸ Compiling AIRMapCalloutSubview.m
 ▸ Compiling AIRMapCalloutSubviewManager.m
+▸ Compiling AIRMapCalloutSubview.m
 ▸ Compiling AIRMapCalloutManager.m
 ▸ Compiling AIRMapCallout.m
+▸ Building library libSDWebImageWebPCoder.a
+▸ Building library libSDWebImageSVGCoder.a
+▸ Building library libSDWebImageAVIFCoder.a
 ▸ Compiling AIRMap.m
 ▸ Building library libreact-native-maps.a
 ▸ Compiling react-native-get-random-values-dummy.m
@@ -909,20 +233,20 @@ public struct LottieView<Placeholder: View>: UIViewConfiguringSwiftUIView {
 ▸ Compiling EXJSIUtils.mm
 ▸ Compiling EXJSIConversions.mm
 ▸ Compiling EXArrayBuffer.mm
-▸ Building library libRCTSwiftUIWrapper.a
 ▸ Compiling ExpoModulesJSI-dummy.m
+▸ Building library libRCTSwiftUIWrapper.a
 ▸ Building library libExpoModulesJSI.a
+▸ Building library libRCT-Folly.a
 ▸ Compiling lottie-ios-dummy.m
-▸ Running script '[CP-User] Generate Specs'
 ▸ Building library liblottie-ios.a
+▸ Running script '[CP-User] Generate Specs'
 ▸ Compiling ExpoRedBoxSwap.mm
 ▸ Compiling ExpoLogBox-dummy.m
 ▸ Running script 'Copy generated compatibility header'
-▸ Building library libRCT-Folly.a
 ▸ Building library libExpoLogBox.a
 ▸ Running script 'Copy generated compatibility header'
-▸ Compiling safeareacontext-generated.mm
 ▸ Compiling rnworklets-generated.mm
+▸ Compiling safeareacontext-generated.mm
 ▸ Compiling rnsvg-generated.mm
 ▸ Compiling rnskia-generated.mm
 ▸ Compiling rnscreens-generated.mm
@@ -1018,7 +342,6 @@ public struct LottieView<Placeholder: View>: UIViewConfiguringSwiftUIView {
 ▸ Compiling RCTOnPageScrollStateChanged.m
 ▸ Compiling RCTOnPageScrollEvent.m
 ▸ Compiling RCTConvert+UIPageViewControllerNavigationOrientation.m
-▸ Compiling RCTAppDependencyProvider.mm
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-webview/apple/RNCWKProcessPoolManager.m:30:42: 'WKProcessPool' is deprecated: first deprecated in iOS 15.0 - Creating and using multiple instances of WKProcessPool no longer has any effect. [-Wdeprecated-declarations]
 #import "lottie-react-native-umbrella.h"
         ^
@@ -1064,21 +387,27 @@ public struct LottieView<Placeholder: View>: UIViewConfiguringSwiftUIView {
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/AnimationViewManagerModule.swift:76:27: will never be executed
                     print("Invalid view returned from registry, expecting ContainerView")
                              ^
+▸ Compiling RCTAppDependencyProvider.mm
 ▸ Compiling ReactAppDependencyProvider-dummy.m
 ▸ Building library libreact-native-webview.a
 ▸ Running script '[CP] Copy XCFrameworks'
 ▸ Building library libreact-native-safe-area-context.a
-▸ Building library libreact-native-pager-view.a
 ▸ Building library libReactAppDependencyProvider.a
+▸ Compiling LottieAnimationViewComponentView.mm
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/Fabric/LottieContainerView.h:10:46: pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified) [-Wnullability-completeness]
+   10 | - (void)onAnimationFailureWithError:(NSString*)error;
+                             ^
+▸ Building library libreact-native-pager-view.a
+▸ Compiling lottie-react-native-dummy.m
+▸ Compiling RCTConvert+Lottie.m
+▸ Compiling LRNAnimationViewManagerObjC.m
 ▸ Compiling base64.cpp
 ▸ Compiling ViewScreenshotService.mm
 ▸ Compiling SkottieUtils.cpp
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/@shopify/react-native-skia/cpp/skia/include/core/SkColor.h:253:6: '@struct' command should not be used in a comment attached to a non-struct declaration [-Wdocumentation]
-  253 | /** \struct SkRGBA4f
-                             ^
 ▸ Compiling SkiaUIView.mm
 ▸ Compiling SkiaPictureViewManager.mm
 ▸ Compiling SkiaPictureView.mm
+▸ Building library liblottie-react-native.a
 ▸ Compiling SkiaManager.mm
 ▸ Compiling SkiaCVPixelBufferUtils.mm
 ▸ Compiling SkJSONReader.cpp
@@ -1096,18 +425,11 @@ public struct LottieView<Placeholder: View>: UIViewConfiguringSwiftUIView {
 ▸ Compiling JsiPromises.cpp
 ▸ Compiling JsiHostObject.cpp
 ▸ Compiling CSSColorParser.cpp
-▸ Compiling LottieAnimationViewComponentView.mm
-▸ Compiling lottie-react-native-dummy.m
-▸ Compiling RCTConvert+Lottie.m
-▸ Compiling LRNAnimationViewManagerObjC.m
-▸ Building library liblottie-react-native.a
 ▸ Running script 'Copy generated compatibility header'
 ▸ Compiling WorkletsVersion.cpp
 ▸ Compiling WorkletsModuleProxy.cpp
-▸ Compiling react-native-skia-dummy.m
 ▸ Compiling WorkletsModule.mm
 ▸ Compiling WorkletsMessageThread.mm
-▸ Building library libreact-native-skia.a
 ▸ Compiling WorkletsJSIUtils.cpp
 ▸ Compiling WorkletRuntimeRegistry.cpp
 ▸ Compiling WorkletRuntimeDecorator.cpp
@@ -1377,6 +699,8 @@ extension RNSSplitViewScreenController: RNSFrameCorrectionProvider {
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/stack/RNSStackController.swift:5:58: conformance of 'RNSStackController' to protocol 'ReactMountingTransactionObserving' crosses into main actor-isolated code and can cause data races; this is an error in the Swift 6 language mode
 public class RNSStackController: UINavigationController, ReactMountingTransactionObserving {
               ^
+▸ Compiling react-native-skia-dummy.m
+▸ Building library libreact-native-skia.a
 ▸ Compiling RNSVGViewBox.mm
 ▸ Compiling RNSVGUseManager.mm
 ▸ Compiling RNSVGUse.mm
@@ -1473,6 +797,8 @@ public class RNSStackController: UINavigationController, ReactMountingTransactio
 ▸ Compiling RNSVGBezierElement.mm
 ▸ Compiling RNSVGArithmeticFilter.mm
 ▸ Compiling RCTConvert+RNSVG.mm
+▸ Compiling RNWorklets-dummy.m
+▸ Building library libRNWorklets.a
 ▸ Compiling UIWindow+RNScreens.mm
 ▸ Compiling UIViewController+RNScreens.mm
 ▸ Compiling UIView+RNSUtility.mm
@@ -1559,8 +885,6 @@ public class RNSStackController: UINavigationController, ReactMountingTransactio
 ▸ Compiling RCTConvert+RNSBottomTabs.mm
 ▸ Compiling NSString+RNSUtility.mm
 ▸ Compiling RNScreens-dummy.m
-▸ Compiling RNWorklets-dummy.m
-▸ Building library libRNWorklets.a
 ▸ Compiling vectors.cpp
 ▸ Compiling translate.cpp
 ▸ Compiling steps.cpp
@@ -1657,6 +981,12 @@ public class RNSStackController: UINavigationController, ReactMountingTransactio
 ▸ Compiling AnimationProgressProvider.cpp
 ▸ Compiling AnimatedSensorModule.cpp
 ▸ Compiling AnimatedPropsRegistry.cpp
+▸ Running script 'Copy generated compatibility header'
+▸ Compiling RNSVG-dummy.m
+▸ Building library libRNSVG.a
+▸ Compiling ReanimatedSensorContainer.m
+▸ Compiling ReanimatedSensor.m
+▸ Compiling RCTUIView+Reanimated.m
 ▸ Compiling RNNativeViewHandler.mm
 ▸ Compiling RNGestureHandlerRootViewComponentView.mm
 ▸ Compiling RNGestureHandlerModule.mm
@@ -1665,21 +995,12 @@ public class RNSStackController: UINavigationController, ReactMountingTransactio
 ▸ Compiling RNGestureHandlerButtonComponentView.mm
 ▸ Compiling RNGestureHandlerButton.mm
 ▸ Compiling RNGestureHandler.mm
-▸ Compiling RNSVG-dummy.m
-▸ Building library libRNSVG.a
-▸ Compiling ReanimatedSensorContainer.m
-▸ Compiling ReanimatedSensor.m
-▸ Compiling RCTUIView+Reanimated.m
 ▸ Compiling RNReanimated-dummy.m
-▸ Running script 'Copy generated compatibility header'
 ▸ Building library libRNReanimated.a
-▸ Compiling RNGestureHandler-dummy.m
 ▸ Compiling ShadowNodes.cpp
 ▸ Compiling RNDateTimePickerState.cpp
 ▸ Compiling RNDateTimePickerComponentView.mm
-▸ Compiling RNDateTimePickerShadowView.m
-▸ Compiling RNDateTimePickerManager.m
-▸ Compiling RNDateTimePicker.m
+▸ Compiling RNGestureHandler-dummy.m
 ▸ Compiling RNTapHandler.m
 ▸ Compiling RNRotationHandler.m
 ▸ Compiling RNRootViewGestureRecognizer.m
@@ -1696,11 +1017,14 @@ public class RNSStackController: UINavigationController, ReactMountingTransactio
 ▸ Compiling RNGHStylusData.m
 ▸ Compiling RNForceTouchHandler.m
 ▸ Compiling RNFlingHandler.m
+▸ Compiling RNDateTimePickerShadowView.m
+▸ Building library libRNGestureHandler.a
+▸ Compiling RNDateTimePickerManager.m
+▸ Compiling RNDateTimePicker.m
+▸ Compiling RNCAsyncStorage.mm
 ▸ Compiling RNDateTimePicker-dummy.m
 ▸ Building library libRNDateTimePicker.a
-▸ Compiling RNCAsyncStorage.mm
-▸ Building library libRNGestureHandler.a
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-gesture-handler/apple/RNGHStylusData.h:23:16: unused function 'ghSpherical2tilt' [-Wunused-function]
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/@react-native-community/datetimepicker/ios/RNDateTimePickerManager.m:47:1: category is implementing a method which will also be implemented by its primary class [-Wobjc-protocol-method-implementation]
 #import "ExpoModulesCore-umbrella.h"
         ^
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Legacy/NativeModulesProxy/EXNativeModulesProxy.h:8:40: pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified)
@@ -2585,8 +1909,8 @@ public class UnexpectedException: Exception {
 ▸ Compiling EXJSUtils.mm
 ▸ Compiling EXJSIInstaller.mm
 ▸ Compiling EXHostWrapper.mm
-▸ Compiling ExpoModulesCore-dummy.m
 ▸ Compiling EXUtilities.m
+▸ Compiling ExpoModulesCore-dummy.m
 ▸ Compiling EXSingletonModule.m
 ▸ Compiling EXReactNativeUserNotificationCenterProxy.m
 ▸ Compiling EXPermissionsService.m
@@ -3197,18 +2521,9 @@ typedef void (^RCTPromiseResolveBlock)(id result);
         ^
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: umbrella header for module 'React' does not include header 'RCTEventEmitter.h'
         ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-symbols/ios/SymbolEffects.swift:22:10: call to main actor-isolated instance method 'addSymbolEffect(_:options:animated:completion:)' in a synchronous nonisolated context
-    view.addSymbolEffect(finalEffect, options: options, animated: true)
-^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-symbols/ios/SymbolEffects.swift:36:10: call to main actor-isolated instance method 'addSymbolEffect(_:options:animated:completion:)' in a synchronous nonisolated context
-    view.addSymbolEffect(finalEffect, options: options, animated: true)
-       ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-symbols/ios/SymbolEffects.swift:56:10: call to main actor-isolated instance method 'addSymbolEffect(_:options:animated:completion:)' in a synchronous nonisolated context
-    view.addSymbolEffect(finalEffect, options: options, animated: true)
-       ^
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-web-browser/ios/WebAuthSession.swift:24:15: main actor-isolated default value in a nonisolated context; this is an error in the Swift 6 language mode
   private var presentationContextProvider = PresentationContextProvider()
-       ^
+^
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-web-browser/ios/WebAuthSession.swift:9:33: 'keyWindow' was deprecated in iOS 13.0: Should not be used for applications that support multiple scenes as it returns a key window across all connected scenes
     return UIApplication.shared.keyWindow ?? ASPresentationAnchor()
               ^
@@ -3245,9 +2560,18 @@ internal class WebBrowserSession: NSObject, SFSafariViewControllerDelegate, UIAd
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-web-browser/ios/WebBrowserModule.swift:50:33: sending value of non-Sendable type '(String) -> Void' risks causing data races; this is an error in the Swift 6 language mode
       currentWebBrowserSession?.dismiss { type in
                                       ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-symbols/ios/SymbolEffects.swift:22:10: call to main actor-isolated instance method 'addSymbolEffect(_:options:animated:completion:)' in a synchronous nonisolated context
+    view.addSymbolEffect(finalEffect, options: options, animated: true)
+                                ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-symbols/ios/SymbolEffects.swift:36:10: call to main actor-isolated instance method 'addSymbolEffect(_:options:animated:completion:)' in a synchronous nonisolated context
+    view.addSymbolEffect(finalEffect, options: options, animated: true)
+       ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-symbols/ios/SymbolEffects.swift:56:10: call to main actor-isolated instance method 'addSymbolEffect(_:options:animated:completion:)' in a synchronous nonisolated context
+    view.addSymbolEffect(finalEffect, options: options, animated: true)
+       ^
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-speech/ios/SpeechDelegate.swift:10:7: non-final class 'SpeechDelegate' cannot conform to 'Sendable'; use '@unchecked Sendable'; this is an error in the Swift 6 language mode
 class SpeechDelegate: NSObject, AVSpeechSynthesizerDelegate {
-                                ^
+       ^
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-speech/ios/SpeechDelegate.swift:11:7: stored property 'resultHandler' of 'Sendable'-conforming class 'SpeechDelegate' has non-Sendable type 'any SpeechResultHadler'
   let resultHandler: SpeechResultHadler
       ^
@@ -3332,14 +2656,17 @@ internal final class KeyChainException: GenericException<OSStatus> {
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-secure-store/ios/SecureStoreModule.swift:207:14: 'kSecAttrAccessibleAlwaysThisDeviceOnly' was deprecated in iOS 12.0: Use an accessibility level that provides some user protection, such as kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
       return kSecAttrAccessibleAlwaysThisDeviceOnly
              ^
-▸ Compiling ExpoSpeech-dummy.m
-▸ Compiling ExpoWebBrowser-dummy.m
-▸ Compiling ExpoSymbols-dummy.m
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/RNSScreenStackHeaderConfig.h:144:4: pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified)
 - (instancetype)initWithInsets:(NSDirectionalEdgeInsets)insets NS_DESIGNATED_INITIALIZER;
         ^
-▸ Compiling ExpoSecureStore-dummy.m
-▸ Compiling ExpoSharing-dummy.m
+❌  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/components/view/BaseViewEventEmitter.h:10:10: 'memory' file not found
+#include <memory>
+         ^
+❌  /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/RNScreens/Swift Compatibility Header/RNScreens-Swift.h:288:9: could not build module 'ReactCodegen'
+#import <RNScreens/RNScreens.h>
+        ^
+▸ Compiling ExpoWebBrowser-dummy.m
+▸ Compiling ExpoSymbols-dummy.m
     Run script build phase '[CP-User] [Hermes] Replace Hermes for the right configuration, if needed' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'hermes-engine' from project 'Pods')
 Build errors (last 200 lines around 'error:')
                        ^
@@ -3366,17 +2693,21 @@ Build errors (last 200 lines around 'error:')
                                ^
   /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/AnimationViewManagerModule.swift:48:27: warning: will never be executed
   --
-  - (instancetype)initWithInsets:(NSDirectionalEdgeInsets)insets NS_DESIGNATED_INITIALIZER;
-     ^
-  <unknown>:0: error: module 'ReactCodegen.RNScreens.RNScreens' requires feature 'cplusplus'
-  /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/RNScreens/Swift Compatibility Header/RNScreens-Swift.h:288:9: note: submodule of top-level module 'ReactCodegen' implicitly imported here
+  #include <react/renderer/components/view/BaseViewEventEmitter.h>
+           ^
+  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/components/view/BaseViewEventEmitter.h:10:10: error: 'memory' file not found
+  #include <memory>
+           ^
+  <module-includes>:2:9: note: in file included from <module-includes>:2:
+  #import "/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/RNScreens/Swift Compatibility Header/RNScreens-Swift.h"
+          ^
+  /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/RNScreens/Swift Compatibility Header/RNScreens-Swift.h:288:9: error: could not build module 'ReactCodegen'
   #import <RNScreens/RNScreens.h>
           ^
   <unknown>:0: error: could not build Objective-C module 'RNScreens'
-  SwiftMergeGeneratedHeaders /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/ExpoSharing.build/DerivedSources/ExpoSharing-Swift.h /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/ExpoSharing.build/Objects-normal/arm64/ExpoSharing-Swift.h (in target 'ExpoSharing' from project 'Pods')
+  SwiftDriver\ Compilation ExpoSymbols normal arm64 com.apple.xcode.tools.swift.compiler (in target 'ExpoSymbols' from project 'Pods')
       cd /Users/runner/work/TAMTAM/TAMTAM/ios/Pods
-      builtin-swiftHeaderTool -arch arm64 /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/ExpoSharing.build/Objects-normal/arm64/ExpoSharing-Swift.h -o /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/ExpoSharing.build/DerivedSources/ExpoSharing-Swift.h
-  Copy /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/ExpoSharing/ExpoSharing.swiftmodule/arm64-apple-ios.swiftmodule /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/ExpoSharing.build/Objects-normal/arm64/ExpoSharing.swiftmodule (in target 'ExpoSharing' from project 'Pods')
-      cd /Users/runner/work/TAMTAM/TAMTAM/ios/Pods
-      builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/ExpoSharing.build/Objects-normal/arm64/ExpoSharing.swiftmodule /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/ExpoSharing/ExpoSharing.swiftmodule/arm64-apple-ios.swiftmodule
+      builtin-Swift-Compilation -- /Applications/Xcode_26.0.1.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name ExpoSymbols -O -whole-module-optimization -enforce-exclusivity\=checked @/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/ExpoSymbols.build/Objects-normal/arm64/ExpoSymbols.SwiftFileList -D COCOAPODS -Xcc -fmodule-map-file\=/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/ExpoModulesCore/ExpoModulesCore.modulemap -Xcc -fmodule-map-file\=/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/RCTSwiftUI/RCTSwiftUI.modulemap -Xcc -fmodule-map-file\=/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/ExpoModulesJSI/ExpoModulesJSI.modulemap -Xcc -fmodule-map-file\=/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/RNWorklets/RNWorklets.modulemap -Xcc -fmodule-map-file\=/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/ReactCodegen/ReactCodegen.modulemap -imp
+  SwiftDriverJobDiscovery normal arm64 Compiling Exceptions.swift, SharingModule.swift, SharingOptions.swift (in target 'ExpoSharing' from project 'Pods')
+  SwiftDriver\ Compilation\ Requirements ExpoSharing normal arm64 com.apple.xcode.tools.swift.compiler (in target 'ExpoSharing' from project 'Pods')
 Error: Process completed with exit code 1.

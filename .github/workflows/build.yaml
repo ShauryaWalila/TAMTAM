@@ -74,47 +74,49 @@ jobs:
       - name: Wrap Fabric C++ headers in __cplusplus guards
         working-directory: ios
         run: |
-          # Xcode 26 strict: when clang parses RNScreens/ExpoRouter umbrella
-          # headers in ObjC mode, it chokes on #include <memory> in the chained
-          # Fabric C++ headers. Marking modulemaps `requires cplusplus` cascades
-          # to consumers. Cleanest fix: wrap each Fabric public header's body
-          # in `#if defined(__cplusplus)` so ObjC parse sees empty, C++ sees
-          # full content. ObjC code never uses these types anyway.
+          echo "PWD: $(pwd)"
+          echo "Pods top: $(ls Pods 2>/dev/null | head -20)"
+          echo "Pods/Headers exists: $([ -d Pods/Headers ] && echo yes || echo no)"
+          echo "Pods/Headers/Public exists: $([ -d Pods/Headers/Public ] && echo yes || echo no)"
+          ls -d Pods/Headers/Public/React-* Pods/Headers/Public/ReactCodegen 2>/dev/null | head -20 || true
+          echo "BaseViewEventEmitter.h present?"
+          find Pods -name BaseViewEventEmitter.h 2>/dev/null | head -5
+
+          # Strategy: scan EVERY .h under Pods/ that #includes a C++ stdlib token,
+          # and wrap its body in `#if defined(__cplusplus)`. ObjC parse sees empty
+          # file, C++ parse sees full content. Path-agnostic so it adapts to
+          # whatever pod install actually produced.
           node -e "
             const fs = require('fs');
             const path = require('path');
-            const roots = [
-              'Pods/Headers/Public/React-Fabric',
-              'Pods/Headers/Public/React-FabricComponents',
-              'Pods/Headers/Public/React-FabricImage',
-              'Pods/Headers/Public/React-graphics',
-              'Pods/Headers/Public/React-RCTFabric',
-              'Pods/Headers/Public/React-ImageManager',
-              'Pods/Headers/Public/ReactCodegen'
-            ];
             const CXX_TOKENS = /#include\s+<(memory|vector|string|functional|optional|unordered_map|unordered_set|map|set|deque|list|array|tuple|chrono|atomic|mutex|thread|future|variant|type_traits|algorithm|iterator|stdexcept|utility|cstdint|cstddef|initializer_list|numeric|limits|cmath|cstdlib|cstdio|cassert|memory_resource|bit|concepts|coroutine|expected|ranges|span|string_view)>/;
             function walk(dir) {
               if (!fs.existsSync(dir)) return [];
               const out = [];
-              for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+              let ents;
+              try { ents = fs.readdirSync(dir, { withFileTypes: true }); } catch (e) { return []; }
+              for (const ent of ents) {
                 const p = path.join(dir, ent.name);
                 if (ent.isDirectory()) out.push(...walk(p));
                 else if (ent.isFile() && (ent.name.endsWith('.h') || ent.name.endsWith('.hpp'))) out.push(p);
               }
               return out;
             }
+            const root = 'Pods';
+            console.log('TAMTAM: scanning', root, '(cwd=' + process.cwd() + ')');
+            const all = walk(root);
+            console.log('TAMTAM: found', all.length, '.h/.hpp files under Pods');
             let patched = 0, skipped = 0;
-            for (const root of roots) {
-              for (const file of walk(root)) {
-                let s = fs.readFileSync(file, 'utf8');
-                if (!CXX_TOKENS.test(s)) continue;
-                if (s.includes('// TAMTAM_CXX_GUARD')) { skipped++; continue; }
-                s = '// TAMTAM_CXX_GUARD\n#if defined(__cplusplus)\n' + s + '\n#endif // TAMTAM_CXX_GUARD\n';
-                fs.writeFileSync(file, s);
-                patched++;
-              }
+            for (const file of all) {
+              let s;
+              try { s = fs.readFileSync(file, 'utf8'); } catch (e) { continue; }
+              if (!CXX_TOKENS.test(s)) continue;
+              if (s.includes('// TAMTAM_CXX_GUARD')) { skipped++; continue; }
+              s = '// TAMTAM_CXX_GUARD\n#if defined(__cplusplus)\n' + s + '\n#endif // TAMTAM_CXX_GUARD\n';
+              fs.writeFileSync(file, s);
+              patched++;
             }
-            console.log('TAMTAM: wrapped', patched, 'Fabric C++ headers; skipped', skipped, 'already wrapped');
+            console.log('TAMTAM: wrapped', patched, 'C++ headers; skipped', skipped, 'already wrapped');
           "
 
       - name: Build App Bundle (Unsigned)
