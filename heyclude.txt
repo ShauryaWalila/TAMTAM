@@ -13,10 +13,101 @@ xcodebuild build \
     COMPILER_INDEX_STORE_ENABLE=NO \
     -quiet || (echo "Build failed, showing last 100 lines of error log:" && xcodebuild build -workspace TAMTAM.xcworkspace -scheme TAMTAM -configuration Release -sdk iphoneos -derivedDataPath ./build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" AD_HOC_CODE_SIGNING_ALLOWED=YES CODE_SIGN_STYLE=Manual PROVISIONING_PROFILE_SPECIFIER="" COMPILER_INDEX_STORE_ENABLE=NO | grep -A 5 "error:" | tail -n 100 && exit 1)
   shell: /bin/bash -e {0}
+  
 --- xcodebuild: WARNING: Using the first of multiple matching destinations:
 { platform:iOS, id:dvtdevice-DVTiPhonePlaceholder-iphoneos:placeholder, name:Any iOS Device }
-{ platform:macOS, arch:arm64, variant:Designed for [iPad,iPhone], id:628acc898c90df7e67210abc5ce7553b04f3b77f, name:My Mac }
+{ platform:macOS, arch:arm64, variant:Designed for [iPad,iPhone], id:1950ab08dd92c42b686603578e55169be13ba8dd, name:My Mac }
 { platform:iOS Simulator, id:dvtdevice-DVTiOSDeviceSimulatorPlaceholder-iphonesimulator:placeholder, name:Any iOS Simulator Device }
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libwebp/src/dsp/dec_neon.c:1467:38: warning: variable 'sum_left' may be uninitialized when used here [-Wconditional-uninitialized]
+ 1467 |     const uint16x8_t sum = vaddq_u16(sum_left, sum_top);
+      |                                      ^~~~~~~~
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libwebp/src/dsp/dec_neon.c:1432:3: note: variable 'sum_left' is declared here
+ 1432 |   uint16x8_t sum_left;
+      |   ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libwebp/src/dsp/dec_neon.c:1467:48: warning: variable 'sum_top' may be uninitialized when used here [-Wconditional-uninitialized]
+ 1467 |     const uint16x8_t sum = vaddq_u16(sum_left, sum_top);
+      |                                                ^~~~~~~
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libwebp/src/dsp/dec_neon.c:1431:3: note: variable 'sum_top' is declared here
+ 1431 |   uint16x8_t sum_top;
+      |   ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libwebp/src/dsp/dec_neon.c:1556:38: warning: variable 'sum_left' may be uninitialized when used here [-Wconditional-uninitialized]
+ 1556 |     const uint16x8_t sum = vaddq_u16(sum_left, sum_top);
+      |                                      ^~~~~~~~
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libwebp/src/dsp/dec_neon.c:1515:3: note: variable 'sum_left' is declared here
+ 1515 |   uint16x8_t sum_left;
+      |   ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libwebp/src/dsp/dec_neon.c:1556:48: warning: variable 'sum_top' may be uninitialized when used here [-Wconditional-uninitialized]
+ 1556 |     const uint16x8_t sum = vaddq_u16(sum_left, sum_top);
+      |                                                ^~~~~~~
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libwebp/src/dsp/dec_neon.c:1514:3: note: variable 'sum_top' is declared here
+ 1514 |   uint16x8_t sum_top;
+      |   ^
+4 warnings generated.
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libwebp/src/enc/backward_references_enc.c:720:12: warning: variable 'best_offset' may be uninitialized when used here [-Wconditional-uninitialized]
+  720 |           (best_offset << MAX_LENGTH_BITS) | (uint32_t)best_length;
+      |            ^~~~~~~~~~~
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libwebp/src/enc/backward_references_enc.c:652:20: note: initialize the variable 'best_offset' to silence this warning
+  652 |     int best_offset;
+      |                    ^
+      |                     = 0
+1 warning generated.
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libdav1d/dav1d/src/thread_task.c:489:36: warning: incompatible pointer types passing 'uint8_t[3][4096]' (aka 'unsigned char[3][4096]') to parameter of type 'uint8_t (*)[256]' (aka 'unsigned char (*)[256]') [-Wincompatible-pointer-types]
+  489 |                                    ttd->delayed_fg.scaling_16bpc,
+      |                                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libdav1d/dav1d/src/thread_task.c:33:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libdav1d/dav1d/src/fg_apply.h:49:33: note: passing argument to parameter 'scaling' here
+   49 |             array_decl(uint8_t, scaling, [3][SCALING_SIZE]),
+      |                                 ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libdav1d/dav1d/src/thread_task.c:490:36: warning: incompatible pointer types passing 'int16_t[3][74][82]' (aka 'short[3][74][82]') to parameter of type 'entry (*)[74][82]' (aka 'signed char (*)[74][82]') [-Wincompatible-pointer-types]
+  490 |                                    ttd->delayed_fg.grain_lut_16bpc);
+      |                                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libdav1d/dav1d/src/thread_task.c:33:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libdav1d/dav1d/src/fg_apply.h:50:31: note: passing argument to parameter 'grain_lut' here
+   50 |             array_decl(entry, grain_lut, [3][GRAIN_HEIGHT+1][GRAIN_WIDTH]));
+      |                               ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libdav1d/dav1d/src/thread_task.c:524:41: warning: incompatible pointer types passing 'uint8_t[3][4096]' (aka 'unsigned char[3][4096]') to parameter of type 'const uint8_t (*)[256]' (aka 'const unsigned char (*)[256]') [-Wincompatible-pointer-types]
+  524 |                                         ttd->delayed_fg.scaling_16bpc,
+      |                                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libdav1d/dav1d/src/thread_task.c:33:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libdav1d/dav1d/src/fg_apply.h:54:39: note: passing argument to parameter 'scaling' here
+   54 |             array_decl(const uint8_t, scaling, [3][SCALING_SIZE]),
+      |                                       ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libdav1d/dav1d/src/thread_task.c:525:41: warning: incompatible pointer types passing 'int16_t[3][74][82]' (aka 'short[3][74][82]') to parameter of type 'const entry (*)[74][82]' (aka 'const signed char (*)[74][82]') [-Wincompatible-pointer-types]
+  525 |                                         ttd->delayed_fg.grain_lut_16bpc, row);
+      |                                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libdav1d/dav1d/src/thread_task.c:33:
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libdav1d/dav1d/src/fg_apply.h:55:37: note: passing argument to parameter 'grain_lut' here
+   55 |             array_decl(const entry, grain_lut, [3][GRAIN_HEIGHT+1][GRAIN_WIDTH]),
+      |                                     ^
+4 warnings generated.
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libdav1d/dav1d/src/lf_mask.c:263:44: warning: possible misuse of comma operator here [-Wcomma]
+  263 |         inner1 = inner & ((1 << hmask) - 1), inner2 = inner >> hmask;
+      |                                            ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libdav1d/dav1d/src/lf_mask.c:263:9: note: cast expression to void to silence warning
+  263 |         inner1 = inner & ((1 << hmask) - 1), inner2 = inner >> hmask;
+      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |         (void)(                            )
+1 warning generated.
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libdav1d/dav1d/src/decode.c:2086:43: warning: conditional expression between different enumeration types ('enum CompInterPredMode' and 'enum InterPredMode') [-Wenum-compare-conditional]
+ 2086 |                 b->inter_mode == (is_comp ? GLOBALMV_GLOBALMV : GLOBALMV);
+      |                                           ^ ~~~~~~~~~~~~~~~~~   ~~~~~~~~
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libdav1d/dav1d/src/decode.c:2654:32: warning: incompatible pointer types assigning to 'coef *' (aka 'short *') from 'uint8_t *' (aka 'unsigned char *') [-Wincompatible-pointer-types]
+ 2654 |         ts->frame_thread[p].cf = f->frame_thread.cf ?
+      |                                ^ ~~~~~~~~~~~~~~~~~~~~
+ 2655 |             (uint8_t*)f->frame_thread.cf +
+      |             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 2656 |                 (((size_t)tile_start_off * size_mul[0]) >> !f->seq_hdr->hbd) :
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 2657 |             NULL;
+      |             ~~~~
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libdav1d/dav1d/src/decode.c:3135:37: warning: possible misuse of comma operator here [-Wcomma]
+ 3135 |     y_stride = f->sr_cur.p.stride[0], uv_stride = f->sr_cur.p.stride[1];
+      |                                     ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libdav1d/dav1d/src/decode.c:3135:5: note: cast expression to void to silence warning
+ 3135 |     y_stride = f->sr_cur.p.stride[0], uv_stride = f->sr_cur.p.stride[1];
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |     (void)(                         )
+3 warnings generated.
 /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/Controls/AnimatedSwitch.swift:263:19: warning: main actor-isolated default value in a nonisolated context; this is an error in the Swift 6 language mode
   fileprivate let impact = UIImpactFeedbackGenerator(style: .light)
                   ^
@@ -785,96 +876,6 @@ SwiftUI.UIViewRepresentableContext.transaction:2:39: note: property declared her
 /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Private/EmbeddedLibraries/EpoxyCore/SwiftUI/UIView+SwiftUIView.swift:29:5: note: sending task-isolated 'makeView' to main actor-isolated initializer 'init(makeContent:)' risks causing data races between main actor-isolated and task-isolated uses
     SwiftUIView(makeContent: makeView)
     ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libwebp/src/dsp/dec_neon.c:1467:38: warning: variable 'sum_left' may be uninitialized when used here [-Wconditional-uninitialized]
- 1467 |     const uint16x8_t sum = vaddq_u16(sum_left, sum_top);
-      |                                      ^~~~~~~~
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libwebp/src/dsp/dec_neon.c:1432:3: note: variable 'sum_left' is declared here
- 1432 |   uint16x8_t sum_left;
-      |   ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libwebp/src/dsp/dec_neon.c:1467:48: warning: variable 'sum_top' may be uninitialized when used here [-Wconditional-uninitialized]
- 1467 |     const uint16x8_t sum = vaddq_u16(sum_left, sum_top);
-      |                                                ^~~~~~~
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libwebp/src/dsp/dec_neon.c:1431:3: note: variable 'sum_top' is declared here
- 1431 |   uint16x8_t sum_top;
-      |   ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libwebp/src/dsp/dec_neon.c:1556:38: warning: variable 'sum_left' may be uninitialized when used here [-Wconditional-uninitialized]
- 1556 |     const uint16x8_t sum = vaddq_u16(sum_left, sum_top);
-      |                                      ^~~~~~~~
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libwebp/src/dsp/dec_neon.c:1515:3: note: variable 'sum_left' is declared here
- 1515 |   uint16x8_t sum_left;
-      |   ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libwebp/src/dsp/dec_neon.c:1556:48: warning: variable 'sum_top' may be uninitialized when used here [-Wconditional-uninitialized]
- 1556 |     const uint16x8_t sum = vaddq_u16(sum_left, sum_top);
-      |                                                ^~~~~~~
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libwebp/src/dsp/dec_neon.c:1514:3: note: variable 'sum_top' is declared here
- 1514 |   uint16x8_t sum_top;
-      |   ^
-4 warnings generated.
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libwebp/src/enc/backward_references_enc.c:720:12: warning: variable 'best_offset' may be uninitialized when used here [-Wconditional-uninitialized]
-  720 |           (best_offset << MAX_LENGTH_BITS) | (uint32_t)best_length;
-      |            ^~~~~~~~~~~
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libwebp/src/enc/backward_references_enc.c:652:20: note: initialize the variable 'best_offset' to silence this warning
-  652 |     int best_offset;
-      |                    ^
-      |                     = 0
-1 warning generated.
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libdav1d/dav1d/src/thread_task.c:489:36: warning: incompatible pointer types passing 'uint8_t[3][4096]' (aka 'unsigned char[3][4096]') to parameter of type 'uint8_t (*)[256]' (aka 'unsigned char (*)[256]') [-Wincompatible-pointer-types]
-  489 |                                    ttd->delayed_fg.scaling_16bpc,
-      |                                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libdav1d/dav1d/src/thread_task.c:33:
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libdav1d/dav1d/src/fg_apply.h:49:33: note: passing argument to parameter 'scaling' here
-   49 |             array_decl(uint8_t, scaling, [3][SCALING_SIZE]),
-      |                                 ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libdav1d/dav1d/src/thread_task.c:490:36: warning: incompatible pointer types passing 'int16_t[3][74][82]' (aka 'short[3][74][82]') to parameter of type 'entry (*)[74][82]' (aka 'signed char (*)[74][82]') [-Wincompatible-pointer-types]
-  490 |                                    ttd->delayed_fg.grain_lut_16bpc);
-      |                                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libdav1d/dav1d/src/thread_task.c:33:
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libdav1d/dav1d/src/fg_apply.h:50:31: note: passing argument to parameter 'grain_lut' here
-   50 |             array_decl(entry, grain_lut, [3][GRAIN_HEIGHT+1][GRAIN_WIDTH]));
-      |                               ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libdav1d/dav1d/src/thread_task.c:524:41: warning: incompatible pointer types passing 'uint8_t[3][4096]' (aka 'unsigned char[3][4096]') to parameter of type 'const uint8_t (*)[256]' (aka 'const unsigned char (*)[256]') [-Wincompatible-pointer-types]
-  524 |                                         ttd->delayed_fg.scaling_16bpc,
-      |                                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libdav1d/dav1d/src/thread_task.c:33:
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libdav1d/dav1d/src/fg_apply.h:54:39: note: passing argument to parameter 'scaling' here
-   54 |             array_decl(const uint8_t, scaling, [3][SCALING_SIZE]),
-      |                                       ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libdav1d/dav1d/src/thread_task.c:525:41: warning: incompatible pointer types passing 'int16_t[3][74][82]' (aka 'short[3][74][82]') to parameter of type 'const entry (*)[74][82]' (aka 'const signed char (*)[74][82]') [-Wincompatible-pointer-types]
-  525 |                                         ttd->delayed_fg.grain_lut_16bpc, row);
-      |                                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libdav1d/dav1d/src/thread_task.c:33:
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libdav1d/dav1d/src/fg_apply.h:55:37: note: passing argument to parameter 'grain_lut' here
-   55 |             array_decl(const entry, grain_lut, [3][GRAIN_HEIGHT+1][GRAIN_WIDTH]),
-      |                                     ^
-4 warnings generated.
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libdav1d/dav1d/src/lf_mask.c:263:44: warning: possible misuse of comma operator here [-Wcomma]
-  263 |         inner1 = inner & ((1 << hmask) - 1), inner2 = inner >> hmask;
-      |                                            ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libdav1d/dav1d/src/lf_mask.c:263:9: note: cast expression to void to silence warning
-  263 |         inner1 = inner & ((1 << hmask) - 1), inner2 = inner >> hmask;
-      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-      |         (void)(                            )
-1 warning generated.
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libdav1d/dav1d/src/decode.c:2086:43: warning: conditional expression between different enumeration types ('enum CompInterPredMode' and 'enum InterPredMode') [-Wenum-compare-conditional]
- 2086 |                 b->inter_mode == (is_comp ? GLOBALMV_GLOBALMV : GLOBALMV);
-      |                                           ^ ~~~~~~~~~~~~~~~~~   ~~~~~~~~
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libdav1d/dav1d/src/decode.c:2654:32: warning: incompatible pointer types assigning to 'coef *' (aka 'short *') from 'uint8_t *' (aka 'unsigned char *') [-Wincompatible-pointer-types]
- 2654 |         ts->frame_thread[p].cf = f->frame_thread.cf ?
-      |                                ^ ~~~~~~~~~~~~~~~~~~~~
- 2655 |             (uint8_t*)f->frame_thread.cf +
-      |             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- 2656 |                 (((size_t)tile_start_off * size_mul[0]) >> !f->seq_hdr->hbd) :
-      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- 2657 |             NULL;
-      |             ~~~~
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libdav1d/dav1d/src/decode.c:3135:37: warning: possible misuse of comma operator here [-Wcomma]
- 3135 |     y_stride = f->sr_cur.p.stride[0], uv_stride = f->sr_cur.p.stride[1];
-      |                                     ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libdav1d/dav1d/src/decode.c:3135:5: note: cast expression to void to silence warning
- 3135 |     y_stride = f->sr_cur.p.stride[0], uv_stride = f->sr_cur.p.stride[1];
-      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-      |     (void)(                         )
-3 warnings generated.
 /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libavif/src/write.c:238:47: warning: a function declaration without a prototype is deprecated in all versions of C [-Wstrict-prototypes]
   238 | static avifEncoderData * avifEncoderDataCreate()
       |                                               ^
@@ -893,65 +894,6 @@ In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/libdav1d/dav1d/s
       |                                               ^
       |                                                void
 3 warnings generated.
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/SDWebImageAVIFCoder/SDWebImageAVIFCoder/Classes/SDImageAVIFCoder.m:308:54: warning: 'CGColorSpaceCopyICCProfile' is deprecated: first deprecated in iOS 11.0 - No longer supported [-Wdeprecated-declarations]
-  308 |     NSData *iccProfile = (__bridge_transfer NSData *)CGColorSpaceCopyICCProfile([SDImageCoderHelper colorSpaceGetDeviceRGB]);
-      |                                                      ^
-In module 'CoreGraphics' imported from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/SDWebImage/SDImageGraphics.h:10:
-/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/CoreGraphics.framework/Headers/CGColorSpace.h:497:32: note: 'CGColorSpaceCopyICCProfile' has been explicitly marked deprecated here
-  497 | CG_EXTERN CFDataRef __nullable CGColorSpaceCopyICCProfile(CGColorSpaceRef cg_nullable space)
-      |                                ^
-1 warning generated.
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/SDWebImageWebPCoder/SDWebImageWebPCoder/Classes/SDImageWebPCoder.m:673:33: warning: 'CGColorSpaceCreateWithICCProfile' is deprecated: first deprecated in iOS 11.0 - No longer supported [-Wdeprecated-declarations]
-  673 |                 colorSpaceRef = CGColorSpaceCreateWithICCProfile((__bridge CFDataRef)profileData);
-      |                                 ^
-In module 'CoreGraphics' imported from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/SDWebImage/SDImageGraphics.h:10:
-/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/CoreGraphics.framework/Headers/CGColorSpace.h:493:38: note: 'CGColorSpaceCreateWithICCProfile' has been explicitly marked deprecated here
-  493 | CG_EXTERN CGColorSpaceRef __nullable CGColorSpaceCreateWithICCProfile(CFDataRef cg_nullable data)
-      |                                      ^
-1 warning generated.
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/SDWebImageAVIFCoder/SDWebImageAVIFCoder/Classes/ColorSpace.m:216:20: warning: 'CGColorSpaceCreateWithICCProfile' is deprecated: first deprecated in iOS 11.0 - No longer supported [-Wdeprecated-declarations]
-  216 |             *ref = CGColorSpaceCreateWithICCProfile((__bridge CFDataRef)iccData);
-      |                    ^
-In module 'CoreGraphics' imported from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/SDWebImage/SDImageGraphics.h:10:
-/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/CoreGraphics.framework/Headers/CGColorSpace.h:493:38: note: 'CGColorSpaceCreateWithICCProfile' has been explicitly marked deprecated here
-  493 | CG_EXTERN CGColorSpaceRef __nullable CGColorSpaceCreateWithICCProfile(CFDataRef cg_nullable data)
-      |                                      ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/SDWebImageAVIFCoder/SDWebImageAVIFCoder/Classes/ColorSpace.m:314:20: warning: 'CGColorSpaceCreateWithICCProfile' is deprecated: first deprecated in iOS 11.0 - No longer supported [-Wdeprecated-declarations]
-  314 |             *ref = CGColorSpaceCreateWithICCProfile((__bridge CFDataRef)iccData);
-      |                    ^
-In module 'CoreGraphics' imported from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/SDWebImage/SDImageGraphics.h:10:
-/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/CoreGraphics.framework/Headers/CGColorSpace.h:493:38: note: 'CGColorSpaceCreateWithICCProfile' has been explicitly marked deprecated here
-  493 | CG_EXTERN CGColorSpaceRef __nullable CGColorSpaceCreateWithICCProfile(CFDataRef cg_nullable data)
-      |                                      ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/SDWebImageAVIFCoder/SDWebImageAVIFCoder/Classes/ColorSpace.m:399:34: warning: 'kCGColorSpaceITUR_2020_PQ' is deprecated: first deprecated in iOS 14.0 - No longer supported [-Wdeprecated-declarations]
-  399 |                 colorSpaceName = kCGColorSpaceITUR_2020_PQ;
-      |                                  ^
-In module 'CoreGraphics' imported from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/SDWebImage/SDImageGraphics.h:10:
-/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/CoreGraphics.framework/Headers/CGColorSpace.h:166:29: note: 'kCGColorSpaceITUR_2020_PQ' has been explicitly marked deprecated here
-  166 | CG_EXTERN const CFStringRef kCGColorSpaceITUR_2020_PQ
-      |                             ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/SDWebImageAVIFCoder/SDWebImageAVIFCoder/Classes/ColorSpace.m:401:34: warning: 'kCGColorSpaceITUR_2020_PQ_EOTF' is deprecated: first deprecated in iOS 13.4 - No longer supported [-Wdeprecated-declarations]
-  401 |                 colorSpaceName = kCGColorSpaceITUR_2020_PQ_EOTF;
-      |                                  ^
-In module 'CoreGraphics' imported from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/SDWebImage/SDImageGraphics.h:10:
-/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/CoreGraphics.framework/Headers/CGColorSpace.h:175:29: note: 'kCGColorSpaceITUR_2020_PQ_EOTF' has been explicitly marked deprecated here
-  175 | CG_EXTERN const CFStringRef kCGColorSpaceITUR_2020_PQ_EOTF
-      |                             ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/SDWebImageAVIFCoder/SDWebImageAVIFCoder/Classes/ColorSpace.m:422:34: warning: 'kCGColorSpaceITUR_2020_HLG' is deprecated: first deprecated in iOS 14.0 - No longer supported [-Wdeprecated-declarations]
-  422 |                 colorSpaceName = kCGColorSpaceITUR_2020_HLG;
-      |                                  ^
-In module 'CoreGraphics' imported from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/SDWebImage/SDImageGraphics.h:10:
-/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/CoreGraphics.framework/Headers/CGColorSpace.h:169:29: note: 'kCGColorSpaceITUR_2020_HLG' has been explicitly marked deprecated here
-  169 | CG_EXTERN const CFStringRef kCGColorSpaceITUR_2020_HLG
-      |                             ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/SDWebImageAVIFCoder/SDWebImageAVIFCoder/Classes/ColorSpace.m:474:34: warning: 'kCGColorSpaceDisplayP3_PQ_EOTF' is deprecated: first deprecated in iOS 13.4 - No longer supported [-Wdeprecated-declarations]
-  474 |                 colorSpaceName = kCGColorSpaceDisplayP3_PQ_EOTF;
-      |                                  ^
-In module 'CoreGraphics' imported from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/SDWebImage/SDImageGraphics.h:10:
-/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/CoreGraphics.framework/Headers/CGColorSpace.h:172:29: note: 'kCGColorSpaceDisplayP3_PQ_EOTF' has been explicitly marked deprecated here
-  172 | CG_EXTERN const CFStringRef kCGColorSpaceDisplayP3_PQ_EOTF
-      |                             ^
-6 warnings generated.
 /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/SDWebImage/SDWebImage/Core/SDImageIOCoder.m:208:64: warning: 'UTTypeCreatePreferredIdentifierForTag' is deprecated: first deprecated in iOS 15.0 - Use the UTType class instead. [-Wdeprecated-declarations]
   208 |             typeIdentifierHint = (__bridge_transfer NSString *)UTTypeCreatePreferredIdentifierForTag(kUTTagClassFilenameExtension, (__bridge CFStringRef)fileExtensionHint, kUTTypeImage);
       |                                                                ^
@@ -1048,13 +990,64 @@ In module 'CoreServices' imported from /Applications/Xcode_16.4.app/Contents/Dev
   472 | UTTypeConformsTo(
       | ^
 1 warning generated.
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/JSI/EXJavaScriptRuntime.mm:61:130: warning: conflicting parameter types in implementation of 'initWithRuntime:callInvoker:': 'shared_ptr<react::CallInvoker>' vs 'shared_ptr<react::RuntimeSchedulerCallInvoker>' [-Wmismatched-parameter-types]
-   61 | - (nonnull instancetype)initWithRuntime:(jsi::Runtime &)runtime callInvoker:(std::shared_ptr<react::RuntimeSchedulerCallInvoker>)callInvoker {
-      |                                                                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ^
-In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/JSI/EXJavaScriptRuntime.mm:3:
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/JSI/EXJavaScriptRuntime.h:64:114: note: previous definition is here
-   64 | - (nonnull instancetype)initWithRuntime:(jsi::Runtime &)runtime callInvoker:(std::shared_ptr<react::CallInvoker>)callInvoker;
-      |                                                                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/SDWebImageAVIFCoder/SDWebImageAVIFCoder/Classes/SDImageAVIFCoder.m:308:54: warning: 'CGColorSpaceCopyICCProfile' is deprecated: first deprecated in iOS 11.0 - No longer supported [-Wdeprecated-declarations]
+  308 |     NSData *iccProfile = (__bridge_transfer NSData *)CGColorSpaceCopyICCProfile([SDImageCoderHelper colorSpaceGetDeviceRGB]);
+      |                                                      ^
+In module 'CoreGraphics' imported from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/SDWebImage/SDImageGraphics.h:10:
+/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/CoreGraphics.framework/Headers/CGColorSpace.h:497:32: note: 'CGColorSpaceCopyICCProfile' has been explicitly marked deprecated here
+  497 | CG_EXTERN CFDataRef __nullable CGColorSpaceCopyICCProfile(CGColorSpaceRef cg_nullable space)
+      |                                ^
+1 warning generated.
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/SDWebImageAVIFCoder/SDWebImageAVIFCoder/Classes/ColorSpace.m:216:20: warning: 'CGColorSpaceCreateWithICCProfile' is deprecated: first deprecated in iOS 11.0 - No longer supported [-Wdeprecated-declarations]
+  216 |             *ref = CGColorSpaceCreateWithICCProfile((__bridge CFDataRef)iccData);
+      |                    ^
+In module 'CoreGraphics' imported from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/SDWebImage/SDImageGraphics.h:10:
+/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/CoreGraphics.framework/Headers/CGColorSpace.h:493:38: note: 'CGColorSpaceCreateWithICCProfile' has been explicitly marked deprecated here
+  493 | CG_EXTERN CGColorSpaceRef __nullable CGColorSpaceCreateWithICCProfile(CFDataRef cg_nullable data)
+      |                                      ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/SDWebImageAVIFCoder/SDWebImageAVIFCoder/Classes/ColorSpace.m:314:20: warning: 'CGColorSpaceCreateWithICCProfile' is deprecated: first deprecated in iOS 11.0 - No longer supported [-Wdeprecated-declarations]
+  314 |             *ref = CGColorSpaceCreateWithICCProfile((__bridge CFDataRef)iccData);
+      |                    ^
+In module 'CoreGraphics' imported from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/SDWebImage/SDImageGraphics.h:10:
+/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/CoreGraphics.framework/Headers/CGColorSpace.h:493:38: note: 'CGColorSpaceCreateWithICCProfile' has been explicitly marked deprecated here
+  493 | CG_EXTERN CGColorSpaceRef __nullable CGColorSpaceCreateWithICCProfile(CFDataRef cg_nullable data)
+      |                                      ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/SDWebImageAVIFCoder/SDWebImageAVIFCoder/Classes/ColorSpace.m:399:34: warning: 'kCGColorSpaceITUR_2020_PQ' is deprecated: first deprecated in iOS 14.0 - No longer supported [-Wdeprecated-declarations]
+  399 |                 colorSpaceName = kCGColorSpaceITUR_2020_PQ;
+      |                                  ^
+In module 'CoreGraphics' imported from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/SDWebImage/SDImageGraphics.h:10:
+/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/CoreGraphics.framework/Headers/CGColorSpace.h:166:29: note: 'kCGColorSpaceITUR_2020_PQ' has been explicitly marked deprecated here
+  166 | CG_EXTERN const CFStringRef kCGColorSpaceITUR_2020_PQ
+      |                             ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/SDWebImageAVIFCoder/SDWebImageAVIFCoder/Classes/ColorSpace.m:401:34: warning: 'kCGColorSpaceITUR_2020_PQ_EOTF' is deprecated: first deprecated in iOS 13.4 - No longer supported [-Wdeprecated-declarations]
+  401 |                 colorSpaceName = kCGColorSpaceITUR_2020_PQ_EOTF;
+      |                                  ^
+In module 'CoreGraphics' imported from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/SDWebImage/SDImageGraphics.h:10:
+/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/CoreGraphics.framework/Headers/CGColorSpace.h:175:29: note: 'kCGColorSpaceITUR_2020_PQ_EOTF' has been explicitly marked deprecated here
+  175 | CG_EXTERN const CFStringRef kCGColorSpaceITUR_2020_PQ_EOTF
+      |                             ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/SDWebImageAVIFCoder/SDWebImageAVIFCoder/Classes/ColorSpace.m:422:34: warning: 'kCGColorSpaceITUR_2020_HLG' is deprecated: first deprecated in iOS 14.0 - No longer supported [-Wdeprecated-declarations]
+  422 |                 colorSpaceName = kCGColorSpaceITUR_2020_HLG;
+      |                                  ^
+In module 'CoreGraphics' imported from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/SDWebImage/SDImageGraphics.h:10:
+/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/CoreGraphics.framework/Headers/CGColorSpace.h:169:29: note: 'kCGColorSpaceITUR_2020_HLG' has been explicitly marked deprecated here
+  169 | CG_EXTERN const CFStringRef kCGColorSpaceITUR_2020_HLG
+      |                             ^
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/SDWebImageAVIFCoder/SDWebImageAVIFCoder/Classes/ColorSpace.m:474:34: warning: 'kCGColorSpaceDisplayP3_PQ_EOTF' is deprecated: first deprecated in iOS 13.4 - No longer supported [-Wdeprecated-declarations]
+  474 |                 colorSpaceName = kCGColorSpaceDisplayP3_PQ_EOTF;
+      |                                  ^
+In module 'CoreGraphics' imported from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/SDWebImage/SDImageGraphics.h:10:
+/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/CoreGraphics.framework/Headers/CGColorSpace.h:172:29: note: 'kCGColorSpaceDisplayP3_PQ_EOTF' has been explicitly marked deprecated here
+  172 | CG_EXTERN const CFStringRef kCGColorSpaceDisplayP3_PQ_EOTF
+      |                             ^
+6 warnings generated.
+/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/SDWebImageWebPCoder/SDWebImageWebPCoder/Classes/SDImageWebPCoder.m:673:33: warning: 'CGColorSpaceCreateWithICCProfile' is deprecated: first deprecated in iOS 11.0 - No longer supported [-Wdeprecated-declarations]
+  673 |                 colorSpaceRef = CGColorSpaceCreateWithICCProfile((__bridge CFDataRef)profileData);
+      |                                 ^
+In module 'CoreGraphics' imported from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/SDWebImage/SDImageGraphics.h:10:
+/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/CoreGraphics.framework/Headers/CGColorSpace.h:493:38: note: 'CGColorSpaceCreateWithICCProfile' has been explicitly marked deprecated here
+  493 | CG_EXTERN CGColorSpaceRef __nullable CGColorSpaceCreateWithICCProfile(CFDataRef cg_nullable data)
+      |                                      ^
 1 warning generated.
 /Users/runner/work/TAMTAM/TAMTAM/node_modules/@react-native-community/netinfo/ios/RNCNetInfo.m:153:33: warning: 'subscriberCellularProvider' is deprecated: first deprecated in iOS 12.0 [-Wdeprecated-declarations]
   153 |   CTCarrier *carrier = [netinfo subscriberCellularProvider];
@@ -1440,58 +1433,14 @@ In module 'UIKit' imported from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Target
   725 |                 self.defaultCompassButton = subview2;
       |                                           ^ ~~~~~~~~
 3 warnings generated.
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-webview/apple/RNCWebView.mm:329:17: warning: implicit conversion loses integer precision: 'WKDataDetectorTypes' (aka 'unsigned long') to 'RNCWebViewDataDetectorTypesMask' (aka 'unsigned int') [-Wshorten-64-to-32]
-  329 |             if (dataDetectorTypes & RNCWebViewDataDetectorTypes::Address) {
-      |                 ^~~~~~~~~~~~~~~~~ ~
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-webview/apple/RNCWebView.mm:331:24: warning: implicit conversion loses integer precision: 'WKDataDetectorTypes' (aka 'unsigned long') to 'RNCWebViewDataDetectorTypesMask' (aka 'unsigned int') [-Wshorten-64-to-32]
-  331 |             } else if (dataDetectorTypes & RNCWebViewDataDetectorTypes::Link) {
-      |                        ^~~~~~~~~~~~~~~~~ ~
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-webview/apple/RNCWebView.mm:333:24: warning: implicit conversion loses integer precision: 'WKDataDetectorTypes' (aka 'unsigned long') to 'RNCWebViewDataDetectorTypesMask' (aka 'unsigned int') [-Wshorten-64-to-32]
-  333 |             } else if (dataDetectorTypes & RNCWebViewDataDetectorTypes::CalendarEvent) {
-      |                        ^~~~~~~~~~~~~~~~~ ~
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-webview/apple/RNCWebView.mm:335:24: warning: implicit conversion loses integer precision: 'WKDataDetectorTypes' (aka 'unsigned long') to 'RNCWebViewDataDetectorTypesMask' (aka 'unsigned int') [-Wshorten-64-to-32]
-  335 |             } else if (dataDetectorTypes & RNCWebViewDataDetectorTypes::TrackingNumber) {
-      |                        ^~~~~~~~~~~~~~~~~ ~
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-webview/apple/RNCWebView.mm:337:24: warning: implicit conversion loses integer precision: 'WKDataDetectorTypes' (aka 'unsigned long') to 'RNCWebViewDataDetectorTypesMask' (aka 'unsigned int') [-Wshorten-64-to-32]
-  337 |             } else if (dataDetectorTypes & RNCWebViewDataDetectorTypes::FlightNumber) {
-      |                        ^~~~~~~~~~~~~~~~~ ~
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-webview/apple/RNCWebView.mm:339:24: warning: implicit conversion loses integer precision: 'WKDataDetectorTypes' (aka 'unsigned long') to 'RNCWebViewDataDetectorTypesMask' (aka 'unsigned int') [-Wshorten-64-to-32]
-  339 |             } else if (dataDetectorTypes & RNCWebViewDataDetectorTypes::LookupSuggestion) {
-      |                        ^~~~~~~~~~~~~~~~~ ~
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-webview/apple/RNCWebView.mm:341:24: warning: implicit conversion loses integer precision: 'WKDataDetectorTypes' (aka 'unsigned long') to 'RNCWebViewDataDetectorTypesMask' (aka 'unsigned int') [-Wshorten-64-to-32]
-  341 |             } else if (dataDetectorTypes & RNCWebViewDataDetectorTypes::PhoneNumber) {
-      |                        ^~~~~~~~~~~~~~~~~ ~
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-webview/apple/RNCWebView.mm:343:24: warning: implicit conversion loses integer precision: 'WKDataDetectorTypes' (aka 'unsigned long') to 'RNCWebViewDataDetectorTypesMask' (aka 'unsigned int') [-Wshorten-64-to-32]
-  343 |             } else if (dataDetectorTypes & RNCWebViewDataDetectorTypes::All) {
-      |                        ^~~~~~~~~~~~~~~~~ ~
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-webview/apple/RNCWebView.mm:345:24: warning: implicit conversion loses integer precision: 'WKDataDetectorTypes' (aka 'unsigned long') to 'RNCWebViewDataDetectorTypesMask' (aka 'unsigned int') [-Wshorten-64-to-32]
-  345 |             } else if (dataDetectorTypes & RNCWebViewDataDetectorTypes::None) {
-      |                        ^~~~~~~~~~~~~~~~~ ~
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-webview/apple/RNCWebView.mm:416:36: warning: null passed to a callee that requires a non-null argument [-Wnonnull]
-  416 |             _view.onFileDownload = nil;
-      |                                    ^~~
-In file included from <built-in>:1:
-In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Target Support Files/react-native-webview/react-native-webview-prefix.pch:2:
-In file included from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIKit.h:8:
-In file included from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/Foundation.framework/Headers/Foundation.h:6:
-In file included from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/CoreFoundation.framework/Headers/CoreFoundation.h:54:
-In file included from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/CoreFoundation.framework/Headers/CFBase.h:80:
-/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/usr/include/MacTypes.h:94:19: note: expanded from macro 'nil'
-   94 |       #define nil nullptr
-      |                   ^~~~~~~
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-webview/apple/RNCWebView.mm:431:34: warning: null passed to a callee that requires a non-null argument [-Wnonnull]
-  431 |             _view.onOpenWindow = nil;
-      |                                  ^~~
-In file included from <built-in>:1:
-In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Target Support Files/react-native-webview/react-native-webview-prefix.pch:2:
-In file included from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIKit.h:8:
-In file included from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/Foundation.framework/Headers/Foundation.h:6:
-In file included from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/CoreFoundation.framework/Headers/CoreFoundation.h:54:
-In file included from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/CoreFoundation.framework/Headers/CFBase.h:80:
-/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/usr/include/MacTypes.h:94:19: note: expanded from macro 'nil'
-   94 |       #define nil nullptr
-      |                   ^~~~~~~
-11 warnings generated.
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/JSI/EXJavaScriptRuntime.mm:61:130: warning: conflicting parameter types in implementation of 'initWithRuntime:callInvoker:': 'shared_ptr<react::CallInvoker>' vs 'shared_ptr<react::RuntimeSchedulerCallInvoker>' [-Wmismatched-parameter-types]
+   61 | - (nonnull instancetype)initWithRuntime:(jsi::Runtime &)runtime callInvoker:(std::shared_ptr<react::RuntimeSchedulerCallInvoker>)callInvoker {
+      |                                                                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ^
+In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/JSI/EXJavaScriptRuntime.mm:3:
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/JSI/EXJavaScriptRuntime.h:64:114: note: previous definition is here
+   64 | - (nonnull instancetype)initWithRuntime:(jsi::Runtime &)runtime callInvoker:(std::shared_ptr<react::CallInvoker>)callInvoker;
+      |                                                                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ^
+1 warning generated.
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "lottie-react-native-umbrella.h"
         ^
@@ -1603,6 +1552,58 @@ In file included from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/
 /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/AnimationViewManagerModule.swift:75:30: note: condition always evaluates to false
                 if RCT_DEBUG == 1 {
                              ^
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-webview/apple/RNCWebView.mm:329:17: warning: implicit conversion loses integer precision: 'WKDataDetectorTypes' (aka 'unsigned long') to 'RNCWebViewDataDetectorTypesMask' (aka 'unsigned int') [-Wshorten-64-to-32]
+  329 |             if (dataDetectorTypes & RNCWebViewDataDetectorTypes::Address) {
+      |                 ^~~~~~~~~~~~~~~~~ ~
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-webview/apple/RNCWebView.mm:331:24: warning: implicit conversion loses integer precision: 'WKDataDetectorTypes' (aka 'unsigned long') to 'RNCWebViewDataDetectorTypesMask' (aka 'unsigned int') [-Wshorten-64-to-32]
+  331 |             } else if (dataDetectorTypes & RNCWebViewDataDetectorTypes::Link) {
+      |                        ^~~~~~~~~~~~~~~~~ ~
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-webview/apple/RNCWebView.mm:333:24: warning: implicit conversion loses integer precision: 'WKDataDetectorTypes' (aka 'unsigned long') to 'RNCWebViewDataDetectorTypesMask' (aka 'unsigned int') [-Wshorten-64-to-32]
+  333 |             } else if (dataDetectorTypes & RNCWebViewDataDetectorTypes::CalendarEvent) {
+      |                        ^~~~~~~~~~~~~~~~~ ~
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-webview/apple/RNCWebView.mm:335:24: warning: implicit conversion loses integer precision: 'WKDataDetectorTypes' (aka 'unsigned long') to 'RNCWebViewDataDetectorTypesMask' (aka 'unsigned int') [-Wshorten-64-to-32]
+  335 |             } else if (dataDetectorTypes & RNCWebViewDataDetectorTypes::TrackingNumber) {
+      |                        ^~~~~~~~~~~~~~~~~ ~
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-webview/apple/RNCWebView.mm:337:24: warning: implicit conversion loses integer precision: 'WKDataDetectorTypes' (aka 'unsigned long') to 'RNCWebViewDataDetectorTypesMask' (aka 'unsigned int') [-Wshorten-64-to-32]
+  337 |             } else if (dataDetectorTypes & RNCWebViewDataDetectorTypes::FlightNumber) {
+      |                        ^~~~~~~~~~~~~~~~~ ~
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-webview/apple/RNCWebView.mm:339:24: warning: implicit conversion loses integer precision: 'WKDataDetectorTypes' (aka 'unsigned long') to 'RNCWebViewDataDetectorTypesMask' (aka 'unsigned int') [-Wshorten-64-to-32]
+  339 |             } else if (dataDetectorTypes & RNCWebViewDataDetectorTypes::LookupSuggestion) {
+      |                        ^~~~~~~~~~~~~~~~~ ~
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-webview/apple/RNCWebView.mm:341:24: warning: implicit conversion loses integer precision: 'WKDataDetectorTypes' (aka 'unsigned long') to 'RNCWebViewDataDetectorTypesMask' (aka 'unsigned int') [-Wshorten-64-to-32]
+  341 |             } else if (dataDetectorTypes & RNCWebViewDataDetectorTypes::PhoneNumber) {
+      |                        ^~~~~~~~~~~~~~~~~ ~
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-webview/apple/RNCWebView.mm:343:24: warning: implicit conversion loses integer precision: 'WKDataDetectorTypes' (aka 'unsigned long') to 'RNCWebViewDataDetectorTypesMask' (aka 'unsigned int') [-Wshorten-64-to-32]
+  343 |             } else if (dataDetectorTypes & RNCWebViewDataDetectorTypes::All) {
+      |                        ^~~~~~~~~~~~~~~~~ ~
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-webview/apple/RNCWebView.mm:345:24: warning: implicit conversion loses integer precision: 'WKDataDetectorTypes' (aka 'unsigned long') to 'RNCWebViewDataDetectorTypesMask' (aka 'unsigned int') [-Wshorten-64-to-32]
+  345 |             } else if (dataDetectorTypes & RNCWebViewDataDetectorTypes::None) {
+      |                        ^~~~~~~~~~~~~~~~~ ~
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-webview/apple/RNCWebView.mm:416:36: warning: null passed to a callee that requires a non-null argument [-Wnonnull]
+  416 |             _view.onFileDownload = nil;
+      |                                    ^~~
+In file included from <built-in>:1:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Target Support Files/react-native-webview/react-native-webview-prefix.pch:2:
+In file included from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIKit.h:8:
+In file included from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/Foundation.framework/Headers/Foundation.h:6:
+In file included from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/CoreFoundation.framework/Headers/CoreFoundation.h:54:
+In file included from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/CoreFoundation.framework/Headers/CFBase.h:80:
+/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/usr/include/MacTypes.h:94:19: note: expanded from macro 'nil'
+   94 |       #define nil nullptr
+      |                   ^~~~~~~
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-webview/apple/RNCWebView.mm:431:34: warning: null passed to a callee that requires a non-null argument [-Wnonnull]
+  431 |             _view.onOpenWindow = nil;
+      |                                  ^~~
+In file included from <built-in>:1:
+In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Target Support Files/react-native-webview/react-native-webview-prefix.pch:2:
+In file included from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIKit.h:8:
+In file included from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/Foundation.framework/Headers/Foundation.h:6:
+In file included from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/CoreFoundation.framework/Headers/CoreFoundation.h:54:
+In file included from /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/CoreFoundation.framework/Headers/CFBase.h:80:
+/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/usr/include/MacTypes.h:94:19: note: expanded from macro 'nil'
+   94 |       #define nil nullptr
+      |                   ^~~~~~~
+11 warnings generated.
 /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-pager-view/ios/Fabric/RNCPagerViewComponentView.mm:370:144: warning: implicit conversion loses integer precision: 'NSInteger' (aka 'long') to 'int' [-Wshorten-64-to-32]
   370 |     NSDictionary *userInfo = [NSDictionary dictionaryWithObjectsAndKeys:[[RCTOnPageScrollEvent alloc] initWithReactTag:[NSNumber numberWithInt:self.tag] position:@(position) offset:@(interpolatedOffset)], @"event", nil];
       |                                                                                                                        ~                       ^~~~~~~~
@@ -5178,233 +5179,9 @@ __deprecated_msg("This API will be removed along with the legacy architecture.")
 <module-includes>:1:9: note: in file included from <module-includes>:1:
 #import "Headers/React_Core/React_Core-umbrella.h"
         ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTCxxBridgeDelegate.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTMountingTransactionObserverCoordinator.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTEnhancedScrollView.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTReloadCommand.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTVirtualViewExperimentalComponentView.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTTouchHandler.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'CoreModulesPlugins.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSurface.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTView.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTBorderStyle.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTInputAccessoryComponentView.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSafeAreaShadowView.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTMockDef.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTFPSGraph.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTScrollEvent.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTActionSheetManager.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'UIView+React.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTCxxInspectorPackagerConnectionDelegate.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTAccessibilityManager+Internal.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTMacros.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTWrapperViewController.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTModalHostViewController.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTTouchableComponentViewProtocol.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTDisplayLink.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTBridgeMethod.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTMountingTransactionObserving.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTDevLoadingViewSetEnabled.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTIdentifierPool.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'FBReactNativeSpecJSI.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTCallInvokerModule.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTBorderDrawing.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTDevLoadingViewProtocol.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTScrollView.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTLogBox.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTExceptionsManager.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTModalHostView.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTActivityIndicatorViewComponentView.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTInitializing.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSurfaceView.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTSurfaceHostingProxyRootView.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTUIManagerUtils.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTAccessibilityManager.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTRootContentView.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTJSStackFrame.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h:288:1: warning: umbrella header for module 'React' does not include header 'RCTDevLoadingView.h'
-^
-<module-includes>:1:9: note: in file included from <module-includes>:1:
-#import "Headers/React_Core/React_Core-umbrella.h"
 --- xcodebuild: WARNING: Using the first of multiple matching destinations:
 { platform:iOS, id:dvtdevice-DVTiPhonePlaceholder-iphoneos:placeholder, name:Any iOS Device }
-{ platform:macOS, arch:arm64, variant:Designed for [iPad,iPhone], id:628acc898c90df7e67210abc5ce7553b04f3b77f, name:My Mac }
+{ platform:macOS, arch:arm64, variant:Designed for [iPad,iPhone], id:1950ab08dd92c42b686603578e55169be13ba8dd, name:My Mac }
 { platform:iOS Simulator, id:dvtdevice-DVTiOSDeviceSimulatorPlaceholder-iphonesimulator:placeholder, name:Any iOS Simulator Device }
 { platform:visionOS Simulator, arch:arm64, variant:Designed for [iPad,iPhone], id:60B3BAF2-290B-4695-B686-2396CCB96138, OS:2.3, name:Apple Vision Pro }
 { platform:visionOS Simulator, arch:arm64, variant:Designed for [iPad,iPhone], id:DABA7DF4-7BC2-4C4B-990D-0EEBBF570262, OS:2.4, name:Apple Vision Pro }
@@ -5598,104 +5375,24 @@ __deprecated_msg("This API will be removed along with the legacy architecture.")
 { platform:iOS Simulator, arch:arm64, id:7631B9C5-26B8-47DC-AE96-B2D87F4D54B2, OS:26.2, name:iPhone SE (3rd generation) }
 { platform:iOS Simulator, arch:x86_64, id:7631B9C5-26B8-47DC-AE96-B2D87F4D54B2, OS:26.2, name:iPhone SE (3rd generation) }
 ** BUILD FAILED **
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIHostingView.swift:45:89: error: unknown attribute 'MainActor'
 The following build commands failed:
+  public final class HostingView<Props: ViewProps, ContentView: View<Props>>: ExpoView, @MainActor AnyExpoSwiftUIHostingView {
 	CompileSwift normal arm64 (in target 'ExpoModulesCore' from project 'Pods')
+                                                                                        ^
 	SwiftCompile normal arm64 Compiling\ AnyArgument.swift,\ AnyArrayBuffer.swift,\ AnyChild.swift,\ AnyClassDefinitionElement.swift,\ AnyDefinition.swift,\ AnyDynamicType.swift,\ AnyExpoView.swift,\ AnyField.swift,\ AnyFunctionDefinition.swift,\ AnyModule.swift,\ AnyTypedArray.swift,\ AnyViewDefinition.swift,\ AnyViewProp.swift,\ AppCodeSignEntitlements.swift,\ AppContext.swift,\ AppContextConfig.swift,\ AppContextFactory.swift,\ AppleView.swift,\ ArrayBuffer.swift,\ ArrayBufferExtensions.swift,\ AsyncFunctionDefinition.swift,\ AsyncFunctionFactories.swift,\ AutoSizingStack.swift,\ Callback.swift,\ CdpNetworkTypes.swift,\ ChainableException.swift,\ ClassComponentBuilder.swift,\ ClassDefinition.swift,\ ClassFactories.swift,\ ClassRegistry.swift,\ CodedError.swift,\ CommonExceptions.swift,\ ConcreteArrayBuffers.swift,\ ConcreteTypedArrays.swift,\ ConcreteViewProp.swift,\ ConcurrentFunctionDefinition.swift,\ ConcurrentFunctionFactories.swift,\ ConstantDefinition.swift,\ ConstantFactories.swift,\ ConstantsProvider.
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIHostingView.swift:113:26: warning: main actor-isolated instance method 'updateProps' cannot be used to satisfy nonisolated requirement from protocol 'AnyExpoSwiftUIHostingView'; this is an error in the Swift 6 language mode
 	Building workspace TAMTAM with scheme TAMTAM and configuration Release
 (3 failures)
-                                     ^
-/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIView.h:185:40: note: property declared here
-@property(nonatomic) CGRect            frame;
-                                       ^
+    public override func updateProps(_ rawProps: [String: Any]) {
+                         ^
+--
 /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:196:43: error: unknown attribute 'MainActor'
 extension ExpoSwiftUI.SwiftUIVirtualView: @MainActor ExpoSwiftUI.ViewWrapper {
                                           ^
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:197:8: error: main actor-isolated instance method 'getWrappedView()' cannot be used to satisfy nonisolated requirement from protocol 'ViewWrapper'
+/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:197:8: warning: main actor-isolated instance method 'getWrappedView()' cannot be used to satisfy nonisolated requirement from protocol 'ViewWrapper'; this is an error in the Swift 6 language mode
   func getWrappedView() -> Any {
        ^
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:197:8: note: add 'nonisolated' to 'getWrappedView()' to make this instance method not isolated to the actor
-  func getWrappedView() -> Any {
-       ^
---
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:84:17: error: main actor-isolated property 'appContext' can not be referenced from a nonisolated context
-      guard let appContext else {
-                ^
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:17:14: note: property declared here
-    weak var appContext: AppContext?
-             ^
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:89:13: error: main actor-isolated property 'props' can not be referenced from a nonisolated context
-        try props.updateRawProps(rawProps, appContext: appContext)
-            ^
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:28:9: note: property declared here
-    let props: Props
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:130:22: error: main actor-isolated property 'props' can not be referenced from a nonisolated context
-      var children = props.children ?? []
-                     ^
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:28:9: note: property declared here
-    let props: Props
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:139:7: error: main actor-isolated property 'props' can not be referenced from a nonisolated context
-      props.children = children
-      ^
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:28:9: note: property declared here
-    let props: Props
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:140:7: error: main actor-isolated property 'props' can not be referenced from a nonisolated context
-      props.objectWillChange.send()
-      ^
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:28:9: note: property declared here
-    let props: Props
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:148:26: error: call to main actor-isolated instance method 'removeFromSuperview()' in a synchronous nonisolated context
-      childComponentView.removeFromSuperview()
-                         ^
-UIKit.UIView.removeFromSuperview:2:22: note: calls to instance method 'removeFromSuperview()' from outside of its actor context are implicitly asynchronous
-@MainActor open func removeFromSuperview()}
-                     ^
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:152:29: error: main actor-isolated property 'id' can not be referenced from a nonisolated context
-        childViewId = child.id
-                            ^
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/AnyChild.swift:14:9: note: property declared here
-    var id: ObjectIdentifier { get }
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:157:25: error: main actor-isolated property 'props' can not be referenced from a nonisolated context
-      if let children = props.children {
-                        ^
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:28:9: note: property declared here
-    let props: Props
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:158:9: error: main actor-isolated property 'props' can not be referenced from a nonisolated context
-        props.children = children.filter({ $0.id != childViewId })
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:28:9: note: property declared here
-    let props: Props
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:158:47: error: main actor-isolated property 'id' can not be referenced from a nonisolated context
-        props.children = children.filter({ $0.id != childViewId })
-                                              ^
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/AnyChild.swift:14:9: note: property declared here
-    var id: ObjectIdentifier { get }
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:162:9: error: main actor-isolated property 'props' can not be referenced from a nonisolated context
-        props.objectWillChange.send()
-        ^
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualView.swift:28:9: note: property declared here
-    let props: Props
-        ^
---
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/DevTools/URLAuthenticationChallengeForwardSender.swift:7:7: error: stored property 'completionHandler' of 'Sendable'-conforming class 'URLAuthenticationChallengeForwardSender' has non-sendable type '(URLSession.AuthChallengeDisposition, URLCredential?) -> Void'
-  let completionHandler: (URLSession.AuthChallengeDisposition, URLCredential?) -> Void
-      ^
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/DevTools/URLAuthenticationChallengeForwardSender.swift:7:7: note: a function type must be marked '@Sendable' to conform to 'Sendable'
-  let completionHandler: (URLSession.AuthChallengeDisposition, URLCredential?) -> Void
-      ^
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/DevTools/URLSessionSessionDelegateProxy.swift:8:15: error: stored property 'delegateMap' of 'Sendable'-conforming class 'URLSessionSessionDelegateProxy' is mutable
-  private var delegateMap: [AnyHashable: URLSessionDataDelegate] = [:]
-              ^
-/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/DevTools/URLSessionSessionDelegateProxy.swift:65:28: warning: passing non-sendable parameter 'completionHandler' to function expecting a @Sendable closure
-        completionHandler: completionHandler)
-                           ^
 --
 /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/ViewDefinition.swift:121:19: error: unknown attribute 'MainActor'
 extension UIView: @MainActor AnyArgument {

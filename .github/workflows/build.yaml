@@ -49,13 +49,12 @@ jobs:
 
       - name: Install CocoaPods
         working-directory: ios
-        run: |
-          rm -rf ~/.cocoapods/repos
-          pod install --repo-update
+        run: pod install
 
       - name: Build App Bundle (Unsigned)
         working-directory: ios
         run: |
+          set -o pipefail
           xcodebuild build \
             -workspace TAMTAM.xcworkspace \
             -scheme TAMTAM \
@@ -65,11 +64,24 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
-            AD_HOC_CODE_SIGNING_ALLOWED=YES \
             CODE_SIGN_STYLE=Manual \
             PROVISIONING_PROFILE_SPECIFIER="" \
             COMPILER_INDEX_STORE_ENABLE=NO \
-            -quiet || (echo "Build failed, showing last 100 lines of error log:" && xcodebuild build -workspace TAMTAM.xcworkspace -scheme TAMTAM -configuration Release -sdk iphoneos -derivedDataPath ./build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" AD_HOC_CODE_SIGNING_ALLOWED=YES CODE_SIGN_STYLE=Manual PROVISIONING_PROFILE_SPECIFIER="" COMPILER_INDEX_STORE_ENABLE=NO | grep -A 5 "error:" | tail -n 100 && exit 1)
+            2>&1 | tee xcodebuild.log | (xcpretty || cat) || BUILD_FAILED=1
+          if [ "$BUILD_FAILED" = "1" ]; then
+            echo "::group::Build errors (last 200 lines around 'error:')"
+            grep -B 2 -A 8 "error:" xcodebuild.log | tail -n 200 || true
+            echo "::endgroup::"
+            exit 1
+          fi
+
+      - name: Upload xcodebuild log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-log
+          path: ios/xcodebuild.log
+          if-no-files-found: ignore
 
       - name: Package IPA
         run: |

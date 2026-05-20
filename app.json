@@ -25,19 +25,11 @@
         "NSLocationAlwaysUsageDescription": "TAMTAM needs background location to alert you when you are near shared memories.",
         "UIBackgroundModes": [
           "location",
-          "fetch",
-          "location",
           "fetch"
         ],
         "NSSupportsLiveActivities": false,
         "NSSupportsLiveActivitiesFrequentUpdates": false,
         "ITSAppUsesNonExemptEncryption": false
-      },
-      "entitlements": {
-        "com.apple.security.application-groups": [
-          "group.com.pratishth.ourlink.expowidgets"
-        ],
-        "aps-environment": "production"
       }
     },
     "android": {

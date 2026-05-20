@@ -31,19 +31,18 @@ const deps = [
 const podPostInstallFix = `
     puts "TAMTAM: Applying global build settings..."
     installer.pods_project.targets.each do |target|
+      is_expo = target.name.start_with?('Expo') || target.name.start_with?('EX') || target.name == 'ExpoModulesCore'
       target.build_configurations.each do |config|
-        # Remove any strict SWIFT_VERSION settings Expo might have added and force 5.9
+        # Expo SDK 55 modules use @MainActor on extensions (Swift 6 syntax).
+        # Legacy community pods (Lottie, etc.) stay on Swift 5.0 to avoid strict concurrency breakage.
         config.build_settings.delete('SWIFT_VERSION')
-        config.build_settings['SWIFT_VERSION'] = '5.9'
-        
+        config.build_settings['SWIFT_VERSION'] = is_expo ? '6.0' : '5.0'
+
         config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
         config.build_settings['SWIFT_STRICT_CONCURRENCY'] = 'off'
         config.build_settings['SWIFT_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
         config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
         config.build_settings['CODE_SIGNING_REQUIRED'] = 'NO'
-        
-        # Expo 55 compatibility flags
-        config.build_settings['OTHER_SWIFT_FLAGS'] = '$(inherited) -D EXPO_SWIFT_6_MIGRATION'
       end
     end
     
