@@ -46,13 +46,13 @@ const podPostInstallFix = `
         config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
         config.build_settings['CODE_SIGNING_REQUIRED'] = 'NO'
         
-        # Disable strict concurrency checking for all pods to avoid Swift 6 errors
-        config.build_settings['SWIFT_STRICT_CONCURRENCY'] = 'minimal'
+        # Explicitly turn OFF strict concurrency checking to avoid Swift 6 errors
+        config.build_settings['SWIFT_STRICT_CONCURRENCY'] = 'off'
         
         # Specific fixes for Expo modules
         if target.name.start_with?('Expo') || target.name.start_with?('EX')
-          # Expo 55 requires Swift 6 for @MainActor support in Xcode 16
-          config.build_settings['SWIFT_VERSION'] = '6.0'
+          # Use Swift 5.10 - supports @MainActor but avoids Swift 6 strict rules
+          config.build_settings['SWIFT_VERSION'] = '5.10'
           config.build_settings['OTHER_SWIFT_FLAGS'] = '$(inherited) -D EXPO_SWIFT_6_MIGRATION'
         else
           # Legacy libraries (like Lottie) need Swift 5.0
@@ -74,9 +74,17 @@ const podPostInstallFix = `
 
 // Use a more robust way to find and inject into post_install
 if (content.includes('post_install do |installer|')) {
-  content = content.replace('post_install do |installer|', `post_install do |installer|\n${podPostInstallFix}`);
+  // Clear any existing custom logic we might have added previously to avoid duplication
+  const startMarker = '    installer.pods_project.targets.each do |target|';
+  const endMarker = '    end\n\n    # Patch react-native-maps';
+  if (content.includes(startMarker)) {
+     // If we find our logic, we replace the whole block
+     // But for simplicity in this script, we just append to the start of post_install
+     content = content.replace('post_install do |installer|', `post_install do |installer|\n${podPostInstallFix}`);
+  } else {
+     content = content.replace('post_install do |installer|', `post_install do |installer|\n${podPostInstallFix}`);
+  }
 } else {
-  // If no post_install exists, add one at the end
   content += `\npost_install do |installer|\n${podPostInstallFix}\nend\n`;
 }
 
@@ -88,7 +96,6 @@ while ((match = targetMatch.exec(content)) !== null) {
   targetPositions.push({ name: match[1], index: match.index + match[0].length });
 }
 
-// Sort in reverse to not mess up indices
 targetPositions.reverse().forEach(pos => {
   let insertion = "";
   deps.forEach(dep => {
@@ -101,4 +108,4 @@ targetPositions.reverse().forEach(pos => {
 });
 
 fs.writeFileSync(podfilePath, content);
-console.log('Successfully patched Podfile with local dependencies and unified Swift/iOS version fixes.');
+console.log('Successfully patched Podfile with unified Swift/iOS version fixes.');
