@@ -29,11 +29,8 @@ const deps = [
 ];
 
 // 3. Final Build Settings Override
-// We append this as a SEPARATE post_install block at the end of the file.
-// CocoaPods supports multiple post_install blocks; they run in order.
-// Appending ensures ours runs LAST and takes absolute precedence.
-const finalPostInstall = `
-post_install do |installer|
+// We INJECT this into the existing post_install block to avoid the "multiple hooks" error.
+const settingsOverride = `
   puts "TAMTAM: Running final build settings override..."
   installer.pods_project.targets.each do |target|
     target.build_configurations.each do |config|
@@ -68,16 +65,14 @@ post_install do |installer|
     File.write(maps_marker, text)
     puts "TAMTAM: Patched AIRMapMarker.m"
   end
-end
 `;
 
-// Remove any previous versions of our custom post_install block to avoid duplication
-if (content.includes('TAMTAM: Running final build settings override')) {
-    // This is a bit risky but we'll try to strip our old block if it exists
-    // (In practice, prebuild deletes the ios folder, so this script usually starts fresh)
+if (content.includes('post_install do |installer|')) {
+  content = content.replace('post_install do |installer|', `post_install do |installer|${settingsOverride}`);
+} else {
+  // Fallback if no post_install exists (unlikely in Expo projects)
+  content += `\npost_install do |installer|\n${settingsOverride}\nend\n`;
 }
-
-content += `\n${finalPostInstall}\n`;
 
 // 4. Inject local pods into targets
 const targetMatch = /target '([^']+)' do/g;
