@@ -44,31 +44,25 @@ const settingsOverride = `
       # Global Concurrency fix: turn OFF strict checking for all
       config.build_settings['SWIFT_STRICT_CONCURRENCY'] = 'off'
       
-      # Targeted Swift Versioning
-      # Expo 55 infrastructure often needs Swift 6 for Xcode 16 compatibility.
-      # Community libs (RNScreens, Lottie) MUST stay on 5.0 to avoid concurrency errors.
+      # Robust Targeted Swift Versioning
+      # Expo 55 (RN 0.83+) requires Swift 6 for core infrastructure (@MainActor support).
+      # Community libs (RNScreens, Lottie, etc.) are NOT ready for Swift 6.
       
-      # Core Expo modules that are safe/required for Swift 6
-      swift6_modules = [
-        'ExpoModulesCore', 
-        'Expo', 
-        'EXOpenSSL', 
-        'ExpoKeepAwake', 
-        'ExpoFileSystem', 
-        'ExpoConstants',
-        'ExpoDevice',
-        'ExpoSplashScreen',
-        'ExpoFont'
-      ]
+      target_name = target.name
       
-      if swift6_modules.include?(target.name)
+      # Step 1: Force Strict Concurrency OFF for EVERYTHING
+      config.build_settings['SWIFT_STRICT_CONCURRENCY'] = 'off'
+      
+      # Step 2: Determine Swift Version
+      if target_name.start_with?('Expo') || target_name.start_with?('EX') || target_name == 'Pods-TAMTAM'
+        # Expo Core + Main App Target -> Swift 6.0
         config.build_settings['SWIFT_VERSION'] = '6.0'
         config.build_settings['OTHER_SWIFT_FLAGS'] = '$(inherited) -D EXPO_SWIFT_6_MIGRATION'
-      elsif target.name.include?('Lottie') || target.name.include?('Screen') || target.name.include?('PagerView')
-        # Explicitly force 5.0 for these problematic libraries
+      elsif target_name.include?('Lottie') || target_name.include?('Screen') || target_name.include?('PagerView') || target_name.include?('BlurView') || target_name.include?('Haptics')
+        # Community libs that fail on Swift 6 -> Swift 5.0
         config.build_settings['SWIFT_VERSION'] = '5.0'
       else
-        # Default fallback
+        # Fallback to Swift 5.0 for safety unless it's an Expo module
         config.build_settings['SWIFT_VERSION'] = '5.0'
       end
     end
