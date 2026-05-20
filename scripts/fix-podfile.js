@@ -39,25 +39,28 @@ const deps = [
 const podPostInstallFix = `
     installer.pods_project.targets.each do |target|
       target.build_configurations.each do |config|
-        # Standardize on iOS 15.1 (Expo 55 minimum)
+        # Standardize on iOS 15.1
         config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
         
-        # Disable signing for ALL pods (required for CI builds)
+        # Disable signing for ALL pods
         config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
         config.build_settings['CODE_SIGNING_REQUIRED'] = 'NO'
         
-        # Explicitly turn OFF strict concurrency checking to avoid Swift 6 errors
+        # Explicitly turn OFF strict concurrency checking
         config.build_settings['SWIFT_STRICT_CONCURRENCY'] = 'off'
         
-        # Specific fixes for Expo modules
+        # Target specific Swift versions
         if target.name.start_with?('Expo') || target.name.start_with?('EX')
-          # Use Swift 5.10 - supports @MainActor but avoids Swift 6 strict rules
-          config.build_settings['SWIFT_VERSION'] = '5.10'
+          # Force Swift 6.0 for Expo to recognize @MainActor
+          config.build_settings['SWIFT_VERSION'] = '6.0'
           config.build_settings['OTHER_SWIFT_FLAGS'] = '$(inherited) -D EXPO_SWIFT_6_MIGRATION'
         else
-          # Legacy libraries (like Lottie) need Swift 5.0
+          # Fallback to Swift 5.0 for stability in community packages
           config.build_settings['SWIFT_VERSION'] = '5.0'
         end
+        
+        # Log the change for debugging
+        puts "Target: #{target.name} | Swift: #{config.build_settings['SWIFT_VERSION']} | OS: #{config.build_settings['IPHONEOS_DEPLOYMENT_TARGET']}"
       end
     end
     
@@ -72,18 +75,14 @@ const podPostInstallFix = `
     end
 `;
 
-// Use a more robust way to find and inject into post_install
+// More aggressive injection: Find the end of the post_install block and insert before it.
+// This ensures our settings are the absolute final word.
 if (content.includes('post_install do |installer|')) {
-  // Clear any existing custom logic we might have added previously to avoid duplication
-  const startMarker = '    installer.pods_project.targets.each do |target|';
-  const endMarker = '    end\n\n    # Patch react-native-maps';
-  if (content.includes(startMarker)) {
-     // If we find our logic, we replace the whole block
-     // But for simplicity in this script, we just append to the start of post_install
-     content = content.replace('post_install do |installer|', `post_install do |installer|\n${podPostInstallFix}`);
-  } else {
-     content = content.replace('post_install do |installer|', `post_install do |installer|\n${podPostInstallFix}`);
-  }
+  // We use a regex to find the end of the post_install block.
+  // We look for 'post_install do |installer|' followed by any code, then 'end' at the end of a line.
+  content = content.replace(/(post_install do \|installer\|[\s\S]*?)(^  end)/m, (match, p1, p2) => {
+    return `${p1}\n${podPostInstallFix}\n${p2}`;
+  });
 } else {
   content += `\npost_install do |installer|\n${podPostInstallFix}\nend\n`;
 }
@@ -108,4 +107,4 @@ targetPositions.reverse().forEach(pos => {
 });
 
 fs.writeFileSync(podfilePath, content);
-console.log('Successfully patched Podfile with unified Swift/iOS version fixes.');
+console.log('Successfully patched Podfile with robust setting injection and logging.');
