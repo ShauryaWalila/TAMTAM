@@ -34,36 +34,21 @@ const settingsOverride = `
   puts "TAMTAM: Running final build settings override..."
   installer.pods_project.targets.each do |target|
     target.build_configurations.each do |config|
-      # Force iOS 15.1 for modern Swift features
+      # Base configurations
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
-      
-      # Disable signing to prevent CI failures
       config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
       config.build_settings['CODE_SIGNING_REQUIRED'] = 'NO'
-      
-      # Global Concurrency fix: turn OFF strict checking for all
       config.build_settings['SWIFT_STRICT_CONCURRENCY'] = 'off'
+      config.build_settings['SWIFT_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
       
-      # Definitive Targeted Swift Versioning
-      # Expo 55 (RN 0.83+) requires Swift 6 for @MainActor conformances in core infrastructure.
-      # Community libs are NOT ready for Swift 6 and MUST stay on 5.0.
-      
+      # Targeted Swift Versioning
       target_name = target.name
-      
-      # Step 1: Force Strict Concurrency OFF for EVERYTHING
-      config.build_settings['SWIFT_STRICT_CONCURRENCY'] = 'off'
-      
-      # Step 2: Set Deployment Target to a modern minimum
-      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
-      
-      # Step 3: Assign Swift Versions
       if target_name.include?('Expo') || target_name.include?('EX') || target_name == 'Pods-TAMTAM' || target_name == 'TAMTAM'
-        # Expo Core + Main App -> Swift 6.0
-        # We use Swift 6.0 for syntax support, but SWIFT_STRICT_CONCURRENCY=off makes it permissive.
-        config.build_settings['SWIFT_VERSION'] = '6.0'
+        # Expo 55 Core + App -> Swift 5.10 (Permissive but supports @MainActor)
+        config.build_settings['SWIFT_VERSION'] = '5.10'
         config.build_settings['OTHER_SWIFT_FLAGS'] = '$(inherited) -D EXPO_SWIFT_6_MIGRATION'
       else
-        # Community libs -> Swift 5.0
+        # Community libraries -> Swift 5.0
         config.build_settings['SWIFT_VERSION'] = '5.0'
       end
     end
@@ -80,10 +65,14 @@ const settingsOverride = `
   end
 `;
 
-if (content.includes('post_install do |installer|')) {
-  content = content.replace('post_install do |installer|', `post_install do |installer|${settingsOverride}`);
+const postInstallRegex = /post_install\s+do\s+\|([^|]+)\|/;
+if (postInstallRegex.test(content)) {
+  console.log('Found post_install block, injecting overrides...');
+  content = content.replace(postInstallRegex, (match, p1) => {
+    return `${match}\n  puts "TAMTAM: Running final build settings override with installer: #{${p1}}..."\n${settingsOverride.replace(/installer/g, p1)}`;
+  });
 } else {
-  // Fallback if no post_install exists (unlikely in Expo projects)
+  console.log('No post_install block found, appending new one...');
   content += `\npost_install do |installer|\n${settingsOverride}\nend\n`;
 }
 
