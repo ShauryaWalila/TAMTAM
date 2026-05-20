@@ -46,6 +46,14 @@ const podPostInstallFix = `
         config.build_settings['SWIFT_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
         config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
         config.build_settings['CODE_SIGNING_REQUIRED'] = 'NO'
+
+        # Xcode 26 / iOS 26 SDK requires explicit C++ stdlib for Fabric headers
+        # (React-Fabric headers use <memory>, <vector>, etc.). Without these,
+        # clang module compilation of ObjC++ umbrella headers fails with
+        # "'memory' file not found" while building RNScreens / ExpoRouter etc.
+        config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++20'
+        config.build_settings['CLANG_CXX_LIBRARY'] = 'libc++'
+        config.build_settings['CLANG_ENABLE_MODULES'] = 'YES'
       end
     end
     
