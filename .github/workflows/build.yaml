@@ -71,39 +71,51 @@ jobs:
         working-directory: ios
         run: pod install
 
-      - name: Patch ReactCodegen / Fabric modulemaps for C++ headers
+      - name: Wrap Fabric C++ headers in __cplusplus guards
         working-directory: ios
         run: |
-          # Xcode 26 strict: modulemaps must declare `requires cplusplus` for any
-          # module whose headers include C++ stdlib (<memory>, <vector>, ...).
-          # ReactCodegen + React-Fabric umbrellas don't declare this, so clang
-          # parses their headers in ObjC mode and fails on `#include <memory>`.
-          # Inject `requires cplusplus` into the umbrella module block.
+          # Xcode 26 strict: when clang parses RNScreens/ExpoRouter umbrella
+          # headers in ObjC mode, it chokes on #include <memory> in the chained
+          # Fabric C++ headers. Marking modulemaps `requires cplusplus` cascades
+          # to consumers. Cleanest fix: wrap each Fabric public header's body
+          # in `#if defined(__cplusplus)` so ObjC parse sees empty, C++ sees
+          # full content. ObjC code never uses these types anyway.
           node -e "
             const fs = require('fs');
             const path = require('path');
-            const targets = [
-              'Pods/Headers/Public/ReactCodegen/ReactCodegen.modulemap',
-              'Pods/Headers/Public/React-Fabric/React-Fabric.modulemap',
-              'Pods/Headers/Public/React-FabricComponents/React-FabricComponents.modulemap',
-              'Pods/Headers/Public/React-FabricImage/React-FabricImage.modulemap',
-              'Pods/Headers/Public/React-graphics/React-graphics.modulemap',
-              'Pods/Headers/Public/React-RCTFabric/React-RCTFabric.modulemap',
-              'Pods/Headers/Public/React-ImageManager/React-ImageManager.modulemap'
+            const roots = [
+              'Pods/Headers/Public/React-Fabric',
+              'Pods/Headers/Public/React-FabricComponents',
+              'Pods/Headers/Public/React-FabricImage',
+              'Pods/Headers/Public/React-graphics',
+              'Pods/Headers/Public/React-RCTFabric',
+              'Pods/Headers/Public/React-ImageManager',
+              'Pods/Headers/Public/ReactCodegen'
             ];
-            for (const rel of targets) {
-              if (!fs.existsSync(rel)) { console.log('skip (not found):', rel); continue; }
-              let s = fs.readFileSync(rel, 'utf8');
-              if (s.includes('requires cplusplus')) { console.log('already patched:', rel); continue; }
-              // Insert 'requires cplusplus' just after the opening '{' of the first module decl
-              const patched = s.replace(/(module\s+[A-Za-z0-9_]+\s*\{)/, '\$1\n  requires cplusplus');
-              if (patched === s) { console.log('pattern not matched:', rel); continue; }
-              fs.writeFileSync(rel, patched);
-              console.log('patched:', rel);
+            const CXX_TOKENS = /#include\s+<(memory|vector|string|functional|optional|unordered_map|unordered_set|map|set|deque|list|array|tuple|chrono|atomic|mutex|thread|future|variant|type_traits|algorithm|iterator|stdexcept|utility|cstdint|cstddef|initializer_list|numeric|limits|cmath|cstdlib|cstdio|cassert|memory_resource|bit|concepts|coroutine|expected|ranges|span|string_view)>/;
+            function walk(dir) {
+              if (!fs.existsSync(dir)) return [];
+              const out = [];
+              for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+                const p = path.join(dir, ent.name);
+                if (ent.isDirectory()) out.push(...walk(p));
+                else if (ent.isFile() && (ent.name.endsWith('.h') || ent.name.endsWith('.hpp'))) out.push(p);
+              }
+              return out;
             }
+            let patched = 0, skipped = 0;
+            for (const root of roots) {
+              for (const file of walk(root)) {
+                let s = fs.readFileSync(file, 'utf8');
+                if (!CXX_TOKENS.test(s)) continue;
+                if (s.includes('// TAMTAM_CXX_GUARD')) { skipped++; continue; }
+                s = '// TAMTAM_CXX_GUARD\n#if defined(__cplusplus)\n' + s + '\n#endif // TAMTAM_CXX_GUARD\n';
+                fs.writeFileSync(file, s);
+                patched++;
+              }
+            }
+            console.log('TAMTAM: wrapped', patched, 'Fabric C++ headers; skipped', skipped, 'already wrapped');
           "
-          echo "---- ReactCodegen modulemap after patch ----"
-          cat Pods/Headers/Public/ReactCodegen/ReactCodegen.modulemap || true
 
       - name: Build App Bundle (Unsigned)
         working-directory: ios
