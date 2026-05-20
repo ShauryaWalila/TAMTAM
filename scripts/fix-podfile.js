@@ -44,22 +44,26 @@ const settingsOverride = `
       # Global Concurrency fix: turn OFF strict checking for all
       config.build_settings['SWIFT_STRICT_CONCURRENCY'] = 'off'
       
-      # Robust Targeted Swift Versioning
-      # Expo 55 (RN 0.83+) needs @MainActor support and modern Swift features.
-      # Swift 5.10 provides these without the fatal strictness of Swift 6 mode.
+      # Definitive Targeted Swift Versioning
+      # Expo 55 (RN 0.83+) requires Swift 6 for @MainActor conformances in core infrastructure.
+      # Community libs are NOT ready for Swift 6 and MUST stay on 5.0.
       
       target_name = target.name
       
       # Step 1: Force Strict Concurrency OFF for EVERYTHING
       config.build_settings['SWIFT_STRICT_CONCURRENCY'] = 'off'
       
-      # Step 2: Determine Swift Version
+      # Step 2: Set Deployment Target to a modern minimum
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
+      
+      # Step 3: Assign Swift Versions
       if target_name.include?('Expo') || target_name.include?('EX') || target_name == 'Pods-TAMTAM' || target_name == 'TAMTAM'
-        # Expo infrastructure and main app -> Swift 5.10
-        config.build_settings['SWIFT_VERSION'] = '5.10'
+        # Expo Core + Main App -> Swift 6.0
+        # We use Swift 6.0 for syntax support, but SWIFT_STRICT_CONCURRENCY=off makes it permissive.
+        config.build_settings['SWIFT_VERSION'] = '6.0'
         config.build_settings['OTHER_SWIFT_FLAGS'] = '$(inherited) -D EXPO_SWIFT_6_MIGRATION'
       else
-        # Community libs (Lottie, Screens, etc.) -> Swift 5.0 for stability
+        # Community libs -> Swift 5.0
         config.build_settings['SWIFT_VERSION'] = '5.0'
       end
     end
