@@ -28,23 +28,23 @@ set -o pipefail
 ▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/react-native-maps/ReactNativeMapsPrivacy.bundle/PrivacyInfo.xcprivacy
 ▸ Processing ResourceBundle-Lottie_React_Native_Privacy-lottie-react-native-Info.plist
 ▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/lottie-react-native/Lottie_React_Native_Privacy.bundle/PrivacyInfo.xcprivacy
+▸ Running script '[CP-User] [RNDeps] Replace React Native Core for the right configuration, if needed'
+▸ Touching ReactNativeMapsPrivacy.bundle (in target 'react-native-maps-ReactNativeMapsPrivacy' from project 'Pods')
 ▸ Processing ResourceBundle-LottiePrivacyInfo-lottie-ios-Info.plist
 ▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/lottie-ios/LottiePrivacyInfo.bundle/PrivacyInfo.xcprivacy
-▸ Touching ReactNativeMapsPrivacy.bundle (in target 'react-native-maps-ReactNativeMapsPrivacy' from project 'Pods')
 ▸ Touching Lottie_React_Native_Privacy.bundle (in target 'lottie-react-native-Lottie_React_Native_Privacy' from project 'Pods')
 ▸ Touching LottiePrivacyInfo.bundle (in target 'lottie-ios-LottiePrivacyInfo' from project 'Pods')
 ▸ Processing ResourceBundle-glog_privacy-glog-Info.plist
 ▸ Processing ResourceBundle-boost_privacy-boost-Info.plist
 ▸ Touching glog_privacy.bundle (in target 'glog-glog_privacy' from project 'Pods')
-▸ Running script '[CP-User] [RNDeps] Replace React Native Core for the right configuration, if needed'
 ▸ Touching boost_privacy.bundle (in target 'boost-boost_privacy' from project 'Pods')
 ▸ Processing ResourceBundle-SDWebImage-SDWebImage-Info.plist
 ▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/SDWebImage/SDWebImage.bundle/PrivacyInfo.xcprivacy
+▸ Touching SDWebImage.bundle (in target 'SDWebImage-SDWebImage' from project 'Pods')
 ▸ Processing ResourceBundle-React-cxxreact_privacy-React-cxxreact-Info.plist
 ▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/React-cxxreact/React-cxxreact_privacy.bundle/PrivacyInfo.xcprivacy
 ▸ Processing ResourceBundle-React-Core_privacy-React-Core-Info.plist
 ▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/React-Core/React-Core_privacy.bundle/PrivacyInfo.xcprivacy
-▸ Touching SDWebImage.bundle (in target 'SDWebImage-SDWebImage' from project 'Pods')
 ▸ Touching React-cxxreact_privacy.bundle (in target 'React-cxxreact-React-cxxreact_privacy' from project 'Pods')
 ▸ Processing ResourceBundle-RNSVGFilters-RNSVG-Info.plist
 ▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/RNSVG/RNSVGFilters.bundle/RNSVGCompositeXor.iphoneos.metallib
@@ -52,33 +52,6 @@ set -o pipefail
 ▸ Touching React-Core_privacy.bundle (in target 'React-Core-React-Core_privacy' from project 'Pods')
 ▸ Processing ResourceBundle-RNCAsyncStorage_resources-RNCAsyncStorage-Info.plist
 ▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/RNCAsyncStorage/RNCAsyncStorage_resources.bundle/PrivacyInfo.xcprivacy
-▸ Touching RNSVGFilters.bundle (in target 'RNSVG-RNSVGFilters' from project 'Pods')
-▸ Processing ResourceBundle-RCT-Folly_privacy-RCT-Folly-Info.plist
-▸ Touching RNCAsyncStorage_resources.bundle (in target 'RNCAsyncStorage-RNCAsyncStorage_resources' from project 'Pods')
-▸ Processing ResourceBundle-ExpoMediaLibrary_privacy-ExpoMediaLibrary-Info.plist
-▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/ExpoMediaLibrary/ExpoMediaLibrary_privacy.bundle/PrivacyInfo.xcprivacy
-▸ Touching RCT-Folly_privacy.bundle (in target 'RCT-Folly-RCT-Folly_privacy' from project 'Pods')
-▸ Processing ResourceBundle-ExpoFileSystem_privacy-ExpoFileSystem-Info.plist
-▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/ExpoFileSystem/ExpoFileSystem_privacy.bundle/PrivacyInfo.xcprivacy
-▸ Touching ExpoMediaLibrary_privacy.bundle (in target 'ExpoMediaLibrary-ExpoMediaLibrary_privacy' from project 'Pods')
-▸ Processing ResourceBundle-ExpoDevice_privacy-ExpoDevice-Info.plist
-▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/ExpoDevice/ExpoDevice_privacy.bundle/PrivacyInfo.xcprivacy
-▸ Touching ExpoFileSystem_privacy.bundle (in target 'ExpoFileSystem-ExpoFileSystem_privacy' from project 'Pods')
-▸ Processing ResourceBundle-ExpoTaskManager_privacy-EXTaskManager-Info.plist
-▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/EXTaskManager/ExpoTaskManager_privacy.bundle/PrivacyInfo.xcprivacy
-▸ Touching ExpoDevice_privacy.bundle (in target 'ExpoDevice-ExpoDevice_privacy' from project 'Pods')
-▸ Processing ResourceBundle-ExpoNotifications_privacy-EXNotifications-Info.plist
-▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/EXNotifications/ExpoNotifications_privacy.bundle/PrivacyInfo.xcprivacy
-▸ Touching ExpoTaskManager_privacy.bundle (in target 'EXTaskManager-ExpoTaskManager_privacy' from project 'Pods')
-▸ Processing ResourceBundle-ExpoConstants_privacy-EXConstants-Info.plist
-▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/EXConstants/ExpoConstants_privacy.bundle/PrivacyInfo.xcprivacy
-▸ Touching ExpoNotifications_privacy.bundle (in target 'EXNotifications-ExpoNotifications_privacy' from project 'Pods')
-▸ Processing ResourceBundle-EXConstants-EXConstants-Info.plist
-▸ Touching ExpoConstants_privacy.bundle (in target 'EXConstants-ExpoConstants_privacy' from project 'Pods')
-▸ Processing ResourceBundle-ExpoApplication_privacy-EXApplication-Info.plist
-▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/EXApplication/ExpoApplication_privacy.bundle/PrivacyInfo.xcprivacy
-▸ Touching EXConstants.bundle (in target 'EXConstants-EXConstants' from project 'Pods')
-▸ Touching ExpoApplication_privacy.bundle (in target 'EXApplication-ExpoApplication_privacy' from project 'Pods')
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/lottie-ios/Sources/Public/Controls/AnimatedSwitch.swift:263:19: main actor-isolated default value in a nonisolated context; this is an error in the Swift 6 language mode
   fileprivate let impact = UIImpactFeedbackGenerator(style: .light)
                   ^
@@ -345,59 +318,24 @@ public struct LottieView<Placeholder: View>: UIViewConfiguringSwiftUIView {
 ▸ Compiling logging.cc
 ▸ Compiling demangle.cc
 ▸ Compiling format.cc
-▸ Compiling json_pointer.cpp
-▸ Compiling json.cpp
-▸ Compiling dynamic.cpp
-▸ Compiling UniqueInstance.cpp
-▸ Compiling Unicode.cpp
-▸ Compiling ToAscii.cpp
-▸ Compiling ThreadId.cpp
-▸ Compiling SysUio.cpp
-▸ Compiling String.cpp
-▸ Compiling StaticSingletonManager.cpp
-▸ Compiling SpookyHashV2.cpp
-▸ Compiling SplitStringSimd.cpp
-▸ Compiling ScopeGuard.cpp
-▸ Compiling SanitizeThread.cpp
-▸ Compiling SafeAssert.cpp
-▸ Compiling ReentrantAllocator.cpp
-▸ Compiling NetOps.cpp
-▸ Compiling MallocImpl.cpp
-▸ Compiling Format.cpp
-▸ Compiling FileUtilDetail.cpp
-▸ Compiling FileUtil.cpp
-▸ Compiling F14Table.cpp
-▸ Compiling Exception.cpp
-▸ Compiling Demangle.cpp
-▸ Compiling Conv.cpp
-▸ Compiling CString.cpp
-▸ Compiling AtFork.cpp
-▸ Compiling strtod.cc
-▸ Compiling fixed-dtoa.cc
-▸ Compiling fast-dtoa.cc
-▸ Compiling double-conversion.cc
-▸ Compiling diy-fp.cc
-▸ Compiling cached-powers.cc
-▸ Compiling bignum.cc
-▸ Compiling bignum-dtoa.cc
 ▸ Compiling yuv_sse41.c
 ▸ Compiling yuv_sse2.c
-▸ Compiling yuv_mips32.c
 ▸ Compiling yuv_mips_dsp_r2.c
-▸ Compiling upsampling_sse41.c
-▸ Compiling upsampling_sse2.c
-▸ Compiling upsampling_msa.c
-▸ Compiling upsampling_mips_dsp_r2.c
-▸ Compiling upsampling.c
+▸ Compiling yuv_mips32.c
 ▸ Compiling yuv.c
-▸ Compiling webp_enc.c
 ▸ Compiling yuv_neon.c
+▸ Compiling webp_enc.c
 ▸ Compiling webp_dec.c
 ▸ Compiling vp8l_enc.c
 ▸ Compiling vp8l_dec.c
 ▸ Compiling vp8_dec.c
 ▸ Compiling utils.c
+▸ Compiling upsampling_sse41.c
+▸ Compiling upsampling_sse2.c
 ▸ Compiling upsampling_neon.c
+▸ Compiling upsampling_msa.c
+▸ Compiling upsampling_mips_dsp_r2.c
+▸ Compiling upsampling.c
 ▸ Compiling tree_enc.c
 ▸ Compiling tree_dec.c
 ▸ Compiling token_enc.c
@@ -407,17 +345,17 @@ public struct LottieView<Placeholder: View>: UIViewConfiguringSwiftUIView {
 ▸ Compiling ssim.c
 ▸ Compiling sharpyuv_sse2.c
 ▸ Compiling sharpyuv_neon.c
-▸ Compiling sharpyuv_dsp.c
 ▸ Compiling sharpyuv_gamma.c
+▸ Compiling sharpyuv_dsp.c
 ▸ Compiling sharpyuv_csp.c
 ▸ Compiling sharpyuv_cpu.c
-▸ Compiling rescaler_sse2.c
-▸ Compiling rescaler_neon.c
 ▸ Compiling sharpyuv.c
+▸ Compiling rescaler_sse2.c
 ▸ Compiling rescaler_utils.c
+▸ Compiling rescaler_neon.c
 ▸ Compiling rescaler_msa.c
-▸ Compiling rescaler_mips_dsp_r2.c
 ▸ Compiling rescaler_mips32.c
+▸ Compiling rescaler_mips_dsp_r2.c
 ▸ Compiling rescaler.c
 ▸ Compiling random_utils.c
 ▸ Compiling quant_levels_utils.c
@@ -437,8 +375,8 @@ public struct LottieView<Placeholder: View>: UIViewConfiguringSwiftUIView {
 ▸ Compiling muxedit.c
 ▸ Compiling lossless_sse41.c
 ▸ Compiling lossless_sse2.c
-▸ Compiling lossless_neon.c
 ▸ Compiling lossless_msa.c
+▸ Compiling lossless_neon.c
 ▸ Compiling lossless_mips_dsp_r2.c
 ▸ Compiling lossless_enc_sse41.c
 ▸ Compiling lossless_enc_sse2.c
@@ -503,21 +441,21 @@ public struct LottieView<Placeholder: View>: UIViewConfiguringSwiftUIView {
 ▸ Compiling alpha_processing_sse41.c
 ▸ Compiling alpha_processing_sse2.c
 ▸ Compiling alpha_processing_neon.c
-▸ Compiling alpha_processing.c
 ▸ Compiling alpha_processing_mips_dsp_r2.c
+▸ Compiling alpha_processing.c
 ▸ Compiling alpha_enc.c
 ▸ Compiling alpha_dec.c
 ▸ Building library liblibwebp.a
 ▸ Compiling wedge.c
 ▸ Compiling tables.c
 ▸ Compiling scan.c
+▸ Compiling qm.c
 ▸ Compiling warpmv.c
-▸ Compiling thread_task.c
 ▸ Compiling refmvs.c
+▸ Compiling thread_task.c
 ▸ Compiling ref.c
 ▸ Compiling recon_tmpl_16.c
 ▸ Compiling recon_tmpl.c
-▸ Compiling qm.c
 ▸ Compiling picture.c
 ▸ Compiling obu.c
 ▸ Compiling msac.c
@@ -533,8 +471,8 @@ public struct LottieView<Placeholder: View>: UIViewConfiguringSwiftUIView {
 ▸ Compiling log.c
 ▸ Compiling lib.c
 ▸ Compiling lf_mask.c
-▸ Compiling lf_apply_tmpl_16.c
 ▸ Compiling libdav1d-dummy.m
+▸ Compiling lf_apply_tmpl_16.c
 ▸ Compiling lf_apply_tmpl.c
 ▸ Compiling itx_tmpl_16.c
 ▸ Compiling itx_tmpl.c
@@ -543,16 +481,16 @@ public struct LottieView<Placeholder: View>: UIViewConfiguringSwiftUIView {
 ▸ Compiling ipred_tmpl.c
 ▸ Compiling ipred_prepare_tmpl_16.c
 ▸ Compiling ipred_prepare_tmpl.c
-▸ Compiling getbits.c
 ▸ Compiling intra_edge.c
+▸ Compiling getbits.c
 ▸ Compiling filmgrain_tmpl_16.c
 ▸ Compiling filmgrain_tmpl.c
 ▸ Compiling fg_apply_tmpl_16.c
 ▸ Compiling fg_apply_tmpl.c
 ▸ Compiling dequant_tables.c
-▸ Compiling data.c
-▸ Compiling cpu.c
 ▸ Compiling decode.c
+▸ Compiling cpu.c
+▸ Compiling data.c
 ▸ Compiling cdf.c
 ▸ Compiling cpu.c
 ▸ Compiling cdef_tmpl_16.c
@@ -566,8 +504,8 @@ public struct LottieView<Placeholder: View>: UIViewConfiguringSwiftUIView {
 ▸ Compiling reformat_libyuv.c
 ▸ Compiling reformat_libsharpyuv.c
 ▸ Compiling rawdata.c
-▸ Compiling obu.c
 ▸ Compiling reformat.c
+▸ Compiling obu.c
 ▸ Compiling mem.c
 ▸ Compiling stream.c
 ▸ Compiling read.c
@@ -578,13 +516,13 @@ public struct LottieView<Placeholder: View>: UIViewConfiguringSwiftUIView {
 ▸ Compiling codec_dav1d.c
 ▸ Compiling avif.c
 ▸ Compiling alpha.c
-▸ Compiling libavif-dummy.m
-▸ Compiling ZXingObjC-dummy.m
 ▸ Compiling glog-dummy.m
+▸ Compiling libavif-dummy.m
 ▸ Compiling fmt-dummy.m
-▸ Compiling ZXWifiResultParser.m
 ▸ Building library libglog.a
 ▸ Building library libfmt.a
+▸ Compiling ZXingObjC-dummy.m
+▸ Compiling ZXWifiResultParser.m
 ▸ Compiling ZXWifiParsedResult.m
 ▸ Compiling ZXWhiteRectangleDetector.m
 ▸ Compiling ZXVINResultParser.m
@@ -628,8 +566,8 @@ public struct LottieView<Placeholder: View>: UIViewConfiguringSwiftUIView {
 ▸ Compiling ZXRSSExpandedDecodedNumeric.m
 ▸ Compiling ZXRSSExpandedDecodedInformation.m
 ▸ Compiling ZXRSSExpandedDecodedChar.m
-▸ Compiling ZXRSSExpandedCurrentParsingState.m
 ▸ Compiling ZXRSSExpandedBlockParsedResult.m
+▸ Compiling ZXRSSExpandedCurrentParsingState.m
 ▸ Compiling ZXRSSDataCharacter.m
 ▸ Compiling ZXRSS14Reader.m
 ▸ Compiling ZXRGBLuminanceSource.m
@@ -658,10 +596,10 @@ public struct LottieView<Placeholder: View>: UIViewConfiguringSwiftUIView {
 ▸ Compiling ZXPDF417BoundingBox.m
 ▸ Compiling ZXPDF417BarcodeValue.m
 ▸ Compiling ZXPDF417BarcodeRow.m
-▸ Compiling ZXPDF417BarcodeMatrix.m
 ▸ Compiling ZXPDF417BarcodeMetadata.m
-▸ Compiling ZXPDF417.m
+▸ Compiling ZXPDF417BarcodeMatrix.m
 ▸ Compiling ZXOneDimensionalCodeWriter.m
+▸ Compiling ZXPDF417.m
 ▸ Compiling ZXOneDReader.m
 ▸ Compiling ZXMultiFormatWriter.m
 ▸ Compiling ZXMultiFormatUPCEANReader.m
@@ -679,8 +617,8 @@ public struct LottieView<Placeholder: View>: UIViewConfiguringSwiftUIView {
 ▸ Compiling ZXITFReader.m
 ▸ Compiling ZXISBNResultParser.m
 ▸ Compiling ZXISBNParsedResult.m
-▸ Compiling ZXHybridBinarizer.m
 ▸ Compiling ZXGridSampler.m
+▸ Compiling ZXHybridBinarizer.m
 ▸ Compiling ZXGlobalHistogramBinarizer.m
 ▸ Compiling ZXGeoResultParser.m
 ▸ Compiling ZXGeoParsedResult.m
@@ -697,8 +635,8 @@ public struct LottieView<Placeholder: View>: UIViewConfiguringSwiftUIView {
 ▸ Compiling ZXEANManufacturerOrgSupport.m
 ▸ Compiling ZXEAN8Writer.m
 ▸ Compiling ZXEAN8Reader.m
-▸ Compiling ZXEAN13Writer.m
 ▸ Compiling ZXEAN13Reader.m
+▸ Compiling ZXEAN13Writer.m
 ▸ Compiling ZXDimension.m
 ▸ Compiling ZXDetectorResult.m
 ▸ Compiling ZXDefaultGridSampler.m
@@ -754,20 +692,16 @@ public struct LottieView<Placeholder: View>: UIViewConfiguringSwiftUIView {
 ▸ Compiling SDWebImageSVGCoder-dummy.m
 ▸ Compiling SDImageSVGCoder.m
 ▸ Compiling SDWebImageAVIFCoder-dummy.m
+▸ Compiling UIView+WebCacheState.m
 ▸ Compiling SDImageAVIFCoder.m
 ▸ Compiling Conversion.m
 ▸ Compiling ColorSpace.m
-▸ Compiling UIView+WebCacheState.m
 ▸ Compiling UIView+WebCacheOperation.m
 ▸ Compiling UIView+WebCache.m
 ▸ Compiling UIImageView+WebCache.m
 ▸ Compiling UIImageView+HighlightedWebCache.m
-▸ Compiling UIImage+Transform.m
 ▸ Compiling UIImage+MultiFormat.m
-▸ Compiling UIImage+WebP.m
-▸ Compiling SDWebImageWebPCoderDefine.m
-▸ Compiling SDWebImageWebPCoder-dummy.m
-▸ Compiling SDImageWebPCoder.m
+▸ Compiling UIImage+Transform.m
 ▸ Compiling UIImage+Metadata.m
 ▸ Compiling UIImage+MemoryCacheCost.m
 ▸ Compiling UIImage+GIF.m
@@ -775,12 +709,16 @@ public struct LottieView<Placeholder: View>: UIViewConfiguringSwiftUIView {
 ▸ Compiling UIImage+ExtendedCacheData.m
 ▸ Compiling UIColor+SDHexString.m
 ▸ Compiling UIButton+WebCache.m
+▸ Compiling UIImage+WebP.m
+▸ Compiling SDWebImageWebPCoderDefine.m
+▸ Compiling SDWebImageWebPCoder-dummy.m
+▸ Compiling SDImageWebPCoder.m
 ▸ Compiling SDWebImageTransition.m
 ▸ Compiling SDWebImagePrefetcher.m
-▸ Compiling SDWebImageOptionsProcessor.m
 ▸ Compiling SDWebImageOperation.m
-▸ Compiling SDWebImageIndicator.m
+▸ Compiling SDWebImageOptionsProcessor.m
 ▸ Compiling SDWebImageManager.m
+▸ Compiling SDWebImageIndicator.m
 ▸ Compiling SDWebImageError.m
 ▸ Compiling SDWebImageDownloaderResponseModifier.m
 ▸ Compiling SDWebImageDownloaderRequestModifier.m
@@ -804,8 +742,8 @@ public struct LottieView<Placeholder: View>: UIViewConfiguringSwiftUIView {
 ▸ Compiling SDImageHEICCoder.m
 ▸ Compiling SDImageGraphics.m
 ▸ Compiling SDImageFramePool.m
-▸ Compiling SDImageGIFCoder.m
 ▸ Compiling SDImageFrame.m
+▸ Compiling SDImageGIFCoder.m
 ▸ Compiling SDImageCodersManager.m
 ▸ Compiling SDImageCoderHelper.m
 ▸ Compiling SDImageCoder.m
@@ -834,23 +772,62 @@ public struct LottieView<Placeholder: View>: UIViewConfiguringSwiftUIView {
 ▸ Compiling NSData+ImageContentType.m
 ▸ Compiling NSButton+WebCache.m
 ▸ Compiling NSBezierPath+SDRoundedCorners.m
-▸ Building library libSDWebImage.a
-▸ Compiling DoubleConversion-dummy.m
-▸ Compiling RCT-Folly-dummy.m
-▸ Building library libDoubleConversion.a
-▸ Running script '[CP] Copy XCFrameworks'
-▸ Compiling RCTSwiftUI-dummy.m
-▸ Building library libRCTSwiftUI.a
 ▸ Building library liblibavif.a
-▸ Running script 'Copy generated compatibility header'
-▸ Running script '[CP-User] [RN]Check FBReactNativeSpec'
+▸ Building library libSDWebImage.a
+▸ Running script '[CP] Copy XCFrameworks'
+▸ Touching RNSVGFilters.bundle (in target 'RNSVG-RNSVGFilters' from project 'Pods')
+▸ Processing ResourceBundle-RCT-Folly_privacy-RCT-Folly-Info.plist
+▸ Building library libSDWebImageWebPCoder.a
+▸ Building library libSDWebImageSVGCoder.a
+▸ Building library libSDWebImageAVIFCoder.a
+▸ Compiling json_pointer.cpp
+▸ Compiling json.cpp
+▸ Compiling dynamic.cpp
+▸ Compiling UniqueInstance.cpp
+▸ Compiling Unicode.cpp
+▸ Compiling ToAscii.cpp
+▸ Compiling ThreadId.cpp
+▸ Compiling SysUio.cpp
+▸ Compiling String.cpp
+▸ Compiling StaticSingletonManager.cpp
+▸ Compiling SpookyHashV2.cpp
+▸ Compiling SplitStringSimd.cpp
+▸ Compiling ScopeGuard.cpp
+▸ Compiling SanitizeThread.cpp
+▸ Compiling SafeAssert.cpp
+▸ Compiling ReentrantAllocator.cpp
+▸ Compiling NetOps.cpp
+▸ Compiling MallocImpl.cpp
+▸ Compiling Format.cpp
+▸ Compiling FileUtilDetail.cpp
+▸ Compiling FileUtil.cpp
+▸ Compiling F14Table.cpp
+▸ Compiling Exception.cpp
+▸ Compiling Demangle.cpp
+▸ Compiling Conv.cpp
+▸ Compiling CString.cpp
+▸ Compiling AtFork.cpp
+▸ Processing ResourceBundle-ExpoMediaLibrary_privacy-ExpoMediaLibrary-Info.plist
+▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/ExpoMediaLibrary/ExpoMediaLibrary_privacy.bundle/PrivacyInfo.xcprivacy
+▸ Compiling RCT-Folly-dummy.m
+▸ Processing ResourceBundle-ExpoFileSystem_privacy-ExpoFileSystem-Info.plist
+▸ Compiling RCTSwiftUI-dummy.m
+▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/ExpoFileSystem/ExpoFileSystem_privacy.bundle/PrivacyInfo.xcprivacy
+▸ Processing ResourceBundle-ExpoDevice_privacy-ExpoDevice-Info.plist
+▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/ExpoDevice/ExpoDevice_privacy.bundle/PrivacyInfo.xcprivacy
+▸ Processing ResourceBundle-ExpoTaskManager_privacy-EXTaskManager-Info.plist
+▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/EXTaskManager/ExpoTaskManager_privacy.bundle/PrivacyInfo.xcprivacy
+▸ Touching RNCAsyncStorage_resources.bundle (in target 'RNCAsyncStorage-RNCAsyncStorage_resources' from project 'Pods')
+▸ Building library libRCTSwiftUI.a
 ▸ Compiling react-native-netinfo-dummy.m
-▸ Compiling RNCConnectionStateWatcher.m
+▸ Running script 'Copy generated compatibility header'
 ▸ Compiling RNCNetInfo.m
+▸ Running script '[CP-User] [RN]Check FBReactNativeSpec'
+▸ Compiling RNCConnectionStateWatcher.m
 ▸ Compiling RNCConnectionState.m
 ▸ Building library libreact-native-netinfo.a
-▸ Compiling react-native-maps-dummy.m
 ▸ Compiling SMCalloutView.m
+▸ Compiling react-native-maps-dummy.m
 ▸ Compiling RCTComponentData+Maps.m
 ▸ Compiling AIRWeakTimerReference.m
 ▸ Compiling RCTConvert+AirMap.m
@@ -882,17 +859,14 @@ public struct LottieView<Placeholder: View>: UIViewConfiguringSwiftUIView {
 ▸ Compiling AIRMapCalloutManager.m
 ▸ Compiling AIRMapCallout.m
 ▸ Compiling AIRMap.m
-▸ Building library libreact-native-maps.a
 ▸ Compiling react-native-get-random-values-dummy.m
 ▸ Compiling RNGetRandomValues.m
-▸ Building library libSDWebImageWebPCoder.a
 ▸ Building library libreact-native-get-random-values.a
-▸ Building library libSDWebImageSVGCoder.a
-▸ Building library libSDWebImageAVIFCoder.a
+▸ Building library libreact-native-maps.a
 ▸ Compiling RCTSwiftUIWrapper-dummy.m
+▸ Compiling RCTSwiftUIContainerViewWrapper.m
 ▸ Compiling TypedArray.cpp
 ▸ Compiling ObjectDeallocator.cpp
-▸ Compiling RCTSwiftUIContainerViewWrapper.m
 ▸ Compiling MemoryBuffer.cpp
 ▸ Compiling MainThreadInvoker.mm
 ▸ Compiling JSIUtils.cpp
@@ -909,14 +883,36 @@ public struct LottieView<Placeholder: View>: UIViewConfiguringSwiftUIView {
 ▸ Compiling EXJSIUtils.mm
 ▸ Compiling EXJSIConversions.mm
 ▸ Compiling EXArrayBuffer.mm
-▸ Building library libRCTSwiftUIWrapper.a
+▸ Compiling lottie-ios-dummy.m
+▸ Touching RCT-Folly_privacy.bundle (in target 'RCT-Folly-RCT-Folly_privacy' from project 'Pods')
 ▸ Compiling ExpoModulesJSI-dummy.m
+▸ Building library liblottie-ios.a
+▸ Building library libRCTSwiftUIWrapper.a
+▸ Touching ExpoMediaLibrary_privacy.bundle (in target 'ExpoMediaLibrary-ExpoMediaLibrary_privacy' from project 'Pods')
+▸ Processing ResourceBundle-ExpoNotifications_privacy-EXNotifications-Info.plist
+▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/EXNotifications/ExpoNotifications_privacy.bundle/PrivacyInfo.xcprivacy
+▸ Processing ResourceBundle-ExpoConstants_privacy-EXConstants-Info.plist
+▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/EXConstants/ExpoConstants_privacy.bundle/PrivacyInfo.xcprivacy
+▸ Processing ResourceBundle-EXConstants-EXConstants-Info.plist
+▸ Processing ResourceBundle-ExpoApplication_privacy-EXApplication-Info.plist
+▸ Copying /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/EXApplication/ExpoApplication_privacy.bundle/PrivacyInfo.xcprivacy
+▸ Running script 'Copy generated compatibility header'
 ▸ Building library libExpoModulesJSI.a
 ▸ Running script '[CP-User] Generate Specs'
-▸ Compiling lottie-ios-dummy.m
-▸ Building library liblottie-ios.a
-▸ Running script 'Copy generated compatibility header'
-▸ Building library libRCT-Folly.a
+▸ Touching ExpoFileSystem_privacy.bundle (in target 'ExpoFileSystem-ExpoFileSystem_privacy' from project 'Pods')
+▸ Touching ExpoDevice_privacy.bundle (in target 'ExpoDevice-ExpoDevice_privacy' from project 'Pods')
+▸ Touching ExpoTaskManager_privacy.bundle (in target 'EXTaskManager-ExpoTaskManager_privacy' from project 'Pods')
+▸ Touching ExpoNotifications_privacy.bundle (in target 'EXNotifications-ExpoNotifications_privacy' from project 'Pods')
+▸ Touching ExpoConstants_privacy.bundle (in target 'EXConstants-ExpoConstants_privacy' from project 'Pods')
+▸ Touching EXConstants.bundle (in target 'EXConstants-EXConstants' from project 'Pods')
+▸ Compiling strtod.cc
+▸ Compiling fixed-dtoa.cc
+▸ Compiling fast-dtoa.cc
+▸ Compiling double-conversion.cc
+▸ Compiling diy-fp.cc
+▸ Compiling cached-powers.cc
+▸ Compiling bignum.cc
+▸ Compiling bignum-dtoa.cc
 ▸ Compiling safeareacontext-generated.mm
 ▸ Compiling rnworklets-generated.mm
 ▸ Compiling rnsvg-generated.mm
@@ -976,14 +972,16 @@ public struct LottieView<Placeholder: View>: UIViewConfiguringSwiftUIView {
 ▸ Compiling ComponentDescriptors.cpp
 ▸ Compiling ComponentDescriptors.cpp
 ▸ Compiling ComponentDescriptors.cpp
+▸ Compiling DoubleConversion-dummy.m
+▸ Building library libDoubleConversion.a
 ▸ Compiling ReactCodegen-dummy.m
 ▸ Compiling ExpoRedBoxSwap.mm
 ▸ Compiling ExpoLogBox-dummy.m
 ▸ Compiling RNCWebViewModule.mm
 ▸ Compiling RNCWebViewManager.mm
 ▸ Building library libExpoLogBox.a
-▸ Building library libReactCodegen.a
 ▸ Compiling RNCWebView.mm
+▸ Building library libReactCodegen.a
 ▸ Compiling react-native-webview-dummy.m
 ▸ Compiling RNCSafeAreaViewState.cpp
 ▸ Compiling RNCSafeAreaViewShadowNode.cpp
@@ -993,6 +991,27 @@ public struct LottieView<Placeholder: View>: UIViewConfiguringSwiftUIView {
 ▸ Compiling react-native-safe-area-context-dummy.m
 ▸ Compiling RNCPagerViewComponentView.mm
 ▸ Compiling react-native-pager-view-dummy.m
+▸ Running script 'Copy generated compatibility header'
+▸ Compiling RNCSafeAreaViewMode.m
+▸ Compiling RNCSafeAreaViewManager.m
+▸ Compiling RNCSafeAreaViewLocalData.m
+▸ Compiling RNCSafeAreaViewEdges.m
+▸ Compiling RNCSafeAreaViewEdgeMode.m
+▸ Compiling RNCSafeAreaView.m
+▸ Compiling RNCSafeAreaUtils.m
+▸ Compiling RNCSafeAreaShadowView.m
+▸ Compiling RNCSafeAreaProviderManager.m
+▸ Compiling RNCSafeAreaProvider.m
+▸ Compiling RNCOnInsetsChangeEvent.m
+▸ Compiling UIViewController+CreateExtension.m
+▸ Compiling UIView+isHorizontalRtlLayout.m
+▸ Compiling RNCPagerViewShadowView.m
+▸ Compiling RNCPagerViewManager.m
+▸ Compiling RNCPagerView.m
+▸ Compiling RCTOnPageSelected.m
+▸ Compiling RCTOnPageScrollStateChanged.m
+▸ Compiling RCTOnPageScrollEvent.m
+▸ Compiling RCTConvert+UIPageViewControllerNavigationOrientation.m
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-pager-view/ios/Fabric/RNCPagerViewComponentView.mm:21:17: class 'RNCPagerViewComponentView' does not conform to protocol 'RCTRNCViewPagerViewProtocol' [-Wprotocol]
 #import "lottie-react-native-umbrella.h"
         ^
@@ -1038,40 +1057,19 @@ public struct LottieView<Placeholder: View>: UIViewConfiguringSwiftUIView {
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/AnimationViewManagerModule.swift:76:27: will never be executed
                     print("Invalid view returned from registry, expecting ContainerView")
                              ^
-▸ Compiling RNCSafeAreaViewMode.m
-▸ Compiling RNCSafeAreaViewManager.m
-▸ Compiling RNCSafeAreaViewLocalData.m
-▸ Compiling RNCSafeAreaViewEdges.m
-▸ Compiling RNCSafeAreaViewEdgeMode.m
-▸ Compiling RNCSafeAreaView.m
-▸ Compiling RNCSafeAreaUtils.m
-▸ Compiling RNCSafeAreaShadowView.m
-▸ Compiling RNCSafeAreaProviderManager.m
-▸ Compiling RNCSafeAreaProvider.m
-▸ Compiling RNCOnInsetsChangeEvent.m
-▸ Compiling UIViewController+CreateExtension.m
-▸ Compiling UIView+isHorizontalRtlLayout.m
-▸ Compiling RNCPagerViewShadowView.m
-▸ Compiling RNCPagerViewManager.m
-▸ Compiling RNCPagerView.m
-▸ Compiling RCTOnPageSelected.m
-▸ Compiling RCTOnPageScrollStateChanged.m
-▸ Compiling RCTOnPageScrollEvent.m
-▸ Compiling RCTConvert+UIPageViewControllerNavigationOrientation.m
-▸ Compiling LottieAnimationViewComponentView.mm
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/Fabric/LottieContainerView.h:10:46: pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified) [-Wnullability-completeness]
-   10 | - (void)onAnimationFailureWithError:(NSString*)error;
-                             ^
 ▸ Compiling RNCWebViewImpl.m
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-webview/apple/RNCWKProcessPoolManager.h:13:4: 'WKProcessPool' is deprecated: first deprecated in iOS 15.0 - Creating and using multiple instances of WKProcessPool no longer has any effect. [-Wdeprecated-declarations]
+   13 | - (WKProcessPool *)sharedProcessPool;
+                             ^
 ▸ Compiling RNCWebViewDecisionManager.m
 ▸ Compiling RNCWKProcessPoolManager.m
 ▸ Compiling RCTConvert+WKDataDetectorTypes.m
+▸ Compiling RCTAppDependencyProvider.mm
+▸ Compiling LottieAnimationViewComponentView.mm
+▸ Compiling ReactAppDependencyProvider-dummy.m
 ▸ Compiling lottie-react-native-dummy.m
 ▸ Compiling RCTConvert+Lottie.m
 ▸ Compiling LRNAnimationViewManagerObjC.m
-▸ Running script 'Copy generated compatibility header'
-▸ Compiling RCTAppDependencyProvider.mm
-▸ Compiling ReactAppDependencyProvider-dummy.m
 ▸ Building library libreact-native-webview.a
 ▸ Running script '[CP] Copy XCFrameworks'
 ▸ Building library libreact-native-safe-area-context.a
@@ -1114,32 +1112,9 @@ public struct LottieView<Placeholder: View>: UIViewConfiguringSwiftUIView {
 ▸ Compiling AsyncQueueImpl.cpp
 ▸ Compiling AnimationFrameQueue.mm
 ▸ Compiling AnimationFrameBatchinator.cpp
-▸ Compiling base64.cpp
 ▸ Running script 'Copy generated compatibility header'
-▸ Compiling ViewScreenshotService.mm
-▸ Compiling SkottieUtils.cpp
-▸ Compiling SkiaUIView.mm
-▸ Compiling SkiaPictureViewManager.mm
-▸ Compiling SkiaPictureView.mm
-▸ Compiling SkiaManager.mm
-▸ Compiling SkiaCVPixelBufferUtils.mm
-▸ Compiling SkJSONReader.cpp
-▸ Compiling RuntimeLifecycleMonitor.cpp
-▸ Compiling RuntimeAwareCache.cpp
-▸ Compiling RNSkiaModule.mm
-▸ Compiling RNSkMetalCanvasProvider.mm
-▸ Compiling RNSkManager.cpp
-▸ Compiling RNSkAppleView.mm
-▸ Compiling RNSkAppleVideo.mm
-▸ Compiling RNSkApplePlatformContext.mm
-▸ Compiling MetalWindowContext.mm
-▸ Compiling MetalContext.mm
-▸ Compiling JsiSkDispatcher.cpp
-▸ Compiling JsiPromises.cpp
-▸ Compiling JsiHostObject.cpp
-▸ Compiling CSSColorParser.cpp
-▸ Compiling RNSVGViewBox.mm
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/@shopify/react-native-skia/cpp/skia/include/gpu/ganesh/mtl/SkSurfaceMetal.h:56:12: parameter 'layer' not found in the function declaration [-Wdocumentation]
+▸ Compiling base64.cpp
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Private/RNWorklets/worklets/WorkletRuntime/WorkletRuntime.h:210:5: declaration is marked with '@deprecated' command but does not have a deprecation attribute [-Wdocumentation-deprecated-sync]
 #import "RNScreens-umbrella.h"
         ^
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/RNScreens/RNSScreenStackHeaderConfig.h:144:4: pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified)
@@ -1229,54 +1204,6 @@ public struct LottieView<Placeholder: View>: UIViewConfiguringSwiftUIView {
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:102:19: main actor-isolated property 'preferredPrimaryColumnWidthOrFraction' can not be referenced from a nonisolated context
         splitView.preferredPrimaryColumnWidthOrFraction
                ^
-          && splitView.preferredInspectorColumnWidthOrFraction < 1
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:155:31: main actor-isolated property 'preferredInspectorColumnWidthFraction' can not be mutated from a nonisolated context
-          splitViewController.preferredInspectorColumnWidthFraction =
-                                       ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:156:23: main actor-isolated property 'preferredInspectorColumnWidthOrFraction' can not be referenced from a nonisolated context
-            splitView.preferredInspectorColumnWidthOrFraction
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:157:29: main actor-isolated property 'preferredInspectorColumnWidthOrFraction' can not be referenced from a nonisolated context
-        } else if splitView.preferredInspectorColumnWidthOrFraction >= 1 {
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:158:31: main actor-isolated property 'preferredInspectorColumnWidth' can not be mutated from a nonisolated context
-          splitViewController.preferredInspectorColumnWidth =
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:159:23: main actor-isolated property 'preferredInspectorColumnWidthOrFraction' can not be referenced from a nonisolated context
-            splitView.preferredInspectorColumnWidthOrFraction
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:165:25: call to main actor-isolated instance method 'toggleSplitViewInspector' in a synchronous nonisolated context
-    splitViewController.toggleSplitViewInspector(splitView.showInspector)
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:165:60: main actor-isolated property 'showInspector' can not be referenced from a nonisolated context
-    splitViewController.toggleSplitViewInspector(splitView.showInspector)
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:182:25: main actor-isolated property 'preferredDisplayMode' can not be mutated from a nonisolated context
-    splitViewController.preferredDisplayMode = splitView.preferredDisplayMode
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:182:58: main actor-isolated property 'preferredDisplayMode' can not be referenced from a nonisolated context
-    splitViewController.preferredDisplayMode = splitView.preferredDisplayMode
-       ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewHostController.swift:10:65: conformance of 'RNSSplitViewHostController' to protocol 'ReactMountingTransactionObserving' crosses into main actor-isolated code and can cause data races; this is an error in the Swift 6 language mode
-public class RNSSplitViewHostController: UISplitViewController, ReactMountingTransactionObserving,
-       ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewHostController.swift:11:3: conformance of 'RNSSplitViewHostController' to protocol 'RNSOrientationProvidingSwift' crosses into main actor-isolated code and can cause data races; this is an error in the Swift 6 language mode
-  RNSOrientationProvidingSwift
-              ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewHostController.swift:356:39: conformance of 'RNSSplitViewHostController' to protocol 'RNSSplitViewNavigationControllerViewFrameObserver' crosses into main actor-isolated code and can cause data races; this is an error in the Swift 6 language mode
-extension RNSSplitViewHostController: RNSSplitViewNavigationControllerViewFrameObserver {
-              ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewNavigationController.swift:38:15: call to main actor-isolated instance method 'onViewOriginChange()' in a synchronous nonisolated context
-        self?.onViewOriginChange()
-       ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewScreenController.swift:229:41: conformance of 'RNSSplitViewScreenController' to protocol 'RNSFrameCorrectionProvider' crosses into main actor-isolated code and can cause data races; this is an error in the Swift 6 language mode
-extension RNSSplitViewScreenController: RNSFrameCorrectionProvider {
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/stack/RNSStackController.swift:5:58: conformance of 'RNSStackController' to protocol 'ReactMountingTransactionObserving' crosses into main actor-isolated code and can cause data races; this is an error in the Swift 6 language mode
-public class RNSStackController: UINavigationController, ReactMountingTransactionObserving {
-              ^
-▸ Compiling RNSVGUseManager.mm
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:103:25: main actor-isolated property 'preferredPrimaryColumnWidthOrFraction' can not be referenced from a nonisolated context
     } else if splitView.preferredPrimaryColumnWidthOrFraction >= 1 {
                ^
@@ -1377,10 +1304,168 @@ public class RNSStackController: UINavigationController, ReactMountingTransactio
         if splitView.preferredInspectorColumnWidthOrFraction >= 0
                ^
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:153:24: main actor-isolated property 'preferredInspectorColumnWidthOrFraction' can not be referenced from a nonisolated autoclosure
-▸ Compiling RNSVGUse.mm
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-svg/apple/Elements/RNSVGUse.mm:71:1: method possibly missing a [super updateProps:oldProps:] call [-Wobjc-missing-super-calls]
-   71 | }
+          && splitView.preferredInspectorColumnWidthOrFraction < 1
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:155:31: main actor-isolated property 'preferredInspectorColumnWidthFraction' can not be mutated from a nonisolated context
+          splitViewController.preferredInspectorColumnWidthFraction =
+                                       ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:156:23: main actor-isolated property 'preferredInspectorColumnWidthOrFraction' can not be referenced from a nonisolated context
+            splitView.preferredInspectorColumnWidthOrFraction
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:157:29: main actor-isolated property 'preferredInspectorColumnWidthOrFraction' can not be referenced from a nonisolated context
+        } else if splitView.preferredInspectorColumnWidthOrFraction >= 1 {
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:158:31: main actor-isolated property 'preferredInspectorColumnWidth' can not be mutated from a nonisolated context
+          splitViewController.preferredInspectorColumnWidth =
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:159:23: main actor-isolated property 'preferredInspectorColumnWidthOrFraction' can not be referenced from a nonisolated context
+            splitView.preferredInspectorColumnWidthOrFraction
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:165:25: call to main actor-isolated instance method 'toggleSplitViewInspector' in a synchronous nonisolated context
+    splitViewController.toggleSplitViewInspector(splitView.showInspector)
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:165:60: main actor-isolated property 'showInspector' can not be referenced from a nonisolated context
+    splitViewController.toggleSplitViewInspector(splitView.showInspector)
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:182:25: main actor-isolated property 'preferredDisplayMode' can not be mutated from a nonisolated context
+    splitViewController.preferredDisplayMode = splitView.preferredDisplayMode
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewAppearanceApplicator.swift:182:58: main actor-isolated property 'preferredDisplayMode' can not be referenced from a nonisolated context
+    splitViewController.preferredDisplayMode = splitView.preferredDisplayMode
+       ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewHostController.swift:10:65: conformance of 'RNSSplitViewHostController' to protocol 'ReactMountingTransactionObserving' crosses into main actor-isolated code and can cause data races; this is an error in the Swift 6 language mode
+public class RNSSplitViewHostController: UISplitViewController, ReactMountingTransactionObserving,
+       ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewHostController.swift:11:3: conformance of 'RNSSplitViewHostController' to protocol 'RNSOrientationProvidingSwift' crosses into main actor-isolated code and can cause data races; this is an error in the Swift 6 language mode
+  RNSOrientationProvidingSwift
               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewHostController.swift:356:39: conformance of 'RNSSplitViewHostController' to protocol 'RNSSplitViewNavigationControllerViewFrameObserver' crosses into main actor-isolated code and can cause data races; this is an error in the Swift 6 language mode
+extension RNSSplitViewHostController: RNSSplitViewNavigationControllerViewFrameObserver {
+              ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewNavigationController.swift:38:15: call to main actor-isolated instance method 'onViewOriginChange()' in a synchronous nonisolated context
+        self?.onViewOriginChange()
+       ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/split-view/RNSSplitViewScreenController.swift:229:41: conformance of 'RNSSplitViewScreenController' to protocol 'RNSFrameCorrectionProvider' crosses into main actor-isolated code and can cause data races; this is an error in the Swift 6 language mode
+extension RNSSplitViewScreenController: RNSFrameCorrectionProvider {
+               ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/ios/gamma/stack/RNSStackController.swift:5:58: conformance of 'RNSStackController' to protocol 'ReactMountingTransactionObserving' crosses into main actor-isolated code and can cause data races; this is an error in the Swift 6 language mode
+public class RNSStackController: UINavigationController, ReactMountingTransactionObserving {
+              ^
+▸ Compiling ViewScreenshotService.mm
+▸ Compiling SkottieUtils.cpp
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/@shopify/react-native-skia/cpp/skia/include/core/SkColor.h:253:6: '@struct' command should not be used in a comment attached to a non-struct declaration [-Wdocumentation]
+  253 | /** \struct SkRGBA4f
+              ^
+▸ Compiling SkiaUIView.mm
+▸ Compiling SkiaPictureViewManager.mm
+▸ Compiling SkiaPictureView.mm
+▸ Compiling SkiaManager.mm
+▸ Compiling SkiaCVPixelBufferUtils.mm
+▸ Compiling SkJSONReader.cpp
+▸ Compiling RuntimeLifecycleMonitor.cpp
+▸ Compiling RuntimeAwareCache.cpp
+▸ Compiling RNSkiaModule.mm
+▸ Compiling RNSkMetalCanvasProvider.mm
+▸ Compiling RNSkManager.cpp
+▸ Compiling RNSkAppleView.mm
+▸ Compiling RNSkAppleVideo.mm
+▸ Compiling RNSkApplePlatformContext.mm
+▸ Compiling MetalWindowContext.mm
+▸ Compiling MetalContext.mm
+▸ Compiling JsiSkDispatcher.cpp
+▸ Compiling JsiPromises.cpp
+▸ Compiling JsiHostObject.cpp
+▸ Compiling CSSColorParser.cpp
+▸ Compiling RNWorklets-dummy.m
+▸ Compiling UIWindow+RNScreens.mm
+▸ Compiling UIViewController+RNScreens.mm
+▸ Building library libRNWorklets.a
+▸ Compiling UIView+RNSUtility.mm
+▸ Compiling UIScrollView+RNScreens.mm
+▸ Compiling UINavigationBar+RNSUtility.mm
+▸ Compiling RNScreensTurboModule.cpp
+▸ Compiling RNSViewControllerInvalidator.mm
+▸ Compiling RNSTabsScreenViewController.mm
+▸ Compiling RNSTabBarControllerDelegate.mm
+▸ Compiling RNSTabBarController.mm
+▸ Compiling RNSTabBarAppearanceCoordinator.mm
+▸ Compiling RNSStackScreenComponentViewManager.mm
+▸ Compiling RNSStackScreenComponentView.mm
+▸ Compiling RNSStackScreenComponentEventEmitter.mm
+▸ Compiling RNSSplitViewScreenShadowStateProxy.mm
+▸ Compiling RNSSplitViewScreenShadowNode.cpp
+▸ Compiling RNSSplitViewScreenComponentViewManager.mm
+▸ Compiling RNSSplitViewScreenComponentView.mm
+▸ Compiling RNSSplitViewScreenComponentEventEmitter.mm
+▸ Compiling RNSSplitViewHostComponentViewManager.mm
+▸ Compiling RNSSplitViewHostComponentView.mm
+▸ Compiling RNSSplitViewHostComponentEventEmitter.mm
+▸ Compiling RNSSearchBar.mm
+▸ Compiling RNSScrollViewHelper.mm
+▸ Compiling RNSScrollViewFinder.mm
+▸ Compiling RNSScrollEdgeEffectApplicator.mm
+▸ Compiling RNSScreenWindowTraits.mm
+▸ Compiling RNSScreenViewEvent.mm
+▸ Compiling RNSScreenState.cpp
+▸ Compiling RNSScreenStackHostComponentViewManager.mm
+▸ Compiling RNSScreenStackHostComponentView.mm
+▸ Compiling RNSScreenStackHeaderSubviewState.cpp
+▸ Compiling RNSScreenStackHeaderSubviewShadowNode.cpp
+▸ Compiling RNSScreenStackHeaderSubview.mm
+▸ Compiling RNSScreenStackHeaderConfigState.cpp
+▸ Compiling RNSScreenStackHeaderConfigShadowNode.cpp
+▸ Compiling RNSScreenStackHeaderConfig.mm
+▸ Compiling RNSScreenStackAnimator.mm
+▸ Compiling RNSScreenStack.mm
+▸ Compiling RNSScreenShadowNode.cpp
+▸ Compiling RNSScreenRemovalListener.cpp
+▸ Compiling RNSScreenNavigationContainer.mm
+▸ Compiling RNSScreenFooter.mm
+▸ Compiling RNSScreenContentWrapper.mm
+▸ Compiling RNSScreenContainer.mm
+▸ Compiling RNSScreen.mm
+▸ Compiling RNSSafeAreaViewState.cpp
+▸ Compiling RNSSafeAreaViewShadowView.mm
+▸ Compiling RNSSafeAreaViewShadowNode.cpp
+▸ Compiling RNSSafeAreaViewManager.mm
+▸ Compiling RNSSafeAreaViewLocalData.mm
+▸ Compiling RNSSafeAreaViewEdges.mm
+▸ Compiling RNSSafeAreaViewComponentView.mm
+▸ Compiling RNSReactBaseView.mm
+▸ Compiling RNSPercentDrivenInteractiveTransition.mm
+▸ Compiling RNSModule.mm
+▸ Compiling RNSModalScreenShadowNode.cpp
+▸ Compiling RNSModalScreen.mm
+▸ Compiling RNSInvalidatedComponentsRegistry.mm
+▸ Compiling RNSHeaderHeightChangeEvent.mm
+▸ Compiling RNSFullWindowOverlayShadowNode.cpp
+▸ Compiling RNSFullWindowOverlay.mm
+▸ Compiling RNSFrameCorrector.mm
+▸ Compiling RNSConvert.mm
+▸ Compiling RNSConversions.mm
+▸ Compiling RNSConversions-SplitView.mm
+▸ Compiling RNSConversions-Fabric.mm
+▸ Compiling RNSConversions-BottomTabs.mm
+▸ Compiling RNSBottomTabsState.cpp
+▸ Compiling RNSBottomTabsShadowNode.cpp
+▸ Compiling RNSBottomTabsScreenEventEmitter.mm
+▸ Compiling RNSBottomTabsScreenComponentViewManager.mm
+▸ Compiling RNSBottomTabsScreenComponentView.mm
+▸ Compiling RNSBottomTabsHostEventEmitter.mm
+▸ Compiling RNSBottomTabsHostComponentViewManager.mm
+▸ Compiling RNSBottomTabsHostComponentView.mm
+▸ Compiling RNSBottomTabsHostComponentView+RNSImageLoader.mm
+▸ Compiling RNSBarButtonItem.mm
+▸ Compiling RNSBackBarButtonItem.mm
+▸ Compiling RCTTouchHandler+RNSUtility.mm
+▸ Compiling RCTSurfaceTouchHandler+RNSUtility.mm
+▸ Compiling RCTImageComponentView+RNSScreenStackHeaderConfig.mm
+▸ Compiling RCTConvert+RNScreens.mm
+▸ Compiling RCTConvert+RNSBottomTabs.mm
+▸ Compiling NSString+RNSUtility.mm
+▸ Compiling RNSVGViewBox.mm
+▸ Compiling RNSVGUseManager.mm
+▸ Compiling RNSVGUse.mm
 ▸ Compiling RNSVGTopAlignedLabel.ios.mm
 ▸ Compiling RNSVGTextProperties.mm
 ▸ Compiling RNSVGTextPathManager.mm
@@ -1471,101 +1556,15 @@ public class RNSStackController: UINavigationController, ReactMountingTransactio
 ▸ Compiling RNSVGBezierElement.mm
 ▸ Compiling RNSVGArithmeticFilter.mm
 ▸ Compiling RCTConvert+RNSVG.mm
-▸ Compiling RNWorklets-dummy.m
 ▸ Compiling react-native-skia-dummy.m
-▸ Building library libRNWorklets.a
-▸ Building library libreact-native-skia.a
-▸ Compiling UIWindow+RNScreens.mm
-▸ Compiling UIViewController+RNScreens.mm
-▸ Compiling UIView+RNSUtility.mm
-▸ Compiling UIScrollView+RNScreens.mm
-▸ Compiling UINavigationBar+RNSUtility.mm
-▸ Compiling RNScreensTurboModule.cpp
-▸ Compiling RNSViewControllerInvalidator.mm
-▸ Compiling RNSTabsScreenViewController.mm
-▸ Compiling RNSTabBarControllerDelegate.mm
-▸ Compiling RNSTabBarController.mm
-▸ Compiling RNSTabBarAppearanceCoordinator.mm
-▸ Compiling RNSStackScreenComponentViewManager.mm
-▸ Compiling RNSStackScreenComponentView.mm
-▸ Compiling RNSStackScreenComponentEventEmitter.mm
-▸ Compiling RNSSplitViewScreenShadowStateProxy.mm
-▸ Compiling RNSSplitViewScreenShadowNode.cpp
-▸ Compiling RNSSplitViewScreenComponentViewManager.mm
-▸ Compiling RNSSplitViewScreenComponentView.mm
-▸ Compiling RNSSplitViewScreenComponentEventEmitter.mm
-▸ Compiling RNSSplitViewHostComponentViewManager.mm
-▸ Compiling RNSSplitViewHostComponentView.mm
-▸ Compiling RNSSplitViewHostComponentEventEmitter.mm
-▸ Compiling RNSSearchBar.mm
-▸ Compiling RNSScrollViewHelper.mm
-▸ Compiling RNSScrollViewFinder.mm
-▸ Compiling RNSScrollEdgeEffectApplicator.mm
-▸ Compiling RNSScreenWindowTraits.mm
-▸ Compiling RNSScreenViewEvent.mm
-▸ Compiling RNSScreenState.cpp
-▸ Compiling RNSScreenStackHostComponentViewManager.mm
-▸ Compiling RNSScreenStackHostComponentView.mm
-▸ Compiling RNSScreenStackHeaderSubviewState.cpp
-▸ Compiling RNSScreenStackHeaderSubviewShadowNode.cpp
-▸ Compiling RNSScreenStackHeaderSubview.mm
-▸ Compiling RNSScreenStackHeaderConfigState.cpp
-▸ Compiling RNSScreenStackHeaderConfigShadowNode.cpp
-▸ Compiling RNSScreenStackHeaderConfig.mm
-▸ Compiling RNSScreenStackAnimator.mm
-▸ Compiling RNSScreenStack.mm
-▸ Compiling RNSScreenShadowNode.cpp
-▸ Compiling RNSScreenRemovalListener.cpp
-▸ Compiling RNSScreenNavigationContainer.mm
-▸ Compiling RNSScreenFooter.mm
-▸ Compiling RNSScreenContentWrapper.mm
-▸ Compiling RNSScreenContainer.mm
-▸ Compiling RNSScreen.mm
-▸ Compiling RNSSafeAreaViewState.cpp
-▸ Compiling RNSSafeAreaViewShadowView.mm
-▸ Compiling RNSSafeAreaViewShadowNode.cpp
-▸ Compiling RNSSafeAreaViewManager.mm
-▸ Compiling RNSSafeAreaViewLocalData.mm
-▸ Compiling RNSSafeAreaViewEdges.mm
-▸ Compiling RNSSafeAreaViewComponentView.mm
-▸ Compiling RNSReactBaseView.mm
-▸ Compiling RNSPercentDrivenInteractiveTransition.mm
-▸ Compiling RNSModule.mm
-▸ Compiling RNSModalScreenShadowNode.cpp
-▸ Compiling RNSModalScreen.mm
-▸ Compiling RNSInvalidatedComponentsRegistry.mm
-▸ Compiling RNSHeaderHeightChangeEvent.mm
-▸ Compiling RNSFullWindowOverlayShadowNode.cpp
-▸ Compiling RNSFullWindowOverlay.mm
-▸ Compiling RNSFrameCorrector.mm
-▸ Compiling RNSConvert.mm
-▸ Compiling RNSConversions.mm
-▸ Compiling RNSConversions-SplitView.mm
-▸ Compiling RNSConversions-Fabric.mm
-▸ Compiling RNSConversions-BottomTabs.mm
-▸ Compiling RNSBottomTabsState.cpp
-▸ Compiling RNSBottomTabsShadowNode.cpp
-▸ Compiling RNSBottomTabsScreenEventEmitter.mm
-▸ Compiling RNSBottomTabsScreenComponentViewManager.mm
-▸ Compiling RNSBottomTabsScreenComponentView.mm
-▸ Compiling RNSBottomTabsHostEventEmitter.mm
-▸ Compiling RNSBottomTabsHostComponentViewManager.mm
-▸ Compiling RNSBottomTabsHostComponentView.mm
-▸ Compiling RNSBottomTabsHostComponentView+RNSImageLoader.mm
-▸ Compiling RNSBarButtonItem.mm
-▸ Compiling RNSBackBarButtonItem.mm
-▸ Compiling RCTTouchHandler+RNSUtility.mm
-▸ Compiling RCTSurfaceTouchHandler+RNSUtility.mm
-▸ Compiling RCTImageComponentView+RNSScreenStackHeaderConfig.mm
-▸ Compiling RCTConvert+RNScreens.mm
-▸ Compiling RCTConvert+RNSBottomTabs.mm
-▸ Compiling NSString+RNSUtility.mm
 ▸ Compiling RNScreens-dummy.m
+▸ Building library libreact-native-skia.a
+▸ Building library libRNScreens.a
+▸ Running script 'Copy generated compatibility header'
 ▸ Compiling vectors.cpp
 ▸ Compiling translate.cpp
 ▸ Compiling steps.cpp
 ▸ Compiling skew.cpp
-▸ Building library libRNScreens.a
 ▸ Compiling scale.cpp
 ▸ Compiling rotate.cpp
 ▸ Compiling props.cpp
@@ -1657,28 +1656,26 @@ public class RNSStackController: UINavigationController, ReactMountingTransactio
 ▸ Compiling AnimationProgressProvider.cpp
 ▸ Compiling AnimatedSensorModule.cpp
 ▸ Compiling AnimatedPropsRegistry.cpp
-▸ Compiling RNSVG-dummy.m
-▸ Running script 'Copy generated compatibility header'
-▸ Building library libRNSVG.a
 ▸ Compiling RNNativeViewHandler.mm
 ▸ Compiling RNGestureHandlerRootViewComponentView.mm
 ▸ Compiling RNGestureHandlerModule.mm
-▸ Compiling ReanimatedSensorContainer.m
-▸ Compiling ReanimatedSensor.m
-▸ Compiling RCTUIView+Reanimated.m
 ▸ Compiling RNGestureHandlerManager.mm
 ▸ Compiling RNGestureHandlerButtonManager.mm
 ▸ Compiling RNGestureHandlerButtonComponentView.mm
 ▸ Compiling RNGestureHandlerButton.mm
 ▸ Compiling RNGestureHandler.mm
-▸ Compiling RNReanimated-dummy.m
-▸ Building library libRNReanimated.a
+▸ Compiling ReanimatedSensorContainer.m
+▸ Compiling RNSVG-dummy.m
+▸ Compiling ReanimatedSensor.m
+▸ Building library libRNSVG.a
+▸ Compiling RCTUIView+Reanimated.m
 ▸ Compiling RNGestureHandler-dummy.m
 ▸ Compiling ShadowNodes.cpp
 ▸ Compiling RNDateTimePickerState.cpp
 ▸ Compiling RNDateTimePickerComponentView.mm
+▸ Compiling RNReanimated-dummy.m
+▸ Building library libRNReanimated.a
 ▸ Compiling RNDateTimePickerShadowView.m
-▸ Compiling RNDateTimePicker.m
 ▸ Compiling RNDateTimePickerManager.m
 ▸ Compiling RNTapHandler.m
 ▸ Compiling RNRotationHandler.m
@@ -1696,10 +1693,14 @@ public class RNSStackController: UINavigationController, ReactMountingTransactio
 ▸ Compiling RNGHStylusData.m
 ▸ Compiling RNForceTouchHandler.m
 ▸ Compiling RNFlingHandler.m
-▸ Compiling RNDateTimePicker-dummy.m
+▸ Compiling RNDateTimePicker.m
 ▸ Building library libRNGestureHandler.a
 ▸ Compiling RNCAsyncStorage.mm
+▸ Compiling RNDateTimePicker-dummy.m
+▸ Compiling RNCAsyncStorage-dummy.m
 ▸ Building library libRNDateTimePicker.a
+▸ Touching ExpoApplication_privacy.bundle (in target 'EXApplication-ExpoApplication_privacy' from project 'Pods')
+▸ Building library libRCT-Folly.a
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-gesture-handler/apple/RNGHStylusData.h:23:16: unused function 'ghSpherical2tilt' [-Wunused-function]
 #import "ExpoModulesCore-umbrella.h"
         ^
@@ -2553,7 +2554,6 @@ public class UnexpectedException: Exception {
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/SharedObjects/SharedObject.swift:91:23: sending 'argumentPairs' risks causing data races
       let arguments = argumentPairs.map { argument, dynamicType in
                                  ^
-▸ Compiling RNCAsyncStorage-dummy.m
 ▸ Building library libRNCAsyncStorage.a
 ▸ Compiling WorkletRuntimeFactory.mm
 ⚠️  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/RNWorklets/worklets/WorkletRuntime/WorkletRuntime.h:148:8: declaration is marked with '@deprecated' command but does not have a deprecation attribute [-Wdocumentation-deprecated-sync]
@@ -2585,10 +2585,10 @@ public class UnexpectedException: Exception {
 ▸ Compiling EXJSUtils.mm
 ▸ Compiling EXJSIInstaller.mm
 ▸ Compiling EXHostWrapper.mm
-▸ Compiling ExpoModulesCore-dummy.m
 ▸ Compiling EXUtilities.m
 ▸ Compiling EXSingletonModule.m
 ▸ Compiling EXReactNativeUserNotificationCenterProxy.m
+▸ Compiling ExpoModulesCore-dummy.m
 ▸ Compiling EXPermissionsService.m
 ▸ Compiling EXPermissionsMethodsDelegate.m
 ▸ Compiling EXModuleRegistryProvider.m
@@ -2602,42 +2602,50 @@ public class UnexpectedException: Exception {
 ▸ Compiling CoreModuleHelper.m
 ▸ Building library libExpoModulesCore.a
 ▸ Running script 'Copy generated compatibility header'
-❌  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-splash-screen/ios/SplashScreenManager.swift:6:27: static property 'shared' is not concurrency-safe because non-'Sendable' type 'SplashScreenManager' may have shared mutable state
-  @objc public static let shared = SplashScreenManager()
-                          ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-splash-screen/ios/SplashScreenManager.swift:61:71: call to main actor-isolated instance method 'instantiateInitialViewController()' in a synchronous nonisolated context
-        nonisolated(unsafe) 
-                          ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-splash-screen/ios/SplashScreenManager.swift:61:17: call to main actor-isolated initializer 'init(name:bundle:)' in a synchronous nonisolated context
-    if let vc = UIStoryboard(name: splashScreenFilename, bundle: nil).instantiateInitialViewController() {
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-splash-screen/ios/SplashScreenManager.swift:62:24: main actor-isolated property 'view' can not be referenced from a nonisolated context
-      loadingView = vc.view
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-splash-screen/ios/SplashScreenManager.swift:63:20: main actor-isolated property 'autoresizingMask' can not be mutated from a nonisolated context
-      loadingView?.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-splash-screen/ios/SplashScreenManager.swift:65:38: main actor-isolated property 'bounds' can not be referenced from a nonisolated context
-      if let bounds = self.rootView?.bounds {
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-splash-screen/ios/SplashScreenManager.swift:66:22: main actor-isolated property 'frame' can not be mutated from a nonisolated context
-        loadingView?.frame = bounds
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-splash-screen/ios/SplashScreenManager.swift:67:22: main actor-isolated property 'center' can not be mutated from a nonisolated context
-        loadingView?.center = CGPoint(x: bounds.midX, y: bounds.midY)
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-splash-screen/ios/SplashScreenManager.swift:69:20: main actor-isolated property 'isHidden' can not be mutated from a nonisolated context
-      loadingView?.isHidden = false
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-splash-screen/ios/SplashScreenManager.swift:72:18: call to main actor-isolated instance method 'disableActivityIndicatorAutoHide' in a synchronous nonisolated context
-        hostView.disableActivityIndicatorAutoHide(true)
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-splash-screen/ios/SplashScreenManager.swift:73:18: main actor-isolated property 'loadingView' can not be mutated from a nonisolated context
-        hostView.loadingView = loadingView
-               ^
-⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-splash-screen/ios/SplashScreenManager.swift:92:25: main actor-isolated property 'isHidden' can not be referenced from a nonisolated context
-    return !loadingView.isHidden
-               ^
+❌  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-speech/ios/SpeechDelegate.swift:10:7: non-final class 'SpeechDelegate' cannot conform to 'Sendable'; use '@unchecked Sendable'
+class SpeechDelegate: NSObject, AVSpeechSynthesizerDelegate {
+      ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-speech/ios/SpeechDelegate.swift:11:7: stored property 'resultHandler' of 'Sendable'-conforming class 'SpeechDelegate' has non-Sendable type 'any SpeechResultHadler'
+  let resultHandler: SpeechResultHadler
+      ^
+⚠️  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-speech/ios/SpeechExceptions.swift:3:22: class 'InvalidVoiceException' must restate inherited '@unchecked Sendable' conformance
+internal final class InvalidVoiceException: GenericException<String> {
+         ^
     Run script build phase '[CP-User] [Hermes] Replace Hermes for the right configuration, if needed' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'hermes-engine' from project 'Pods')
 Build errors (last 200 lines around 'error:')
+                       ^
+  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/ContainerView.swift:42:15: note: property declared here
+      @objc var failureCallback: (_ error: String) -> Void {
+                ^
+  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/ContainerView.swift:373:22: warning: main actor-isolated property 'failureCallback' can not be referenced from a Sendable closure
+                  self.failureCallback("No data received for the Lottie animation from the URL.")
+                       ^
+  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/ContainerView.swift:42:15: note: property declared here
+      @objc var failureCallback: (_ error: String) -> Void {
+                ^
+  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/ContainerView.swift:391:22: warning: main actor-isolated property 'failureCallback' can not be referenced from a Sendable closure
+                  self.failureCallback("Unable to decode the Lottie animation object from the fetched URL source: \(error.localizedDescription)")
+                       ^
+  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/ContainerView.swift:42:15: note: property declared here
+      @objc var failureCallback: (_ error: String) -> Void {
+                ^
+  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/AnimationViewManagerModule.swift:30:27: warning: will never be executed
+                      print("Invalid view returned from registry, expecting ContainerView")
+                            ^
+  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/AnimationViewManagerModule.swift:29:30: note: condition always evaluates to false
+                  if RCT_DEBUG == 1 {
+                               ^
+  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/AnimationViewManagerModule.swift:48:27: warning: will never be executed
+  --
+      cd /Users/runner/work/TAMTAM/TAMTAM/ios/Pods
+      
+  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-speech/ios/SpeechDelegate.swift:10:7: error: non-final class 'SpeechDelegate' cannot conform to 'Sendable'; use '@unchecked Sendable'
+  class SpeechDelegate: NSObject, AVSpeechSynthesizerDelegate {
+        ^
+  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-speech/ios/SpeechDelegate.swift:11:7: warning: stored property 'resultHandler' of 'Sendable'-conforming class 'SpeechDelegate' has non-Sendable type 'any SpeechResultHadler'
+    let resultHandler: SpeechResultHadler
+        ^
+  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-speech/ios/SpeechDelegate.swift:3:10: note: protocol 'SpeechResultHadler' does not conform to the 'Sendable' protocol
+  protocol SpeechResultHadler {
+           ^
 Error: Process completed with exit code 1.

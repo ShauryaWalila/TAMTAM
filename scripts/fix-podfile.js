@@ -31,12 +31,15 @@ const deps = [
 const podPostInstallFix = `
     puts "TAMTAM: Applying global build settings..."
     installer.pods_project.targets.each do |target|
-      is_expo = target.name.start_with?('Expo') || target.name.start_with?('EX') || target.name == 'ExpoModulesCore'
+      # Only ExpoModulesCore uses Swift 6.2 isolated-conformance syntax (`@MainActor`
+      # on protocol conformances) — it MUST compile in Swift 6 mode. Every other
+      # Expo pod (speech, splash-screen, etc.) was never fully ported to Swift 6
+      # strict concurrency and trips on implicit Sendable inference. Force Swift 5
+      # everywhere else so those errors disappear at the source.
+      needs_swift6 = (target.name == 'ExpoModulesCore')
       target.build_configurations.each do |config|
-        # Expo SDK 55 modules use @MainActor on extensions (Swift 6 syntax).
-        # Legacy community pods (Lottie, etc.) stay on Swift 5.0 to avoid strict concurrency breakage.
         config.build_settings.delete('SWIFT_VERSION')
-        config.build_settings['SWIFT_VERSION'] = is_expo ? '6.0' : '5.0'
+        config.build_settings['SWIFT_VERSION'] = needs_swift6 ? '6.0' : '5.0'
 
         config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
         config.build_settings['SWIFT_STRICT_CONCURRENCY'] = 'off'
