@@ -74,6 +74,10 @@ jobs:
       - name: Wrap Fabric C++ headers in __cplusplus guards
         working-directory: ios
         run: |
+          set -x
+          # Bulk-unlock Pods/ so the wrap script can rewrite read-only headers
+          # (RCT-Folly, xcframework headers, etc.).
+          chmod -R u+w Pods || true
           echo "PWD: $(pwd)"
           echo "Pods top: $(ls Pods 2>/dev/null | head -20)"
           echo "Pods/Headers exists: $([ -d Pods/Headers ] && echo yes || echo no)"
@@ -133,6 +137,11 @@ jobs:
             }
             console.log('TAMTAM: wrapped', patched, 'C++ headers; skipped', skipped, '; errors', errs);
           "
+          echo "---- post-wrap check of BaseViewEventEmitter.h ----"
+          head -5 Pods/Headers/Public/React-Fabric/react/renderer/components/view/BaseViewEventEmitter.h 2>&1 || true
+          echo "---- realpath of that file ----"
+          ls -lL Pods/Headers/Public/React-Fabric/react/renderer/components/view/BaseViewEventEmitter.h 2>&1 || true
+          readlink -f Pods/Headers/Public/React-Fabric/react/renderer/components/view/BaseViewEventEmitter.h 2>&1 || true
 
       - name: Build App Bundle (Unsigned)
         working-directory: ios
