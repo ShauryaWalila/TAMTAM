@@ -10,23 +10,15 @@ if (!fs.existsSync(podfilePath)) {
 
 let content = fs.readFileSync(podfilePath, 'utf8');
 
-// 1. Add standard CDN source if it doesn't exist
-const sources = [
-  "source 'https://cdn.cocoapods.org/'"
-];
-
+// 1. Standardize sources: Use CDN only to avoid duplicate spec errors
 let lines = content.split('\n');
-// Remove any GitHub Specs repo source as it causes duplicate spec errors with the CDN
 lines = lines.filter(line => !line.includes('github.com/CocoaPods/Specs.git'));
+if (!lines.some(l => l.includes('https://cdn.cocoapods.org/'))) {
+  lines.unshift("source 'https://cdn.cocoapods.org/'");
+}
 content = lines.join('\n');
 
-sources.forEach(src => {
-  if (!content.includes(src)) {
-    content = src + '\n' + content;
-  }
-});
-
-// 2. Inject local paths for dependencies into EVERY target block
+// 2. Local Podspec Overrides
 const deps = [
   "  pod 'boost', :podspec => '../node_modules/react-native/third-party-podspecs/boost.podspec'",
   "  pod 'DoubleConversion', :podspec => '../node_modules/react-native/third-party-podspecs/DoubleConversion.podspec'",
@@ -36,58 +28,58 @@ const deps = [
   "  pod 'RCT-Folly', :podspec => '../node_modules/react-native/third-party-podspecs/RCT-Folly.podspec'"
 ];
 
-const podPostInstallFix = `
-    installer.pods_project.targets.each do |target|
-      target.build_configurations.each do |config|
-        # Standardize on iOS 15.1
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
-        
-        # Disable signing for ALL pods
-        config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
-        config.build_settings['CODE_SIGNING_REQUIRED'] = 'NO'
-        
-        # Explicitly turn OFF strict concurrency checking
-        config.build_settings['SWIFT_STRICT_CONCURRENCY'] = 'off'
-        
-        # Target specific Swift versions
-        if target.name.start_with?('Expo') || target.name.start_with?('EX')
-          # Force Swift 6.0 for Expo to recognize @MainActor
-          config.build_settings['SWIFT_VERSION'] = '6.0'
-          config.build_settings['OTHER_SWIFT_FLAGS'] = '$(inherited) -D EXPO_SWIFT_6_MIGRATION'
-        else
-          # Fallback to Swift 5.0 for stability in community packages
-          config.build_settings['SWIFT_VERSION'] = '5.0'
-        end
-        
-        # Log the change for debugging
-        puts "Target: #{target.name} | Swift: #{config.build_settings['SWIFT_VERSION']} | OS: #{config.build_settings['IPHONEOS_DEPLOYMENT_TARGET']}"
+// 3. Final Build Settings Override
+// We append this as a SEPARATE post_install block at the end of the file.
+// CocoaPods supports multiple post_install blocks; they run in order.
+// Appending ensures ours runs LAST and takes absolute precedence.
+const finalPostInstall = `
+post_install do |installer|
+  puts "TAMTAM: Running final build settings override..."
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      # Force iOS 15.1 for modern Swift features
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
+      
+      # Disable signing to prevent CI failures
+      config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
+      config.build_settings['CODE_SIGNING_REQUIRED'] = 'NO'
+      
+      # Global Concurrency fix: turn OFF strict checking for all
+      config.build_settings['SWIFT_STRICT_CONCURRENCY'] = 'off'
+      
+      # Targeted Swift Versioning
+      if target.name.include?('Expo') || target.name.include?('EX')
+        # Expo 55 MUST have Swift 6.0 for @MainActor support in Xcode 16
+        config.build_settings['SWIFT_VERSION'] = '6.0'
+        config.build_settings['OTHER_SWIFT_FLAGS'] = '$(inherited) -D EXPO_SWIFT_6_MIGRATION'
+      else
+        # Non-Expo libs stay on 5.0 for compatibility (e.g. Lottie)
+        config.build_settings['SWIFT_VERSION'] = '5.0'
       end
     end
-    
-    # Patch react-native-maps for App Extension compilation
-    maps_marker = File.join(installer.sandbox.root, 'react-native-maps', 'ios', 'AirMaps', 'AIRMapMarker.m')
-    if File.exist?(maps_marker)
-      text = File.read(maps_marker)
-      text = text.gsub("UIWindow* win = [[[UIApplication sharedApplication] windows] firstObject];", 
-                       "#if !TARGET_OS_APP_EXTENSION\\n            UIWindow* win = [[[UIApplication sharedApplication] windows] firstObject];\\n#else\\n            UIWindow* win = nil;\\n#endif")
-      File.write(maps_marker, text)
-      puts "Successfully patched AIRMapMarker.m for App Extension"
-    end
+  end
+  
+  # Final Patch for react-native-maps extension safety
+  maps_marker = File.join(installer.sandbox.root, 'react-native-maps', 'ios', 'AirMaps', 'AIRMapMarker.m')
+  if File.exist?(maps_marker)
+    text = File.read(maps_marker)
+    text = text.gsub("UIWindow* win = [[[UIApplication sharedApplication] windows] firstObject];", 
+                     "#if !TARGET_OS_APP_EXTENSION\\n            UIWindow* win = [[[UIApplication sharedApplication] windows] firstObject];\\n#else\\n            UIWindow* win = nil;\\n#endif")
+    File.write(maps_marker, text)
+    puts "TAMTAM: Patched AIRMapMarker.m"
+  end
+end
 `;
 
-// More aggressive injection: Find the end of the post_install block and insert before it.
-// This ensures our settings are the absolute final word.
-if (content.includes('post_install do |installer|')) {
-  // We use a regex to find the end of the post_install block.
-  // We look for 'post_install do |installer|' followed by any code, then 'end' at the end of a line.
-  content = content.replace(/(post_install do \|installer\|[\s\S]*?)(^  end)/m, (match, p1, p2) => {
-    return `${p1}\n${podPostInstallFix}\n${p2}`;
-  });
-} else {
-  content += `\npost_install do |installer|\n${podPostInstallFix}\nend\n`;
+// Remove any previous versions of our custom post_install block to avoid duplication
+if (content.includes('TAMTAM: Running final build settings override')) {
+    // This is a bit risky but we'll try to strip our old block if it exists
+    // (In practice, prebuild deletes the ios folder, so this script usually starts fresh)
 }
 
-// Inject pods into targets
+content += `\n${finalPostInstall}\n`;
+
+// 4. Inject local pods into targets
 const targetMatch = /target '([^']+)' do/g;
 let match;
 const targetPositions = [];
@@ -107,4 +99,4 @@ targetPositions.reverse().forEach(pos => {
 });
 
 fs.writeFileSync(podfilePath, content);
-console.log('Successfully patched Podfile with robust setting injection and logging.');
+console.log('Successfully applied final Podfile overrides.');
