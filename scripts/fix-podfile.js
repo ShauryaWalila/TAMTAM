@@ -61,10 +61,25 @@ const podPostInstallFix = `
         # chain misses the declaring header. Demote to warning so the build
         # completes; runtime symbol resolution still works (these are real
         # ObjC functions linked from ExpoModulesCore).
-        existing = config.build_settings['OTHER_CFLAGS'] || '$(inherited)'
-        existing = existing.is_a?(Array) ? existing.join(' ') : existing.to_s
-        unless existing.include?('-Wno-error=implicit-function-declaration')
-          config.build_settings['OTHER_CFLAGS'] = existing + ' -Wno-error=implicit-function-declaration'
+        existing_cflags = config.build_settings['OTHER_CFLAGS'] || '$(inherited)'
+        existing_cflags = existing_cflags.is_a?(Array) ? existing_cflags.join(' ') : existing_cflags.to_s
+        unless existing_cflags.include?('-Wno-error=implicit-function-declaration')
+          config.build_settings['OTHER_CFLAGS'] = existing_cflags + ' -Wno-error=implicit-function-declaration -URCT_NEW_ARCH_ENABLED'
+        end
+
+        # Hard-undefine the new-arch flag everywhere. Some pods (expo-modules-
+        # core's own podspec) inject -DRCT_NEW_ARCH_ENABLED at the target
+        # level regardless of project-level newArchEnabled=false. Walk the
+        # preprocessor definitions list and strip it.
+        defs = config.build_settings['GCC_PREPROCESSOR_DEFINITIONS']
+        if defs.is_a?(Array)
+          defs = defs.reject { |d| d.to_s.start_with?('RCT_NEW_ARCH_ENABLED') }
+          defs << 'RCT_NEW_ARCH_ENABLED=0'
+          config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] = defs
+        elsif defs.is_a?(String)
+          parts = defs.split(' ').reject { |d| d.start_with?('RCT_NEW_ARCH_ENABLED') }
+          parts << 'RCT_NEW_ARCH_ENABLED=0'
+          config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] = parts.join(' ')
         end
       end
     end

@@ -1,10 +1,4 @@
-❌  fatal error: too many errors emitted, stopping now [-ferror-limit=]
-▸ Compiling SharedRef.cpp
-▸ Compiling SharedObject.cpp
-▸ Compiling SerializableExtractor.mm
-▸ Compiling NativeModule.cpp
-▸ Compiling LazyObject.cpp
-    Run script build phase '[CP-User] [Hermes] Replace Hermes for the right configuration, if needed' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'hermes-engine' from project 'Pods')
+Run script build phase '[CP-User] [Hermes] Replace Hermes for the right configuration, if needed' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'hermes-engine' from project 'Pods')
     Run script build phase 'TAMTAM: Wrap codegen C++ headers' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'ReactCodegen' from project 'Pods')
 Wrap step log (wrap.log)
   + chmod -R u+w Pods
@@ -154,129 +148,15 @@ Build errors (last 200 lines around 'error:')
   --
       
       /Applications/Xcode_26.0.1.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x objective-c++ -ivfsstatcache /Users/runner/work/TAMTAM/TAMTAM/ios/build/SDKStatCaches.noindex/iphoneos26.0-23A339-3885c01c3e6b6a337905948deab2002ee897cee61435230feef45a4748fd4bcc.sdkstatcache -fmessage-length\=0 -fdiagnostics-show-note-include-stack -fmacro-backtrace-limit\=0 -fno-color-diagnostics -fmodules-prune-interval\=86400 -fmodules-prune-after\=345600 -fbuild-session-file\=/Users/runner/work/TAMTAM/TAMTAM/ios/build/ModuleCache.noindex/Session.modulevalidation -fmodules-validate-once-per-build-session -Wnon-modular-include-in-framework-module -Werror\=non-modular-include-in-framework-module -Wno-trigraphs -Wno-missing-field-initializers -Wno-missing-prototypes -Werror\=return-type -Wdocumentation -Wunreachable-code -Wno-implicit-atomic-properties -Werror\=deprecated-objc-isa-usage -Wno-objc-interface-ivars -Werror\=objc-root-class -Wno-arc-repeated-use-of-weak -Wimplicit-retain-self -Wno-non-virtu
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualViewObjC.mm:83:40: error: no member named 'ExpoViewComponentDescriptor' in namespace 'expo'; did you mean 'SharedComponentDescriptor'?
-     83 | static std::unordered_map<std::string, expo::ExpoViewComponentDescriptor::Flavor> _componentFlavorsCache;
-        |                                        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        |                                        SharedComponentDescriptor
-  In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualViewObjC.mm:17:
-  In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-RCTFabric/React/RCTComponentViewProtocol.h:10:
-  In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/componentregistry/ComponentDescriptorProvider.h:12:
-  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/ComponentDescriptor.h:27:7: note: 'SharedComponentDescriptor' declared here
-     27 | using SharedComponentDescriptor = std::shared_ptr<const ComponentDescriptor>;
-        |       ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualViewObjC.mm:83:75: error: no member named 'Flavor' in 'std::shared_ptr<const facebook::react::ComponentDescriptor>'
-     83 | static std::unordered_map<std::string, expo::ExpoViewComponentDescriptor::Flavor> _componentFlavorsCache;
-        |                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualViewObjC.mm:87:10: error: no type named 'SharedViewEventEmitter' in namespace 'facebook::react'; did you mean 'SharedEventEmitter'?
-     87 |   react::SharedViewEventEmitter _eventEmitter;
-        |   ~~~~~~~^~~~~~~~~~~~~~~~~~~~~~
-        |          SharedEventEmitter
-  In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualViewObjC.mm:17:
-  In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-RCTFabric/React/RCTComponentViewProtocol.h:10:
-  In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/componentregistry/ComponentDescriptorProvider.h:12:
-  In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/ComponentDescriptor.h:17:
-  In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/ShadowNode.h:18:
-  --
-     26 | using SharedEventEmitter = std::shared_ptr<const EventEmitter>;
-        |       ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualViewObjC.mm:88:9: error: no member named 'ExpoViewShadowNode' in namespace 'expo'
-     88 |   expo::ExpoViewShadowNode::ConcreteState::Shared _state;
-        |   ~~~~~~^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualViewObjC.mm:216:3: error: no member named 'ExpoViewComponentDescriptor' in namespace 'expo'; did you mean 'SharedComponentDescriptor'?
-    216 |   expo::ExpoViewComponentDescriptor::Flavor flavor = _componentFlavorsCache[className];
-        |   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        |   SharedComponentDescriptor
-  In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualViewObjC.mm:17:
-  In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-RCTFabric/React/RCTComponentViewProtocol.h:10:
-  In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/componentregistry/ComponentDescriptorProvider.h:12:
-  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/ComponentDescriptor.h:27:7: note: 'SharedComponentDescriptor' declared here
-     27 | using SharedComponentDescriptor = std::shared_ptr<const ComponentDescriptor>;
-        |       ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualViewObjC.mm:216:45: error: use of undeclared identifier 'flavor'; did you mean 'floor'?
-    216 |   expo::ExpoViewComponentDescriptor::Flavor flavor = _componentFlavorsCache[className];
-        |                                             ^~~~~~
-        |                                             floor
-  In file included from <built-in>:1:
-  In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Target Support Files/ExpoModulesCore/ExpoModulesCore-prefix.pch:2:
-  In file included from /Applications/Xcode_26.0.1.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIKit.h:8:
-  In file included from /Applications/Xcode_26.0.1.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/Foundation.framework/Headers/Foundation.h:6:
-  In file included from /Applications/Xcode_26.0.1.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/CoreFoundation.framework/Headers/CoreFoundation.h:28:
-  --
-    466 | using std::__math::floor;
-        |                    ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualViewObjC.mm:216:44: error: expected ';' after expression
-    216 |   expo::ExpoViewComponentDescriptor::Flavor flavor = _componentFlavorsCache[className];
-        |                                            ^
-        |                                            ;
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualViewObjC.mm:216:38: error: no member named 'Flavor' in 'std::shared_ptr<const facebook::react::ComponentDescriptor>'
-    216 |   expo::ExpoViewComponentDescriptor::Flavor flavor = _componentFlavorsCache[className];
-        |   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualViewObjC.mm:218:7: error: use of undeclared identifier 'flavor'; did you mean 'floor'?
-    218 |   if (flavor == nullptr) {
-        |       ^~~~~~
-        |       floor
-  In file included from <built-in>:1:
-  In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Target Support Files/ExpoModulesCore/ExpoModulesCore-prefix.pch:2:
-  In file included from /Applications/Xcode_26.0.1.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIKit.h:8:
-  In file included from /Applications/Xcode_26.0.1.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/Foundation.framework/Headers/Foundation.h:6:
-  In file included from /Applications/Xcode_26.0.1.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/CoreFoundation.framework/Headers/CoreFoundation.h:28:
-  --
-    466 | using std::__math::floor;
-        |                    ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualViewObjC.mm:218:7: error: reference to overloaded function could not be resolved; did you mean to call it?
-    218 |   if (flavor == nullptr) {
-        |       ^~~~~~
-  In file included from <built-in>:1:
-  In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Target Support Files/ExpoModulesCore/ExpoModulesCore-prefix.pch:2:
-  In file included from /Applications/Xcode_26.0.1.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIKit.h:8:
-  In file included from /Applications/Xcode_26.0.1.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/Foundation.framework/Headers/Foundation.h:6:
-  In file included from /Applications/Xcode_26.0.1.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/CoreFoundation.framework/Headers/CoreFoundation.h:28:
-  In file included from /Applications/Xcode_26.0.1.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/usr/include/c++/v1/math.h:377:
-  --
-     59 | [[__nodiscard__]] inline _LIBCPP_HIDE_FROM_ABI double floor(_A1 __x) _NOEXCEPT {
-        |                                                       ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualViewObjC.mm:219:5: error: use of undeclared identifier 'flavor'
-    219 |     flavor = _componentFlavorsCache[className] = std::make_shared<std::string const>(className);
-        |     ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualViewObjC.mm:222:49: error: use of undeclared identifier 'flavor'
-    222 |   ComponentName componentName = ComponentName { flavor->c_str() };
-        |                                                 ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualViewObjC.mm:228:5: error: use of undeclared identifier 'flavor'
-    228 |     flavor,
-        |     ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualViewObjC.mm:229:68: error: no member named 'ExpoViewComponentDescriptor' in namespace 'expo'
-    229 |     &facebook::react::concreteComponentDescriptorConstructor<expo::ExpoViewComponentDescriptor>
-        |                                                              ~~~~~~^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualViewObjC.mm:256:50: error: unknown type name 'ViewEventEmitter'; did you mean 'EventEmitter'?
-    256 |   _eventEmitter = std::static_pointer_cast<const ViewEventEmitter>(eventEmitter);
-        |                                                  ^~~~~~~~~~~~~~~~
-        |                                                  EventEmitter
-  In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualViewObjC.mm:17:
-  In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-RCTFabric/React/RCTComponentViewProtocol.h:10:
-  In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/componentregistry/ComponentDescriptorProvider.h:12:
-  In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/ComponentDescriptor.h:17:
-  In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Fabric/react/renderer/core/ShadowNode.h:18:
-  --
-     34 | class EventEmitter {
-        |       ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualViewObjC.mm:333:54: error: no type named 'ExpoViewEventEmitter' in namespace 'expo'
-    333 |   const auto &eventEmitter = static_cast<const expo::ExpoViewEventEmitter &>(*_eventEmitter);
-        |                                                ~~~~~~^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualViewObjC.mm:335:16: error: no member named 'dispatch' in 'facebook::react::EventEmitter'
-    335 |   eventEmitter.dispatch([normalizeEventName(eventName) UTF8String], [payload](jsi::Runtime &runtime) {
-        |   ~~~~~~~~~~~~ ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualViewObjC.mm:349:49: error: no member named 'ExpoViewShadowNode' in namespace 'expo'
-    349 |   _state = std::static_pointer_cast<const expo::ExpoViewShadowNode::ConcreteState>(state);
-        |                                           ~~~~~~^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualViewObjC.mm:361:31: error: no member named 'ExpoViewState' in namespace 'expo'
-    361 |     _state->updateState(expo::ExpoViewState(width, height), EventQueue::UpdateMode::unstable_Immediate);
-        |                         ~~~~~~^
-  fatal error: too many errors emitted, stopping now [-ferror-limit=]
-  20 errors generated.
-  CompileC /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/ExpoModulesCore.build/Objects-normal/arm64/SharedRef-8c2012e365b400941cff4a0aca9e509f.o /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/common/cpp/SharedRef.cpp normal arm64 c++ com.apple.compilers.llvm.clang.1_0.compiler (in target 'ExpoModulesCore' from project 'Pods')
+  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/JS/ExpoModulesHostObject.mm:37:3: error: use of undeclared identifier 'LazyObject'
+     37 |   LazyObject::Shared moduleLazyObject = std::make_shared<LazyObject>(^SharedJSIObject(jsi::Runtime &runtime) {
+        |   ^
+  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/JS/ExpoModulesHostObject.mm:37:58: error: use of undeclared identifier 'LazyObject'
+     37 |   LazyObject::Shared moduleLazyObject = std::make_shared<LazyObject>(^SharedJSIObject(jsi::Runtime &runtime) {
+        |                                                          ^
+  2 errors generated.
+  CompileC /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/ExpoModulesCore.build/Objects-normal/arm64/ExpoFabricViewObjC.o /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/Fabric/ExpoFabricViewObjC.mm normal arm64 objective-c++ com.apple.compilers.llvm.clang.1_0.compiler (in target 'ExpoModulesCore' from project 'Pods')
       cd /Users/runner/work/TAMTAM/TAMTAM/ios/Pods
       
-      Using response file: /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/ExpoModulesCore.build/Objects-normal/arm64/82b82416624d2658e5098eb0a28c15c5-common-args.resp
-      
-      /Applications/Xcode_26.0.1.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -ivfsstatcache /Users/runner/work/TAMTAM/TAMTAM/ios/build/SDKStatCaches.noindex/iphoneos26.0-23A339-3885c01c3e6b6a337905948deab2002ee897cee61435230feef45a4748fd4bcc.sdkstatcache -fmessage-length\=0 -fdiagnostics-show-note-include-stack -fmacro-backtrace-limit\=0 -fno-color-diagnostics -fmodules-prune-interval\=86400 -fmodules-prune-after\=345600 -fbuild-session-file\=/Users/runner/work/TAMTAM/TAMTAM/ios/build/ModuleCache.noindex/Session.modulevalidation -fmodules-validate-once-per-build-session -Wnon-modular-include-in-framework-module -Werror\=non-modular-include-in-framework-module -Wno-trigraphs -Wno-missing-field-initializers -Wno-missing-prototypes -Werror\=return-type -Wdocumentation -Wunreachable-code -Werror\=deprecated-objc-isa-usage -Werror\=objc-root-class -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wno-missing-braces -Wparentheses -Wswitch -Wunused-function -
+      Using response file: /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/ExpoModulesCore.build/Objects-normal/arm64/af3fcb34312c57c0f52879cdce924b91-common-args.resp
 Error: Process completed with exit code 1.
