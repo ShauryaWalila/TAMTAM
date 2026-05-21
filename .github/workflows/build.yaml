@@ -75,72 +75,15 @@ jobs:
         working-directory: ios
         run: |
           set -x
-          # Bulk-unlock Pods/ so the wrap script can rewrite read-only headers
-          # (RCT-Folly, xcframework headers, etc.).
+          exec > >(tee wrap.log) 2>&1
+          # Bulk-unlock Pods/ AND node_modules/ so wrap can rewrite read-only
+          # headers and headers reached via Pods symlinks into node_modules
+          # (RN 0.83's React-Fabric pod sources from node_modules/react-native).
           chmod -R u+w Pods || true
-          echo "PWD: $(pwd)"
-          echo "Pods top: $(ls Pods 2>/dev/null | head -20)"
-          echo "Pods/Headers exists: $([ -d Pods/Headers ] && echo yes || echo no)"
-          echo "Pods/Headers/Public exists: $([ -d Pods/Headers/Public ] && echo yes || echo no)"
-          ls -d Pods/Headers/Public/React-* Pods/Headers/Public/ReactCodegen 2>/dev/null | head -20 || true
-          echo "BaseViewEventEmitter.h present?"
-          find Pods -name BaseViewEventEmitter.h 2>/dev/null | head -5
-
-          # Strategy: scan .h under Pods/Headers/Public (the active include path
-          # for clang) that #include a C++ stdlib token. Wrap body in
-          # `#if defined(__cplusplus)`. ObjC parse sees empty file, C++ parse
-          # sees full content. RN 0.83 ships React as prebuilt xcframework -
-          # public headers under Pods/Headers/Public are symlinks; resolve and
-          # chmod writable before patching the real target.
-          node -e "
-            const fs = require('fs');
-            const path = require('path');
-            const CXX_TOKENS = new RegExp([
-              '#include\\s+<(memory|vector|string|functional|optional|unordered_map|unordered_set|map|set|deque|list|array|tuple|chrono|atomic|mutex|thread|future|variant|type_traits|algorithm|iterator|stdexcept|utility|cstdint|cstddef|initializer_list|numeric|limits|cmath|cstdlib|cstdio|cassert|memory_resource|bit|concepts|coroutine|expected|ranges|span|string_view)>',
-              '^\\s*namespace\\s+\\w+\\s*\\{',
-              '^\\s*template\\s*<',
-              '^\\s*using\\s+namespace\\s+\\w',
-              '\\bstd::\\w+'
-            ].join('|'), 'm');
-            function walk(dir) {
-              if (!fs.existsSync(dir)) return [];
-              const out = [];
-              let ents;
-              try { ents = fs.readdirSync(dir, { withFileTypes: true }); } catch (e) { return []; }
-              for (const ent of ents) {
-                const p = path.join(dir, ent.name);
-                let st;
-                try { st = fs.statSync(p); } catch (e) { continue; }
-                if (st.isDirectory()) out.push(...walk(p));
-                else if (st.isFile() && (p.endsWith('.h') || p.endsWith('.hpp'))) out.push(p);
-              }
-              return out;
-            }
-            const roots = ['Pods/Headers/Public', 'Pods/React-Core-prebuilt'];
-            console.log('TAMTAM: scanning', roots.join(', '), '(cwd=' + process.cwd() + ')');
-            const all = roots.flatMap(r => walk(r));
-            console.log('TAMTAM: found', all.length, '.h/.hpp files');
-            let patched = 0, skipped = 0, errs = 0, seen = new Set();
-            for (const file of all) {
-              let real;
-              try { real = fs.realpathSync(file); } catch (e) { continue; }
-              if (seen.has(real)) continue;
-              seen.add(real);
-              let s;
-              try { s = fs.readFileSync(real, 'utf8'); } catch (e) { continue; }
-              if (!CXX_TOKENS.test(s)) continue;
-              if (s.includes('// TAMTAM_CXX_GUARD')) { skipped++; continue; }
-              s = '// TAMTAM_CXX_GUARD\n#if defined(__cplusplus)\n' + s + '\n#endif // TAMTAM_CXX_GUARD\n';
-              try { fs.chmodSync(real, 0o644); } catch (e) {}
-              try { fs.writeFileSync(real, s); patched++; }
-              catch (e) { errs++; console.log('  skip (write fail):', real, e.code); }
-            }
-            console.log('TAMTAM: wrapped', patched, 'C++ headers; skipped', skipped, '; errors', errs);
-          "
+          chmod -R u+w ../node_modules/react-native || true
+          node ../scripts/wrap-cxx-headers.js
           echo "---- post-wrap check of BaseViewEventEmitter.h ----"
           head -5 Pods/Headers/Public/React-Fabric/react/renderer/components/view/BaseViewEventEmitter.h 2>&1 || true
-          echo "---- realpath of that file ----"
-          ls -lL Pods/Headers/Public/React-Fabric/react/renderer/components/view/BaseViewEventEmitter.h 2>&1 || true
           readlink -f Pods/Headers/Public/React-Fabric/react/renderer/components/view/BaseViewEventEmitter.h 2>&1 || true
 
       - name: Build App Bundle (Unsigned)
@@ -161,6 +104,17 @@ jobs:
             COMPILER_INDEX_STORE_ENABLE=NO \
             2>&1 | tee xcodebuild.log | (xcpretty || cat) || BUILD_FAILED=1
           if [ "$BUILD_FAILED" = "1" ]; then
+            echo "::group::Wrap step log (wrap.log)"
+            cat wrap.log 2>&1 || echo "wrap.log missing"
+            echo "::endgroup::"
+            echo "::group::Sample of patched-or-not BaseViewEventEmitter.h"
+            for f in $(find Pods/React-Core-prebuilt -name BaseViewEventEmitter.h 2>/dev/null | head -5) \
+                     Pods/Headers/Public/React-Fabric/react/renderer/components/view/BaseViewEventEmitter.h \
+                     Pods/Headers/Public/React-Core-prebuilt/React_Fabric/BaseViewEventEmitter.h; do
+              echo "--- $f"
+              head -5 "$f" 2>&1 || true
+            done
+            echo "::endgroup::"
             echo "::group::Build errors (last 200 lines around 'error:')"
             grep -B 2 -A 8 "error:" xcodebuild.log | tail -n 200 || true
             echo "::endgroup::"
@@ -173,6 +127,14 @@ jobs:
         with:
           name: xcodebuild-log
           path: ios/xcodebuild.log
+          if-no-files-found: ignore
+
+      - name: Upload wrap step log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wrap-log
+          path: ios/wrap.log
           if-no-files-found: ignore
 
       - name: Package IPA
