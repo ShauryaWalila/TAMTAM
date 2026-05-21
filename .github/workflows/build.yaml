@@ -35,8 +35,50 @@ jobs:
       - name: Install Dependencies
         run: npm install --legacy-peer-deps
 
-      - name: Align expo-* versions to SDK 54
-        run: npx expo install --check --fix || true
+      - name: Add expo-* and RN-coupled deps at SDK 54 versions
+        run: |
+          npx expo install \
+            expo-router \
+            expo-auth-session \
+            expo-av \
+            expo-blur \
+            expo-build-properties \
+            expo-camera \
+            expo-constants \
+            expo-crypto \
+            expo-device \
+            expo-file-system \
+            expo-font \
+            expo-haptics \
+            expo-image-picker \
+            expo-linear-gradient \
+            expo-linking \
+            expo-local-authentication \
+            expo-location \
+            expo-media-library \
+            expo-notifications \
+            expo-print \
+            expo-secure-store \
+            expo-sharing \
+            expo-speech \
+            expo-sqlite \
+            expo-status-bar \
+            expo-symbols \
+            expo-task-manager \
+            expo-web-browser \
+            lottie-react-native \
+            react-native-gesture-handler \
+            react-native-maps \
+            react-native-pager-view \
+            react-native-reanimated \
+            react-native-reanimated-carousel \
+            react-native-safe-area-context \
+            react-native-screens \
+            react-native-svg \
+            react-native-web \
+            react-native-webview
+          echo "--- package.json after expo install ---"
+          cat package.json
 
       - name: Patch RCT-Folly podspec
         run: |
