@@ -20,18 +20,15 @@ export async function registerForPushNotificationsAsync() {
       return;
     }
 
-    const projectId = Constants?.expoConfig?.extra?.eas?.projectId;
-    
-    // Only fetch token if a valid PROJECT_ID exists (prevents crash with placeholders)
-    if (projectId && !projectId.includes('77777777')) {
-      try {
-        token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
-      } catch (e) {
-        console.log('Could not fetch push token (Push Notifications disabled):', e);
-      }
-    } else {
-      console.log('Push Notifications Disabled: No valid EAS Project ID found in app.json. Local reminders and proximity alerts will still work.');
-    }
+    // Remote push (Expo Push Service / APNs) requires the `aps-environment`
+    // entitlement, which a free Apple Developer account cannot sign. Skip the
+    // push-token registration entirely. LOCAL notifications (scheduled time,
+    // calendar, and geofence-triggered) still work fine - they go through
+    // UNUserNotificationCenter which is free.
+    // const projectId = Constants?.expoConfig?.extra?.eas?.projectId;
+    // if (projectId && !projectId.includes('77777777')) {
+    //   try { token = (await Notifications.getExpoPushTokenAsync({ projectId })).data; } catch (e) {}
+    // }
   } else {
     // alert('Must use physical device for Push Notifications');
   }

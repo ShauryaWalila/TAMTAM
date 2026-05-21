@@ -1,4 +1,4 @@
-Run script build phase '[CP-User] [Hermes] Replace Hermes for the right configuration, if needed' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'hermes-engine' from project 'Pods')
+ Run script build phase '[CP-User] [Hermes] Replace Hermes for the right configuration, if needed' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'hermes-engine' from project 'Pods')
     Run script build phase 'TAMTAM: Wrap codegen C++ headers' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'ReactCodegen' from project 'Pods')
 Wrap step log (wrap.log)
   + chmod -R u+w Pods
@@ -54,10 +54,10 @@ Wrap step log (wrap.log)
   /*
    * Copyright (c) Meta Platforms, Inc. and affiliates.
    *
-   * This source code is licensed under the MIT license found in the
-   * LICENSE file in the root directory of this source tree.
-  TAMTAM: target Pods/Headers/Public/RCTTypeSafety/RCTTypeSafety/RCTTypedModuleConstants.h
-    realpath: /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native/Libraries/TypeSafety/RCTTypedModuleConstants.h
+  --- Pods/React-Core-prebuilt/React.xcframework/ios-arm64/React.framework/Headers/React_Fabric/BaseViewEventEmitter.h
+  // TAMTAM_CXX_GUARD
+  #if defined(__cplusplus)
+  /*
    * Copyright (c) Meta Platforms, Inc. and affiliates.
    *
   --- Pods/Headers/Public/React-Fabric/react/renderer/components/view/BaseViewEventEmitter.h
@@ -97,18 +97,18 @@ Build errors (last 200 lines around 'error:')
                                ^
   /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/AnimationViewManagerModule.swift:48:27: warning: will never be executed
   --
-  public class CameraPermissionRequester: NSObject, EXPermissionsRequester {
-               ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-image-picker/ios/ImagePickerPermissionRequesters.swift:22:7: error: cannot find 'EXFatal' in scope
-        EXFatal(EXErrorWithMessage("""
-        ^~~~~~~
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-image-picker/ios/ImagePickerPermissionRequesters.swift:22:15: error: cannot find 'EXErrorWithMessage' in scope
-        EXFatal(EXErrorWithMessage("""
-                ^~~~~~~~~~~~~~~~~~
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-image-picker/ios/ImagePickerPermissionRequesters.swift:86:15: warning: capture of 'self' with non-Sendable type 'DefaultMediaLibraryPermissionRequester?' in a '@Sendable' closure
-        resolve(self?.getPermissions())
-                ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-image-picker/ios/ImagePickerPermissionRequesters.swift:72:14: note: class 'DefaultMediaLibraryPermissionRequester' does not conform to the 'Sendable' protocol
-  public class DefaultMediaLibraryPermissionRequester: NSObject {}
-               ^
+      cd /Users/runner/work/TAMTAM/TAMTAM/ios/Pods
+      
+  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-notifications/ios/EXNotifications/Badge/BadgeModule.swift:11:14: error: cannot find 'EXSharedApplication' in scope
+        return EXSharedApplication().applicationIconBadgeNumber
+               ^~~~~~~~~~~~~~~~~~~
+  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-notifications/ios/EXNotifications/Badge/BadgeModule.swift:25:13: error: cannot find 'EXSharedApplication' in scope
+              EXSharedApplication().applicationIconBadgeNumber = badgeCount
+              ^~~~~~~~~~~~~~~~~~~
+  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-notifications/ios/EXNotifications/Notifications/Handler/HandlerModule.swift:81:23: warning: 'alert' was deprecated in iOS 14.0
+        options.insert(.alert)
+                        ^
+  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-notifications/ios/EXNotifications/Notifications/NotificationCenterManager.swift:42:21: warning: static property 'shared' is not concurrency-safe because non-'Sendable' type 'NotificationCenterManager' may have shared mutable state; this is an error in the Swift 6 language mode
+    public static let shared = NotificationCenterManager()
+                      ^
 Error: Process completed with exit code 1.
