@@ -101,16 +101,19 @@ for (const file of all) {
   } catch (e) {
     continue;
   }
-  if (!CXX_TOKENS.test(s)) continue;
+  // Force-wrap: files with `#error This file must be compiled as Obj-C++`
+  // are pure-ObjC++-required headers that detonate in ObjC parse. Wrap them
+  // so the #error is hidden in ObjC mode.
+  const forceWrap = /^\s*#\s*error[^\n]*Obj-C\+\+/m.test(s);
+  if (!forceWrap && !CXX_TOKENS.test(s)) continue;
   // Skip mixed ObjC/C++ headers. ObjC markers indicate the file expects to be
   // parsed in ObjC mode by some consumers; wrapping would hide @interface
-  // declarations / block typedefs. Upstream RN guards the C++ parts with
-  // proper #ifdef __cplusplus already in these files.
+  // declarations / block typedefs.
   if (/^\s*@(interface|protocol|class|implementation)\b/m.test(s)) continue;
-  // Skip files that already have upstream __cplusplus guards (Yoga's YGEnums.h,
-  // YGMacros.h, etc. - they keep namespace blocks inside #ifdef __cplusplus so
-  // C consumers see the plain C types). Wrapping them would hide C content too.
-  if (/#\s*if(def)?\s+(defined\(__cplusplus\)|__cplusplus)/.test(s)) continue;
+  // Path-based skip for headers known to be C-API-with-cplusplus-guards
+  // (Yoga's YGEnums/YGConfig/etc. - they keep their namespace blocks inside
+  // #ifdef __cplusplus and need to parse in C mode for the rest).
+  if (/\/yoga\/[^/]+\.h$/.test(real)) continue;
   matched++;
   if (sampleMatches.length < 5) sampleMatches.push(real);
 
