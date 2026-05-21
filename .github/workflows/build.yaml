@@ -70,13 +70,15 @@ jobs:
             react-native-gesture-handler \
             react-native-maps \
             react-native-pager-view \
-            react-native-reanimated \
             react-native-reanimated-carousel \
             react-native-safe-area-context \
             react-native-screens \
             react-native-svg \
             react-native-web \
             react-native-webview
+          # Reanimated 4 (SDK 54 default) hard-requires new arch. We're on
+          # old arch, so pin to 3.x explicitly via plain npm.
+          npm install --legacy-peer-deps react-native-reanimated@~3.18.0
           echo "--- package.json after expo install ---"
           cat package.json
 
