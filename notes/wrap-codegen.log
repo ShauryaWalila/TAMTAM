@@ -1,12 +1,12 @@
 TAMTAM: scanning Pods/Headers/Public, Pods/React-Core-prebuilt (cwd=/Users/runner/work/TAMTAM/TAMTAM/ios)
 TAMTAM: found 11876 .h/.hpp files
-TAMTAM: matched 687 / 11876 ; patched 687 ; skipped 0 ; errors 0
+TAMTAM: matched 6120 / 11876 ; patched 691 ; skipped 5429 ; errors 0
 TAMTAM: sample matched files:
-   /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/React-Core-prebuilt/React.xcframework/Headers/FBLazyVector/FBLazyIterator.h
-   /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/React-Core-prebuilt/React.xcframework/Headers/FBLazyVector/FBLazyVector.h
-   /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/React-Core-prebuilt/React.xcframework/Headers/FBReactNativeSpec/ComponentDescriptors.h
-   /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/React-Core-prebuilt/React.xcframework/Headers/FBReactNativeSpec/EventEmitters.h
-   /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/React-Core-prebuilt/React.xcframework/Headers/FBReactNativeSpec/FBReactNativeSpecJSI.h
+   /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/DoubleConversion/double-conversion/bignum-dtoa.h
+   /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/DoubleConversion/double-conversion/bignum.h
+   /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/DoubleConversion/double-conversion/cached-powers.h
+   /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/DoubleConversion/double-conversion/diy-fp.h
+   /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/DoubleConversion/double-conversion/double-conversion.h
 TAMTAM: target Pods/Headers/Public/React-Fabric/react/renderer/components/view/BaseViewEventEmitter.h
   realpath: /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native/ReactCommon/react/renderer/components/view/BaseViewEventEmitter.h
   seen-by-walk: true

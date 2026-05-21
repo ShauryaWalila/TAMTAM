@@ -147,6 +147,10 @@ const targets = [
   'Pods/Headers/Public/React-Fabric/react/renderer/components/view/BaseViewEventEmitter.h',
   'Pods/Headers/Public/ReactCodegen/react/renderer/components/lottiereactnative/EventEmitters.h',
   'Pods/Headers/Public/ReactCodegen/react/renderer/components/lottiereactnative/Props.h',
+  'Pods/Headers/Public/React-Core-prebuilt/yoga/YGEnums.h',
+  'Pods/Headers/Public/React-Core-prebuilt/yoga/YGMacros.h',
+  'Pods/Headers/Public/RCTTypeSafety/RCTTypeSafety/RCTTypedModuleConstants.h',
+  'Pods/Headers/Public/ReactCodegen/rnasyncstorage/rnasyncstorage.h',
 ];
 for (const target of targets) {
   console.log('TAMTAM: target', target);
