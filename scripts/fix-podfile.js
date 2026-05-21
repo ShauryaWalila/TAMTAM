@@ -55,13 +55,6 @@ const podPostInstallFix = `
         config.build_settings['CLANG_CXX_LIBRARY'] = 'libc++'
         config.build_settings['CLANG_ENABLE_MODULES'] = 'YES'
 
-        # Skip generated Swift-to-ObjC compatibility header install. The
-        # generated RNScreens-Swift.h etc. imports the ObjC umbrella, which
-        # transitively pulls Fabric C++ headers and fails parse in ObjC mode.
-        # Pods are linked, not consumed as ObjC frameworks, so this header
-        # isn't needed by downstream targets.
-        config.build_settings['SWIFT_INSTALL_OBJC_HEADER'] = 'NO'
-
         # Xcode 26 promotes implicit function declarations from warning to
         # error. expo-location 19.0.8 and a few other pods rely on EXFatal /
         # EXErrorWithMessage being implicitly declared because their include
