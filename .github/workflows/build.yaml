@@ -76,9 +76,10 @@ jobs:
             react-native-svg \
             react-native-web \
             react-native-webview
-          # Reanimated 4 (SDK 54 default) hard-requires new arch. We're on
-          # old arch, so pin to 3.x explicitly via plain npm.
-          npm install --legacy-peer-deps react-native-reanimated@~3.18.0
+          # Reanimated 4 (SDK 54 default) hard-requires new arch. 3.18 still
+          # references ShadowNode unguarded. 3.16.x is the last dual-arch
+          # version that builds cleanly on old arch.
+          npm install --legacy-peer-deps react-native-reanimated@~3.16.0
           echo "--- package.json after expo install ---"
           cat package.json
 
