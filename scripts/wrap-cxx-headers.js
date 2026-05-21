@@ -28,7 +28,9 @@ const CXX_TOKENS = new RegExp(
     String.raw`^\s*namespace\s+\w+\s*\{`,
     String.raw`^\s*template\s*<`,
     String.raw`^\s*using\s+namespace\s+\w`,
-    String.raw`\bstd::\w+`,
+    // Any qualified name like `foo::bar` is C++ syntax (ObjC doesn't use `::`).
+    // Catches std::, facebook::, react::, winrt::, and other namespaces.
+    String.raw`\b\w+::\w+`,
   ].join('|'),
   'm'
 );
