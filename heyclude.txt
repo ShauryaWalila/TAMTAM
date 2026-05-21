@@ -1,4 +1,9 @@
-Run script build phase '[CP-User] [Hermes] Replace Hermes for the right configuration, if needed' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'hermes-engine' from project 'Pods')
+❌  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-modules-core/ios/JS/ExpoModulesHostObject.mm:37:3: use of undeclared identifier 'LazyObject'
+   37 |   LazyObject::Shared moduleLazyObject = std::make_shared<LazyObject>(^SharedJSIObject(jsi::Runtime &runtime) {
+                                 ^
+▸ Compiling ExpoFabricViewObjC.mm
+▸ Compiling ExpoBridgeModule.mm
+    Run script build phase '[CP-User] [Hermes] Replace Hermes for the right configuration, if needed' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'hermes-engine' from project 'Pods')
     Run script build phase 'TAMTAM: Wrap codegen C++ headers' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'ReactCodegen' from project 'Pods')
 Wrap step log (wrap.log)
   + chmod -R u+w Pods
@@ -159,4 +164,5 @@ Build errors (last 200 lines around 'error:')
       cd /Users/runner/work/TAMTAM/TAMTAM/ios/Pods
       
       Using response file: /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/ExpoModulesCore.build/Objects-normal/arm64/af3fcb34312c57c0f52879cdce924b91-common-args.resp
+  
 Error: Process completed with exit code 1.
