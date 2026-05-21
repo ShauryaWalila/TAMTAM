@@ -102,6 +102,11 @@ for (const file of all) {
     continue;
   }
   if (!CXX_TOKENS.test(s)) continue;
+  // Skip mixed ObjC/C++ headers. ObjC markers indicate the file expects to be
+  // parsed in ObjC mode by some consumers; wrapping would hide @interface
+  // declarations / block typedefs. Upstream RN guards the C++ parts with
+  // proper #ifdef __cplusplus already in these files.
+  if (/^\s*@(interface|protocol|class|implementation)\b/m.test(s)) continue;
   matched++;
   if (sampleMatches.length < 5) sampleMatches.push(real);
 
