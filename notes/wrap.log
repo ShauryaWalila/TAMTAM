@@ -1,17 +1,3 @@
- set -x
-  exec > >(tee wrap.log) 2>&1
-  # Bulk-unlock Pods/ AND node_modules/ so wrap can rewrite read-only
-  # headers and headers reached via Pods symlinks into node_modules
-  # (RN 0.83's React-Fabric pod sources from node_modules/react-native).
-  chmod -R u+w Pods || true
-  chmod -R u+w ../node_modules/react-native || true
-  node ../scripts/wrap-cxx-headers.js
-  echo "---- post-wrap check of BaseViewEventEmitter.h ----"
-  head -5 Pods/Headers/Public/React-Fabric/react/renderer/components/view/BaseViewEventEmitter.h 2>&1 || true
-  readlink -f Pods/Headers/Public/React-Fabric/react/renderer/components/view/BaseViewEventEmitter.h 2>&1 || true
-  shell: /bin/bash -e {0}
-+ exec
-++ tee wrap.log
 + chmod -R u+w Pods
 + chmod -R u+w ../node_modules/react-native
 + node ../scripts/wrap-cxx-headers.js

@@ -22,15 +22,23 @@ const CXX_STDLIB = [
   'string_view'
 ].join('|');
 
+// Pods to skip entirely - pure C libraries that break if wrapped in __cplusplus
+// (their headers define C types like WebPConfig that the C build expects).
+const SKIP_PODS = new Set([
+  'libwebp', 'libavif', 'libdav1d', 'lottie-ios', 'SDWebImage',
+  'SDWebImageWebPCoder', 'SDWebImageAVIFCoder', 'libevent', 'libuv',
+  'hermes-engine', 'OpenSSL',
+]);
+
 const CXX_TOKENS = new RegExp(
   [
     String.raw`#include\s+<(${CXX_STDLIB})>`,
     String.raw`^\s*namespace\s+\w+\s*\{`,
     String.raw`^\s*template\s*<`,
     String.raw`^\s*using\s+namespace\s+\w`,
-    // Any qualified name like `foo::bar` is C++ syntax (ObjC doesn't use `::`).
-    // Catches std::, facebook::, react::, winrt::, and other namespaces.
-    String.raw`\b\w+::\w+`,
+    // Narrow C++ namespace prefixes - avoids matching `::` in comments of
+    // pure-C libraries like libwebp.
+    String.raw`\b(std|facebook|react|winrt|boost|folly|fmt|glog|hermes|jsi)::\w+`,
   ].join('|'),
   'm'
 );
@@ -80,6 +88,12 @@ for (const file of all) {
   }
   if (seen.has(real)) continue;
   seen.add(real);
+
+  // Skip pods known to be pure C - wrapping breaks their C typedefs.
+  const skipHit = [...SKIP_PODS].find(
+    (p) => real.includes('/Pods/' + p + '/') || real.includes('/' + p + '/')
+  );
+  if (skipHit) continue;
 
   let s;
   try {
