@@ -43,6 +43,25 @@ jobs:
       - name: Patch Expo SDK 55 removed-API usage in Swift files
         run: node scripts/patch-expo-removed-apis.js
 
+      - name: Strip RCT_NEW_ARCH_ENABLED from expo-modules-core podspec
+        run: |
+          # expo-modules-core's podspec hard-codes -DRCT_NEW_ARCH_ENABLED at
+          # the pod-target xcconfig level. Project-level newArchEnabled=false
+          # doesn't reach this. Sed it out before pod install.
+          F=node_modules/expo-modules-core/ExpoModulesCore.podspec
+          if [ -f "$F" ]; then
+            sed -i.bak -E 's/-D *RCT_NEW_ARCH_ENABLED(=[0-9]+)?//g' "$F"
+            echo "Stripped RCT_NEW_ARCH_ENABLED from $F"
+            grep -n "RCT_NEW_ARCH_ENABLED\|new_arch_enabled\|newArchEnabled\|new arch" "$F" || true
+          fi
+          # Also strip any other expo-* podspecs that inject it
+          for pf in node_modules/expo-*/Expo*.podspec; do
+            if [ -f "$pf" ] && grep -q "RCT_NEW_ARCH_ENABLED" "$pf"; then
+              sed -i.bak -E 's/-D *RCT_NEW_ARCH_ENABLED(=[0-9]+)?//g' "$pf"
+              echo "Stripped from $pf"
+            fi
+          done
+
       - name: Stub broken expo-modules-core SwiftUI Fabric file
         run: |
           # SwiftUIVirtualViewObjC.mm references undefined codegen types
