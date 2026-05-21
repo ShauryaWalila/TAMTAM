@@ -110,15 +110,15 @@ for (const file of all) {
     /^\s*#\s*error[^\n]*Obj-C\+\+/m.test(s) ||
     new RegExp(String.raw`#include\s+<(${CXX_STDLIB})>`).test(s);
   if (!forceWrap && !CXX_TOKENS.test(s)) continue;
+  // Yoga always-skip: C-API headers (YGMacros, YGEnums, YGConfig, etc.) need
+  // to parse in plain C; wrapping breaks them. Apply BEFORE forceWrap so
+  // YGMacros's `#include <cstddef>` doesn't drag it in.
+  if (/[/\\][Yy]oga[/\\]/.test(real)) continue;
   if (!forceWrap) {
     // Skip mixed ObjC/C++ headers. ObjC markers indicate the file expects to
     // be parsed in ObjC mode by some consumers; wrapping would hide
     // @interface declarations / block typedefs.
     if (/^\s*@(interface|protocol|class|implementation)\b/m.test(s)) continue;
-    // Path-based skip for Yoga - it ships C-API headers (YGMacros.h /
-    // YGEnums.h / YGConfig.h) that need to parse in plain C. Case-insensitive
-    // because the xcframework normalizes to /Yoga/ (capital).
-    if (/[\\/](yoga|Yoga)[\\/][^/\\]+\.h$/.test(real)) continue;
   }
   matched++;
   if (sampleMatches.length < 5) sampleMatches.push(real);
