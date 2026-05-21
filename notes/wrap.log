@@ -2,8 +2,8 @@
 + chmod -R u+w ../node_modules/react-native
 + node ../scripts/wrap-cxx-headers.js
 TAMTAM: scanning Pods/Headers/Public, Pods/React-Core-prebuilt (cwd=/Users/runner/work/TAMTAM/TAMTAM/ios)
-TAMTAM: found 11876 .h/.hpp files
-TAMTAM: matched 5950 / 11876 ; patched 5950 ; skipped 0 ; errors 0
+TAMTAM: found 11771 .h/.hpp files
+TAMTAM: matched 5851 / 11771 ; patched 5851 ; skipped 0 ; errors 0
 TAMTAM: sample matched files:
    /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/DoubleConversion/double-conversion/bignum-dtoa.h
    /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/DoubleConversion/double-conversion/bignum.h

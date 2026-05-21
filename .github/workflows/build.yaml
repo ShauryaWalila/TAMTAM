@@ -43,6 +43,26 @@ jobs:
       - name: Patch Expo SDK 55 removed-API usage in Swift files
         run: node scripts/patch-expo-removed-apis.js
 
+      - name: Stub broken expo-modules-core SwiftUI Fabric file
+        run: |
+          # SwiftUIVirtualViewObjC.mm references undefined codegen types
+          # (expo::ExpoViewComponentDescriptor, etc.) that don't exist in
+          # this expo-modules-core 3.x build. With new arch disabled, the
+          # file's behavior is irrelevant (no Expo SwiftUI views fire). Stub
+          # it so compilation passes.
+          F=node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualViewObjC.mm
+          if [ -f "$F" ]; then
+            cat > "$F" << 'EOF'
+          // TAMTAM: stubbed - SwiftUI Fabric types missing in this build.
+          // App does not use Expo SwiftUI views, so empty implementation is safe.
+          #import <Foundation/Foundation.h>
+          EOF
+            echo "Stubbed: $F"
+            head -5 "$F"
+          else
+            echo "$F not found"
+          fi
+
       - name: Patch RCT-Folly podspec
         run: |
           node -e "
