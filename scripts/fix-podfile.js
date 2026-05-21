@@ -61,6 +61,18 @@ const podPostInstallFix = `
         # Pods are linked, not consumed as ObjC frameworks, so this header
         # isn't needed by downstream targets.
         config.build_settings['SWIFT_INSTALL_OBJC_HEADER'] = 'NO'
+
+        # Xcode 26 promotes implicit function declarations from warning to
+        # error. expo-location 19.0.8 and a few other pods rely on EXFatal /
+        # EXErrorWithMessage being implicitly declared because their include
+        # chain misses the declaring header. Demote to warning so the build
+        # completes; runtime symbol resolution still works (these are real
+        # ObjC functions linked from ExpoModulesCore).
+        existing = config.build_settings['OTHER_CFLAGS'] || '$(inherited)'
+        existing = existing.is_a?(Array) ? existing.join(' ') : existing.to_s
+        unless existing.include?('-Wno-error=implicit-function-declaration')
+          config.build_settings['OTHER_CFLAGS'] = existing + ' -Wno-error=implicit-function-declaration'
+        end
       end
     end
     
