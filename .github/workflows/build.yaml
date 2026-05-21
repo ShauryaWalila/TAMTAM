@@ -61,9 +61,29 @@ jobs:
           "
 
       - name: Expo Prebuild
+        env:
+          RCT_NEW_ARCH_ENABLED: '0'
+          EX_DEV_LAUNCHER_NEW_ARCH_ENABLED: '0'
         run: |
           rm -rf ios
           npx expo prebuild --platform ios --no-install --clean
+
+      - name: Force-disable New Architecture in Podfile.properties.json
+        run: |
+          PROPS=ios/Podfile.properties.json
+          if [ -f "$PROPS" ]; then
+            node -e "
+              const fs = require('fs');
+              const p = '$PROPS';
+              const j = JSON.parse(fs.readFileSync(p, 'utf8'));
+              j['newArchEnabled'] = 'false';
+              j['expo.fabricEnabled'] = 'false';
+              fs.writeFileSync(p, JSON.stringify(j, null, 2));
+              console.log('TAMTAM: Podfile.properties.json after override:'); console.log(JSON.stringify(j, null, 2));
+            "
+          else
+            echo "Podfile.properties.json not found"
+          fi
 
       - name: Fix Podfile and Dependencies
         run: |
@@ -72,6 +92,9 @@ jobs:
 
       - name: Install CocoaPods
         working-directory: ios
+        env:
+          RCT_NEW_ARCH_ENABLED: '0'
+          EX_DEV_LAUNCHER_NEW_ARCH_ENABLED: '0'
         run: pod install
 
       - name: Wrap Fabric C++ headers in __cplusplus guards
