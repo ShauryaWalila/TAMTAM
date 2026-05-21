@@ -21,6 +21,7 @@ if (!lines.some(l => l.includes('https://cdn.cocoapods.org/'))) {
 const deps = [
   "  pod 'boost', :podspec => '../node_modules/react-native/third-party-podspecs/boost.podspec'",
   "  pod 'DoubleConversion', :podspec => '../node_modules/react-native/third-party-podspecs/DoubleConversion.podspec'",
+  "  pod 'fast_float', :podspec => '../node_modules/react-native/third-party-podspecs/fast_float.podspec'",
   "  pod 'fmt', :podspec => '../node_modules/react-native/third-party-podspecs/fmt.podspec'",
   "  pod 'glog', :podspec => '../node_modules/react-native/third-party-podspecs/glog.podspec'",
   "  pod 'RCT-Folly', :podspec => '../node_modules/react-native/third-party-podspecs/RCT-Folly.podspec'"
