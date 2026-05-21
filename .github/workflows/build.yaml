@@ -63,33 +63,7 @@ jobs:
           done
 
       - name: Diagnose + fix LazyObject in ExpoModulesHostObject.mm
-        run: |
-          set -x
-          # Locate where LazyObject class is declared in expo-modules-core
-          echo "--- Hunting for LazyObject declaration ---"
-          grep -rEn "class\s+LazyObject\b|^class LazyObject" node_modules/expo-modules-core/ios node_modules/expo-modules-core/common 2>/dev/null | head -10 || true
-          echo "--- Current imports in ExpoModulesHostObject.mm ---"
-          F=node_modules/expo-modules-core/ios/JS/ExpoModulesHostObject.mm
-          grep -n "^#" "$F" | head -25 || true
-
-          # Most likely path: node_modules/expo-modules-core/common/cpp/LazyObject.h or
-          # node_modules/expo-modules-core/ios/JS/LazyObject.h. Find it and add
-          # an explicit #import line at the top of the .mm if missing.
-          DECL=$(grep -rl "class LazyObject" node_modules/expo-modules-core 2>/dev/null | head -1)
-          if [ -n "$DECL" ] && [ -f "$F" ]; then
-            HDR_NAME=$(basename "$DECL")
-            if ! grep -q "$HDR_NAME" "$F"; then
-              echo "Adding #import \"$HDR_NAME\" to $F"
-              sed -i.bak "1i\\
-#import \"$HDR_NAME\"
-" "$F"
-              head -10 "$F"
-            else
-              echo "$HDR_NAME already referenced in $F"
-            fi
-          else
-            echo "Could not locate LazyObject declaration"
-          fi
+        run: node scripts/patch-lazy-object.js
 
       - name: Stub broken expo-modules-core SwiftUI Fabric file
         run: |
