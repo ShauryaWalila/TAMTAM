@@ -76,15 +76,10 @@ jobs:
             react-native-svg \
             react-native-web \
             react-native-webview
-          # Reanimated 4 (SDK 54 default) hard-requires new arch. 3.18 still
-          # references ShadowNode unguarded. 3.16.x is the last dual-arch
-          # version that builds cleanly on old arch.
-          npm install --legacy-peer-deps react-native-reanimated@~3.16.0
-          # SDK 54 ships `react-native-worklets` as a standalone package for
-          # Reanimated 4. With Reanimated 3.x (built-in worklets), the separate
-          # package conflicts at runtime and triggers a SIGABRT during worklet
-          # eval. Uninstall it.
-          npm uninstall --legacy-peer-deps react-native-worklets || true
+          # Pin to versions Expo bundles with SDK 54 per
+          # https://github.com/expo/expo/blob/sdk-54/packages/expo/bundledNativeModules.json
+          # reanimated 4.1.x + worklets 0.5.1. Reanimated 4 requires New Arch.
+          npm install --legacy-peer-deps react-native-reanimated@~4.1.1 react-native-worklets@0.5.1
           echo "--- package.json after expo install ---"
           cat package.json
 
@@ -106,29 +101,9 @@ jobs:
           "
 
       - name: Expo Prebuild
-        env:
-          RCT_NEW_ARCH_ENABLED: '0'
-          EX_DEV_LAUNCHER_NEW_ARCH_ENABLED: '0'
         run: |
           rm -rf ios
           npx expo prebuild --platform ios --no-install --clean
-
-      - name: Force-disable New Architecture in Podfile.properties.json
-        run: |
-          PROPS=ios/Podfile.properties.json
-          if [ -f "$PROPS" ]; then
-            node -e "
-              const fs = require('fs');
-              const p = '$PROPS';
-              const j = JSON.parse(fs.readFileSync(p, 'utf8'));
-              j['newArchEnabled'] = 'false';
-              j['expo.fabricEnabled'] = 'false';
-              fs.writeFileSync(p, JSON.stringify(j, null, 2));
-              console.log('TAMTAM: Podfile.properties.json after override:'); console.log(JSON.stringify(j, null, 2));
-            "
-          else
-            echo "Podfile.properties.json not found"
-          fi
 
       - name: Fix Podfile and Dependencies
         run: |
@@ -137,9 +112,6 @@ jobs:
 
       - name: Install CocoaPods
         working-directory: ios
-        env:
-          RCT_NEW_ARCH_ENABLED: '0'
-          EX_DEV_LAUNCHER_NEW_ARCH_ENABLED: '0'
         run: pod install
 
       - name: Build App Bundle (Unsigned)

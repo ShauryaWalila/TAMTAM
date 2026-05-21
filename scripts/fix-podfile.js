@@ -46,21 +46,7 @@ const podPostInstallFix = `
         existing_cflags = config.build_settings['OTHER_CFLAGS'] || '$(inherited)'
         existing_cflags = existing_cflags.is_a?(Array) ? existing_cflags.join(' ') : existing_cflags.to_s
         unless existing_cflags.include?('-Wno-error=implicit-function-declaration')
-          config.build_settings['OTHER_CFLAGS'] = existing_cflags + ' -Wno-error=implicit-function-declaration -URCT_NEW_ARCH_ENABLED'
-        end
-
-        # Hard-undefine the new-arch flag at every level. Some podspecs inject
-        # -DRCT_NEW_ARCH_ENABLED at the target xcconfig regardless of project
-        # newArchEnabled=false. Strip it from preprocessor defs and force =0.
-        defs = config.build_settings['GCC_PREPROCESSOR_DEFINITIONS']
-        if defs.is_a?(Array)
-          defs = defs.reject { |d| d.to_s.start_with?('RCT_NEW_ARCH_ENABLED') }
-          defs << 'RCT_NEW_ARCH_ENABLED=0'
-          config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] = defs
-        elsif defs.is_a?(String)
-          parts = defs.split(' ').reject { |d| d.start_with?('RCT_NEW_ARCH_ENABLED') }
-          parts << 'RCT_NEW_ARCH_ENABLED=0'
-          config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] = parts.join(' ')
+          config.build_settings['OTHER_CFLAGS'] = existing_cflags + ' -Wno-error=implicit-function-declaration'
         end
       end
     end
