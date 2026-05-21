@@ -114,6 +114,12 @@ for (const file of all) {
   // to parse in plain C; wrapping breaks them. Apply BEFORE forceWrap so
   // YGMacros's `#include <cstddef>` doesn't drag it in.
   if (/[/\\][Yy]oga[/\\]/.test(real)) continue;
+  // Expo modules (expo-modules-core, expo-location, etc.) ship ObjC utility
+  // headers like EXAppDefines.h that declare EXFatal/EXErrorWithMessage as
+  // C functions/macros. Wrap would hide them from ObjC consumers like
+  // EXBaseLocationRequester.m. These pods rarely use C++ syntax at their
+  // ObjC layer.
+  if (/[/\\]expo-[a-zA-Z0-9_-]+[/\\]/.test(real)) continue;
   if (!forceWrap) {
     // Skip mixed ObjC/C++ headers. ObjC markers indicate the file expects to
     // be parsed in ObjC mode by some consumers; wrapping would hide
