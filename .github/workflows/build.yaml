@@ -137,6 +137,14 @@ jobs:
           path: ios/wrap.log
           if-no-files-found: ignore
 
+      - name: Upload post-codegen wrap log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wrap-codegen-log
+          path: ios/wrap-codegen.log
+          if-no-files-found: ignore
+
       - name: Package IPA
         run: |
           mkdir -p Payload

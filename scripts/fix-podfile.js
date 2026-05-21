@@ -68,10 +68,26 @@ const podPostInstallFix = `
     maps_marker = File.join(installer.sandbox.root, 'react-native-maps', 'ios', 'AirMaps', 'AIRMapMarker.m')
     if File.exist?(maps_marker)
       text = File.read(maps_marker)
-      text = text.gsub("UIWindow* win = [[[UIApplication sharedApplication] windows] firstObject];", 
+      text = text.gsub("UIWindow* win = [[[UIApplication sharedApplication] windows] firstObject];",
                        "#if !TARGET_OS_APP_EXTENSION\\n            UIWindow* win = [[[UIApplication sharedApplication] windows] firstObject];\\n#else\\n            UIWindow* win = nil;\\n#endif")
       File.write(maps_marker, text)
       puts "TAMTAM: Patched AIRMapMarker.m"
+    end
+
+    # Add a build phase to ReactCodegen that re-runs the wrap script AFTER
+    # codegen regenerates EventEmitters.h / Props.h / etc. in build/generated.
+    # Without this, codegen overwrites our pre-build wrap mid-xcodebuild.
+    codegen_target = installer.pods_project.targets.find { |t| t.name == 'ReactCodegen' }
+    if codegen_target
+      already = codegen_target.shell_script_build_phases.any? { |p| p.name == 'TAMTAM: Wrap codegen C++ headers' }
+      unless already
+        phase = codegen_target.new_shell_script_build_phase('TAMTAM: Wrap codegen C++ headers')
+        phase.shell_script = 'cd "$PODS_ROOT/.." && node "$SRCROOT/../scripts/wrap-cxx-headers.js" >> "$PODS_ROOT/../wrap-codegen.log" 2>&1 || true'
+        phase.show_env_vars_in_log = '0'
+        puts "TAMTAM: Added post-codegen wrap phase to ReactCodegen target"
+      end
+    else
+      puts "TAMTAM WARNING: ReactCodegen target not found - skipping post-codegen wrap"
     end
 `;
 
