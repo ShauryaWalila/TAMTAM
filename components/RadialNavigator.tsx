@@ -110,17 +110,23 @@ export default function RadialNavigator() {
     })
     .onUpdate((e) => {
       if (expansion.value > 0.5 && isDragging.value < 0.5) {
-        const menuTop = -MENU_HEIGHT / 2 + 30;
-        const normalizedY = e.translationY + (MENU_HEIGHT / 2) - 30 - MENU_PADDING;
-        const rawIdx = Math.floor(normalizedY / ITEM_HEIGHT);
-        
-        const distToOrb = Math.sqrt(e.translationX**2 + e.translationY**2);
-        const isFarX = Math.abs(e.translationX) > 150;
-        const isOutOfBoundsY = normalizedY < -10 || normalizedY > (NAV_ITEMS.length * ITEM_HEIGHT) + 10;
+        // Gesture translation is relative to the pill center. When expanded
+        // the pill spans from -MENU_HEIGHT/2 to +MENU_HEIGHT/2 around that
+        // center. Items sit inside MENU_PADDING margin.
+        const menuLocalY = e.translationY + (MENU_HEIGHT / 2) - MENU_PADDING;
+        const itemsHeight = NAV_ITEMS.length * ITEM_HEIGHT;
+
+        // Hit-test: pointer must be within pill X-bounds AND within items'
+        // Y-bounds. Outside either => not selecting (idx = -1).
+        const PILL_HALF_WIDTH = 40; // 60px pill + 20px tolerance
+        const insideX = Math.abs(e.translationX) <= PILL_HALF_WIDTH;
+        const insideY = menuLocalY >= 0 && menuLocalY < itemsHeight;
 
         let nextIdx = -1;
-        if (!isFarX && !isOutOfBoundsY && distToOrb >= 25) {
-          nextIdx = Math.max(0, Math.min(NAV_ITEMS.length - 1, rawIdx));
+        if (insideX && insideY) {
+          nextIdx = Math.floor(menuLocalY / ITEM_HEIGHT);
+          if (nextIdx < 0) nextIdx = 0;
+          if (nextIdx >= NAV_ITEMS.length) nextIdx = NAV_ITEMS.length - 1;
         }
 
         if (nextIdx !== activeIdx.value) {
@@ -189,10 +195,11 @@ export default function RadialNavigator() {
                 }))]}
               >
                 {NAV_ITEMS.map((item, index) => {
+                  const itemColor = item.color;
                   const itemIconStyle = useAnimatedStyle(() => {
                     const isSelected = activeIdx.value === index;
                     return {
-                      backgroundColor: withTiming(isSelected ? '#FF2D55' : 'transparent', { duration: 100 }),
+                      backgroundColor: withTiming(isSelected ? itemColor : 'transparent', { duration: 100 }),
                       transform: [{ scale: withSpring(isSelected ? 1.3 : 1, SPRING_CONFIG) }],
                     };
                   });

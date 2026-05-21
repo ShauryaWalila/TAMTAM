@@ -178,8 +178,8 @@ export default function OurLifeScreen() {
 
       <MapView
         key={`map-${activeTripId}`}
-        ref={mapRef} 
-        provider={PROVIDER_GOOGLE} 
+        ref={mapRef}
+        provider={PROVIDER_GOOGLE}
         style={styles.map}
         initialRegion={{ latitude: location?.coords.latitude ?? 20, longitude: location?.coords.longitude ?? 78, latitudeDelta: 0.0922, longitudeDelta: 0.0421 }}
         onPress={closeActivePin}
