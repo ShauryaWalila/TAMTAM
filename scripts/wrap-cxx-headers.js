@@ -101,19 +101,25 @@ for (const file of all) {
   } catch (e) {
     continue;
   }
-  // Force-wrap: files with `#error This file must be compiled as Obj-C++`
-  // are pure-ObjC++-required headers that detonate in ObjC parse. Wrap them
-  // so the #error is hidden in ObjC mode.
-  const forceWrap = /^\s*#\s*error[^\n]*Obj-C\+\+/m.test(s);
+  // Force-wrap criteria (override all skip rules below):
+  //   1) `#error This file must be compiled as Obj-C++` directives - the
+  //      error fires in ObjC parse, must hide it.
+  //   2) C++ stdlib include (`#include <memory>`, `<utility>`, etc.) - these
+  //      fail with "X file not found" in ObjC parse regardless of guards.
+  const forceWrap =
+    /^\s*#\s*error[^\n]*Obj-C\+\+/m.test(s) ||
+    new RegExp(String.raw`#include\s+<(${CXX_STDLIB})>`).test(s);
   if (!forceWrap && !CXX_TOKENS.test(s)) continue;
-  // Skip mixed ObjC/C++ headers. ObjC markers indicate the file expects to be
-  // parsed in ObjC mode by some consumers; wrapping would hide @interface
-  // declarations / block typedefs.
-  if (/^\s*@(interface|protocol|class|implementation)\b/m.test(s)) continue;
-  // Path-based skip for headers known to be C-API-with-cplusplus-guards
-  // (Yoga's YGEnums/YGConfig/etc. - they keep their namespace blocks inside
-  // #ifdef __cplusplus and need to parse in C mode for the rest).
-  if (/\/yoga\/[^/]+\.h$/.test(real)) continue;
+  if (!forceWrap) {
+    // Skip mixed ObjC/C++ headers. ObjC markers indicate the file expects to
+    // be parsed in ObjC mode by some consumers; wrapping would hide
+    // @interface declarations / block typedefs.
+    if (/^\s*@(interface|protocol|class|implementation)\b/m.test(s)) continue;
+    // Path-based skip for Yoga - it ships C-API headers (YGMacros.h /
+    // YGEnums.h / YGConfig.h) that need to parse in plain C. Case-insensitive
+    // because the xcframework normalizes to /Yoga/ (capital).
+    if (/[\\/](yoga|Yoga)[\\/][^/\\]+\.h$/.test(real)) continue;
+  }
   matched++;
   if (sampleMatches.length < 5) sampleMatches.push(real);
 
