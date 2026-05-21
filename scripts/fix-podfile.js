@@ -82,7 +82,10 @@ const podPostInstallFix = `
       already = codegen_target.shell_script_build_phases.any? { |p| p.name == 'TAMTAM: Wrap codegen C++ headers' }
       unless already
         phase = codegen_target.new_shell_script_build_phase('TAMTAM: Wrap codegen C++ headers')
-        phase.shell_script = 'cd "$PODS_ROOT/.." && node "$SRCROOT/../scripts/wrap-cxx-headers.js" >> "$PODS_ROOT/../wrap-codegen.log" 2>&1 || true'
+        # $SRCROOT for a Pods-project target == ios/Pods, so two `..` to reach
+        # the repo root. cwd is set to ios/ so the wrap script's relative paths
+        # (Pods/Headers/Public, Pods/React-Core-prebuilt) resolve.
+        phase.shell_script = 'cd "$PODS_ROOT/.." && node "$PODS_ROOT/../../scripts/wrap-cxx-headers.js" >> "$PODS_ROOT/../wrap-codegen.log" 2>&1 || true'
         phase.show_env_vars_in_log = '0'
         puts "TAMTAM: Added post-codegen wrap phase to ReactCodegen target"
       end

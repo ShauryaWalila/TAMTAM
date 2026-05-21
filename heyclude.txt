@@ -1,18 +1,18 @@
-Build errors (last 200 lines around 'error:')
-  ❌  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/ReactCodegen/react/renderer/components/lottiereactnative/EventEmitters.h:15:1: unknown type name 'namespace'
-  namespace facebook::react {
-           ^
-  ❌  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/ReactCodegen/react/renderer/components/lottiereactnative/EventEmitters.h:15:19: expected ';' after top level declarator
-  namespace facebook::react {
-           ^
-  ❌  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/ReactCodegen/react/renderer/components/lottiereactnative/Props.h:17:10: 'vector' file not found
-  #include <vector>
-           ^
-  ❌  /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/RNScreens/Swift Compatibility Header/RNScreens-Swift.h:288:9: could not build module 'ReactCodegen'
-  #import <RNScreens/RNScreens.h>
-          ^
-  ▸ Compiling ExpoSharing-dummy.m
-      Run script build phase '[CP-User] [Hermes] Replace Hermes for the right configuration, if needed' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'hermes-engine' from project 'Pods')
+❌  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/ReactCodegen/react/renderer/components/lottiereactnative/EventEmitters.h:15:1: unknown type name 'namespace'
+namespace facebook::react {
+         ^
+❌  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/ReactCodegen/react/renderer/components/lottiereactnative/EventEmitters.h:15:19: expected ';' after top level declarator
+namespace facebook::react {
+         ^
+❌  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/ReactCodegen/react/renderer/components/lottiereactnative/Props.h:17:10: 'vector' file not found
+#include <vector>
+         ^
+❌  /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/RNScreens/Swift Compatibility Header/RNScreens-Swift.h:288:9: could not build module 'ReactCodegen'
+#import <RNScreens/RNScreens.h>
+        ^
+▸ Compiling ExpoSharing-dummy.m
+    Run script build phase '[CP-User] [Hermes] Replace Hermes for the right configuration, if needed' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'hermes-engine' from project 'Pods')
+    Run script build phase 'TAMTAM: Wrap codegen C++ headers' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'ReactCodegen' from project 'Pods')
 Wrap step log (wrap.log)
   + chmod -R u+w Pods
   + chmod -R u+w ../node_modules/react-native
@@ -96,54 +96,6 @@ Sample of patched-or-not BaseViewEventEmitter.h
   /*
    * Copyright (c) Meta Platforms, Inc. and affiliates.
    *
-   * This source code is licensed under the MIT license found in the
-   * LICENSE file in the root directory of this source tree.
-                       ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/ContainerView.swift:42:15: note: property declared here
-      @objc var failureCallback: (_ error: String) -> Void {
-                ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/ContainerView.swift:373:22: warning: main actor-isolated property 'failureCallback' can not be referenced from a Sendable closure
-                  self.failureCallback("No data received for the Lottie animation from the URL.")
-                       ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/ContainerView.swift:42:15: note: property declared here
-      @objc var failureCallback: (_ error: String) -> Void {
-                ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/ContainerView.swift:391:22: warning: main actor-isolated property 'failureCallback' can not be referenced from a Sendable closure
-                  self.failureCallback("Unable to decode the Lottie animation object from the fetched URL source: \(error.localizedDescription)")
-                       ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/ContainerView.swift:42:15: note: property declared here
-      @objc var failureCallback: (_ error: String) -> Void {
-                ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/AnimationViewManagerModule.swift:30:27: warning: will never be executed
-                      print("Invalid view returned from registry, expecting ContainerView")
-                            ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/AnimationViewManagerModule.swift:29:30: note: condition always evaluates to false
-                  if RCT_DEBUG == 1 {
-                               ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/AnimationViewManagerModule.swift:48:27: warning: will never be executed
-  --
-  #include <react/renderer/components/lottiereactnative/EventEmitters.h>
-           ^
-  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/ReactCodegen/react/renderer/components/lottiereactnative/EventEmitters.h:15:1: error: unknown type name 'namespace'
-  namespace facebook::react {
-  ^
-  /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/RNScreens/Swift Compatibility Header/RNScreens-Swift.h:288:9: note: while building module 'ReactCodegen' imported from /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/RNScreens/Swift Compatibility Header/RNScreens-Swift.h:288:
-  #import <RNScreens/RNScreens.h>
-          ^
-  <module-includes>:1:9: note: in file included from <module-includes>:1:
-  #import "ReactCodegen-umbrella.h"
-          ^
-  --
-  #include <react/renderer/components/lottiereactnative/EventEmitters.h>
-           ^
-  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/ReactCodegen/react/renderer/components/lottiereactnative/EventEmitters.h:15:19: error: expected ';' after top level declarator
-  namespace facebook::react {
-                    ^
-  /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/RNScreens/Swift Compatibility Header/RNScreens-Swift.h:288:9: note: while building module 'ReactCodegen' imported from /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/RNScreens/Swift Compatibility Header/RNScreens-Swift.h:288:
-  #import <RNScreens/RNScreens.h>
-          ^
-  <module-includes>:1:9: note: in file included from <module-includes>:1:
-  #import "ReactCodegen-umbrella.h"
           ^
   --
   #include <react/renderer/components/lottiereactnative/Props.h>
@@ -161,7 +113,6 @@ Sample of patched-or-not BaseViewEventEmitter.h
   SwiftDriver\ Compilation ExpoRouter normal arm64 com.apple.xcode.tools.swift.compiler (in target 'ExpoRouter' from project 'Pods')
       cd /Users/runner/work/TAMTAM/TAMTAM/ios/Pods
       builtin-Swift-Compilation -- /Applications/Xcode_26.0.1.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name ExpoRouter -O -whole-module-optimization -enforce-exclusivity\=checked @/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/ExpoRouter.build/Objects-normal/arm64/ExpoRouter.SwiftFileList -D COCOAPODS -Xcc -fmodule-map-file\=/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/ExpoModulesCore/ExpoModulesCore.modulemap -Xcc -fmodule-map-file\=/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/RCTSwiftUI/RCTSwiftUI.modulemap -Xcc -fmodule-map-file\=/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/RNScreens/RNScreens.modulemap -Xcc -fmodule-map-file\=/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/ExpoModulesJSI/ExpoModulesJSI.modulemap -Xcc -fmodule-map-file\=/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/RNWorklets/RNWorklets.modul
-  CompileC /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/ExpoSharing.build/Objects-normal/arm64/ExpoSharing-dummy.o /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Target\ Support\ Files/ExpoSharing/ExpoSharing-dummy.m normal arm64 objective-c com.apple.compilers.llvm.clang.1_0.compiler (in target 'ExpoSharing' from project 'Pods')
-      cd /Users/runner/work/TAMTAM/TAMTAM/ios/Pods
-      
+  SwiftDriverJobDiscovery normal arm64 Compiling Exceptions.swift, SharingModule.swift, SharingOptions.swift (in target 'ExpoSharing' from project 'Pods')
+  SwiftDriver\ Compilation\ Requirements ExpoSharing normal arm64 com.apple.xcode.tools.swift.compiler (in target 'ExpoSharing' from project 'Pods')
 Error: Process completed with exit code 1.
