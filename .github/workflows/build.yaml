@@ -6,10 +6,6 @@ on:
 
 jobs:
   build:
-    # Expo SDK 55 / expo-modules-core uses isolated conformances (`@MainActor` on
-    # protocol conformances) — a Swift 6.2 feature. Need Xcode 26+ which ships
-    # on macOS 15 runner images. Older Xcode (16.4 on macos-latest=macos-14)
-    # rejects the syntax as "unknown attribute 'MainActor'".
     runs-on: macos-15
     steps:
       - name: Checkout Code
@@ -18,7 +14,6 @@ jobs:
       - name: Select Xcode 26
         run: |
           ls /Applications | grep -i Xcode || true
-          # Prefer Xcode 26 (Swift 6.2). Fallback to highest available if not present.
           if [ -d "/Applications/Xcode_26.app" ]; then
             sudo xcode-select -s /Applications/Xcode_26.app
           elif [ -d "/Applications/Xcode_26.0.app" ]; then
@@ -40,50 +35,8 @@ jobs:
       - name: Install Dependencies
         run: npm install --legacy-peer-deps
 
-      - name: Patch Expo SDK 55 removed-API usage in Swift files
-        run: node scripts/patch-expo-removed-apis.js
-
-      - name: Strip RCT_NEW_ARCH_ENABLED from expo-modules-core podspec
-        run: |
-          # expo-modules-core's podspec hard-codes -DRCT_NEW_ARCH_ENABLED at
-          # the pod-target xcconfig level. Project-level newArchEnabled=false
-          # doesn't reach this. Sed it out before pod install.
-          F=node_modules/expo-modules-core/ExpoModulesCore.podspec
-          if [ -f "$F" ]; then
-            sed -i.bak -E 's/-D *RCT_NEW_ARCH_ENABLED(=[0-9]+)?//g' "$F"
-            echo "Stripped RCT_NEW_ARCH_ENABLED from $F"
-            grep -n "RCT_NEW_ARCH_ENABLED\|new_arch_enabled\|newArchEnabled\|new arch" "$F" || true
-          fi
-          # Also strip any other expo-* podspecs that inject it
-          for pf in node_modules/expo-*/Expo*.podspec; do
-            if [ -f "$pf" ] && grep -q "RCT_NEW_ARCH_ENABLED" "$pf"; then
-              sed -i.bak -E 's/-D *RCT_NEW_ARCH_ENABLED(=[0-9]+)?//g' "$pf"
-              echo "Stripped from $pf"
-            fi
-          done
-
-      - name: Diagnose + fix LazyObject in ExpoModulesHostObject.mm
-        run: node scripts/patch-lazy-object.js
-
-      - name: Stub broken expo-modules-core SwiftUI Fabric file
-        run: |
-          # SwiftUIVirtualViewObjC.mm references undefined codegen types
-          # (expo::ExpoViewComponentDescriptor, etc.) that don't exist in
-          # this expo-modules-core 3.x build. With new arch disabled, the
-          # file's behavior is irrelevant (no Expo SwiftUI views fire). Stub
-          # it so compilation passes.
-          F=node_modules/expo-modules-core/ios/Core/Views/SwiftUI/SwiftUIVirtualViewObjC.mm
-          if [ -f "$F" ]; then
-            cat > "$F" << 'EOF'
-          // TAMTAM: stubbed - SwiftUI Fabric types missing in this build.
-          // App does not use Expo SwiftUI views, so empty implementation is safe.
-          #import <Foundation/Foundation.h>
-          EOF
-            echo "Stubbed: $F"
-            head -5 "$F"
-          else
-            echo "$F not found"
-          fi
+      - name: Align expo-* versions to SDK 54
+        run: npx expo install --check --fix || true
 
       - name: Patch RCT-Folly podspec
         run: |
@@ -130,7 +83,7 @@ jobs:
       - name: Fix Podfile and Dependencies
         run: |
           node scripts/fix-podfile.js
-          cat ios/Podfile # Log for debugging
+          cat ios/Podfile
 
       - name: Install CocoaPods
         working-directory: ios
@@ -138,21 +91,6 @@ jobs:
           RCT_NEW_ARCH_ENABLED: '0'
           EX_DEV_LAUNCHER_NEW_ARCH_ENABLED: '0'
         run: pod install
-
-      - name: Wrap Fabric C++ headers in __cplusplus guards
-        working-directory: ios
-        run: |
-          set -x
-          exec > >(tee wrap.log) 2>&1
-          # Bulk-unlock Pods/ AND node_modules/ so wrap can rewrite read-only
-          # headers and headers reached via Pods symlinks into node_modules
-          # (RN 0.83's React-Fabric pod sources from node_modules/react-native).
-          chmod -R u+w Pods || true
-          chmod -R u+w ../node_modules/react-native || true
-          node ../scripts/wrap-cxx-headers.js
-          echo "---- post-wrap check of BaseViewEventEmitter.h ----"
-          head -5 Pods/Headers/Public/React-Fabric/react/renderer/components/view/BaseViewEventEmitter.h 2>&1 || true
-          readlink -f Pods/Headers/Public/React-Fabric/react/renderer/components/view/BaseViewEventEmitter.h 2>&1 || true
 
       - name: Build App Bundle (Unsigned)
         working-directory: ios
@@ -172,17 +110,6 @@ jobs:
             COMPILER_INDEX_STORE_ENABLE=NO \
             2>&1 | tee xcodebuild.log | (xcpretty || cat) || BUILD_FAILED=1
           if [ "$BUILD_FAILED" = "1" ]; then
-            echo "::group::Wrap step log (wrap.log)"
-            cat wrap.log 2>&1 || echo "wrap.log missing"
-            echo "::endgroup::"
-            echo "::group::Sample of patched-or-not BaseViewEventEmitter.h"
-            for f in $(find Pods/React-Core-prebuilt -name BaseViewEventEmitter.h 2>/dev/null | head -5) \
-                     Pods/Headers/Public/React-Fabric/react/renderer/components/view/BaseViewEventEmitter.h \
-                     Pods/Headers/Public/React-Core-prebuilt/React_Fabric/BaseViewEventEmitter.h; do
-              echo "--- $f"
-              head -5 "$f" 2>&1 || true
-            done
-            echo "::endgroup::"
             echo "::group::Build errors (last 200 lines around 'error:')"
             grep -B 2 -A 8 "error:" xcodebuild.log | tail -n 200 || true
             echo "::endgroup::"
@@ -195,22 +122,6 @@ jobs:
         with:
           name: xcodebuild-log
           path: ios/xcodebuild.log
-          if-no-files-found: ignore
-
-      - name: Upload wrap step log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: wrap-log
-          path: ios/wrap.log
-          if-no-files-found: ignore
-
-      - name: Upload post-codegen wrap log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: wrap-codegen-log
-          path: ios/wrap-codegen.log
           if-no-files-found: ignore
 
       - name: Package IPA

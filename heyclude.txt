@@ -164,5 +164,4 @@ Build errors (last 200 lines around 'error:')
       cd /Users/runner/work/TAMTAM/TAMTAM/ios/Pods
       
       Using response file: /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/ExpoModulesCore.build/Objects-normal/arm64/af3fcb34312c57c0f52879cdce924b91-common-args.resp
-  
-Error: Process completed with exit code 1. 
+Error: Process completed with exit code 1.
