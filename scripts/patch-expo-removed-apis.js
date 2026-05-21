@@ -63,6 +63,21 @@ for (const file of files) {
     );
     // EXSharedApplication() -> UIApplication.shared
     s = s.replace(/\bEXSharedApplication\s*\(\s*\)/g, 'UIApplication.shared');
+  } else {
+    // ObjC/.m/.mm: comment out imports of headers removed in expo-modules-core
+    // SDK 55 rewrite. Files referencing the symbols beyond the import will
+    // surface follow-up errors handled case-by-case.
+    const removedHeaders = [
+      'ExpoModulesCore/EXEventEmitterService.h',
+      'ExpoModulesCore/EXPermissionsService.h',
+      'ExpoModulesCore/EXModuleRegistryProvider.h',
+      'ExpoModulesCore/EXSingletonModule.h',
+      'ExpoModulesCore/EXLegacyEventEmitter.h',
+    ];
+    for (const h of removedHeaders) {
+      const re = new RegExp(`^(#\\s*import\\s+<${h.replace(/[/.]/g, '\\$&')}>.*)$`, 'gm');
+      s = s.replace(re, '// $1 // TAMTAM: removed in Expo SDK 55');
+    }
   }
 
   if (s !== before) {

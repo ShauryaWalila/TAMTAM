@@ -1,4 +1,5 @@
- Run script build phase '[CP-User] [Hermes] Replace Hermes for the right configuration, if needed' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'hermes-engine' from project 'Pods')
+ Compiling EXTaskManagerAppDelegate.m
+    Run script build phase '[CP-User] [Hermes] Replace Hermes for the right configuration, if needed' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'hermes-engine' from project 'Pods')
     Run script build phase 'TAMTAM: Wrap codegen C++ headers' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'ReactCodegen' from project 'Pods')
 Wrap step log (wrap.log)
   + chmod -R u+w Pods
@@ -54,9 +55,9 @@ Wrap step log (wrap.log)
   /*
    * Copyright (c) Meta Platforms, Inc. and affiliates.
    *
-  --- Pods/React-Core-prebuilt/React.xcframework/ios-arm64/React.framework/Headers/React_Fabric/BaseViewEventEmitter.h
-  // TAMTAM_CXX_GUARD
-  #if defined(__cplusplus)
+   * This source code is licensed under the MIT license found in the
+   * LICENSE file in the root directory of this source tree.
+  TAMTAM: target Pods/Headers/Public/RCTTypeSafety/RCTTypeSafety/RCTTypedModuleConstants.h
   /*
    * Copyright (c) Meta Platforms, Inc. and affiliates.
    *
@@ -97,18 +98,13 @@ Build errors (last 200 lines around 'error:')
                                ^
   /Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/ios/LottieReactNative/AnimationViewManagerModule.swift:48:27: warning: will never be executed
   --
+      
+      builtin-ScanDependencies -o /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/EXTaskManager.build/Objects-normal/arm64/EXTaskManager.o.scan -- /Applications/Xcode_26.0.1.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x objective-c -ivfsstatcache /Users/runner/work/TAMTAM/TAMTAM/ios/build/SDKStatCaches.noindex/iphoneos26.0-23A339-3885c01c3e6b6a337905948deab2002ee897cee61435230feef45a4748fd4bcc.sdkstatcache -fmessage-length\=0 -fdiagnostics-show-note-include-stack -fmacro-backtrace-limit\=0 -fno-color-diagnostics -fmodules-prune-interval\=86400 -fmodules-prune-after\=345600 -fbuild-session-file\=/Users/runner/work/TAMTAM/TAMTAM/ios/build/ModuleCache.noindex/Session.modulevalidation -fmodules-validate-once-per-build-session -Wnon-modular-include-in-framework-module -Werror\=non-modular-include-in-framework-module -Wno-trigraphs -Wno-missing-field-initializers -Wno-missing-prototypes -Werror\=return-type -Wdocumentation -Wunreachable-
+  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-task-manager/ios/EXTaskManager/EXTaskManager.m:5:9: error: 'ExpoModulesCore/EXEventEmitterService.h' file not found (in target 'EXTaskManager' from project 'Pods')
+  ScanDependencies /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/EXTaskManager.build/Objects-normal/arm64/EXTaskManager-dummy.o /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Target\ Support\ Files/EXTaskManager/EXTaskManager-dummy.m normal arm64 objective-c com.apple.compilers.llvm.clang.1_0.compiler (in target 'EXTaskManager' from project 'Pods')
       cd /Users/runner/work/TAMTAM/TAMTAM/ios/Pods
       
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-notifications/ios/EXNotifications/Badge/BadgeModule.swift:11:14: error: cannot find 'EXSharedApplication' in scope
-        return EXSharedApplication().applicationIconBadgeNumber
-               ^~~~~~~~~~~~~~~~~~~
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-notifications/ios/EXNotifications/Badge/BadgeModule.swift:25:13: error: cannot find 'EXSharedApplication' in scope
-              EXSharedApplication().applicationIconBadgeNumber = badgeCount
-              ^~~~~~~~~~~~~~~~~~~
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-notifications/ios/EXNotifications/Notifications/Handler/HandlerModule.swift:81:23: warning: 'alert' was deprecated in iOS 14.0
-        options.insert(.alert)
-                        ^
-  /Users/runner/work/TAMTAM/TAMTAM/node_modules/expo-notifications/ios/EXNotifications/Notifications/NotificationCenterManager.swift:42:21: warning: static property 'shared' is not concurrency-safe because non-'Sendable' type 'NotificationCenterManager' may have shared mutable state; this is an error in the Swift 6 language mode
-    public static let shared = NotificationCenterManager()
-                      ^
+      Using response file: /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/EXTaskManager.build/Objects-normal/arm64/e6072d4f65d7061329687fe24e3d63a7-common-args.resp
+      
+      builtin-ScanDependencies -o /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/EXTaskManager.build/Objects-normal/arm64/EXTaskManager-dummy.o.scan -- /Applications/Xcode_26.0.1.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x objective-c -ivfsstatcache /Users/runner/work/TAMTAM/TAMTAM/ios/build/SDKStatCaches.noindex/iphoneos26.0-23A339-3885c01c3e6b6a337905948deab2002ee897cee61435230feef45a4748fd4bcc.sdkstatcache -fmessage-length\=0 -fdiagnostics-show-note-include-stack -fmacro-backtrace-limit\=0 -fno-color-diagnostics -fmodules-prune-interval\=86400 -fmodules-prune-after\=345600 -fbuild-session-file\=/Users/runner/work/TAMTAM/TAMTAM/ios/build/ModuleCache.noindex/Session.modulevalidation -fmodules-validate-once-per-build-session -Wnon-modular-include-in-framework-module -Werror\=non-modular-include-in-framework-module -Wno-trigraphs -Wno-missing-field-initializers -Wno-missing-prototypes -Werror\=return-type -Wdocumentation -Wunreac
 Error: Process completed with exit code 1.
