@@ -40,6 +40,21 @@ jobs:
       - name: Install Dependencies
         run: npm install --legacy-peer-deps
 
+      - name: Patch expo-image-picker EXFatal usage
+        run: |
+          node -e "
+            const fs = require('fs');
+            const p = 'node_modules/expo-image-picker/ios/ImagePickerPermissionRequesters.swift';
+            if (!fs.existsSync(p)) { console.log('ImagePickerPermissionRequesters.swift not found, skipping'); process.exit(0); }
+            let s = fs.readFileSync(p, 'utf8');
+            const before = s;
+            // EXFatal/EXErrorWithMessage no longer exist in Expo SDK 55's
+            // expo-modules-core. Replace with Swift fatalError equivalent.
+            s = s.replace(/EXFatal\(EXErrorWithMessage\(([\s\S]*?)\)\)/g, 'fatalError(\$1)');
+            if (s === before) { console.log('No EXFatal usage matched'); }
+            else { fs.writeFileSync(p, s); console.log('Patched ImagePickerPermissionRequesters.swift'); }
+          "
+
       - name: Patch RCT-Folly podspec
         run: |
           node -e "
