@@ -107,6 +107,10 @@ for (const file of all) {
   // declarations / block typedefs. Upstream RN guards the C++ parts with
   // proper #ifdef __cplusplus already in these files.
   if (/^\s*@(interface|protocol|class|implementation)\b/m.test(s)) continue;
+  // Skip files that already have upstream __cplusplus guards (Yoga's YGEnums.h,
+  // YGMacros.h, etc. - they keep namespace blocks inside #ifdef __cplusplus so
+  // C consumers see the plain C types). Wrapping them would hide C content too.
+  if (/#\s*if(def)?\s+(defined\(__cplusplus\)|__cplusplus)/.test(s)) continue;
   matched++;
   if (sampleMatches.length < 5) sampleMatches.push(real);
 

@@ -1,16 +1,5 @@
-❌  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/ReactCodegen/react/renderer/components/lottiereactnative/EventEmitters.h:15:1: unknown type name 'namespace'
-namespace facebook::react {
-         ^
-❌  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/ReactCodegen/react/renderer/components/lottiereactnative/EventEmitters.h:15:19: expected ';' after top level declarator
-namespace facebook::react {
-         ^
-❌  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/ReactCodegen/react/renderer/components/lottiereactnative/Props.h:17:10: 'vector' file not found
-#include <vector>
-         ^
-❌  /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/RNScreens/Swift Compatibility Header/RNScreens-Swift.h:288:9: could not build module 'ReactCodegen'
-#import <RNScreens/RNScreens.h>
-        ^
-▸ Compiling ExpoSharing-dummy.m
+❌  fatal error: too many errors emitted, stopping now [-ferror-limit=]
+▸ Compiling RNCSafeAreaViewManager.m
     Run script build phase '[CP-User] [Hermes] Replace Hermes for the right configuration, if needed' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'hermes-engine' from project 'Pods')
     Run script build phase 'TAMTAM: Wrap codegen C++ headers' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'ReactCodegen' from project 'Pods')
 Wrap step log (wrap.log)
@@ -63,29 +52,29 @@ Wrap step log (wrap.log)
   /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native/ReactCommon/react/renderer/components/view/BaseViewEventEmitter.h
 Sample of patched-or-not BaseViewEventEmitter.h
   --- Pods/React-Core-prebuilt/React.xcframework/ios-arm64_x86_64-simulator/React.framework/Headers/React_Fabric/BaseViewEventEmitter.h
+  // TAMTAM_CXX_GUARD
+  #if defined(__cplusplus)
   /*
    * Copyright (c) Meta Platforms, Inc. and affiliates.
    *
-   * This source code is licensed under the MIT license found in the
-   * LICENSE file in the root directory of this source tree.
   --- Pods/React-Core-prebuilt/React.xcframework/ios-arm64_x86_64-maccatalyst/React.framework/Headers/React_Fabric/BaseViewEventEmitter.h
+  // TAMTAM_CXX_GUARD
+  #if defined(__cplusplus)
   /*
    * Copyright (c) Meta Platforms, Inc. and affiliates.
    *
-   * This source code is licensed under the MIT license found in the
-   * LICENSE file in the root directory of this source tree.
   --- Pods/React-Core-prebuilt/React.xcframework/Headers/React_Fabric/BaseViewEventEmitter.h
+  // TAMTAM_CXX_GUARD
+  #if defined(__cplusplus)
   /*
    * Copyright (c) Meta Platforms, Inc. and affiliates.
    *
-   * This source code is licensed under the MIT license found in the
-   * LICENSE file in the root directory of this source tree.
   --- Pods/React-Core-prebuilt/React.xcframework/ios-arm64/React.framework/Headers/React_Fabric/BaseViewEventEmitter.h
+  // TAMTAM_CXX_GUARD
+  #if defined(__cplusplus)
   /*
    * Copyright (c) Meta Platforms, Inc. and affiliates.
    *
-   * This source code is licensed under the MIT license found in the
-   * LICENSE file in the root directory of this source tree.
   --- Pods/Headers/Public/React-Fabric/react/renderer/components/view/BaseViewEventEmitter.h
   // TAMTAM_CXX_GUARD
   #if defined(__cplusplus)
@@ -93,26 +82,92 @@ Sample of patched-or-not BaseViewEventEmitter.h
    * Copyright (c) Meta Platforms, Inc. and affiliates.
    *
   --- Pods/Headers/Public/React-Core-prebuilt/React_Fabric/BaseViewEventEmitter.h
+  // TAMTAM_CXX_GUARD
+  #if defined(__cplusplus)
   /*
    * Copyright (c) Meta Platforms, Inc. and affiliates.
    *
-          ^
+Build errors (last 200 lines around 'error:')
+  In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Core-prebuilt/yoga/Yoga.h:14:
+  In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Core-prebuilt/yoga/YGConfig.h:14:
+  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Core-prebuilt/yoga/YGEnums.h:13:1: error: unknown type name 'YG_EXTERN_C_BEGIN'
+     13 | YG_EXTERN_C_BEGIN
+        | ^
+  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Core-prebuilt/yoga/YGEnums.h:27:1: error: expected function body after function declarator
+     27 | YG_ENUM_DECL(
+        | ^
+  In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-safe-area-context/ios/RNCSafeAreaViewMode.m:2:
+  In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Core/React/RCTConvert.h:19:
+  In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Core-prebuilt/yoga/Yoga.h:14:
+  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Core-prebuilt/yoga/YGConfig.h:37:1: error: unknown type name 'YG_EXPORT'
+     37 | YG_EXPORT YGConfigRef YGConfigNew(void);
+        | ^
+  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Core-prebuilt/yoga/YGConfig.h:37:22: error: expected ';' after top level declarator
+     37 | YG_EXPORT YGConfigRef YGConfigNew(void);
+        |                      ^
+        |                      ;
+  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Core-prebuilt/yoga/YGConfig.h:42:1: error: unknown type name 'YG_EXPORT'
+     42 | YG_EXPORT void YGConfigFree(YGConfigRef config);
+        | ^
+  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Core-prebuilt/yoga/YGConfig.h:47:1: error: unknown type name 'YG_EXPORT'
+     47 | YG_EXPORT YGConfigConstRef YGConfigGetDefault(void);
+        | ^
+  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Core-prebuilt/yoga/YGConfig.h:47:27: error: expected ';' after top level declarator
+     47 | YG_EXPORT YGConfigConstRef YGConfigGetDefault(void);
+        |                           ^
+        |                           ;
+  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Core-prebuilt/yoga/YGConfig.h:55:1: error: unknown type name 'YG_EXPORT'
+     55 | YG_EXPORT void YGConfigSetUseWebDefaults(YGConfigRef config, bool enabled);
+        | ^
+  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Core-prebuilt/yoga/YGConfig.h:60:1: error: unknown type name 'YG_EXPORT'
+     60 | YG_EXPORT bool YGConfigGetUseWebDefaults(YGConfigConstRef config);
+        | ^
+  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Core-prebuilt/yoga/YGConfig.h:69:1: error: unknown type name 'YG_EXPORT'
+     69 | YG_EXPORT void YGConfigSetPointScaleFactor(
+        | ^
+  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Core-prebuilt/yoga/YGConfig.h:76:1: error: unknown type name 'YG_EXPORT'
+     76 | YG_EXPORT float YGConfigGetPointScaleFactor(YGConfigConstRef config);
+        | ^
+  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Core-prebuilt/yoga/YGConfig.h:93:1: error: unknown type name 'YG_EXPORT'
+     93 | YG_EXPORT void YGConfigSetErrata(YGConfigRef config, YGErrata errata);
+        | ^
+  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Core-prebuilt/yoga/YGConfig.h:93:54: error: unknown type name 'YGErrata'
+     93 | YG_EXPORT void YGConfigSetErrata(YGConfigRef config, YGErrata errata);
+        |                                                      ^
+  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Core-prebuilt/yoga/YGConfig.h:98:1: error: unknown type name 'YG_EXPORT'
+     98 | YG_EXPORT YGErrata YGConfigGetErrata(YGConfigConstRef config);
+        | ^
+  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Core-prebuilt/yoga/YGConfig.h:98:19: error: expected ';' after top level declarator
+     98 | YG_EXPORT YGErrata YGConfigGetErrata(YGConfigConstRef config);
+        |                   ^
+        |                   ;
+  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Core-prebuilt/yoga/YGConfig.h:106:5: error: unknown type name 'YGLogLevel'; did you mean 'RCTLogLevel'?
+    106 |     YGLogLevel level,
+        |     ^~~~~~~~~~
+        |     RCTLogLevel
+  In file included from /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-safe-area-context/ios/RNCSafeAreaViewMode.m:2:
+  In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Core/React/RCTConvert.h:16:
+  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Core/React/RCTLog.h:43:28: note: 'RCTLogLevel' declared here
+     43 | typedef NS_ENUM(NSInteger, RCTLogLevel) {
+        |                            ^
   --
-  #include <react/renderer/components/lottiereactnative/Props.h>
-           ^
-  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/ReactCodegen/react/renderer/components/lottiereactnative/Props.h:17:10: error: 'vector' file not found
-  #include <vector>
-           ^
-  <module-includes>:2:9: note: in file included from <module-includes>:2:
-  #import "/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/RNScreens/Swift Compatibility Header/RNScreens-Swift.h"
-          ^
-  /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/RNScreens/Swift Compatibility Header/RNScreens-Swift.h:288:9: error: could not build module 'ReactCodegen'
-  #import <RNScreens/RNScreens.h>
-          ^
-  <unknown>:0: error: could not build Objective-C module 'RNScreens'
-  SwiftDriver\ Compilation ExpoRouter normal arm64 com.apple.xcode.tools.swift.compiler (in target 'ExpoRouter' from project 'Pods')
+  In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Core/React/RCTConvert.h:19:
+  In file included from /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Core-prebuilt/yoga/Yoga.h:14:
+  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Core-prebuilt/yoga/YGConfig.h:114:1: error: unknown type name 'YG_EXPORT'
+    114 | YG_EXPORT void YGConfigSetLogger(YGConfigRef config, YGLogger logger);
+        | ^
+  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Core-prebuilt/yoga/YGConfig.h:120:1: error: unknown type name 'YG_EXPORT'
+    120 | YG_EXPORT void YGConfigSetContext(YGConfigRef config, void* context);
+        | ^
+  /Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/React-Core-prebuilt/yoga/YGConfig.h:125:1: error: unknown type name 'YG_EXPORT'
+    125 | YG_EXPORT void* YGConfigGetContext(YGConfigConstRef config);
+        | ^
+  fatal error: too many errors emitted, stopping now [-ferror-limit=]
+  20 errors generated.
+  Failed frontend command:
+  /Applications/Xcode_26.0.1.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -cc1 -Wundef-prefix\=TARGET_OS_ -fdiagnostics-show-note-include-stack -fmacro-backtrace-limit\=0 -ferror-limit 19 -serialize-diagnostic-file /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/react-native-safe-area-context.build/Objects-normal/arm64/RNCSafeAreaViewMode.dia -Wdeprecated-objc-isa-usage -Werror\=deprecated-objc-isa-usage -Werror\=implicit-function-declaration -Wnon-modular-include-in-framework-module -Werror\=non-modular-include-in-framework-module -Wno-trigraphs -Wno-missing-field-initializers -Wno-missing-prototypes -Werror\=return-type -Wdocumentation -Wunreachable-code -Wno-implicit-atomic-properties -Werror\=deprecated-objc-isa-usage -Wno-objc-interface-ivars -Werror\=objc-root-class -Wno-arc-repeated-use-of-weak -Wimplicit-retain-self -Wduplicate-method-match -Wno-missing-braces -Wparentheses -Wswitch -Wunused-function -Wno-unused-label -Wno-un
+  CompileC /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/react-native-safe-area-context.build/Objects-normal/arm64/RNCSafeAreaViewManager.o /Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-safe-area-context/ios/RNCSafeAreaViewManager.m normal arm64 objective-c com.apple.compilers.llvm.clang.1_0.compiler (in target 'react-native-safe-area-context' from project 'Pods')
       cd /Users/runner/work/TAMTAM/TAMTAM/ios/Pods
-      builtin-Swift-Compilation -- /Applications/Xcode_26.0.1.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name ExpoRouter -O -whole-module-optimization -enforce-exclusivity\=checked @/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/ExpoRouter.build/Objects-normal/arm64/ExpoRouter.SwiftFileList -D COCOAPODS -Xcc -fmodule-map-file\=/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/ExpoModulesCore/ExpoModulesCore.modulemap -Xcc -fmodule-map-file\=/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/RCTSwiftUI/RCTSwiftUI.modulemap -Xcc -fmodule-map-file\=/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/RNScreens/RNScreens.modulemap -Xcc -fmodule-map-file\=/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/ExpoModulesJSI/ExpoModulesJSI.modulemap -Xcc -fmodule-map-file\=/Users/runner/work/TAMTAM/TAMTAM/ios/Pods/Headers/Public/RNWorklets/RNWorklets.modul
-  SwiftDriverJobDiscovery normal arm64 Compiling Exceptions.swift, SharingModule.swift, SharingOptions.swift (in target 'ExpoSharing' from project 'Pods')
-  SwiftDriver\ Compilation\ Requirements ExpoSharing normal arm64 com.apple.xcode.tools.swift.compiler (in target 'ExpoSharing' from project 'Pods')
+      
+      Using response file: /Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Intermediates.noindex/Pods.build/Release-iphoneos/react-native-safe-area-context.build/Objects-normal/arm64/e6072d4f65d7061329687fe24e3d63a7-common-args.resp
 Error: Process completed with exit code 1.
