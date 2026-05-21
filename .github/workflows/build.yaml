@@ -80,6 +80,11 @@ jobs:
           # references ShadowNode unguarded. 3.16.x is the last dual-arch
           # version that builds cleanly on old arch.
           npm install --legacy-peer-deps react-native-reanimated@~3.16.0
+          # SDK 54 ships `react-native-worklets` as a standalone package for
+          # Reanimated 4. With Reanimated 3.x (built-in worklets), the separate
+          # package conflicts at runtime and triggers a SIGABRT during worklet
+          # eval. Uninstall it.
+          npm uninstall --legacy-peer-deps react-native-worklets || true
           echo "--- package.json after expo install ---"
           cat package.json
 
