@@ -42,6 +42,20 @@ const expoDirs = fs
 const files = expoDirs.flatMap(walk);
 console.log('TAMTAM: scanning', files.length, 'expo source files');
 
+// Build a Set of every header name that still ships in expo-modules-core/ios.
+const expoCoreHeaderRoot = path.join(nodeModulesRoot, 'expo-modules-core', 'ios');
+const availableHeaders = new Set();
+(function collect(dir) {
+  if (!fs.existsSync(dir)) return;
+  let ents;
+  try { ents = fs.readdirSync(dir, { withFileTypes: true }); } catch (e) { return; }
+  for (const ent of ents) {
+    if (ent.isFile() && ent.name.endsWith('.h')) availableHeaders.add(ent.name);
+    else if (ent.isDirectory()) collect(path.join(dir, ent.name));
+  }
+})(expoCoreHeaderRoot);
+console.log('TAMTAM: indexed', availableHeaders.size, 'expo-modules-core headers');
+
 let touched = 0;
 
 for (const file of files) {
@@ -64,20 +78,22 @@ for (const file of files) {
     // EXSharedApplication() -> UIApplication.shared
     s = s.replace(/\bEXSharedApplication\s*\(\s*\)/g, 'UIApplication.shared');
   } else {
-    // ObjC/.m/.mm: comment out imports of headers removed in expo-modules-core
-    // SDK 55 rewrite. Files referencing the symbols beyond the import will
-    // surface follow-up errors handled case-by-case.
-    const removedHeaders = [
-      'ExpoModulesCore/EXEventEmitterService.h',
-      'ExpoModulesCore/EXPermissionsService.h',
-      'ExpoModulesCore/EXModuleRegistryProvider.h',
-      'ExpoModulesCore/EXSingletonModule.h',
-      'ExpoModulesCore/EXLegacyEventEmitter.h',
-    ];
-    for (const h of removedHeaders) {
-      const re = new RegExp(`^(#\\s*import\\s+<${h.replace(/[/.]/g, '\\$&')}>.*)$`, 'gm');
-      s = s.replace(re, '// $1 // TAMTAM: removed in Expo SDK 55');
-    }
+    // ObjC/.m/.mm: comment out imports of ExpoModulesCore framework headers
+    // that no longer exist on disk (SDK 55 rewrite removed some). Only
+    // comment when the header file actually can't be found - never comment
+    // out a header that still ships, otherwise we break its own .m file.
+    const expoCoreHeaderRoot = path.join(
+      nodeModulesRoot,
+      'expo-modules-core',
+      'ios'
+    );
+    s = s.replace(
+      /^(#\s*import\s+<ExpoModulesCore\/([^>]+\.h)>.*)$/gm,
+      (full, line, headerName) => {
+        if (availableHeaders.has(headerName)) return line;
+        return '// ' + line + ' // TAMTAM: removed in Expo SDK 55';
+      }
+    );
   }
 
   if (s !== before) {
