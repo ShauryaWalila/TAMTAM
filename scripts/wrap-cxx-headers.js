@@ -136,10 +136,22 @@ console.log('TAMTAM: matched', matched, '/', all.length, '; patched', patched, '
 console.log('TAMTAM: sample matched files:');
 for (const f of sampleMatches) console.log('  ', f);
 
-const target = 'Pods/Headers/Public/React-Fabric/react/renderer/components/view/BaseViewEventEmitter.h';
-if (fs.existsSync(target)) {
-  console.log('TAMTAM: target file head:');
-  console.log(fs.readFileSync(target, 'utf8').split('\n').slice(0, 5).join('\n'));
-} else {
-  console.log('TAMTAM: target file missing:', target);
+const targets = [
+  'Pods/Headers/Public/React-Fabric/react/renderer/components/view/BaseViewEventEmitter.h',
+  'Pods/Headers/Public/ReactCodegen/react/renderer/components/lottiereactnative/EventEmitters.h',
+  'Pods/Headers/Public/ReactCodegen/react/renderer/components/lottiereactnative/Props.h',
+];
+for (const target of targets) {
+  console.log('TAMTAM: target', target);
+  if (!fs.existsSync(target)) {
+    console.log('  missing');
+    continue;
+  }
+  const real = fs.realpathSync(target);
+  console.log('  realpath:', real);
+  const wasSeen = seen.has(real);
+  console.log('  seen-by-walk:', wasSeen);
+  const head = fs.readFileSync(target, 'utf8').split('\n').slice(0, 5).join('\n');
+  console.log('  head:');
+  console.log(head);
 }
