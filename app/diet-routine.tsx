@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, TextInput, Modal, Alert, Dimensions, Platform, FlatList } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, TextInput, Modal, Alert, Dimensions, Platform, FlatList, DeviceEventEmitter } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { BlurView } from 'expo-blur';
@@ -87,6 +87,11 @@ export default function DietRoutineScreen() {
     loadSettings();
     loadLibrary();
     loadRoutines();
+    const sub = DeviceEventEmitter.addListener('refresh-diet-library', () => {
+      loadLibrary();
+      loadRoutines();
+    });
+    return () => sub.remove();
   }, []);
 
   const loadSettings = () => {

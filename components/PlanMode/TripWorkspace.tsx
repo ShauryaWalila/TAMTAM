@@ -40,6 +40,8 @@ interface TripWorkspaceProps {
   onMarkersChange?: (markers: any[]) => void;
   onSnapChange?: (snap: 'min' | 'mid' | 'max') => void;
   onDayChange?: (dayIndex: number) => void;
+  onCategoryChange?: (categoryName: string) => void;
+  onFocusDay?: (dayNumber: number | null) => void;
 }
 
 const GlassBackground = ({ style }: BottomSheetBackgroundProps) => {
@@ -115,7 +117,7 @@ const CategoryHeader = ({ name, isDark }: { name: string, isDark: boolean }) => 
   <View style={styles.headerTitleContainer}><AnimatePresence mode="wait"><MotiView key={name} from={{ opacity: 0, translateY: 5 }} animate={{ opacity: 1, translateY: 0 }} exit={{ opacity: 0, translateY: -5 }} transition={{ type: 'timing', duration: 200 }}><Text style={[styles.sheetTitle, { color: Colors[isDark ? 'dark' : 'light'].text }]}>{name.toUpperCase()}</Text></MotiView></AnimatePresence></View>
 );
 
-export default function TripWorkspace({ tripId, onBack, userId, mapRef, onMarkersChange, onSnapChange, onDayChange }: TripWorkspaceProps) {
+export default function TripWorkspace({ tripId, onBack, userId, mapRef, onMarkersChange, onSnapChange, onDayChange, onCategoryChange, onFocusDay }: TripWorkspaceProps) {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
   const isDark = colorScheme === 'dark';
@@ -324,15 +326,22 @@ export default function TripWorkspace({ tripId, onBack, userId, mapRef, onMarker
   // that froze the bottom sheet. Capture latest via ref instead.
   const onMarkersChangeRef = React.useRef(onMarkersChange);
   React.useEffect(() => { onMarkersChangeRef.current = onMarkersChange; }, [onMarkersChange]);
+  const onCategoryChangeRef = React.useRef(onCategoryChange);
+  React.useEffect(() => { onCategoryChangeRef.current = onCategoryChange; }, [onCategoryChange]);
+  React.useEffect(() => {
+    if (onCategoryChangeRef.current) onCategoryChangeRef.current(activeCategoryFilter || '');
+  }, [activeCategoryFilter]);
   const didFitRef = React.useRef(false);
   React.useEffect(() => {
     const cb = onMarkersChangeRef.current;
     if (!cb) return;
-    const assignedIds = new Set(
-      (itineraryItems || [])
-        .filter((it: any) => it && it.bucket_item_id)
-        .map((it: any) => it.bucket_item_id)
-    );
+    // Build a map of bucket_item_id -> day_number for "assigned" info.
+    const dayByItemId = new Map<string, number>();
+    (itineraryItems || []).forEach((it: any) => {
+      if (it && it.bucket_item_id && it.day_number != null && !dayByItemId.has(it.bucket_item_id)) {
+        dayByItemId.set(it.bucket_item_id, it.day_number);
+      }
+    });
     const markers = (bucketItems || [])
       .filter((b: any) => b.latitude != null && b.longitude != null)
       .map((b: any) => ({
@@ -342,7 +351,8 @@ export default function TripWorkspace({ tripId, onBack, userId, mapRef, onMarker
         name: b.name,
         category: b.category,
         notes: b.notes,
-        isAssigned: assignedIds.has(b.id),
+        isAssigned: dayByItemId.has(b.id),
+        dayNumber: dayByItemId.get(b.id) ?? null,
       }));
     cb(markers);
 
@@ -432,7 +442,7 @@ export default function TripWorkspace({ tripId, onBack, userId, mapRef, onMarker
             <View style={styles.listWrapper}>
               {currentSnap === 'min' ? <FlatList data={days} horizontal pagingEnabled keyExtractor={(_, i) => i.toString()} renderItem={({ item }) => (<View style={{ width: width }}><TouchableOpacity style={[styles.dayCard, { width: width - 40, height: 130, marginHorizontal: 20 }]} onPress={() => setSelectedDay(item)}><View style={styles.dayCardInnerHorizontal}><Text style={styles.dayWeekday}>{item.weekday}</Text><Text style={[styles.dayNumber, { color: theme.text }]}>Day {item.dayNumber}</Text>{(dayCounts[item.dayNumber] || 0) > 0 && <View style={[styles.countBadge, { backgroundColor: theme.tint + '15' }]}><MapPin size={10} color={theme.tint} /><Text style={[styles.countText, { color: theme.tint }]}>{dayCounts[item.dayNumber]} spots</Text></View>}<Text style={styles.dayDate}>{item.date ? format(item.date, 'dd MMM yyyy') : 'Set Date'}</Text></View></TouchableOpacity></View>)} showsHorizontalScrollIndicator={false} onMomentumScrollEnd={(e) => { const idx = Math.round(e.nativeEvent.contentOffset.x / width); setActiveDayIndex(idx); if(onDayChange) onDayChange(idx); }} snapToInterval={width} snapToAlignment="center" decelerationRate="fast" />
               : currentSnap === 'mid' ? <View style={styles.dialWrapper}><Animated.ScrollView ref={dialRef} horizontal pagingEnabled onScroll={scrollHandler} scrollEventThrottle={16} onMomentumScrollEnd={(e) => { const idx = Math.round(e.nativeEvent.contentOffset.x / ITEM_WIDTH); if (idx >= 0 && idx < dbCategories.length) { runOnJS(setActiveCategoryFilter)(dbCategories[idx].name); runOnJS(triggerHaptic)('snap'); } }} showsHorizontalScrollIndicator={false} snapToInterval={ITEM_WIDTH} decelerationRate="fast">{dbCategories.map((cat, i) => { const categoryBucketItems = bucketItems.filter(bi => bi.category?.toLowerCase() === cat.name.toLowerCase()); const dayAssignedIds = itineraryItems.filter(i => i.day_number === activeDayIndex + 1); return <CategoryDialItem key={cat.id} cat={cat} index={i} isSelected={activeCategoryFilter === cat.name} theme={theme} scrollX={scrollX} categoryBucketItems={categoryBucketItems} dayAssignedIds={dayAssignedIds} onAddItem={async (bucketItem: any) => { await supabase.from('itinerary_items').upsert({ trip_id: tripId, bucket_item_id: bucketItem.id, day_number: activeDayIndex + 1, sequence: (dayAssignedIds.length || 0) + 1 }, { onConflict: 'trip_id, day_number, bucket_item_id' }); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); fetchItinerary(); }} onRemoveItem={handleRemoveFromDay} isDark={isDark} /> ; })}</Animated.ScrollView></View>
-              : <DayReorderList tripId={tripId} days={days} dayCounts={dayCounts} onReorder={(newData) => setDays(newData)} onSelectDay={(d) => setSelectedDay(d)} onAddFromBucket={(dayNum) => { setActiveDayIndex(dayNum - 1); bottomSheetRef.current?.snapToIndex(1); }} />}
+              : <DayReorderList tripId={tripId} days={days} dayCounts={dayCounts} onReorder={(newData) => setDays(newData)} onSelectDay={(d) => setSelectedDay(d)} onAddFromBucket={(dayNum) => { setActiveDayIndex(dayNum - 1); bottomSheetRef.current?.snapToIndex(1); }} onFocusDay={(dayNum) => { if (onFocusDay) onFocusDay(dayNum); }} />}
             </View>
           </BottomSheetView>
         </BottomSheet>

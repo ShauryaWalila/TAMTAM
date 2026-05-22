@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, Pressable, TouchableOpacity, Text, Dimensions, Alert, Image, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Pressable, TouchableOpacity, Text, Dimensions, Alert, Image, ActivityIndicator, Modal } from 'react-native';
 import MapView, { Marker, Callout } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Map as MapIcon, MapPin, Plane, Plus, Search, Layers, X, Navigation as NavIcon, Menu, Sparkles, CheckCircle2 } from 'lucide-react-native';
@@ -59,6 +59,42 @@ export default function OurLifeScreen() {
   const [workspaceMarkers, setWorkspaceMarkers] = useState<any[]>([]);
   const [currentSnap, setCurrentSnap] = useState<'min' | 'mid' | 'max'>('min');
   const [activeDayIndex, setActiveDayIndex] = useState(0);
+  const [activeCategory, setActiveCategory] = useState<string>('');
+
+  // Compute the subset of markers the user is currently looking at. Used both
+  // for rendering AND for auto-fitting the camera. Max snap is ignored - the
+  // bottom sheet covers the map at that level so no need to recompute.
+  const visibleMarkers = React.useMemo(() => {
+    if (!activeTripId) return workspaceMarkers;
+    if (currentSnap === 'min') {
+      return workspaceMarkers.filter((m: any) => m.dayNumber === (activeDayIndex + 1));
+    }
+    if (currentSnap === 'mid' && activeCategory) {
+      return workspaceMarkers.filter((m: any) => (m.category || '').toLowerCase() === activeCategory.toLowerCase());
+    }
+    return workspaceMarkers;
+  }, [activeTripId, workspaceMarkers, currentSnap, activeDayIndex, activeCategory]);
+
+  // Auto-fit map to the currently visible subset whenever it changes.
+  useEffect(() => {
+    if (!activeTripId || !mapRef.current) return;
+    if (visibleMarkers.length === 0) return;
+    try {
+      if (visibleMarkers.length === 1) {
+        mapRef.current.animateToRegion({
+          latitude: visibleMarkers[0].latitude,
+          longitude: visibleMarkers[0].longitude,
+          latitudeDelta: 0.05,
+          longitudeDelta: 0.05,
+        }, 500);
+      } else {
+        mapRef.current.fitToCoordinates(
+          visibleMarkers.map((m: any) => ({ latitude: m.latitude, longitude: m.longitude })),
+          { edgePadding: { top: 120, bottom: 320, left: 60, right: 60 }, animated: true }
+        );
+      }
+    } catch {}
+  }, [visibleMarkers, activeTripId]);
 
   useEffect(() => {
     (async () => {
@@ -166,14 +202,15 @@ export default function OurLifeScreen() {
   return (
     <View style={styles.container}>
       {activeTripId && (
-        <TripWorkspace 
-          tripId={activeTripId} 
-          userId={userId} 
-          mapRef={mapRef} 
-          onBack={handleBackFromTrip} 
-          onMarkersChange={(m) => setWorkspaceMarkers(m)} 
+        <TripWorkspace
+          tripId={activeTripId}
+          userId={userId}
+          mapRef={mapRef}
+          onBack={handleBackFromTrip}
+          onMarkersChange={(m) => setWorkspaceMarkers(m)}
           onSnapChange={(snap) => setCurrentSnap(snap)}
           onDayChange={(dayIndex) => setActiveDayIndex(dayIndex)}
+          onCategoryChange={(name) => setActiveCategory(name)}
         />
       )}
 
@@ -186,7 +223,7 @@ export default function OurLifeScreen() {
         onLongPress={handleMapLongPress}
       >
         {activeTripId ? (
-          workspaceMarkers.map(marker => (
+          visibleMarkers.map(marker => (
             <Marker
               key={marker.id}
               coordinate={{ latitude: marker.latitude, longitude: marker.longitude }}
@@ -282,35 +319,26 @@ export default function OurLifeScreen() {
         )}
       </AnimatePresence>
 
-      <AnimatePresence>
-        {searchVisible && (
-          <MotiView 
-            from={{ opacity: 0, translateY: -20 }}
-            animate={{ opacity: 1, translateY: 0 }}
-            exit={{ opacity: 0, translateY: -20 }}
-            style={[styles.searchOverlay, { top: insets.top + 10 }]}
-          >
-            <SmartLocationPicker
-              title="Search Places"
-              onClose={() => setSearchVisible(false)}
-              onLocationCaptured={(loc) => {
-                // Close WebView first so AddPinModal can present cleanly on iOS.
-                setSearchVisible(false);
-                mapRef.current?.animateToRegion({
-                  latitude: loc.lat,
-                  longitude: loc.lng,
-                  latitudeDelta: LATITUDE_DELTA,
-                  longitudeDelta: LONGITUDE_DELTA
-                }, 800);
-                setPendingCoordinate({ latitude: loc.lat, longitude: loc.lng });
-                setPendingPlaceName(loc.name || '');
-                setEditingPin(null);
-                setTimeout(() => setIsAddModalVisible(true), 350);
-              }}
-            />
-          </MotiView>
-        )}
-      </AnimatePresence>
+      <Modal visible={searchVisible} animationType="slide" presentationStyle="overFullScreen" transparent onRequestClose={() => setSearchVisible(false)}>
+        <SmartLocationPicker
+          title="Search Places"
+          onClose={() => setSearchVisible(false)}
+          onLocationCaptured={(loc) => {
+            // Close WebView first so AddPinModal can present cleanly on iOS.
+            setSearchVisible(false);
+            mapRef.current?.animateToRegion({
+              latitude: loc.lat,
+              longitude: loc.lng,
+              latitudeDelta: LATITUDE_DELTA,
+              longitudeDelta: LONGITUDE_DELTA
+            }, 800);
+            setPendingCoordinate({ latitude: loc.lat, longitude: loc.lng });
+            setPendingPlaceName(loc.name || '');
+            setEditingPin(null);
+            setTimeout(() => setIsAddModalVisible(true), 350);
+          }}
+        />
+      </Modal>
 
       <AddPinModal
         isVisible={isAddModalVisible}

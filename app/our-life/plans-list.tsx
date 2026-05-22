@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, FlatList, TouchableOpacity, TextInput, Dimensions, Modal, ActivityIndicator, Alert } from 'react-native';
-import { Search, Plus, Calendar, MapPin, ChevronRight, Clock, X, Save, Globe } from 'lucide-react-native';
+import { Search, Plus, Calendar, MapPin, ChevronRight, Clock, X, Save, Globe, Trash2 } from 'lucide-react-native';
+import * as Haptics from 'expo-haptics';
 import { BlurView } from 'expo-blur';
 import { format } from 'date-fns';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -87,6 +88,34 @@ export default function PlansListScreen({ onSelectTrip, onClose }: PlansListProp
     return result;
   }
 
+  const handleLongPressPlan = (item: any) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    Alert.alert(
+      `Delete "${item.title}"?`,
+      'This will permanently remove the plan and all its bucket items, days, songs, etc.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const { error } = await supabase.from('trips').delete().eq('id', item.id);
+              if (error) {
+                Alert.alert('Could not delete', error.message);
+                return;
+              }
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              fetchPlans();
+            } catch (e: any) {
+              Alert.alert('Could not delete', e?.message || 'Unknown error');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
@@ -102,7 +131,13 @@ export default function PlansListScreen({ onSelectTrip, onClose }: PlansListProp
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         renderItem={({ item }) => (
-          <TouchableOpacity style={[styles.planCard, { backgroundColor: Colors[colorScheme].card }]} onPress={() => onSelectTrip(item.id)}>
+          <TouchableOpacity
+            style={[styles.planCard, { backgroundColor: Colors[colorScheme].card }]}
+            onPress={() => onSelectTrip(item.id)}
+            onLongPress={() => handleLongPressPlan(item)}
+            delayLongPress={400}
+            activeOpacity={0.7}
+          >
             <View style={styles.cardInfo}>
               <ThemedText style={styles.planTitle}>{item.title}</ThemedText>
               <View style={styles.infoRow}>

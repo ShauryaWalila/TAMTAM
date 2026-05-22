@@ -20,9 +20,10 @@ interface DayReorderListProps {
   dayCounts: Record<number, number>;
   onSelectDay: (day: any) => void;
   onAddFromBucket: (dayNumber: number) => void;
+  onFocusDay?: (dayNumber: number) => void;
 }
 
-export default function DayReorderList({ tripId, days, onReorder, dayCounts, onSelectDay, onAddFromBucket }: DayReorderListProps) {
+export default function DayReorderList({ tripId, days, onReorder, dayCounts, onSelectDay, onAddFromBucket, onFocusDay }: DayReorderListProps) {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
   const [expandedDay, setExpandedDay] = useState<number | null>(null);
@@ -224,7 +225,9 @@ export default function DayReorderList({ tripId, days, onReorder, dayCounts, onS
             onLongPress={drag}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setExpandedDay(isExpanded ? null : item.dayNumber);
+              const next = isExpanded ? null : item.dayNumber;
+              setExpandedDay(next);
+              if (next != null && onFocusDay) onFocusDay(next);
             }}
             disabled={isActive}
             style={[

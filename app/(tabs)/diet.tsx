@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, TextInput, Modal, FlatList, Alert, Dimensions, Platform } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, TextInput, Modal, FlatList, Alert, Dimensions, Platform, DeviceEventEmitter } from 'react-native';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { BlurView } from 'expo-blur';
@@ -1175,8 +1175,8 @@ function RecipesTab({ theme, searchQuery, userName }: any) {
   const saveRecipe = () => {
     if (!newRecipe.name) return;
     const recipeId = editingRecipeId || generateUUID();
+    const payload = { id: recipeId, name: newRecipe.name, description: newRecipe.description, base_quantity: newRecipe.base_quantity, base_unit: newRecipe.base_unit, nutrients: newRecipe.is_manual ? JSON.stringify(newRecipe.nutrients) : null, user_id: userName, created_at: new Date().toISOString() };
     db.withTransactionSync(() => {
-      const payload = { id: recipeId, name: newRecipe.name, description: newRecipe.description, base_quantity: newRecipe.base_quantity, base_unit: newRecipe.base_unit, nutrients: newRecipe.is_manual ? JSON.stringify(newRecipe.nutrients) : null, user_id: userName, created_at: new Date().toISOString() };
       if (editingRecipeId) {
         db.runSync('UPDATE recipes SET name=?, description=?, base_quantity=?, base_unit=?, nutrients=? WHERE id=?', [payload.name, payload.description, payload.base_quantity, payload.base_unit, payload.nutrients, recipeId]);
         db.runSync('DELETE FROM recipe_ingredients WHERE recipe_id=?', [recipeId]);
@@ -1189,7 +1189,9 @@ function RecipesTab({ theme, searchQuery, userName }: any) {
         });
       }
     });
+    queueSyncOperation('recipes', recipeId, editingRecipeId ? 'UPDATE' : 'INSERT', payload);
     setShowAdd(false); setEditingRecipeId(null); loadRecipes();
+    DeviceEventEmitter.emit('refresh-diet-library');
   };
 
   const toggleTempSelected = (id: string) => {
@@ -1498,9 +1500,16 @@ function IngredientsTab({ theme, searchQuery, userName }: any) {
     if (!newIng.name) return;
     const id = editingIngId || generateUUID();
     const payload = { id, name: newIng.name, nutrients: JSON.stringify(newIng.nutrients), base_quantity: newIng.base_quantity, base_unit: newIng.base_unit, user_id: userName, created_at: new Date().toISOString() };
-    if (editingIngId) db.runSync('UPDATE ingredients SET name=?, nutrients=?, base_quantity=?, base_unit=? WHERE id=?', [payload.name, payload.nutrients, payload.base_quantity, payload.base_unit, id]);
-    else db.runSync('INSERT INTO ingredients (id, name, nutrients, base_quantity, base_unit, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)', [payload.id, payload.name, payload.nutrients, payload.base_quantity, payload.base_unit, payload.user_id, payload.created_at]);
+    if (editingIngId) {
+      db.runSync('UPDATE ingredients SET name=?, nutrients=?, base_quantity=?, base_unit=? WHERE id=?', [payload.name, payload.nutrients, payload.base_quantity, payload.base_unit, id]);
+      queueSyncOperation('ingredients', id, 'UPDATE', payload);
+    } else {
+      db.runSync('INSERT INTO ingredients (id, name, nutrients, base_quantity, base_unit, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)', [payload.id, payload.name, payload.nutrients, payload.base_quantity, payload.base_unit, payload.user_id, payload.created_at]);
+      queueSyncOperation('ingredients', id, 'INSERT', payload);
+    }
     setShowAdd(false); setEditingIngId(null); loadIngredients();
+    // Tell other diet screens (history, routine, recipe builder) to refresh.
+    DeviceEventEmitter.emit('refresh-diet-library');
   };
 
   return (
