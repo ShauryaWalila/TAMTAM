@@ -304,8 +304,14 @@ export default function TripWorkspace({ tripId, onBack, userId, mapRef, onMarker
 
   // Push bucket items as map markers whenever they (or the itinerary) change.
   // `isAssigned` is true if the bucket item is already in any day's itinerary.
+  // NOTE: `onMarkersChange` is intentionally NOT in the deps. Parent passes a
+  // fresh arrow each render; including it caused an infinite re-render loop
+  // that froze the bottom sheet. Capture latest via ref instead.
+  const onMarkersChangeRef = React.useRef(onMarkersChange);
+  React.useEffect(() => { onMarkersChangeRef.current = onMarkersChange; }, [onMarkersChange]);
   React.useEffect(() => {
-    if (!onMarkersChange) return;
+    const cb = onMarkersChangeRef.current;
+    if (!cb) return;
     const assignedIds = new Set(
       (itineraryItems || [])
         .filter((it: any) => it && it.bucket_item_id)
@@ -322,8 +328,8 @@ export default function TripWorkspace({ tripId, onBack, userId, mapRef, onMarker
         notes: b.notes,
         isAssigned: assignedIds.has(b.id),
       }));
-    onMarkersChange(markers);
-  }, [bucketItems, itineraryItems, onMarkersChange]);
+    cb(markers);
+  }, [bucketItems, itineraryItems]);
 
   const fetchCategories = async () => {
     const { data } = await supabase.from('bucket_categories').select('*').eq('trip_id', tripId).order('name', { ascending: true });
