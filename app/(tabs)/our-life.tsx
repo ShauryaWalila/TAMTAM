@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, View, Pressable, TouchableOpacity, Text, Dimensions, Alert, Image, ActivityIndicator } from 'react-native';
-import MapView, { Marker, Callout, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, Callout } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Map as MapIcon, MapPin, Plane, Plus, Search, Layers, X, Navigation as NavIcon, Menu, Sparkles, CheckCircle2 } from 'lucide-react-native';
 import { MotiView, AnimatePresence } from 'moti';
@@ -179,7 +179,6 @@ export default function OurLifeScreen() {
       <MapView
         key={`map-${activeTripId}`}
         ref={mapRef}
-        provider={PROVIDER_GOOGLE}
         style={styles.map}
         initialRegion={{ latitude: location?.coords.latitude ?? 20, longitude: location?.coords.longitude ?? 78, latitudeDelta: 0.0922, longitudeDelta: 0.0421 }}
         onPress={closeActivePin}

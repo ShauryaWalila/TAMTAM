@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Dimensions, Modal, TextInput, ActivityIndicator, Alert, Image, DeviceEventEmitter, Linking, FlatList, ScrollView, Platform, Share } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker } from 'react-native-maps';
 import { Search, Plus, X, Navigation as NavIcon, Globe, MapPin, Heart, MessageCircle, ArrowRight, Trash2, Map as MapIcon, ChevronDown, Sparkles, Copy, ExternalLink, MapPinned, ChevronRight, Users, Wifi } from 'lucide-react-native';
 import { MotiView, AnimatePresence } from 'moti';
 import { BlurView } from 'expo-blur';
@@ -162,7 +162,6 @@ export default function WishlistScreen() {
     <ThemedView style={styles.container}>
       <MapView
         ref={mapRef}
-        provider={PROVIDER_GOOGLE}
         style={styles.map}
         initialRegion={{ latitude: 20.5937, longitude: 78.9629, latitudeDelta: 20, longitudeDelta: 20 }}
         showsUserLocation

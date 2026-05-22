@@ -1254,7 +1254,22 @@ function RecipesTab({ theme, searchQuery, userName }: any) {
       <Modal visible={!!showOptions} transparent animationType="fade"><TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowOptions(null)}><BlurView intensity={20} tint={colorScheme} style={StyleSheet.absoluteFill} /><View style={[styles.optionsMenu, { backgroundColor: theme.background }]}>
           <Text style={[styles.optionsTitle, { color: theme.text }]}>{showOptions?.name}</Text>
           <TouchableOpacity onPress={() => handleEdit(showOptions)} style={styles.optionBtn}><Edit2 size={20} color={theme.text} /><Text style={[styles.optionText, { color: theme.text }]}>Edit Entry</Text></TouchableOpacity>
-          <TouchableOpacity onPress={() => { Alert.alert('Delete Recipe?', 'This will remove the recipe.', [{ text: 'Cancel' }, { text: 'Delete', style: 'destructive', onPress: () => { db.runSync('DELETE FROM recipes WHERE id = ?', [showOptions.id]); loadRecipes(); setShowOptions(null); } }]); }} style={styles.optionBtn}><Trash2 size={20} color="#FF3B30" /><Text style={[styles.optionText, { color: '#FF3B30' }]}>Delete Entry</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => {
+            const id = showOptions?.id;
+            const name = showOptions?.name;
+            setShowOptions(null);
+            setTimeout(() => {
+              Alert.alert('Delete Recipe?', `Remove "${name}"?`, [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Delete', style: 'destructive', onPress: () => {
+                  try {
+                    db.runSync('DELETE FROM recipes WHERE id = ?', [id]);
+                    loadRecipes();
+                  } catch (e) { console.warn('Delete recipe failed', e); }
+                }}
+              ]);
+            }, 250);
+          }} style={styles.optionBtn}><Trash2 size={20} color="#FF3B30" /><Text style={[styles.optionText, { color: '#FF3B30' }]}>Delete Entry</Text></TouchableOpacity>
         </View></TouchableOpacity></Modal>
 
       {/* Details Modal */}
@@ -1502,7 +1517,22 @@ function IngredientsTab({ theme, searchQuery, userName }: any) {
           <View style={[styles.optionsMenu, { backgroundColor: theme.background }]}>
             <Text style={[styles.optionsTitle, { color: theme.text }]}>{showOptions?.name}</Text>
             <TouchableOpacity onPress={() => handleEdit(showOptions)} style={styles.optionBtn}><Edit2 size={20} color={theme.text} /><Text style={[styles.optionText, { color: theme.text }]}>Edit Entry</Text></TouchableOpacity>
-            <TouchableOpacity onPress={() => { Alert.alert('Delete Ingredient?', 'This will remove the ingredient.', [{ text: 'Cancel' }, { text: 'Delete', style: 'destructive', onPress: () => { db.runSync('DELETE FROM ingredients WHERE id = ?', [showOptions.id]); loadIngredients(); setShowOptions(null); } }]); }} style={styles.optionBtn}><Trash2 size={20} color="#FF3B30" /><Text style={[styles.optionText, { color: '#FF3B30' }]}>Delete Entry</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => {
+              const id = showOptions?.id;
+              const name = showOptions?.name;
+              setShowOptions(null);
+              setTimeout(() => {
+                Alert.alert('Delete Ingredient?', `Remove "${name}"?`, [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Delete', style: 'destructive', onPress: () => {
+                    try {
+                      db.runSync('DELETE FROM ingredients WHERE id = ?', [id]);
+                      loadIngredients();
+                    } catch (e) { console.warn('Delete failed', e); }
+                  }}
+                ]);
+              }, 250);
+            }} style={styles.optionBtn}><Trash2 size={20} color="#FF3B30" /><Text style={[styles.optionText, { color: '#FF3B30' }]}>Delete Entry</Text></TouchableOpacity>
           </View>
         </TouchableOpacity>
       </Modal>
