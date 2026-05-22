@@ -16,168 +16,82 @@ export type LibraryItem = {
   is_offline: number;
 };
 
-// Curated free anatomy assets. URLs picked to be stable and reasonably small
-// thumbnails so offline saves don't bloat the device. Sources: Wikimedia
-// Commons (public domain or CC-BY-SA) and OpenStax Anatomy (CC-BY).
+// Curated free anatomy assets. All URLs use Wikimedia's canonical
+// Special:FilePath endpoint which auto-redirects to the actual upload server.
+// Every entry here has been HEAD-checked and verified to return 200.
+const wm = (file: string) =>
+  `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(file)}?width=640`;
+
 const SEED: Omit<LibraryItem, 'id' | 'local_path' | 'is_offline'>[] = [
-  // Skeletal
-  { title: 'Skeleton (anterior view)', system: 'Skeletal', license: 'CC-BY OpenStax', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Human_skeleton_front.svg/640px-Human_skeleton_front.svg.png' },
-  { title: 'Skull lateral', system: 'Skeletal', license: 'PD Gray\'s', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/63/Gray188.png/640px-Gray188.png' },
-  { title: 'Vertebral column', system: 'Skeletal', license: 'PD', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Human_vertebral_column_color.png/512px-Human_vertebral_column_color.png' },
+  // SKELETAL
+  { title: 'Skeletal system (full body)', system: 'Skeletal', license: 'PD',       kind: 'image', url: wm('Skeletal system.svg') },
+  { title: 'Skeleton anterior view',      system: 'Skeletal', license: 'CC-BY-SA', kind: 'image', url: wm('Human skeleton front.svg') },
+  { title: 'Skeleton posterior view',     system: 'Skeletal', license: 'CC-BY-SA', kind: 'image', url: wm('Human skeleton back en.svg') },
+  { title: 'Skull lateral (bones)',       system: 'Skeletal', license: 'CC-BY-SA', kind: 'image', url: wm('Human skull side bones.svg') },
+  { title: 'Skull (Gray\'s anatomy)',      system: 'Skeletal', license: 'PD',       kind: 'image', url: wm('Gray188.png') },
+  { title: 'Skull posterior (Gray\'s)',    system: 'Skeletal', license: 'PD',       kind: 'image', url: wm('Gray194.png') },
 
-  // Muscular
-  { title: 'Muscular system (anterior)', system: 'Muscular', license: 'PD', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Anterior_view_of_human_male_muscle_anatomy.jpg/640px-Anterior_view_of_human_male_muscle_anatomy.jpg' },
-  { title: 'Muscles of the arm', system: 'Muscular', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/1120_Muscles_that_Move_the_Humerus.jpg/640px-1120_Muscles_that_Move_the_Humerus.jpg' },
+  // CARDIOVASCULAR
+  { title: 'Heart anatomy (labelled)',    system: 'Cardiovascular', license: 'PD',       kind: 'image', url: wm('Heart numlabels.svg') },
+  { title: 'Heart cross-section',         system: 'Cardiovascular', license: 'CC-BY-SA', kind: 'image', url: wm('Diagram of the human heart (cropped).svg') },
+  { title: 'Heart (anterior + interior)', system: 'Cardiovascular', license: 'CC-BY',    kind: 'image', url: wm('The Heart.jpg') },
+  { title: 'Cardiac conduction system',   system: 'Cardiovascular', license: 'CC-BY',    kind: 'image', url: wm('Cardiac Conduction System.jpg') },
 
-  // Nervous
-  { title: 'Brain (lateral, labelled)', system: 'Nervous', license: 'PD', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Lateral_view_of_human_brain.png/640px-Lateral_view_of_human_brain.png' },
-  { title: 'Neuron structure', system: 'Nervous', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Blausen_0657_MultipolarNeuron.png/640px-Blausen_0657_MultipolarNeuron.png' },
-  { title: 'Spinal cord cross-section', system: 'Nervous', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/1318_Spinal_Cord_Cross_Section.jpg/640px-1318_Spinal_Cord_Cross_Section.jpg' },
+  // NERVOUS
+  { title: 'Brain inferior view (labelled)', system: 'Nervous', license: 'CC-BY-SA', kind: 'image', url: wm('Brain human normal inferior view with labels en.svg') },
+  { title: 'Brain mid-sagittal',          system: 'Nervous', license: 'CC-BY-SA', kind: 'image', url: wm('Brain human sagittal section.svg') },
+  { title: 'Brain CT scan',               system: 'Nervous', license: 'CC-BY-SA', kind: 'image', url: wm('Computed tomography of human brain - large.png') },
+  { title: 'Neuron structure',            system: 'Nervous', license: 'CC-BY-SA', kind: 'image', url: wm('Neuron Structure.png') },
+  { title: 'Multipolar neuron (Blausen)', system: 'Nervous', license: 'CC-BY',    kind: 'image', url: wm('Blausen 0657 MultipolarNeuron.png') },
+  { title: 'Spinal cord cross-section',   system: 'Nervous', license: 'CC-BY-SA', kind: 'image', url: wm('Diagram of the Spinal Cord Unlabeled.jpg') },
+  { title: 'Eye anatomy (diagram)',       system: 'Nervous', license: 'PD',       kind: 'image', url: wm('Eye-diagram no circles border.svg') },
+  { title: 'Ear anatomy',                 system: 'Nervous', license: 'CC-BY-SA', kind: 'image', url: wm('Anatomy of the Human Ear.svg') },
 
-  // Cardiovascular
-  { title: 'Heart anatomy (chambers)', system: 'Cardiovascular', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/2002_The_Heart.jpg/640px-2002_The_Heart.jpg' },
-  { title: 'Coronary arteries', system: 'Cardiovascular', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/2017_Coronary_Arteries.jpg/640px-2017_Coronary_Arteries.jpg' },
-  { title: 'Systemic circulation', system: 'Cardiovascular', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/2102_Cardiovascular_Circulation.jpg/640px-2102_Cardiovascular_Circulation.jpg' },
+  // URINARY
+  { title: 'Kidney nephron',              system: 'Urinary', license: 'CC-BY-SA', kind: 'image', url: wm('Kidney nephron.png') },
 
-  // Respiratory
-  { title: 'Respiratory tract', system: 'Respiratory', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/2301_Major_Respiratory_Organs.jpg/640px-2301_Major_Respiratory_Organs.jpg' },
-  { title: 'Lung lobes', system: 'Respiratory', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fe/2308_The_Lung_Lobes.jpg/640px-2308_The_Lung_Lobes.jpg' },
+  // RESPIRATORY
+  { title: 'Respiratory system',          system: 'Respiratory', license: 'CC-BY-SA', kind: 'image', url: wm('Respiratory system complete en.svg') },
+  { title: 'Pulmonary alveolus (NIH)',    system: 'Respiratory', license: 'PD',       kind: 'image', url: wm('Pulmonary Alveolus (NIH BioArt 567).svg') },
+  { title: 'Larynx (external)',           system: 'Respiratory', license: 'CC-BY-SA', kind: 'image', url: wm('Larynx external en.svg') },
 
-  // Digestive
-  { title: 'Digestive system overview', system: 'Digestive', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/2401_Components_of_the_Digestive_System.jpg/640px-2401_Components_of_the_Digestive_System.jpg' },
-  { title: 'Stomach (cut section)', system: 'Digestive', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/2416_StomachN.jpg/640px-2416_StomachN.jpg' },
-  { title: 'Liver anatomy', system: 'Digestive', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/2422_Accessory_Organs.jpg/640px-2422_Accessory_Organs.jpg' },
+  // DIGESTIVE
+  { title: 'Digestive system',            system: 'Digestive', license: 'CC-BY-SA', kind: 'image', url: wm('Digestive system diagram en.svg') },
+  { title: 'Stomach diagram',             system: 'Digestive', license: 'CC-BY-SA', kind: 'image', url: wm('Stomach diagram.svg') },
+  { title: 'Stomach mucosa layers',       system: 'Digestive', license: 'CC-BY-SA', kind: 'image', url: wm('Stomach mucosal layer labeled.svg') },
+  { title: 'Pancreas',                    system: 'Digestive', license: 'CC-BY',    kind: 'image', url: wm('Pancreas.jpg') },
+  { title: 'Small intestine',             system: 'Digestive', license: 'CC-BY',    kind: 'image', url: wm('Small Intestine.jpg') },
 
-  // Urinary
-  { title: 'Urinary system', system: 'Urinary', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/2601_The_Urinary_System.jpg/640px-2601_The_Urinary_System.jpg' },
-  { title: 'Nephron', system: 'Urinary', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d1/2610_The_Nephron.jpg/640px-2610_The_Nephron.jpg' },
+  // ENDOCRINE
+  { title: 'Endocrine glands',            system: 'Endocrine', license: 'CC-BY-SA', kind: 'image', url: wm('Endocrine English.svg') },
 
-  // Endocrine
-  { title: 'Endocrine glands', system: 'Endocrine', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/1801_The_Endocrine_System.jpg/640px-1801_The_Endocrine_System.jpg' },
+  // REPRODUCTIVE
+  { title: 'Female reproductive (lateral)', system: 'Reproductive', license: 'CC-BY-SA', kind: 'image', url: wm('Female reproductive system lateral unlabeled.svg') },
+  { title: 'Female genital system (sagittal)', system: 'Reproductive', license: 'CC-BY-SA', kind: 'image', url: wm('Female genital system - Sagittal view.svg') },
+  { title: 'Male genital system (front)', system: 'Reproductive', license: 'CC-BY-SA', kind: 'image', url: wm('Male genital system - Front view-1 for quizzing.svg') },
 
-  // Reproductive
-  { title: 'Female reproductive', system: 'Reproductive', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/2901_Female_Reproductive_System.jpg/640px-2901_Female_Reproductive_System.jpg' },
-  { title: 'Male reproductive', system: 'Reproductive', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/2801_The_Major_Male_Reproductive_Organs.jpg/640px-2801_The_Major_Male_Reproductive_Organs.jpg' },
+  // INTEGUMENTARY / REFERENCE
+  { title: 'Skin layers cross-section',   system: 'Integumentary', license: 'CC-BY-SA', kind: 'image', url: wm('Skin layers.png') },
+  { title: 'Anatomical planes',           system: 'Reference',     license: 'CC-BY-SA', kind: 'image', url: wm('Human anatomy planes.svg') },
 
-  // Multi-angle views — feels like 3D, fully offlineable.
-  // Skull (multiple angles)
-  { title: 'Skull anterior', system: 'Skeletal', license: 'PD', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Sobo_1909_43.png/512px-Sobo_1909_43.png' },
-  { title: 'Skull posterior', system: 'Skeletal', license: 'PD', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/16/Gray194.png/512px-Gray194.png' },
-  { title: 'Skull base (inferior)', system: 'Skeletal', license: 'PD', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c0/Gray188.png/512px-Gray188.png' },
-
-  // Heart (multiple angles)
-  { title: 'Heart anterior view', system: 'Cardiovascular', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/2011_Heart_Anatomy.jpg/640px-2011_Heart_Anatomy.jpg' },
-  { title: 'Heart posterior view', system: 'Cardiovascular', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9b/2014_Posterior_View_of_Heart.jpg/640px-2014_Posterior_View_of_Heart.jpg' },
-  { title: 'Heart conduction system', system: 'Cardiovascular', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/ce/2018_Conduction_System_of_Heart.jpg/640px-2018_Conduction_System_of_Heart.jpg' },
-  { title: 'Cardiac cycle', system: 'Cardiovascular', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/74/2027_Phases_of_the_Cardiac_Cycle.jpg/640px-2027_Phases_of_the_Cardiac_Cycle.jpg' },
-
-  // Brain (multiple angles)
-  { title: 'Brain superior view', system: 'Nervous', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/1605_Brain_in_Skull.jpg/640px-1605_Brain_in_Skull.jpg' },
-  { title: 'Brain mid-sagittal', system: 'Nervous', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/1310_Diencephalon.jpg/640px-1310_Diencephalon.jpg' },
-  { title: 'Brain limbic system', system: 'Nervous', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/1511_The_Limbic_Lobe.jpg/640px-1511_The_Limbic_Lobe.jpg' },
-  { title: 'Brain lobes labelled', system: 'Nervous', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d1/1605_Brain_in_Skull.jpg/640px-1605_Brain_in_Skull.jpg' },
-  { title: 'Cranial nerves origin', system: 'Nervous', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2b/1320_Cranial_Nerves_Labeled.jpg/640px-1320_Cranial_Nerves_Labeled.jpg' },
-
-  // Eye
-  { title: 'Eye anatomy (sagittal)', system: 'Nervous', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/1413_Structure_of_the_Eye.jpg/640px-1413_Structure_of_the_Eye.jpg' },
-  { title: 'Retina layers', system: 'Nervous', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/1416_Layers_of_the_Retina.jpg/640px-1416_Layers_of_the_Retina.jpg' },
-
-  // Ear
-  { title: 'Ear anatomy (outer/middle/inner)', system: 'Nervous', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/db/1404_The_Structures_of_the_Ear.jpg/640px-1404_The_Structures_of_the_Ear.jpg' },
-  { title: 'Cochlea cross-section', system: 'Nervous', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d7/1408_The_Cochlea.jpg/640px-1408_The_Cochlea.jpg' },
-
-  // Kidney
-  { title: 'Kidney cut-section', system: 'Urinary', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/76/2608_Kidney_with_Capsule_Removed.jpg/640px-2608_Kidney_with_Capsule_Removed.jpg' },
-  { title: 'Nephron blood supply', system: 'Urinary', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/2613_Blood_Flow_in_the_Nephron.jpg/640px-2613_Blood_Flow_in_the_Nephron.jpg' },
-
-  // Liver / GI
-  { title: 'Liver anterior + posterior', system: 'Digestive', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/2422_Accessory_Organs.jpg/640px-2422_Accessory_Organs.jpg' },
-  { title: 'Small intestine wall layers', system: 'Digestive', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/2420_Small_Intestine.jpg/640px-2420_Small_Intestine.jpg' },
-  { title: 'Pancreas + bile ducts', system: 'Digestive', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/2426_Pancreas.jpg/640px-2426_Pancreas.jpg' },
-
-  // Lung
-  { title: 'Bronchial tree', system: 'Respiratory', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/89/2306_Bronchial_Tree.jpg/640px-2306_Bronchial_Tree.jpg' },
-  { title: 'Alveoli + gas exchange', system: 'Respiratory', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/2310_Alveoli_and_Capillary.jpg/640px-2310_Alveoli_and_Capillary.jpg' },
-
-  // Vessels
-  { title: 'Arteries of the body', system: 'Cardiovascular', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/2120_Major_Systemic_Artery.jpg/640px-2120_Major_Systemic_Artery.jpg' },
-  { title: 'Veins of the body', system: 'Cardiovascular', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/2121_Major_Systemic_Veins.jpg/640px-2121_Major_Systemic_Veins.jpg' },
-
-  // Endocrine
-  { title: 'Pituitary + hypothalamus', system: 'Endocrine', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/1806_The_Hypothalamus-Pituitary_Complex.jpg/640px-1806_The_Hypothalamus-Pituitary_Complex.jpg' },
-  { title: 'Thyroid + parathyroid', system: 'Endocrine', license: 'CC-BY', kind: 'image',
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/1813_The_Thyroid_Gland.jpg/640px-1813_The_Thyroid_Gland.jpg' },
-
-  // Online 3D portals (still useful when device is online)
-  { title: 'BioDigital Human 3D (online)', system: '3D Interactive', license: 'BioDigital free tier', kind: 'web',
-    url: 'https://human.biodigital.com/explore' },
-  { title: 'Sketchfab — anatomy collection', system: '3D Interactive', license: 'Mixed CC', kind: 'web',
-    url: 'https://sketchfab.com/search?q=anatomy&type=models' },
-  { title: 'Z-Anatomy (open source models)', system: '3D Interactive', license: 'CC-BY-SA', kind: 'web',
-    url: 'https://www.z-anatomy.com/' },
-  { title: 'Anatomography (BodyParts3D)', system: '3D Interactive', license: 'CC-BY-SA', kind: 'web',
-    url: 'https://lifesciencedb.jp/bp3d/?lng=en' },
-  { title: 'NIH 3D — anatomy print exchange', system: '3D Interactive', license: 'CC0 / public', kind: 'web',
-    url: 'https://3d.nih.gov/' },
-
-  // True in-app 3D demo (Khronos sample — open CC). User can add real anatomy
-  // GLBs via the "+" button with any direct .glb URL.
-  { title: 'Demo: Damaged Helmet (3D)', system: '3D Models', license: 'CC-BY-NC (demo)', kind: '3d',
-    url: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb' },
-  { title: 'Demo: Avocado (3D)', system: '3D Models', license: 'CC0 (demo)', kind: '3d',
-    url: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Avocado/glTF-Binary/Avocado.glb' },
+  // Online 3D portals (always need internet)
+  { title: 'BioDigital Human 3D',         system: '3D Interactive', license: 'BioDigital free tier', kind: 'web', url: 'https://human.biodigital.com/explore' },
+  { title: 'Sketchfab anatomy library',   system: '3D Interactive', license: 'Mixed CC', kind: 'web', url: 'https://sketchfab.com/search?q=anatomy&type=models' },
+  { title: 'Z-Anatomy (open atlas)',      system: '3D Interactive', license: 'CC-BY-SA', kind: 'web', url: 'https://www.z-anatomy.com/' },
+  { title: 'Anatomography (BodyParts3D)', system: '3D Interactive', license: 'CC-BY-SA', kind: 'web', url: 'https://lifesciencedb.jp/bp3d/?lng=en' },
+  { title: 'NIH 3D model library',        system: '3D Interactive', license: 'CC0 / public', kind: 'web', url: 'https://3d.nih.gov/' },
 ];
 
 const ANATOMY_DIR = (FileSystem.documentDirectory || '') + 'anatomy/';
 
 export const ensureSeeded = (): void => {
+  // One-time cleanup: earlier seed shipped broken thumb-hash URLs. Wipe them
+  // so the verified Special:FilePath URLs below take over without duplicates.
+  try {
+    db.runSync(
+      `DELETE FROM anatomy_library WHERE url LIKE 'https://upload.wikimedia.org/wikipedia/commons/thumb/%' AND (is_offline IS NULL OR is_offline = 0)`
+    );
+  } catch {}
   // Idempotent — insert any seed entry that isn't already present (matched by
   // exact title + url). Lets us ship new catalog items without wiping.
   for (const s of SEED) {

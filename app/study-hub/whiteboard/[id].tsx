@@ -169,7 +169,10 @@ export default function WhiteboardScreen() {
       const canvasData = { paths: sP, images: fI ?? imagesRef.current, links: fL ?? linksRef.current };
       const updatedAt = new Date().toISOString();
       db.runSync(`INSERT OR REPLACE INTO study_whiteboards (id, title, canvas_data, updated_at) VALUES (?, ?, ?, ?)`, [id as string, boardRef.current?.title || 'Board', JSON.stringify(canvasData), updatedAt]);
-      queueSyncOperation('study_whiteboards', id as string, 'UPDATE', { canvas_data: canvasData, updated_at: updatedAt, last_editor: SESSION_ID });
+      // NOTE: do NOT include last_editor here — that column may not exist on
+      // Supabase. Unknown columns cause the entire UPDATE to fail silently
+      // and the partner device never receives the new canvas.
+      queueSyncOperation('study_whiteboards', id as string, 'UPDATE', { canvas_data: canvasData, updated_at: updatedAt });
     } catch (e) { console.warn('Save failed:', e); }
     finally { setIsSaving(false); }
   };
@@ -193,13 +196,20 @@ export default function WhiteboardScreen() {
   useEffect(() => { 
     fetchBoard(); 
     SecureStore.getItemAsync('user_name').then(name => setCurrentUser(name?.toLowerCase() || ''));
-    const channel = supabase.channel(`whiteboard_${id}`).on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'study_whiteboards', filter: `id=eq.${id}` }, (payload) => {
-      if (isDrawingRef.current || payload.new.last_editor === SESSION_ID) return;
-      const remoteData = payload.new;
+    const channel = supabase.channel(`whiteboard_${id}`).on('postgres_changes', { event: '*', schema: 'public', table: 'study_whiteboards', filter: `id=eq.${id}` }, (payload: any) => {
+      // Ignore self-echoes and incoming events while the user is mid-stroke.
+      if (isDrawingRef.current) return;
+      const remoteData = payload.new || payload.record;
+      if (!remoteData) return;
       const remoteUpdatedAt = new Date(remoteData.updated_at).getTime();
       const local = db.getFirstSync(`SELECT * FROM study_whiteboards WHERE id = ?`, [id as string]) as any;
       const localUpdatedAt = local ? new Date(local.updated_at).getTime() : 0;
-      if (remoteUpdatedAt > localUpdatedAt) loadDataIntoState(remoteData);
+      // Only pull when the remote row is strictly newer. Equal timestamps
+      // mean it's our own change echoed back; ignore.
+      if (remoteUpdatedAt > localUpdatedAt) {
+        try { db.runSync(`INSERT OR REPLACE INTO study_whiteboards (id, title, canvas_data, updated_at) VALUES (?, ?, ?, ?)`, [remoteData.id, remoteData.title, typeof remoteData.canvas_data === 'string' ? remoteData.canvas_data : JSON.stringify(remoteData.canvas_data), remoteData.updated_at]); } catch {}
+        loadDataIntoState(remoteData);
+      }
     }).subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [id]);
@@ -267,19 +277,41 @@ export default function WhiteboardScreen() {
     nP.lineTo(wX + 0.1, wY + 0.1);
     const newPath = { id: generateUUID(), path: nP, color: activeTool === 'eraser' ? '#fff' : color, strokeWidth: sw, isEraser: activeTool === 'eraser', opacity: activeTool === 'high' ? highOpacity : (activeTool === 'eraser' ? 1 : penOpacity), startX: wX, startY: wY, swOrig: sw };
     currentPathRef.current = newPath;
+    lastPointRef.current = { x: wX, y: wY };
     setCurrentPath(newPath);
   }, [activeTool, color, penSize, highSize, eraserSize, penOpacity, highOpacity, scale, translateX, translateY]);
 
+  const lastPointRef = useRef<{ x: number; y: number } | null>(null);
+  const rafPendingRef = useRef(false);
+
   const onDrawUpdate = useCallback((x: number, y: number) => {
     const cp = currentPathRef.current;
-    if (cp) {
-      const wX = (x - translateX.value) / scale.value;
-      const wY = (y - translateY.value) / scale.value;
+    if (!cp) return;
+    const wX = (x - translateX.value) / scale.value;
+    const wY = (y - translateY.value) / scale.value;
+    const lp = lastPointRef.current;
+    // Quadratic smoothing: each new sample becomes a quad control point with
+    // the midpoint of (previous, current) as the end-point. Removes the
+    // jagged line-segments that show up at high sample rates (Apple Pencil).
+    if (lp) {
+      const midX = (lp.x + wX) / 2;
+      const midY = (lp.y + wY) / 2;
+      cp.path.quadTo(lp.x, lp.y, midX, midY);
+    } else {
       cp.path.lineTo(wX, wY);
-      const updated = { ...cp };
-      currentPathRef.current = updated;
-      setCurrentPath(updated);
     }
+    lastPointRef.current = { x: wX, y: wY };
+
+    // Throttle React re-renders to the display vsync (~60-120 Hz). Pencil
+    // emits ~120 samples/sec; without this, every setState collides with the
+    // next sample and the stroke skips.
+    if (rafPendingRef.current) return;
+    rafPendingRef.current = true;
+    requestAnimationFrame(() => {
+      rafPendingRef.current = false;
+      const cur = currentPathRef.current;
+      if (cur) setCurrentPath({ ...cur });
+    });
   }, [scale, translateX, translateY]);
 
   const onDrawFinalize = useCallback(() => {
@@ -296,6 +328,7 @@ export default function WhiteboardScreen() {
       else setPaths(prev => { const next = [...prev, finalized]; handleSave(next); return next; });
       currentPathRef.current = null;
       setCurrentPath(null);
+      lastPointRef.current = null;
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
     isDrawingRef.current = false;

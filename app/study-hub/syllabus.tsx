@@ -194,6 +194,9 @@ export default function SyllabusTracker() {
   const [targetParentId, setTargetParentId] = useState<string | null>(null);
 
   useEffect(() => { init(); }, []);
+  // Guarantee the add-subject input is empty whenever the modal closes so the
+  // previous value never carries over on the next open.
+  useEffect(() => { if (!isAddModalVisible) setNewItemTitle(''); }, [isAddModalVisible]);
 
   const init = async () => {
     const name = await SecureStore.getItemAsync('user_name');
@@ -266,7 +269,10 @@ export default function SyllabusTracker() {
     };
     db.runSync(`INSERT INTO study_syllabus (id, parent_id, title, theory_status, practical_status, user_id, order_index, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [newItem.id, newItem.parent_id, newItem.title, newItem.theory_status, newItem.practical_status, newItem.user_id, newItem.order_index, newItem.created_at]);
     queueSyncOperation('study_syllabus', newItem.id, 'INSERT', newItem);
-    setNodes(prev => [...prev, newItem]); setIsAddModalVisible(false); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setNodes(prev => [...prev, newItem]);
+    setNewItemTitle('');
+    setIsAddModalVisible(false);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
   const handleDelete = (id: string) => {

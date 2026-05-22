@@ -813,13 +813,9 @@ export default function StudyHubDashboard() {
             <View style={styles.actionsHandle} />
             <Text style={[styles.actionsTitle, { color: theme.text }]}>Create something</Text>
             {[
-              { label: 'Flashcard deck',    icon: <BrainCircuit size={20} color="#FF2D55" />, color: '#FF2D55', open: () => setIsDeckModalVisible(true) },
-              { label: 'Whiteboard',        icon: <PenTool size={20} color="#5856D6" />,     color: '#5856D6', open: () => setIsWhiteboardModalVisible(true) },
-              { label: 'Exam date',         icon: <Calendar size={20} color="#FF9500" />,    color: '#FF9500', open: () => setIsExamModalVisible(true) },
-              { label: 'Routine task',      icon: <CalendarDays size={20} color={theme.tint} />, color: theme.tint, open: () => setIsRoutineModalVisible(true) },
-              { label: 'Brain dump',        icon: <Bot size={20} color="#34C759" />,         color: '#34C759', open: () => setIsDumpModalVisible(true) },
-              { label: 'Buddy memory',      icon: <Sparkles size={20} color="#FFD60A" />,    color: '#FFD60A', open: () => router.push('/study-hub/memories') },
-              { label: 'Anatomy reference', icon: <BookOpen size={20} color="#0AE" />,       color: '#0AE',    open: () => router.push('/study-hub/anatomy') },
+              { label: 'Brain dump',        icon: <Bot size={20} color="#34C759" />,      color: '#34C759', open: () => setIsDumpModalVisible(true) },
+              { label: 'Buddy memory',      icon: <Sparkles size={20} color="#FFD60A" />, color: '#FFD60A', open: () => router.push('/study-hub/memories') },
+              { label: 'Anatomy reference', icon: <BookOpen size={20} color="#0AE" />,    color: '#0AE',    open: () => router.push('/study-hub/anatomy') },
             ].map((a, i) => (
               <TouchableOpacity key={i} onPress={() => { setIsActionsSheetOpen(false); setTimeout(a.open, 200); }} style={[styles.actionRow, { borderColor: theme.tabIconDefault + '20' }]}>
                 <View style={[styles.actionIcon, { backgroundColor: a.color + '20' }]}>{a.icon}</View>
