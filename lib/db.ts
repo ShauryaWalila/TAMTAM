@@ -97,6 +97,15 @@ export const initDB = () => {
         frequency TEXT
       );
 
+      -- Anniversaries (yearly recurring couple milestones)
+      CREATE TABLE IF NOT EXISTS anniversaries (
+        id TEXT PRIMARY KEY,
+        created_at DATETIME DEFAULT (datetime('now')),
+        name TEXT NOT NULL,
+        date TEXT NOT NULL,
+        created_by TEXT
+      );
+
       -- Targets (Home/Finance)
       CREATE TABLE IF NOT EXISTS targets (
         id TEXT PRIMARY KEY,
@@ -529,6 +538,22 @@ export const getPendingSyncs = () => {
 
 export const removeSyncOperation = (id: string) => {
   db.runSync(`DELETE FROM sync_queue WHERE id = ?`, [id]);
+};
+
+// True if there's a pending DELETE in the sync_queue for this record. Prevents
+// re-inserting locally-deleted rows when a Supabase realtime INSERT or a fetch
+// arrives before our DELETE has reached the server (or the server DELETE fails
+// silently due to RLS / network).
+export const isTombstoned = (tableName: string, recordId: string): boolean => {
+  try {
+    const row = db.getFirstSync(
+      `SELECT 1 FROM sync_queue WHERE table_name = ? AND record_id = ? AND operation = 'DELETE' LIMIT 1`,
+      [tableName, recordId]
+    );
+    return !!row;
+  } catch {
+    return false;
+  }
 };
 
 export const clearAllData = () => {

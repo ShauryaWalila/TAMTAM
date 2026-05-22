@@ -82,6 +82,26 @@ export default function DashboardScreen() {
   const daysTogether = differenceInDays(now, addYears(ANNIVERSARY_DATE, yearsTogether));
   const ourDaysText = `${yearsTogether}Y ${daysTogether}D`;
 
+  // Next upcoming anniversary (from anniversaries table)
+  const [nextAnniv, setNextAnniv] = useState<{ name: string; date: Date; daysAway: number } | null>(null);
+  React.useEffect(() => {
+    try {
+      const rows = db.getAllSync(`SELECT * FROM anniversaries`) as any[];
+      if (!rows || rows.length === 0) { setNextAnniv(null); return; }
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      let best: { name: string; date: Date; daysAway: number } | null = null;
+      for (const r of rows) {
+        const d = new Date(r.date);
+        const thisYear = new Date(today.getFullYear(), d.getMonth(), d.getDate());
+        const next = thisYear < today ? new Date(today.getFullYear() + 1, d.getMonth(), d.getDate()) : thisYear;
+        const daysAway = Math.ceil((next.getTime() - today.getTime()) / 86400000);
+        if (!best || daysAway < best.daysAway) best = { name: r.name, date: next, daysAway };
+      }
+      setNextAnniv(best);
+    } catch { setNextAnniv(null); }
+  }, []);
+
   // --- Routine States ---
   const [selectedDay, setSelectedDay] = useState(DAYS_SHORT[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]);
   const [showTimetableModal, setShowTimetableModal] = useState(false);
@@ -528,6 +548,23 @@ export default function DashboardScreen() {
           <SummaryCard title="Our Days" value={ourDaysText} icon={<Heart color={theme.tint} size={20} fill={theme.tint} />} theme={theme} />
           <SummaryCard title="Memories" value={stats.memories} icon={<MessageCircle color={theme.secondary} size={20} />} theme={theme} />
         </View>
+
+        {/* Next Anniversary */}
+        {nextAnniv && (
+          <MotiView from={{ opacity: 0, translateY: 8 }} animate={{ opacity: 1, translateY: 0 }} style={{ marginTop: 14, marginHorizontal: 4, padding: 16, borderRadius: 18, backgroundColor: theme.card, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#FF2D5520', justifyContent: 'center', alignItems: 'center' }}>
+              <Heart size={20} color="#FF2D55" fill="#FF2D55" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: theme.tabIconDefault, fontSize: 11, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase' }}>Next Anniversary</Text>
+              <Text style={{ color: theme.text, fontSize: 16, fontWeight: '800', marginTop: 2 }} numberOfLines={1}>{nextAnniv.name}</Text>
+            </View>
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={{ color: '#FF2D55', fontSize: 22, fontWeight: '900' }}>{nextAnniv.daysAway}</Text>
+              <Text style={{ color: theme.tabIconDefault, fontSize: 10, fontWeight: '700', letterSpacing: 0.5 }}>{nextAnniv.daysAway === 1 ? 'DAY' : 'DAYS'}</Text>
+            </View>
+          </MotiView>
+        )}
 
         {/* --- DIET SECTION --- */}
         {/* <View style={styles.section}>

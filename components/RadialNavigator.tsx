@@ -199,7 +199,7 @@ export default function RadialNavigator() {
                   const itemIconStyle = useAnimatedStyle(() => {
                     const isSelected = activeIdx.value === index;
                     return {
-                      backgroundColor: withTiming(isSelected ? itemColor : 'transparent', { duration: 100 }),
+                      backgroundColor: isSelected ? itemColor : 'rgba(0,0,0,0)',
                       transform: [{ scale: withSpring(isSelected ? 1.3 : 1, SPRING_CONFIG) }],
                     };
                   });

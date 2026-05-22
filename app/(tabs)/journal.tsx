@@ -2,7 +2,7 @@ import { Text, View as ThemedView } from "@/components/Themed";
 import { useColorScheme } from "@/components/useColorScheme";
 import Colors from "@/constants/Colors";
 import { supabase, supabaseAnonKey, supabaseUrl } from "@/lib/supabase";
-import { db, queueSyncOperation, generateUUID } from "@/lib/db";
+import { db, queueSyncOperation, generateUUID, isTombstoned } from "@/lib/db";
 import * as base64js from "base64-js";
 import { format, formatDistanceToNow } from "date-fns";
 import * as FileSystem from "expo-file-system/legacy";
@@ -154,13 +154,19 @@ export default function JournalScreen() {
         (payload) => {
           if (payload.eventType === "INSERT" || payload.eventType === "UPDATE") {
             const n = payload.new as Post;
+            // Skip if we locally deleted this row and the DELETE hasn't synced
+            // to Supabase yet (or failed silently). Otherwise the realtime
+            // INSERT/UPDATE event resurrects it.
+            if (isTombstoned('posts', n.id)) {
+              return;
+            }
             // Only update local if incoming is newer or doesn't exist
             const local = db.getFirstSync(`SELECT updated_at FROM posts WHERE id = ?`, [n.id]) as any;
             const incomingTime = new Date(n.updated_at || n.created_at).getTime();
             const localTime = local?.updated_at ? new Date(local.updated_at).getTime() : 0;
 
             if (incomingTime >= localTime) {
-              db.runSync(`INSERT OR REPLACE INTO posts (id, created_at, updated_at, type, content, user_id, reactions, seen_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, 
+              db.runSync(`INSERT OR REPLACE INTO posts (id, created_at, updated_at, type, content, user_id, reactions, seen_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
                 [n.id, n.created_at, n.updated_at || n.created_at, n.type, n.content, n.user_id, JSON.stringify(n.reactions), n.seen_by ? n.seen_by.join(',') : '']);
             }
           } else if (payload.eventType === "DELETE") {
@@ -220,12 +226,13 @@ export default function JournalScreen() {
 
     if (!error && data) {
       data.forEach(n => {
+        if (isTombstoned('posts', n.id)) return;
         const local = db.getFirstSync(`SELECT updated_at FROM posts WHERE id = ?`, [n.id]) as any;
         const incomingTime = new Date(n.updated_at || n.created_at).getTime();
         const localTime = local?.updated_at ? new Date(local.updated_at).getTime() : 0;
 
         if (incomingTime >= localTime) {
-          db.runSync(`INSERT OR REPLACE INTO posts (id, created_at, updated_at, type, content, user_id, reactions, seen_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, 
+          db.runSync(`INSERT OR REPLACE INTO posts (id, created_at, updated_at, type, content, user_id, reactions, seen_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
             [n.id, n.created_at, n.updated_at || n.created_at, n.type, n.content, n.user_id, JSON.stringify(n.reactions), n.seen_by ? n.seen_by.join(',') : '']);
         }
       });

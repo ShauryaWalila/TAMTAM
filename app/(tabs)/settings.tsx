@@ -3,10 +3,10 @@ import { StyleSheet, ScrollView, Pressable, Switch, View, Image, ActivityIndicat
 import { Text, View as ThemedView } from '@/components/Themed';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
-import { User, Bell, Shield, CircleHelp, LogOut, ChevronRight, Camera, MessageSquareHeart, HeartHandshake, Tags, Plus, X, Trash2, Briefcase, Wrench, MessageCircle, Clock, TrendingUp, Coffee, Palette, Image as ImageIcon, Edit3, Save, Check, Brain, Layout,Music,Utensils } from 'lucide-react-native';
+import { User, Bell, Shield, CircleHelp, LogOut, ChevronRight, Camera, MessageSquareHeart, HeartHandshake, Tags, Plus, X, Trash2, Briefcase, Wrench, MessageCircle, Clock, TrendingUp, Coffee, Palette, Image as ImageIcon, Edit3, Save, Check, Brain, Layout, Music, Utensils, Heart, Calendar } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '@/lib/supabase';
-import { db } from '@/lib/db';
+import { db, generateUUID, queueSyncOperation } from '@/lib/db';
 import * as SecureStore from 'expo-secure-store';
 import * as base64js from 'base64-js';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -67,6 +67,43 @@ export default function SettingsScreen() {
   const [isOurSongsVisible, setIsOurSongsVisible] = useState(false);
   const [isDietSettingsVisible, setIsDietSettingsVisible] = useState(false);
   const [isDietUnitsVisible, setIsDietUnitsVisible] = useState(false);
+  const [isAnniversariesVisible, setIsAnniversariesVisible] = useState(false);
+
+  // Anniversaries State
+  const [anniversaries, setAnniversaries] = useState<any[]>([]);
+  const [annivName, setAnnivName] = useState('');
+  const [annivDate, setAnnivDate] = useState<Date>(new Date());
+  const [annivPickerVisible, setAnnivPickerVisible] = useState(false);
+
+  const loadAnniversaries = () => {
+    try {
+      const rows = db.getAllSync(`SELECT * FROM anniversaries ORDER BY date ASC`) as any[];
+      setAnniversaries(rows || []);
+    } catch { setAnniversaries([]); }
+  };
+
+  const addAnniversary = () => {
+    const name = annivName.trim();
+    if (!name) return;
+    const id = generateUUID();
+    const dateStr = annivDate.toISOString().slice(0, 10);
+    try {
+      db.runSync(`INSERT INTO anniversaries (id, name, date, created_by) VALUES (?, ?, ?, ?)`, [id, name, dateStr, userName || '']);
+      queueSyncOperation('anniversaries', id, 'INSERT', { id, name, date: dateStr, created_by: userName || '' });
+      setAnnivName('');
+      loadAnniversaries();
+    } catch (e) { console.warn('addAnniversary failed', e); }
+  };
+
+  const deleteAnniversary = (id: string) => {
+    try {
+      db.runSync(`DELETE FROM anniversaries WHERE id = ?`, [id]);
+      queueSyncOperation('anniversaries', id, 'DELETE', {});
+      loadAnniversaries();
+    } catch (e) { console.warn('deleteAnniversary failed', e); }
+  };
+
+  React.useEffect(() => { loadAnniversaries(); }, []);
 
   // Groq API Key State
   const [groqKey, setGroqKey] = useState('');
@@ -438,6 +475,7 @@ export default function SettingsScreen() {
           <SettingsItem icon={<Music color="#1DB954" size={22} />} label="Our Songs" theme={theme} onPress={() => setIsOurSongsVisible(true)} />
           <SettingsItem icon={<Utensils color="#FF2D55" size={22} />} label="Diet Metrics" theme={theme} onPress={() => setIsDietSettingsVisible(true)} />
           <SettingsItem icon={<Briefcase color="#AF52DE" size={22} />} label="Diet Units" theme={theme} onPress={() => setIsDietUnitsVisible(true)} />
+          <SettingsItem icon={<Heart color="#FF2D55" size={22} fill="#FF2D55" />} label="Anniversaries" theme={theme} onPress={() => { loadAnniversaries(); setIsAnniversariesVisible(true); }} />
           <SettingsItem icon={<Wrench color={theme.text} size={22} />} label="Tools" theme={theme} onPress={() => setIsToolsVisible(true)} />
           <SettingsItem icon={<LogOut color="#FF3B30" size={22} />} label="Logout" theme={theme} onPress={() => router.replace('/auth/login')} labelStyle={{ color: "#FF3B30" }} showChevron={false} />
         </View>
@@ -647,6 +685,70 @@ export default function SettingsScreen() {
       </Modal>
 
       {/* 🏷️ WARDROBE CATEGORIES MODAL */}
+      {/* 💖 ANNIVERSARIES MODAL */}
+      <Modal visible={isAnniversariesVisible} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <BlurView intensity={100} tint={colorScheme} style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>Anniversaries</Text>
+              <TouchableOpacity onPress={() => setIsAnniversariesVisible(false)}><X size={24} color={theme.text} /></TouchableOpacity>
+            </View>
+
+            <Text style={[styles.sectionLabel, { color: theme.tint }]}>Add New</Text>
+            <View style={{ gap: 10 }}>
+              <TextInput
+                style={[styles.modalInput, { backgroundColor: theme.background, color: theme.text }]}
+                placeholder="Occasion (e.g., Met for first time)"
+                placeholderTextColor={theme.tabIconDefault}
+                value={annivName}
+                onChangeText={setAnnivName}
+              />
+              <TouchableOpacity onPress={() => setAnnivPickerVisible(true)} style={[styles.modalInput, { backgroundColor: theme.background, justifyContent: 'center', height: 44, flexDirection: 'row', alignItems: 'center', gap: 8 }]}>
+                <Calendar size={16} color={theme.text} />
+                <Text style={{ color: theme.text }}>{format(annivDate, 'MMM dd, yyyy')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => { addAnniversary(); }} disabled={!annivName.trim()} style={[styles.addBtnFull, { backgroundColor: annivName.trim() ? '#FF2D55' : '#888' }]}>
+                <Text style={{ color: 'white', fontWeight: '800' }}>Add Anniversary</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={[styles.sectionLabel, { color: theme.tint, marginTop: 20 }]}>Saved ({anniversaries.length})</Text>
+            <FlatList
+              data={anniversaries}
+              keyExtractor={(item) => item.id}
+              ListEmptyComponent={<Text style={{ color: theme.tabIconDefault, textAlign: 'center', marginTop: 20 }}>No anniversaries yet. Add one above ✨</Text>}
+              renderItem={({ item }) => {
+                const d = new Date(item.date);
+                const now = new Date();
+                const thisYear = new Date(now.getFullYear(), d.getMonth(), d.getDate());
+                const next = thisYear < now ? new Date(now.getFullYear() + 1, d.getMonth(), d.getDate()) : thisYear;
+                const daysAway = Math.ceil((next.getTime() - now.getTime()) / 86400000);
+                return (
+                  <View style={[styles.catItem, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12 }]}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: theme.text, fontWeight: '700', fontSize: 16 }}>{item.name}</Text>
+                      <Text style={{ color: theme.tabIconDefault, fontSize: 12, marginTop: 2 }}>{format(d, 'MMM dd')} · in {daysAway}d</Text>
+                    </View>
+                    <TouchableOpacity onPress={() => deleteAnniversary(item.id)}>
+                      <Trash2 size={18} color="#FF3B30" />
+                    </TouchableOpacity>
+                  </View>
+                );
+              }}
+            />
+
+            {annivPickerVisible && (
+              <DateTimePicker
+                value={annivDate}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={(_, d) => { setAnnivPickerVisible(Platform.OS === 'ios'); if (d) setAnnivDate(d); }}
+              />
+            )}
+          </BlurView>
+        </View>
+      </Modal>
+
       <Modal visible={isWardrobeSettingsVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <BlurView intensity={100} tint={colorScheme} style={styles.modalContent}>

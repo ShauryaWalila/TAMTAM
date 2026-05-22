@@ -1,6 +1,6 @@
 import NetInfo from '@react-native-community/netinfo';
 import { supabase } from './supabase';
-import { db, getPendingSyncs, removeSyncOperation, clearAllData } from './db';
+import { db, getPendingSyncs, removeSyncOperation, clearAllData, isTombstoned } from './db';
 import { processPendingAIQueries } from './aiEngine';
 import * as SecureStore from 'expo-secure-store';
 
@@ -68,8 +68,11 @@ export const initialFullSync = async (shouldClear = false) => {
         [n.id, n.created_at, n.event_date, n.title, n.user_id, n.frequency]));
 
     await syncTable('posts', supabase.from('posts').select('*').order('created_at', { ascending: false }).limit(50),
-      p => db.runSync(`INSERT OR REPLACE INTO posts (id, created_at, updated_at, type, content, user_id, reactions, seen_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [p.id, p.created_at, p.updated_at || p.created_at, p.type, p.content, p.user_id, JSON.stringify(p.reactions), p.seen_by ? p.seen_by.join(',') : '']));
+      p => {
+        if (isTombstoned('posts', p.id)) return;
+        db.runSync(`INSERT OR REPLACE INTO posts (id, created_at, updated_at, type, content, user_id, reactions, seen_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [p.id, p.created_at, p.updated_at || p.created_at, p.type, p.content, p.user_id, JSON.stringify(p.reactions), p.seen_by ? p.seen_by.join(',') : '']);
+      });
   } catch (e) {
     console.warn('Urgent sync failed:', e);
   }
