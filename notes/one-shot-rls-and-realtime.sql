@@ -32,7 +32,8 @@ declare
     'system_config',
     'study_chats','study_chat_messages',
     'user_memories','chat_summaries',
-    'anatomy_library'
+    'anatomy_library',
+    'partner_locations'
   ];
 begin
   -- Make sure anniversaries exists before iterating.

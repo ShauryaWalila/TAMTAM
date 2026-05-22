@@ -168,6 +168,16 @@ export const initDB = () => {
         FOREIGN KEY (chat_id) REFERENCES study_chats(id) ON DELETE CASCADE
       );
 
+      -- Partner location pings (last-known, used by home compass).
+      -- One row per user_id. Both partners read each other's row.
+      CREATE TABLE IF NOT EXISTS partner_locations (
+        user_id TEXT PRIMARY KEY,
+        latitude REAL NOT NULL,
+        longitude REAL NOT NULL,
+        accuracy REAL,
+        updated_at TEXT NOT NULL
+      );
+
       -- Anatomy reference library — curated CC images / 3D model links.
       -- local_path is set after the user taps "Save offline".
       CREATE TABLE IF NOT EXISTS anatomy_library (

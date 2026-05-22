@@ -4,7 +4,10 @@ import { Text, View as ThemedView } from '@/components/Themed';
 import { MotiView, AnimatePresence } from 'moti';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
-import { Heart, Calendar, MessageCircle, MapPin, ChevronRight, ChevronLeft, Sparkles, MessageSquareHeart, Clock, Plus, X, Trash2, Settings2, ChevronDown, CalendarDays, CalendarRange,Utensils } from 'lucide-react-native';
+import { Heart, Calendar, MessageCircle, MapPin, ChevronRight, ChevronLeft, Sparkles, MessageSquareHeart, Clock, Plus, X, Trash2, Settings2, ChevronDown, CalendarDays, CalendarRange, Utensils, Compass, Navigation } from 'lucide-react-native';
+import * as Location from 'expo-location';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming, withRepeat, withSequence, Easing } from 'react-native-reanimated';
+import { recordOwnLocation, getPartnerLocation, bearingDeg, distanceMeters, formatDistance, ago } from '@/lib/partnerLocation';
 import { 
   differenceInSeconds, format, isAfter, isBefore, addWeeks, addMonths, subMonths, set, setDay, 
   startOfDay, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, 
@@ -549,16 +552,7 @@ export default function DashboardScreen() {
         {/* Stats */}
         <View style={styles.statsRow}>
           <SummaryCard title="Our Days" value={ourDaysText} icon={<Heart color={theme.tint} size={20} fill={theme.tint} />} theme={theme} />
-          {nextAnniv ? (
-            <SummaryCard
-              title={nextAnniv.daysAway === 0 ? 'Today' : `Next · ${nextAnniv.name}`}
-              value={nextAnniv.daysAway === 0 ? nextAnniv.name : (nextAnniv.daysAway === 1 ? '1d' : `${nextAnniv.daysAway}d`)}
-              icon={<Heart color="#FF2D55" size={20} fill="#FF2D55" />}
-              theme={theme}
-            />
-          ) : (
-            <SummaryCard title="Memories" value={stats.memories} icon={<MessageCircle color={theme.secondary} size={20} />} theme={theme} />
-          )}
+          <PartnerCompassCard theme={theme} currentUser={currentUserName || ''} partnerName={partnerName || ''} />
         </View>
 
         {/* --- DIET SECTION --- */}
@@ -762,6 +756,170 @@ function SummaryCard({ title, value, icon, theme }: any) {
     </View>
   );
 }
+
+function PartnerCompassCard({ theme, currentUser, partnerName }: any) {
+  const [distance, setDistance] = React.useState<number | null>(null);
+  const [updated, setUpdated] = React.useState<string | null>(null);
+  const [status, setStatus] = React.useState<'waiting' | 'no-perm' | 'locked' | 'ready'>('waiting');
+  const needleRotation = useSharedValue(0); // animated needle angle
+  const pulse = useSharedValue(1);
+  const targetBearingRef = React.useRef<number | null>(null);
+  const headingRef = React.useRef(0);
+
+  // Smooth pulse on the partner avatar dot.
+  React.useEffect(() => {
+    pulse.value = withRepeat(withSequence(
+      withTiming(1.15, { duration: 900, easing: Easing.inOut(Easing.quad) }),
+      withTiming(1.0,  { duration: 900, easing: Easing.inOut(Easing.quad) })
+    ), -1, false);
+  }, []);
+
+  const applyRotation = () => {
+    if (targetBearingRef.current == null) return;
+    const raw = ((targetBearingRef.current - headingRef.current) + 360) % 360;
+    // Take shortest rotation path so it never spins all the way around.
+    const delta = ((raw - (needleRotation.value % 360)) + 540) % 360 - 180;
+    needleRotation.value = withTiming(needleRotation.value + delta, { duration: 280, easing: Easing.out(Easing.cubic) });
+  };
+
+  React.useEffect(() => {
+    if (!currentUser) return;
+    let headingSub: any = null;
+    let posInterval: any = null;
+    let recomputeInterval: any = null;
+    let realtimeChan: any = null;
+    let live = true;
+
+    (async () => {
+      try {
+        const { status: pstatus } = await Location.requestForegroundPermissionsAsync();
+        if (pstatus !== 'granted') { if (live) setStatus('no-perm'); return; }
+
+        const writeMine = async () => {
+          try {
+            const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+            recordOwnLocation(currentUser, pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy ?? undefined);
+          } catch {}
+        };
+        await writeMine();
+        posInterval = setInterval(writeMine, 60 * 1000);
+
+        headingSub = await Location.watchHeadingAsync((h: any) => {
+          if (!live) return;
+          const deg = h?.trueHeading != null && h.trueHeading >= 0 ? h.trueHeading : (h?.magHeading ?? 0);
+          headingRef.current = deg < 0 ? deg + 360 : deg;
+          applyRotation();
+        });
+
+        const recompute = async () => {
+          try {
+            const me = await Location.getLastKnownPositionAsync();
+            if (!me) return;
+            const partner = getPartnerLocation(partnerName);
+            if (!partner) { if (live) { setStatus('waiting'); targetBearingRef.current = null; } return; }
+            const b = bearingDeg(me.coords.latitude, me.coords.longitude, partner.latitude, partner.longitude);
+            const d = distanceMeters(me.coords.latitude, me.coords.longitude, partner.latitude, partner.longitude);
+            if (!live) return;
+            targetBearingRef.current = b;
+            setDistance(d);
+            setUpdated(partner.updated_at);
+            setStatus('ready');
+            applyRotation();
+          } catch {}
+        };
+        await recompute();
+        recomputeInterval = setInterval(recompute, 15 * 1000);
+
+        realtimeChan = supabase.channel('partner-locations').on('postgres_changes',
+          { event: '*', schema: 'public', table: 'partner_locations', filter: `user_id=eq.${partnerName}` },
+          (payload: any) => {
+            const row = payload.new || payload.record;
+            if (!row || !live) return;
+            db.runSync(
+              `INSERT OR REPLACE INTO partner_locations (user_id, latitude, longitude, accuracy, updated_at) VALUES (?, ?, ?, ?, ?)`,
+              [row.user_id, row.latitude, row.longitude, row.accuracy ?? null, row.updated_at]
+            );
+            recompute();
+          }
+        ).subscribe();
+      } catch {}
+    })();
+
+    return () => {
+      live = false;
+      if (headingSub?.remove) headingSub.remove();
+      if (posInterval) clearInterval(posInterval);
+      if (recomputeInterval) clearInterval(recomputeInterval);
+      if (realtimeChan) supabase.removeChannel(realtimeChan);
+    };
+  }, [currentUser, partnerName]);
+
+  const needleStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${needleRotation.value}deg` }] }));
+  const pulseStyle  = useAnimatedStyle(() => ({ transform: [{ scale: pulse.value }] }));
+
+  const initial = (partnerName || 'P').charAt(0).toUpperCase();
+
+  return (
+    <View style={[compassStyles.card, { backgroundColor: theme.card }]}>
+      <View style={compassStyles.header}>
+        <Compass color="#FF2D55" size={16} />
+        <Text style={[compassStyles.label, { color: theme.tabIconDefault }]}>FIND {(partnerName || 'PARTNER').toUpperCase()}</Text>
+      </View>
+
+      <View style={compassStyles.dial}>
+        {/* Cardinal markers (rotate with device heading so N always points magnetic north) */}
+        <View style={[compassStyles.ring, { borderColor: theme.tabIconDefault + '30' }]} />
+        {['N','E','S','W'].map((c, i) => (
+          <Text key={c} style={[compassStyles.cardinal, {
+            color: c === 'N' ? '#FF2D55' : theme.tabIconDefault,
+            top: i === 0 ? 4 : i === 2 ? undefined : '46%',
+            bottom: i === 2 ? 4 : undefined,
+            left: i === 3 ? 6 : i === 1 ? undefined : '47%',
+            right: i === 1 ? 6 : undefined,
+          }]}>{c}</Text>
+        ))}
+
+        {status === 'ready' ? (
+          <Animated.View style={[compassStyles.needleWrap, needleStyle]}>
+            <View style={compassStyles.needleHead} />
+            <View style={compassStyles.needleTail} />
+          </Animated.View>
+        ) : (
+          <Text style={[compassStyles.idle, { color: theme.tabIconDefault }]}>
+            {status === 'no-perm' ? 'enable\nlocation' : 'waiting'}
+          </Text>
+        )}
+
+        {/* Centre avatar */}
+        <Animated.View style={[compassStyles.centerDot, pulseStyle, { backgroundColor: '#FF2D55' }]}>
+          <Text style={compassStyles.centerInitial}>{initial}</Text>
+        </Animated.View>
+      </View>
+
+      <Text style={[compassStyles.distance, { color: theme.text }]} numberOfLines={1}>
+        {distance != null ? formatDistance(distance) : '—'}
+      </Text>
+      {updated && <Text style={[compassStyles.age, { color: theme.tabIconDefault }]}>{ago(updated)}</Text>}
+    </View>
+  );
+}
+
+const compassStyles = StyleSheet.create({
+  card: { flex: 1, marginLeft: 10, borderRadius: 24, paddingVertical: 14, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'space-between' },
+  header: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' },
+  label: { fontSize: 9, fontWeight: '900', letterSpacing: 1 },
+  dial: { width: 92, height: 92, justifyContent: 'center', alignItems: 'center', marginTop: 8 },
+  ring: { position: 'absolute', width: 92, height: 92, borderRadius: 46, borderWidth: 1.5 },
+  cardinal: { position: 'absolute', fontSize: 9, fontWeight: '900', letterSpacing: 0.5 },
+  needleWrap: { width: 80, height: 80, justifyContent: 'center', alignItems: 'center', position: 'absolute' },
+  needleHead: { width: 0, height: 0, borderLeftWidth: 5, borderRightWidth: 5, borderBottomWidth: 28, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderBottomColor: '#FF2D55', position: 'absolute', top: 6 },
+  needleTail: { width: 0, height: 0, borderLeftWidth: 5, borderRightWidth: 5, borderTopWidth: 24, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: 'rgba(255,45,85,0.3)', position: 'absolute', bottom: 8 },
+  centerDot: { width: 26, height: 26, borderRadius: 13, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: 'rgba(255,255,255,0.85)' },
+  centerInitial: { color: '#fff', fontWeight: '900', fontSize: 12 },
+  idle: { fontSize: 10, fontWeight: '800', textAlign: 'center' },
+  distance: { marginTop: 10, fontSize: 16, fontWeight: '900' },
+  age: { fontSize: 9, fontWeight: '700', marginTop: 1 },
+});
 
 const styles = StyleSheet.create({
   container: { flex: 1 },

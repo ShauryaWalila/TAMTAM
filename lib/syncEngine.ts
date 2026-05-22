@@ -173,6 +173,10 @@ export const initialFullSync = async (shouldClear = false) => {
         n => db.runSync(`INSERT OR REPLACE INTO anatomy_library (id, title, system, url, kind, license, local_path, is_offline, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [n.id, n.title, n.system, n.url, n.kind, n.license, n.local_path, n.is_offline ? 1 : 0, n.created_at]));
 
+      await syncTable('partner_locations', supabase.from('partner_locations').select('*'),
+        n => db.runSync(`INSERT OR REPLACE INTO partner_locations (user_id, latitude, longitude, accuracy, updated_at) VALUES (?, ?, ?, ?, ?)`,
+          [n.user_id, n.latitude, n.longitude, n.accuracy, n.updated_at]), 'user_id');
+
       // DIET SYSTEM SYNC
       await syncTable('diet_settings', supabase.from('diet_settings').select('*'),
         n => db.runSync(`INSERT OR REPLACE INTO diet_settings (id, cycle_length, updated_at) VALUES (?, ?, ?)`,
