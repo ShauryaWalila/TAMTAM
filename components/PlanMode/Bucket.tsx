@@ -244,7 +244,7 @@ export default function Bucket({ tripId, userId, onSelectItem, tripLocation, tri
       </View>
 
       {/* WEBVIEW DISCOVERY */}
-      <Modal visible={showWebView} animationType="slide">
+      <Modal visible={showWebView} animationType="slide" presentationStyle="overFullScreen" transparent>
         <View style={{ flex: 1, backgroundColor: '#000' }}>
           <BlurView intensity={90} tint="dark" style={[styles.webHeader, { paddingTop: insets.top + 10 }]}><TouchableOpacity onPress={() => setShowWebView(false)} style={styles.webCloseBtn}><X size={24} color="#FFF" /></TouchableOpacity><Text style={styles.webTitle}>Google Maps Discovery</Text><View style={{ width: 40 }} /></BlurView>
           <WebView source={{ uri: `https://www.google.com/maps/search/${encodeURIComponent(activeTab + ' in hotels')}` }} onNavigationStateChange={handleWebViewStateChange} onLoadStart={() => setIsWebLoading(true)} onLoadEnd={() => setIsWebLoading(false)} style={{ flex: 1 }} userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 14_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.3 Mobile/15E148 Safari/604.1" />

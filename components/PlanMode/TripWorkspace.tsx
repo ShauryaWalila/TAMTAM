@@ -71,22 +71,37 @@ const CategoryDialItem = ({ cat, index, isSelected, theme, scrollX, categoryBuck
         <AnimatePresence>
           {isSelected && (
             <MotiView from={{ opacity: 0, scale: 0.95, translateY: 10 }} animate={{ opacity: 1, scale: 1, translateY: 0 }} exit={{ opacity: 0, scale: 0.95, translateY: -10 }} transition={{ type: 'timing', duration: 250 }} style={styles.itineraryListContainer}>
-              {(categoryBucketItems || []).length === 0 ? (
-                <View style={styles.emptyItinerary}><Text style={[styles.emptyItineraryText, { color: '#aaa' }]}>No items in {cat.name} bucket</Text></View>
-              ) : (
-                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.itineraryScroll} style={{ flex: 1 }}>
-                  {(categoryBucketItems || []).map((item: any, idx: number) => {
-                    const assignedItem = dayAssignedIds.find((a: any) => a.bucket_item_id === item.id);
-                    const isPlanned = !!assignedItem;
-                    return (
-                      <MotiView key={item.id} from={{ opacity: 0, translateX: -15 }} animate={{ opacity: 1, translateX: 0 }} transition={{ delay: idx * 40 }} style={[styles.plannedItem, { borderLeftColor: cat.color, backgroundColor: isPlanned ? (isDark ? '#1a2e1a' : '#F0FFF4') : (isDark ? '#222' : '#FFFFFF') }]}>
-                        <View style={styles.plannedItemMain}><Text style={[styles.plannedItemText, { color: isDark ? '#FFF' : '#1A1A1A' }]} numberOfLines={1}>{item.name}</Text>{isPlanned && <Text style={{ fontSize: 10, color: '#34C759', fontWeight: '800' }}>IN PLAN</Text>}</View>
-                        <TouchableOpacity onPress={() => isPlanned ? onRemoveItem(assignedItem.id) : onAddItem(item)} style={styles.removeItemBtn} activeOpacity={0.6}>{isPlanned ? <Trash2 size={18} color="#FF3B30" /> : <Plus size={18} color={theme.tint} />}</TouchableOpacity>
+              {(() => {
+                // Only show items already assigned to this day. Adding new ones
+                // is done from the map (tap a pin → add button on callout).
+                const plannedInCategory = (categoryBucketItems || [])
+                  .map((item: any) => ({ item, assigned: dayAssignedIds.find((a: any) => a.bucket_item_id === item.id) }))
+                  .filter((x: any) => !!x.assigned);
+                if (plannedInCategory.length === 0) {
+                  return (
+                    <View style={styles.emptyItinerary}>
+                      <Text style={[styles.emptyItineraryText, { color: '#aaa', textAlign: 'center' }]}>
+                        No {cat.name.toLowerCase()} planned for this day yet.{'\n'}Tap a pin on the map to add one.
+                      </Text>
+                    </View>
+                  );
+                }
+                return (
+                  <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.itineraryScroll} style={{ flex: 1 }}>
+                    {plannedInCategory.map(({ item, assigned }: any, idx: number) => (
+                      <MotiView key={item.id} from={{ opacity: 0, translateX: -15 }} animate={{ opacity: 1, translateX: 0 }} transition={{ delay: idx * 40 }} style={[styles.plannedItem, { borderLeftColor: cat.color, backgroundColor: isDark ? '#1a2e1a' : '#F0FFF4' }]}>
+                        <View style={styles.plannedItemMain}>
+                          <Text style={[styles.plannedItemText, { color: isDark ? '#FFF' : '#1A1A1A' }]} numberOfLines={1}>{item.name}</Text>
+                          <Text style={{ fontSize: 10, color: '#34C759', fontWeight: '800' }}>IN PLAN</Text>
+                        </View>
+                        <TouchableOpacity onPress={() => onRemoveItem(assigned.id)} style={styles.removeItemBtn} activeOpacity={0.6}>
+                          <Trash2 size={18} color="#FF3B30" />
+                        </TouchableOpacity>
                       </MotiView>
-                    );
-                  })}
-                </ScrollView>
-              )}
+                    ))}
+                  </ScrollView>
+                );
+              })()}
             </MotiView>
           )}
         </AnimatePresence>
@@ -309,6 +324,7 @@ export default function TripWorkspace({ tripId, onBack, userId, mapRef, onMarker
   // that froze the bottom sheet. Capture latest via ref instead.
   const onMarkersChangeRef = React.useRef(onMarkersChange);
   React.useEffect(() => { onMarkersChangeRef.current = onMarkersChange; }, [onMarkersChange]);
+  const didFitRef = React.useRef(false);
   React.useEffect(() => {
     const cb = onMarkersChangeRef.current;
     if (!cb) return;
@@ -329,6 +345,28 @@ export default function TripWorkspace({ tripId, onBack, userId, mapRef, onMarker
         isAssigned: assignedIds.has(b.id),
       }));
     cb(markers);
+
+    // First time we get markers, pan the map so they're visible. Trip pins are
+    // often in a different region than the user's current location, so the
+    // map's initialRegion ends up empty without this.
+    if (!didFitRef.current && markers.length > 0 && mapRef?.current) {
+      didFitRef.current = true;
+      try {
+        if (markers.length === 1) {
+          mapRef.current.animateToRegion({
+            latitude: markers[0].latitude,
+            longitude: markers[0].longitude,
+            latitudeDelta: 0.05,
+            longitudeDelta: 0.05,
+          }, 600);
+        } else {
+          mapRef.current.fitToCoordinates(
+            markers.map((m: any) => ({ latitude: m.latitude, longitude: m.longitude })),
+            { edgePadding: { top: 100, bottom: 300, left: 60, right: 60 }, animated: true }
+          );
+        }
+      } catch {}
+    }
   }, [bucketItems, itineraryItems]);
 
   const fetchCategories = async () => {
