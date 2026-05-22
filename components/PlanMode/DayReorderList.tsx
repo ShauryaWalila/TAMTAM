@@ -92,10 +92,17 @@ export default function DayReorderList({ tripId, days, onReorder, dayCounts, onS
     Alert.alert("Delete Item", "Remove this from your itinerary?", [
       { text: "Cancel", style: "cancel" },
       { text: "Delete", style: "destructive", onPress: async () => {
-        const { error } = await supabase.from('itinerary_items').delete().eq('id', itemId);
-        if (!error) {
+        try {
+          const { error } = await supabase.from('itinerary_items').delete().eq('id', itemId);
+          if (error) {
+            console.warn('itinerary_items delete failed', error);
+            Alert.alert('Delete failed', error.message || 'Could not remove the item.');
+            return;
+          }
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           if (expandedDay) fetchDayItems(expandedDay);
+        } catch (e) {
+          console.warn('itinerary_items delete threw', e);
         }
       }}
     ]);

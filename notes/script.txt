@@ -2194,3 +2194,137 @@ CREATE POLICY "Public access" ON diet_metrics FOR ALL USING (true);
 
 
 
+      -- 1. Ensure the table exists with the correct types
+     CREATE TABLE IF NOT EXISTS public.study_routines (
+         id TEXT PRIMARY KEY,
+         user_id TEXT NOT NULL, -- This stores 'pratishth' or 'love'
+         title TEXT NOT NULL,
+         description TEXT,
+         start_time TEXT,
+         end_time TEXT,
+         date DATE NOT NULL,
+        is_completed INTEGER DEFAULT 0,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+   
+    -- 2. Enable RLS (Required for Supabase)
+    ALTER TABLE public.study_routines ENABLE ROW LEVEL SECURITY;
+   
+    -- 3. Drop any restrictive policies you created earlier
+    DROP POLICY IF EXISTS "Users can manage their own routines" ON public.study_routines;
+    DROP POLICY IF EXISTS "Partners can view each other's routines" ON public.study_routines;
+   
+    -- 4. Create the "Shared Access" policy (Matches your script.txt pattern)
+    -- This allows both 'pratishth' and 'love' to read/write routines without RLS blocking them
+    CREATE POLICY "Shared Access" ON public.study_routines
+    FOR ALL
+    USING (true)
+    WITH CHECK (true);
+   
+    -- 5. Enable Realtime sync for instant updates
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.study_routines;
+   
+    -- 6. Refresh Schema Cache
+    NOTIFY pgrst, 'reload schema';
+
+
+
+
+
+
+
+
+
+
+
+
+     CREATE TABLE IF NOT EXISTS public.system_config (
+         key TEXT PRIMARY KEY,
+         value TEXT NOT NULL,
+         updated_at TIMESTAMPTZ DEFAULT NOW()
+     );
+    
+     ALTER TABLE public.system_config ENABLE ROW LEVEL SECURITY;
+    
+     CREATE POLICY "Allow public read access" ON public.system_config FOR SELECT USING (true);
+    CREATE POLICY "Allow all for authenticated" ON public.system_config FOR ALL USING (true);
+   
+    INSERT INTO public.system_config (key, value) VALUES ('REDACTED_GROQ_KEY', '')
+    ON CONFLICT (key) DO NOTHING;
+
+
+
+
+
+
+
+
+
+
+
+
+
+    ALTER TABLE system_config ENABLE ROW LEVEL SECURITY;
+   
+    -- Allow authenticated users to read config
+    CREATE POLICY "Allow authenticated read access"
+    ON system_config FOR SELECT
+    TO authenticated
+    USING (true);
+
+
+
+
+
+
+
+
+    TRUNCATE TABLE
+         study_decks,
+         study_cards,
+         study_whiteboards,
+         study_exams,
+         study_habit_log,
+         study_brain_dump,
+        focus_sessions,
+        active_study_sessions,
+        study_naps,
+        study_syllabus,
+        study_routines
+    RESTART identity
+
+
+
+
+
+
+
+
+create table if not exists public.anniversaries (
+    id text primary key,
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+    name text not null,
+    date text not null,
+    created_by text
+  );
+
+  -- Realtime so partner sees additions live
+  alter publication supabase_realtime add table public.anniversaries;
+
+  -- RLS: allow anon key full access (matches your other tables' permissive setup)
+  alter table public.anniversaries enable row level security;
+
+  create policy "anniversaries read"  on public.anniversaries for select using (true);
+  create policy "anniversaries write" on public.anniversaries for insert with check (true);
+  create policy "anniversaries update" on public.anniversaries for update using (true) with check (true);
+  create policy "anniversaries delete" on public.anniversaries for delete using (true);
+
+
+
+
+
+
+
+
+
+  

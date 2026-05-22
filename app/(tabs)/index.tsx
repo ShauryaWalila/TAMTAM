@@ -11,7 +11,7 @@ import {
   isSameMonth, isSameDay, addYears, differenceInYears, differenceInDays, addDays 
 } from 'date-fns';
 import { supabase } from '@/lib/supabase';
-import { db, queueSyncOperation, generateUUID } from '@/lib/db';
+import { db, queueSyncOperation, generateUUID, isTombstoned } from '@/lib/db';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import LottieView from 'lottie-react-native';
@@ -336,13 +336,16 @@ export default function DashboardScreen() {
     try {
       const data = db.getFirstSync(`SELECT COUNT(*) as count FROM posts`) as any;
       setStats({ memories: data?.count || 0 });
-      
+
       const { count } = await supabase.from('posts').select('*', { count: 'exact', head: true });
       if (count !== undefined) {
         setStats({ memories: count });
         const { data: pData } = await supabase.from('posts').select('*');
-        if (pData) pData.forEach(p => db.runSync(`INSERT OR REPLACE INTO posts (id, created_at, type, content, user_id, reactions, seen_by) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
-          [p.id, p.created_at, p.type, p.content, p.user_id, JSON.stringify(p.reactions), p.seen_by ? p.seen_by.join(',') : '']));
+        if (pData) pData.forEach(p => {
+          if (isTombstoned('posts', p.id)) return;
+          db.runSync(`INSERT OR REPLACE INTO posts (id, created_at, type, content, user_id, reactions, seen_by) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [p.id, p.created_at, p.type, p.content, p.user_id, JSON.stringify(p.reactions), p.seen_by ? p.seen_by.join(',') : '']);
+        });
       }
     } catch (e) {}
   };
@@ -546,25 +549,17 @@ export default function DashboardScreen() {
         {/* Stats */}
         <View style={styles.statsRow}>
           <SummaryCard title="Our Days" value={ourDaysText} icon={<Heart color={theme.tint} size={20} fill={theme.tint} />} theme={theme} />
-          <SummaryCard title="Memories" value={stats.memories} icon={<MessageCircle color={theme.secondary} size={20} />} theme={theme} />
+          {nextAnniv ? (
+            <SummaryCard
+              title={nextAnniv.daysAway === 0 ? 'Today' : `Next · ${nextAnniv.name}`}
+              value={nextAnniv.daysAway === 0 ? nextAnniv.name : (nextAnniv.daysAway === 1 ? '1d' : `${nextAnniv.daysAway}d`)}
+              icon={<Heart color="#FF2D55" size={20} fill="#FF2D55" />}
+              theme={theme}
+            />
+          ) : (
+            <SummaryCard title="Memories" value={stats.memories} icon={<MessageCircle color={theme.secondary} size={20} />} theme={theme} />
+          )}
         </View>
-
-        {/* Next Anniversary */}
-        {nextAnniv && (
-          <MotiView from={{ opacity: 0, translateY: 8 }} animate={{ opacity: 1, translateY: 0 }} style={{ marginTop: 14, marginHorizontal: 4, padding: 16, borderRadius: 18, backgroundColor: theme.card, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#FF2D5520', justifyContent: 'center', alignItems: 'center' }}>
-              <Heart size={20} color="#FF2D55" fill="#FF2D55" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: theme.tabIconDefault, fontSize: 11, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase' }}>Next Anniversary</Text>
-              <Text style={{ color: theme.text, fontSize: 16, fontWeight: '800', marginTop: 2 }} numberOfLines={1}>{nextAnniv.name}</Text>
-            </View>
-            <View style={{ alignItems: 'flex-end' }}>
-              <Text style={{ color: '#FF2D55', fontSize: 22, fontWeight: '900' }}>{nextAnniv.daysAway}</Text>
-              <Text style={{ color: theme.tabIconDefault, fontSize: 10, fontWeight: '700', letterSpacing: 0.5 }}>{nextAnniv.daysAway === 1 ? 'DAY' : 'DAYS'}</Text>
-            </View>
-          </MotiView>
-        )}
 
         {/* --- DIET SECTION --- */}
         {/* <View style={styles.section}>

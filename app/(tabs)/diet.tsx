@@ -1263,7 +1263,9 @@ function RecipesTab({ theme, searchQuery, userName }: any) {
                 { text: 'Cancel', style: 'cancel' },
                 { text: 'Delete', style: 'destructive', onPress: () => {
                   try {
+                    db.runSync('DELETE FROM recipe_ingredients WHERE recipe_id = ?', [id]);
                     db.runSync('DELETE FROM recipes WHERE id = ?', [id]);
+                    queueSyncOperation('recipes', id, 'DELETE', {});
                     loadRecipes();
                   } catch (e) { console.warn('Delete recipe failed', e); }
                 }}
@@ -1527,6 +1529,7 @@ function IngredientsTab({ theme, searchQuery, userName }: any) {
                   { text: 'Delete', style: 'destructive', onPress: () => {
                     try {
                       db.runSync('DELETE FROM ingredients WHERE id = ?', [id]);
+                      queueSyncOperation('ingredients', id, 'DELETE', {});
                       loadIngredients();
                     } catch (e) { console.warn('Delete failed', e); }
                   }}

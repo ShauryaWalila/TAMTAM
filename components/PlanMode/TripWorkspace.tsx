@@ -159,7 +159,11 @@ export default function TripWorkspace({ tripId, onBack, userId, mapRef, onMarker
 
   const handleRemoveFromDay = async (itemId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    await supabase.from('itinerary_items').delete().eq('id', itemId);
+    const { error } = await supabase.from('itinerary_items').delete().eq('id', itemId);
+    if (error) {
+      console.warn('Remove from day failed', error);
+      Alert.alert('Could not remove', error.message || 'Check Supabase delete policy on itinerary_items.');
+    }
   };
 
   const fetchItinerary = async () => {
@@ -297,6 +301,29 @@ export default function TripWorkspace({ tripId, onBack, userId, mapRef, onMarker
     const { data } = await supabase.from('bucket_items').select('*').eq('trip_id', tripId);
     if (data) setBucketItems(data);
   };
+
+  // Push bucket items as map markers whenever they (or the itinerary) change.
+  // `isAssigned` is true if the bucket item is already in any day's itinerary.
+  React.useEffect(() => {
+    if (!onMarkersChange) return;
+    const assignedIds = new Set(
+      (itineraryItems || [])
+        .filter((it: any) => it && it.bucket_item_id)
+        .map((it: any) => it.bucket_item_id)
+    );
+    const markers = (bucketItems || [])
+      .filter((b: any) => b.latitude != null && b.longitude != null)
+      .map((b: any) => ({
+        id: b.id,
+        latitude: Number(b.latitude),
+        longitude: Number(b.longitude),
+        name: b.name,
+        category: b.category,
+        notes: b.notes,
+        isAssigned: assignedIds.has(b.id),
+      }));
+    onMarkersChange(markers);
+  }, [bucketItems, itineraryItems, onMarkersChange]);
 
   const fetchCategories = async () => {
     const { data } = await supabase.from('bucket_categories').select('*').eq('trip_id', tripId).order('name', { ascending: true });

@@ -37,11 +37,24 @@ export const initialFullSync = async (shouldClear = false) => {
 
   console.log('Starting lazy initial sync...');
 
-  // Helper to fetch and store a table
-  const syncTable = async (tableName: string, query: any, storeFn: (item: any) => void) => {
+  // Helper to fetch and store a table. Skips records whose id has a pending
+  // local DELETE in the sync queue (tombstoned) so deleted rows don't get
+  // resurrected by a remote refetch before our DELETE reaches the server.
+  const syncTable = async (
+    tableName: string,
+    query: any,
+    storeFn: (item: any) => void,
+    keyField: string = 'id'
+  ) => {
     try {
       const { data } = await query;
-      if (data) data.forEach(storeFn);
+      if (data) {
+        for (const item of data) {
+          const id = item?.[keyField];
+          if (id && isTombstoned(tableName, String(id))) continue;
+          storeFn(item);
+        }
+      }
       console.log(`Lazy sync: ${tableName} synced.`);
     } catch (e) {
       console.warn(`Lazy sync failed for ${tableName}:`, e);
@@ -68,11 +81,8 @@ export const initialFullSync = async (shouldClear = false) => {
         [n.id, n.created_at, n.event_date, n.title, n.user_id, n.frequency]));
 
     await syncTable('posts', supabase.from('posts').select('*').order('created_at', { ascending: false }).limit(50),
-      p => {
-        if (isTombstoned('posts', p.id)) return;
-        db.runSync(`INSERT OR REPLACE INTO posts (id, created_at, updated_at, type, content, user_id, reactions, seen_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          [p.id, p.created_at, p.updated_at || p.created_at, p.type, p.content, p.user_id, JSON.stringify(p.reactions), p.seen_by ? p.seen_by.join(',') : '']);
-      });
+      p => db.runSync(`INSERT OR REPLACE INTO posts (id, created_at, updated_at, type, content, user_id, reactions, seen_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [p.id, p.created_at, p.updated_at || p.created_at, p.type, p.content, p.user_id, JSON.stringify(p.reactions), p.seen_by ? p.seen_by.join(',') : '']));
   } catch (e) {
     console.warn('Urgent sync failed:', e);
   }
