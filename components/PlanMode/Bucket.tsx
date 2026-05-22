@@ -135,8 +135,13 @@ export default function Bucket({ tripId, userId, onSelectItem, tripLocation, tri
       setLastResolvedUrl(url);
       const resolved = await reverseGeocodeAndCategorize(parseFloat(match[1]), parseFloat(match[2]), decodeURIComponent(nameMatch[1].replace(/\+/g, ' ')));
       setPendingLocation(resolved);
-      setShowPicker(true);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      // Close the WebView first, then show the category picker. iOS can't
+      // present another Modal while one is still presenting — without this
+      // delay, the picker would mount behind the WebView and the screen
+      // looked frozen after closing Maps.
+      setShowWebView(false);
+      setTimeout(() => setShowPicker(true), 300);
     }
   };
 

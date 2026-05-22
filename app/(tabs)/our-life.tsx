@@ -52,6 +52,7 @@ export default function OurLifeScreen() {
   // Add Pin State
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [pendingCoordinate, setPendingCoordinate] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [pendingPlaceName, setPendingPlaceName] = useState<string>('');
   const [editingPin, setEditingPin] = useState<any | null>(null);
   
   // Workspace Sync State
@@ -289,28 +290,34 @@ export default function OurLifeScreen() {
             exit={{ opacity: 0, translateY: -20 }}
             style={[styles.searchOverlay, { top: insets.top + 10 }]}
           >
-            <SmartLocationPicker 
+            <SmartLocationPicker
               title="Search Places"
               onClose={() => setSearchVisible(false)}
               onLocationCaptured={(loc) => {
+                // Close WebView first so AddPinModal can present cleanly on iOS.
+                setSearchVisible(false);
                 mapRef.current?.animateToRegion({
                   latitude: loc.lat,
                   longitude: loc.lng,
                   latitudeDelta: LATITUDE_DELTA,
                   longitudeDelta: LONGITUDE_DELTA
-                }, 1000);
-                setSearchVisible(false);
+                }, 800);
+                setPendingCoordinate({ latitude: loc.lat, longitude: loc.lng });
+                setPendingPlaceName(loc.name || '');
+                setEditingPin(null);
+                setTimeout(() => setIsAddModalVisible(true), 350);
               }}
             />
           </MotiView>
         )}
       </AnimatePresence>
 
-      <AddPinModal 
-        isVisible={isAddModalVisible} 
-        onClose={() => { setIsAddModalVisible(false); setPendingCoordinate(null); setEditingPin(null); }} 
-        coordinate={pendingCoordinate} 
-        editingPin={editingPin || activePin} 
+      <AddPinModal
+        isVisible={isAddModalVisible}
+        onClose={() => { setIsAddModalVisible(false); setPendingCoordinate(null); setEditingPin(null); setPendingPlaceName(''); }}
+        coordinate={pendingCoordinate}
+        prefillName={pendingPlaceName}
+        editingPin={editingPin || activePin}
         onSuccess={() => {
           fetchPins();
           setActivePin(null);

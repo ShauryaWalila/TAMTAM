@@ -55,7 +55,15 @@ export default function FloatingPopup({ pin, onClose, onEdit, isPlanMode }: Floa
     );
   }
 
-  const images = pin.images && pin.images.length > 0 ? pin.images : [pin.image_url || 'https://via.placeholder.com/400x300'];
+  // Supabase may return images as array (jsonb) or stringified JSON (text).
+  // Normalise to a string[].
+  let pinImgs: any = pin.images;
+  if (typeof pinImgs === 'string') {
+    try { pinImgs = JSON.parse(pinImgs); } catch { pinImgs = []; }
+  }
+  if (!Array.isArray(pinImgs)) pinImgs = [];
+  pinImgs = pinImgs.filter((u: any) => typeof u === 'string' && u);
+  const images = pinImgs.length > 0 ? pinImgs : [pin.image_url || 'https://via.placeholder.com/400x300'];
 
   const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
     if (viewableItems.length > 0) {

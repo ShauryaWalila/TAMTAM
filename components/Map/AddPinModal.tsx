@@ -3,11 +3,25 @@ import { StyleSheet, View, TextInput, TouchableOpacity, Text, Image, ScrollView,
 import { BlurView } from 'expo-blur';
 import { X, Camera, MapPin, Save, Plus, Trash2 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as base64js from 'base64-js';
 
 import { View as ThemedView, Text as ThemedText } from '@/components/Themed';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { supabase } from '@/lib/supabase';
+
+async function uploadPlaceImage(uri: string): Promise<string> {
+  if (uri.startsWith('http')) return uri; // already remote
+  const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
+  const filePath = `places/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+  const { error } = await supabase.storage
+    .from('journal-assets')
+    .upload(filePath, base64js.toByteArray(base64), { contentType: 'image/jpeg' });
+  if (error) throw error;
+  const { data: { publicUrl } } = supabase.storage.from('journal-assets').getPublicUrl(filePath);
+  return publicUrl;
+}
 
 interface AddPinModalProps {
   isVisible: boolean;
@@ -16,9 +30,10 @@ interface AddPinModalProps {
   onSuccess: () => void;
   isPlanMode: boolean;
   editingPin?: any;
+  prefillName?: string;
 }
 
-export default function AddPinModal({ isVisible, onClose, coordinate, onSuccess, isPlanMode, editingPin }: AddPinModalProps) {
+export default function AddPinModal({ isVisible, onClose, coordinate, onSuccess, isPlanMode, editingPin, prefillName }: AddPinModalProps) {
   const colorScheme = useColorScheme() ?? 'light';
   const [name, setName] = useState('');
   const [notes, setNotes] = useState('');
@@ -31,15 +46,21 @@ export default function AddPinModal({ isVisible, onClose, coordinate, onSuccess,
     if (editingPin) {
       setName(editingPin.name || '');
       setNotes(editingPin.notes || '');
-      setImages(editingPin.images || []);
+      // Supabase may return images as either an array (jsonb) or a JSON string
+      // (text column). Normalise to array of URI strings.
+      let imgs: any = editingPin.images;
+      if (typeof imgs === 'string') {
+        try { imgs = JSON.parse(imgs); } catch { imgs = []; }
+      }
+      setImages(Array.isArray(imgs) ? imgs.filter((u: any) => typeof u === 'string' && u) : []);
       setCurrentCoord({ latitude: editingPin.latitude, longitude: editingPin.longitude });
     } else {
-      setName('');
+      setName(prefillName || '');
       setNotes('');
       setImages([]);
       setCurrentCoord(coordinate);
     }
-  }, [editingPin, isVisible, coordinate]);
+  }, [editingPin, isVisible, coordinate, prefillName]);
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -58,12 +79,20 @@ export default function AddPinModal({ isVisible, onClose, coordinate, onSuccess,
     setIsSaving(true);
 
     try {
+      // Upload any local file:// images to Supabase Storage so the partner can
+      // see them too. Already-remote URLs pass through unchanged.
+      const uploadedImages: string[] = [];
+      for (const uri of images) {
+        try { uploadedImages.push(await uploadPlaceImage(uri)); }
+        catch (e) { console.warn('Image upload failed, skipping', e); }
+      }
+
       const pinData = {
         name,
         notes,
         latitude: currentCoord.latitude,
         longitude: currentCoord.longitude,
-        images: images,
+        images: uploadedImages,
         category: isPlanMode ? (editingPin?.category || 'visit') : 'memory',
       };
 
