@@ -11,7 +11,7 @@ const getGroqKey = () => {
     const row = db.getFirstSync(`SELECT value FROM system_config WHERE key = 'groq_api_key'`) as any;
     if (row && row.value && row.value.trim().length > 0) return row.value.trim();
   } catch (e) {}
-  return process.env.EXPO_PUBLIC_GROQ_API_KEY || "";
+  return '';
 };
 
 const GROQ_BASE_URL = "https://api.groq.com/openai/v1/chat/completions";

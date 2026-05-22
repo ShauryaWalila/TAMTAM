@@ -3,8 +3,17 @@
  */
 import 'react-native-url-polyfill/auto';
 import { makeRedirectUri } from 'expo-auth-session';
+import { db } from './db';
 
-export const SPOTIFY_CLIENT_ID = process.env.EXPO_PUBLIC_SPOTIFY_CLIENT_ID || '';
+// Read Spotify client ID from system_config (set via Settings → Tools).
+// Synchronous so it can be called during a component's render.
+export const getSpotifyClientId = (): string => {
+  try {
+    const row = db.getFirstSync(`SELECT value FROM system_config WHERE key = 'spotify_client_id'`) as any;
+    if (row?.value && row.value.trim().length > 0) return row.value.trim();
+  } catch {}
+  return '';
+};
 
 export const REDIRECT_URI = makeRedirectUri({
   scheme: 'tamtam',

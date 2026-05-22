@@ -146,6 +146,12 @@ export const initialFullSync = async (shouldClear = false) => {
         n => db.runSync(`INSERT OR REPLACE INTO trip_songs (id, trip_id, spotify_id, track_name, artist_name, album_art, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
           [n.id, n.trip_id, n.spotify_id, n.track_name, n.artist_name, n.album_art, n.created_at]));
 
+      // system_config: API keys / client IDs (groq, spotify, etc.) live here.
+      // Pull on boot so device picks up changes the other partner made.
+      await syncTable('system_config', supabase.from('system_config').select('*'),
+        n => db.runSync(`INSERT OR REPLACE INTO system_config (key, value, updated_at) VALUES (?, ?, ?)`,
+          [n.key, n.value, n.updated_at || new Date().toISOString()]), 'key');
+
       // DIET SYSTEM SYNC
       await syncTable('diet_settings', supabase.from('diet_settings').select('*'),
         n => db.runSync(`INSERT OR REPLACE INTO diet_settings (id, cycle_length, updated_at) VALUES (?, ?, ?)`,

@@ -300,8 +300,9 @@ export const initDB = () => {
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
 
-      -- Pre-populate with default key if table just created (optional)
+      -- Pre-populate with default keys if table just created (optional)
       INSERT OR IGNORE INTO system_config (key, value) VALUES ('groq_api_key', '');
+      INSERT OR IGNORE INTO system_config (key, value) VALUES ('spotify_client_id', '');
 
       -- ==========================================
       -- FTS5: ULTRA-FAST LOCAL SEARCH ENGINE

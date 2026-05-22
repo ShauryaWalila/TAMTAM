@@ -14,7 +14,7 @@ import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import {
   searchTracks,
-  SPOTIFY_CLIENT_ID,
+  getSpotifyClientId,
   REDIRECT_URI,
   SCOPES,
   getUserProfile,
@@ -67,7 +67,7 @@ export function TripSoundtrack({ tripId, tripName = "My Trip", onClose, isMaster
   const [request, response, promptAsync] = useAuthRequest(
     {
       responseType: ResponseType.Code,
-      clientId: SPOTIFY_CLIENT_ID,
+      clientId: getSpotifyClientId(),
       scopes: SCOPES,
       usePKCE: true,
       redirectUri: REDIRECT_URI,
@@ -119,7 +119,7 @@ export function TripSoundtrack({ tripId, tripName = "My Trip", onClose, isMaster
   const handleTokenExchange = async (code: string) => {
     try {
       const tokenResult = await exchangeCodeAsync(
-        { code, clientId: SPOTIFY_CLIENT_ID, redirectUri: REDIRECT_URI, extraParams: request?.codeVerifier ? { code_verifier: request.codeVerifier } : undefined },
+        { code, clientId: getSpotifyClientId(), redirectUri: REDIRECT_URI, extraParams: request?.codeVerifier ? { code_verifier: request.codeVerifier } : undefined },
         discovery
       );
       

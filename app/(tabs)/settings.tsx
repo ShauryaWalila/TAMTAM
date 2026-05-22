@@ -109,6 +109,10 @@ export default function SettingsScreen() {
   const [groqKey, setGroqKey] = useState('');
   const [isSavingGroq, setIsSavingGroq] = useState(false);
 
+  // Spotify Client ID State
+  const [spotifyClientId, setSpotifyClientId] = useState('');
+  const [isSavingSpotify, setIsSavingSpotify] = useState(false);
+
   // Diet Metrics State
   const [dietMetrics, setDietMetrics] = useState<any[]>([]);
   const [dietUnits, setDietUnits] = useState<any[]>([]);
@@ -139,7 +143,35 @@ export default function SettingsScreen() {
     fetchDietMetrics();
     fetchDietUnits();
     loadGroqKey();
+    loadSpotifyClientId();
   }, []);
+
+  const loadSpotifyClientId = async () => {
+    const name = await SecureStore.getItemAsync('user_name');
+    if (name?.toLowerCase().trim() === 'pratishth') {
+      try {
+        const row = db.getFirstSync(`SELECT value FROM system_config WHERE key = 'spotify_client_id'`) as any;
+        if (row) setSpotifyClientId(row.value || '');
+      } catch {}
+    }
+  };
+
+  const updateSpotifyClientId = async () => {
+    setIsSavingSpotify(true);
+    try {
+      db.runSync(`INSERT OR REPLACE INTO system_config (key, value, updated_at) VALUES ('spotify_client_id', ?, CURRENT_TIMESTAMP)`, [spotifyClientId]);
+      const { error } = await supabase.from('system_config').upsert({ key: 'spotify_client_id', value: spotifyClientId, updated_at: new Date().toISOString() });
+      if (!error) {
+        Alert.alert('Success', 'Spotify Client ID saved.');
+      } else {
+        throw error;
+      }
+    } catch (e: any) {
+      Alert.alert('Error', 'Failed to save Spotify Client ID: ' + e.message);
+    } finally {
+      setIsSavingSpotify(false);
+    }
+  };
 
   const loadGroqKey = async () => {
     const name = await SecureStore.getItemAsync('user_name');
@@ -587,8 +619,8 @@ export default function SettingsScreen() {
                       autoCorrect={false}
                       secureTextEntry={true}
                     />
-                    <TouchableOpacity 
-                      onPress={updateGroqKey} 
+                    <TouchableOpacity
+                      onPress={updateGroqKey}
                       disabled={isSavingGroq}
                       style={[styles.addBtnFull, { backgroundColor: theme.tint, opacity: isSavingGroq ? 0.6 : 1 }]}
                     >
@@ -596,6 +628,35 @@ export default function SettingsScreen() {
                         <>
                           <Brain size={20} color="white" />
                           <Text style={styles.addBtnText}>SAVE API KEY</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+
+              {userName?.toLowerCase().trim() === 'pratishth' && (
+                <View style={styles.toolSection}>
+                  <Text style={[styles.sectionLabel, { color: theme.tint }]}>Spotify Client ID</Text>
+                  <View style={{ gap: 10 }}>
+                    <TextInput
+                      style={[styles.modalInput, { backgroundColor: theme.background, color: theme.text }]}
+                      placeholder="OAuth Client ID (32 char hex)"
+                      placeholderTextColor={theme.tabIconDefault}
+                      value={spotifyClientId}
+                      onChangeText={setSpotifyClientId}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                    <TouchableOpacity
+                      onPress={updateSpotifyClientId}
+                      disabled={isSavingSpotify}
+                      style={[styles.addBtnFull, { backgroundColor: '#1DB954', opacity: isSavingSpotify ? 0.6 : 1 }]}
+                    >
+                      {isSavingSpotify ? <ActivityIndicator color="#fff" /> : (
+                        <>
+                          <Music size={20} color="white" />
+                          <Text style={styles.addBtnText}>SAVE CLIENT ID</Text>
                         </>
                       )}
                     </TouchableOpacity>
