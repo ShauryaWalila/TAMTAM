@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput, FlatList, Dimensions, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, ActivityIndicator, DeviceEventEmitter } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput, FlatList, Dimensions, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, ActivityIndicator, DeviceEventEmitter, Pressable } from 'react-native';
 import { Text, View as ThemedView } from '@/components/Themed';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
@@ -8,7 +8,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { db, queueSyncOperation, generateUUID } from '@/lib/db';
 import * as SecureStore from 'expo-secure-store';
-import { BookOpen, Plus, X, BrainCircuit, PenTool, LayoutDashboard, Clock, ChevronLeft, Search as SearchIcon, Calendar, Flame, MessageSquare, Check, Trash2, ChevronRight, ListChecks, Minus, Edit3, Moon, Play, Pause, Bell, Sparkles, Bot, CalendarDays, Copy, Repeat } from 'lucide-react-native';
+import { BookOpen, Plus, X, BrainCircuit, PenTool, LayoutDashboard, Clock, ChevronLeft, Search as SearchIcon, Calendar, Flame, MessageSquare, Check, Trash2, ChevronRight, ListChecks, Minus, Edit3, Moon, Play, Pause, Bell, Sparkles, Bot, CalendarDays, Copy, Repeat, Microscope } from 'lucide-react-native';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import RadialNavigator from '@/components/RadialNavigator';
@@ -81,6 +81,8 @@ export default function StudyHubDashboard() {
   const [dumpContent, setDumpContent] = useState('');
   const [editingDumpId, setEditingDumpId] = useState<string | null>(null);
   const [isSearchVisible, setIsSearchVisible] = useState(false);
+  const [isActionsSheetOpen, setIsActionsSheetOpen] = useState(false);
+  const [toolsOrder, setToolsOrder] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAllDumps, setShowAllDumps] = useState(false);
   const [expandedDumpId, setExpandedDumpId] = useState<string | null>(null);
@@ -470,13 +472,53 @@ export default function StudyHubDashboard() {
     return Math.round((completedChecks / totalChecks) * 100);
   }, [syllabus]);
 
+  // ───────── TOOLS RAIL ─────────
+  const defaultTools = React.useMemo(() => ([
+    { key: 'syllabus',    label: 'Syllabus',    color: '#AF52DE', icon: <ListChecks size={22} color="#AF52DE" />,    onPress: () => router.push('/study-hub/syllabus'),       badge: null as number | null },
+    { key: 'flashcards',  label: 'Flashcards',  color: '#FF2D55', icon: <BrainCircuit size={22} color="#FF2D55" />,  onPress: () => router.push('/study-hub'),                badge: null },
+    { key: 'whiteboards', label: 'Boards',      color: '#5856D6', icon: <PenTool size={22} color="#5856D6" />,       onPress: () => setIsWhiteboardModalVisible(true),        badge: null },
+    { key: 'anatomy',     label: 'Anatomy',     color: '#0AE',    icon: <BookOpen size={22} color="#0AE" />,         onPress: () => router.push('/study-hub/anatomy'),        badge: null },
+    { key: 'memory',      label: 'Memory',      color: '#FFD60A', icon: <Sparkles size={22} color="#FFD60A" />,      onPress: () => router.push('/study-hub/memories'),       badge: null },
+    { key: 'braindump',   label: 'Brain Dump',  color: '#34C759', icon: <Bot size={22} color="#34C759" />,           onPress: () => setIsDumpModalVisible(true),              badge: null },
+  ]), [router]);
+
+  const orderedTools = React.useMemo(() => {
+    if (!toolsOrder || toolsOrder.length === 0) return defaultTools;
+    const map = new Map(defaultTools.map(t => [t.key, t]));
+    const out: typeof defaultTools = [];
+    toolsOrder.forEach(k => { const t = map.get(k); if (t) { out.push(t); map.delete(k); } });
+    map.forEach(t => out.push(t));
+    return out;
+  }, [defaultTools, toolsOrder]);
+
+  React.useEffect(() => {
+    try {
+      const row = db.getFirstSync(`SELECT value FROM system_config WHERE key = 'study_tools_order'`) as any;
+      if (row?.value) setToolsOrder(JSON.parse(row.value));
+    } catch {}
+  }, []);
+
+  const promoteTool = (key: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const current = orderedTools.map(t => t.key);
+    const next = [key, ...current.filter(k => k !== key)];
+    setToolsOrder(next);
+    try {
+      const value = JSON.stringify(next);
+      const now = new Date().toISOString();
+      db.runSync(`INSERT OR REPLACE INTO system_config (key, value, updated_at) VALUES ('study_tools_order', ?, ?)`, [value, now]);
+      queueSyncOperation('system_config', 'study_tools_order', 'UPDATE', { key: 'study_tools_order', value, updated_at: now });
+    } catch {}
+  };
+
   return (
     <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <View style={{ flex: 1 }}><Text style={[styles.title, { color: theme.text }]}>Study Hub</Text><Text style={[styles.subtitle, { color: theme.tabIconDefault }]}>Exam Mode Activated 🧠</Text></View>
         <View style={{ flexDirection: 'row', gap: 10 }}>
-          <TouchableOpacity onPress={() => setIsTimerModalVisible(true)} style={[styles.headerBtn, { backgroundColor: isTimerRunning ? (isTimerPaused ? '#FFCC00' : '#FF2D55') : theme.card }]}><Clock size={22} color={isTimerRunning ? '#fff' : theme.text} /></TouchableOpacity>
           <TouchableOpacity onPress={() => { setIsSearchVisible(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} style={[styles.headerBtn, { backgroundColor: theme.card }]}><SearchIcon size={22} color={theme.text} /></TouchableOpacity>
+          <TouchableOpacity onPress={() => setIsTimerModalVisible(true)} style={[styles.headerBtn, { backgroundColor: isTimerRunning ? (isTimerPaused ? '#FFCC00' : '#FF2D55') : theme.card }]}><Clock size={22} color={isTimerRunning ? '#fff' : theme.text} /></TouchableOpacity>
+          <TouchableOpacity onPress={() => setIsActionsSheetOpen(true)} style={[styles.headerBtn, { backgroundColor: theme.tint }]}><Plus size={22} color="#fff" /></TouchableOpacity>
         </View>
       </View>
 
@@ -506,12 +548,32 @@ export default function StudyHubDashboard() {
           <View style={styles.buddyFooter}><Text style={styles.buddyAction}>TAP TO CHAT</Text><ChevronRight size={14} color="#AF52DE" /></View>
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.syllabusCard, { backgroundColor: theme.card }]} onPress={() => router.push('/study-hub/syllabus')}>
-          <View style={styles.syllabusHeader}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}><View style={[styles.statIcon, { backgroundColor: '#AF52DE15' }]}><ListChecks size={24} color="#AF52DE" /></View><View><Text style={[styles.cardTitle, { color: theme.text, marginBottom: 2 }]}>Syllabus Mastery</Text><Text style={styles.cardSub}>{syllabus.length} topics tracked</Text></View></View>
-            <View style={styles.progressCircle}><Text style={[styles.progressText, { color: theme.text }]}>{syllabusProgress}%</Text></View>
-          </View>
-          <View style={styles.syllabusProgressBar}><View style={[styles.syllabusProgressFill, { width: `${syllabusProgress}%`, backgroundColor: '#AF52DE' }]} /></View>
+        {/* Tools rail — every feature 1 tap, no vertical clutter */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.toolsRail}>
+          {orderedTools.map(tool => (
+            <TouchableOpacity
+              key={tool.key}
+              onPress={tool.onPress}
+              onLongPress={() => promoteTool(tool.key)}
+              delayLongPress={350}
+              style={[styles.toolChip, { backgroundColor: theme.card }]}
+              activeOpacity={0.75}
+            >
+              <View style={[styles.toolIconWrap, { backgroundColor: tool.color + '20' }]}>{tool.icon}</View>
+              <Text style={[styles.toolChipLabel, { color: theme.text }]} numberOfLines={1}>{tool.label}</Text>
+              {tool.badge != null && tool.badge > 0 && (
+                <View style={[styles.toolBadge, { backgroundColor: tool.color }]}><Text style={styles.toolBadgeText}>{tool.badge}</Text></View>
+              )}
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        {/* Syllabus progress strip — compact, lives under the rail */}
+        <TouchableOpacity style={[styles.syllabusStrip, { backgroundColor: theme.card }]} onPress={() => router.push('/study-hub/syllabus')}>
+          <ListChecks size={16} color="#AF52DE" />
+          <Text style={[styles.syllabusStripText, { color: theme.text }]}>Syllabus · {syllabus.length} topics</Text>
+          <View style={styles.syllabusStripBar}><View style={[styles.syllabusStripFill, { width: `${syllabusProgress}%` }]} /></View>
+          <Text style={[styles.syllabusStripPct, { color: '#AF52DE' }]}>{syllabusProgress}%</Text>
         </TouchableOpacity>
 
         {/* STUDY ROUTINE SECTION */}
@@ -744,6 +806,34 @@ export default function StudyHubDashboard() {
         </View>
       </Modal>
 
+      {/* Unified "+" actions sheet — replaces scattered add buttons */}
+      <Modal visible={isActionsSheetOpen} transparent animationType="slide" presentationStyle="overFullScreen" onRequestClose={() => setIsActionsSheetOpen(false)}>
+        <Pressable style={styles.actionsScrim} onPress={() => setIsActionsSheetOpen(false)}>
+          <Pressable style={[styles.actionsCard, { backgroundColor: theme.background }]} onPress={() => {}}>
+            <View style={styles.actionsHandle} />
+            <Text style={[styles.actionsTitle, { color: theme.text }]}>Create something</Text>
+            {[
+              { label: 'Flashcard deck',    icon: <BrainCircuit size={20} color="#FF2D55" />, color: '#FF2D55', open: () => setIsDeckModalVisible(true) },
+              { label: 'Whiteboard',        icon: <PenTool size={20} color="#5856D6" />,     color: '#5856D6', open: () => setIsWhiteboardModalVisible(true) },
+              { label: 'Exam date',         icon: <Calendar size={20} color="#FF9500" />,    color: '#FF9500', open: () => setIsExamModalVisible(true) },
+              { label: 'Routine task',      icon: <CalendarDays size={20} color={theme.tint} />, color: theme.tint, open: () => setIsRoutineModalVisible(true) },
+              { label: 'Brain dump',        icon: <Bot size={20} color="#34C759" />,         color: '#34C759', open: () => setIsDumpModalVisible(true) },
+              { label: 'Buddy memory',      icon: <Sparkles size={20} color="#FFD60A" />,    color: '#FFD60A', open: () => router.push('/study-hub/memories') },
+              { label: 'Anatomy reference', icon: <BookOpen size={20} color="#0AE" />,       color: '#0AE',    open: () => router.push('/study-hub/anatomy') },
+            ].map((a, i) => (
+              <TouchableOpacity key={i} onPress={() => { setIsActionsSheetOpen(false); setTimeout(a.open, 200); }} style={[styles.actionRow, { borderColor: theme.tabIconDefault + '20' }]}>
+                <View style={[styles.actionIcon, { backgroundColor: a.color + '20' }]}>{a.icon}</View>
+                <Text style={[styles.actionLabel, { color: theme.text }]}>{a.label}</Text>
+                <ChevronRight size={18} color={theme.tabIconDefault} />
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity onPress={() => setIsActionsSheetOpen(false)} style={styles.actionsCancel}>
+              <Text style={{ color: theme.tabIconDefault, fontWeight: '700' }}>Cancel</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       <RadialNavigator />
     </ThemedView>
   );
@@ -759,6 +849,25 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, marginLeft: 10, fontSize: 16, fontWeight: '600' },
   closeSearch: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
   scrollContent: { padding: 20, paddingBottom: 100 },
+  toolsRail: { gap: 12, paddingVertical: 12, paddingRight: 8 },
+  toolChip: { width: 86, paddingVertical: 14, alignItems: 'center', borderRadius: 20, gap: 6, elevation: 1 },
+  toolIconWrap: { width: 44, height: 44, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+  toolChipLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 0.3 },
+  toolBadge: { position: 'absolute', top: 6, right: 6, minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 5, alignItems: 'center', justifyContent: 'center' },
+  toolBadgeText: { color: '#fff', fontSize: 10, fontWeight: '900' },
+  syllabusStrip: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 18, marginTop: 4, marginBottom: 20 },
+  syllabusStripText: { fontSize: 13, fontWeight: '800', flex: 0 },
+  syllabusStripBar: { flex: 1, height: 6, borderRadius: 3, backgroundColor: 'rgba(150,150,150,0.2)', overflow: 'hidden' },
+  syllabusStripFill: { height: '100%', backgroundColor: '#AF52DE', borderRadius: 3 },
+  syllabusStripPct: { fontSize: 12, fontWeight: '900', minWidth: 38, textAlign: 'right' },
+  actionsScrim: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  actionsCard: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 22, paddingTop: 12, paddingBottom: 36 },
+  actionsHandle: { width: 36, height: 5, borderRadius: 3, backgroundColor: 'rgba(120,120,120,0.4)', alignSelf: 'center', marginBottom: 14 },
+  actionsTitle: { fontSize: 18, fontWeight: '900', marginBottom: 14 },
+  actionRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 12, borderBottomWidth: 1 },
+  actionIcon: { width: 38, height: 38, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  actionLabel: { flex: 1, fontSize: 15, fontWeight: '700' },
+  actionsCancel: { alignItems: 'center', paddingVertical: 14, marginTop: 6 },
   syllabusCard: { padding: 20, borderRadius: 28, marginBottom: 25, elevation: 4 },
   syllabusHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
   progressCircle: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(0,0,0,0.05)', justifyContent: 'center', alignItems: 'center' },

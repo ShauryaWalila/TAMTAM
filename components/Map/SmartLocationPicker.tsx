@@ -74,11 +74,12 @@ export default function SmartLocationPicker({ onLocationCaptured, onClose, title
 
       {/* 🗺️ MAP WEBVIEW */}
       <View style={styles.webviewContainer}>
-        <WebView 
-          source={{ uri: 'https://www.google.com/maps' }} 
+        <WebView
+          source={{ uri: 'https://www.google.com/maps' }}
           onNavigationStateChange={handleNavigationStateChange}
           onLoadEnd={() => setIsLoading(false)}
           style={styles.webview}
+          userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 14_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.3 Mobile/15E148 Safari/604.1"
         />
         {isLoading && (
           <View style={[styles.loader, { backgroundColor: theme.background }]}>

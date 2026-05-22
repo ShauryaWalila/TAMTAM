@@ -29,7 +29,10 @@ declare
     'diet_metrics','diet_units','ingredients','recipes','recipe_ingredients',
     'diet_plans','diet_settings','diet_goals',
     'anniversaries',
-    'system_config'
+    'system_config',
+    'study_chats','study_chat_messages',
+    'user_memories','chat_summaries',
+    'anatomy_library'
   ];
 begin
   -- Make sure anniversaries exists before iterating.
@@ -40,6 +43,25 @@ begin
     date text not null,
     created_by text
   );
+
+  -- Med Buddy chats (mirror of local SQLite so chats roam across devices).
+  create table if not exists public.study_chats (
+    id text primary key,
+    title text not null default 'New Chat',
+    user_id text,
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+    updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+  );
+
+  create table if not exists public.study_chat_messages (
+    id text primary key,
+    chat_id text not null references public.study_chats(id) on delete cascade,
+    sender text not null,
+    text text not null,
+    data text,
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null
+  );
+  create index if not exists idx_study_chat_messages_chat on public.study_chat_messages(chat_id, created_at);
 
   foreach t in array tbls loop
     -- Skip tables that don't exist (some may not have been created in this DB).

@@ -76,9 +76,17 @@ export default function OurLifeScreen() {
   }, [activeTripId, workspaceMarkers, currentSnap, activeDayIndex, activeCategory]);
 
   // Auto-fit map to the currently visible subset whenever it changes.
+  // Bottom padding follows the bottom-sheet snap so pins always land in the
+  // map area that is NOT covered by the sheet.
   useEffect(() => {
     if (!activeTripId || !mapRef.current) return;
     if (visibleMarkers.length === 0) return;
+    // Sheet snap heights mirror TripWorkspace: min=220, mid=55%, max=h-85.
+    const sheetCover =
+      currentSnap === 'min' ? 240 :
+      currentSnap === 'mid' ? Math.round(height * 0.6) :
+      height - 100;
+    const bottomPad = Math.min(sheetCover + 40, height - 160);
     try {
       if (visibleMarkers.length === 1) {
         mapRef.current.animateToRegion({
@@ -90,11 +98,11 @@ export default function OurLifeScreen() {
       } else {
         mapRef.current.fitToCoordinates(
           visibleMarkers.map((m: any) => ({ latitude: m.latitude, longitude: m.longitude })),
-          { edgePadding: { top: 120, bottom: 320, left: 60, right: 60 }, animated: true }
+          { edgePadding: { top: (insets.top || 0) + 80, bottom: bottomPad, left: 60, right: 60 }, animated: true }
         );
       }
     } catch {}
-  }, [visibleMarkers, activeTripId]);
+  }, [visibleMarkers, activeTripId, currentSnap]);
 
   useEffect(() => {
     (async () => {

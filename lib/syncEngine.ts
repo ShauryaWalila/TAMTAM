@@ -152,6 +152,27 @@ export const initialFullSync = async (shouldClear = false) => {
         n => db.runSync(`INSERT OR REPLACE INTO system_config (key, value, updated_at) VALUES (?, ?, ?)`,
           [n.key, n.value, n.updated_at || new Date().toISOString()]), 'key');
 
+      // Med Buddy chats — pulled so user resumes on every device.
+      await syncTable('study_chats', supabase.from('study_chats').select('*'),
+        n => db.runSync(`INSERT OR REPLACE INTO study_chats (id, title, user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`,
+          [n.id, n.title, n.user_id, n.created_at, n.updated_at]));
+
+      await syncTable('study_chat_messages', supabase.from('study_chat_messages').select('*').order('created_at', { ascending: true }),
+        n => db.runSync(`INSERT OR REPLACE INTO study_chat_messages (id, chat_id, sender, text, data, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
+          [n.id, n.chat_id, n.sender, n.text, typeof n.data === 'string' ? n.data : (n.data ? JSON.stringify(n.data) : null), n.created_at]));
+
+      await syncTable('user_memories', supabase.from('user_memories').select('*'),
+        n => db.runSync(`INSERT OR REPLACE INTO user_memories (id, kind, content, source_chat_id, source_message_id, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [n.id, n.kind, n.content, n.source_chat_id, n.source_message_id, n.user_id, n.created_at]));
+
+      await syncTable('chat_summaries', supabase.from('chat_summaries').select('*'),
+        n => db.runSync(`INSERT OR REPLACE INTO chat_summaries (chat_id, topic, takeaways, updated_at) VALUES (?, ?, ?, ?)`,
+          [n.chat_id, n.topic, typeof n.takeaways === 'string' ? n.takeaways : JSON.stringify(n.takeaways || []), n.updated_at]), 'chat_id');
+
+      await syncTable('anatomy_library', supabase.from('anatomy_library').select('*'),
+        n => db.runSync(`INSERT OR REPLACE INTO anatomy_library (id, title, system, url, kind, license, local_path, is_offline, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [n.id, n.title, n.system, n.url, n.kind, n.license, n.local_path, n.is_offline ? 1 : 0, n.created_at]));
+
       // DIET SYSTEM SYNC
       await syncTable('diet_settings', supabase.from('diet_settings').select('*'),
         n => db.runSync(`INSERT OR REPLACE INTO diet_settings (id, cycle_length, updated_at) VALUES (?, ?, ?)`,

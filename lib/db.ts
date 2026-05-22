@@ -106,6 +106,83 @@ export const initDB = () => {
         created_by TEXT
       );
 
+      -- Study AI chats (Med Buddy conversations)
+      CREATE TABLE IF NOT EXISTS study_chats (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        user_id TEXT,
+        created_at DATETIME DEFAULT (datetime('now')),
+        updated_at DATETIME DEFAULT (datetime('now'))
+      );
+
+      CREATE TABLE IF NOT EXISTS study_chat_messages (
+        id TEXT PRIMARY KEY,
+        chat_id TEXT NOT NULL,
+        sender TEXT NOT NULL,
+        text TEXT NOT NULL,
+        data TEXT,
+        created_at DATETIME DEFAULT (datetime('now')),
+        FOREIGN KEY (chat_id) REFERENCES study_chats(id) ON DELETE CASCADE
+      );
+      CREATE INDEX IF NOT EXISTS idx_study_chat_messages_chat ON study_chat_messages(chat_id, created_at);
+
+      -- FTS5 search over every chat message for fast keyword retrieval.
+      CREATE VIRTUAL TABLE IF NOT EXISTS study_chat_messages_fts USING fts5(
+        text, content='study_chat_messages', content_rowid='rowid'
+      );
+
+      -- Keep FTS index in lockstep with the source table.
+      CREATE TRIGGER IF NOT EXISTS study_chat_messages_ai
+        AFTER INSERT ON study_chat_messages BEGIN
+        INSERT INTO study_chat_messages_fts(rowid, text) VALUES (new.rowid, new.text);
+      END;
+      CREATE TRIGGER IF NOT EXISTS study_chat_messages_ad
+        AFTER DELETE ON study_chat_messages BEGIN
+        INSERT INTO study_chat_messages_fts(study_chat_messages_fts, rowid, text) VALUES('delete', old.rowid, old.text);
+      END;
+      CREATE TRIGGER IF NOT EXISTS study_chat_messages_au
+        AFTER UPDATE ON study_chat_messages BEGIN
+        INSERT INTO study_chat_messages_fts(study_chat_messages_fts, rowid, text) VALUES('delete', old.rowid, old.text);
+        INSERT INTO study_chat_messages_fts(rowid, text) VALUES (new.rowid, new.text);
+      END;
+
+      -- Distilled facts the buddy should remember forever (pinned answers,
+      -- preferences, weak topics, exam dates, manual notes).
+      CREATE TABLE IF NOT EXISTS user_memories (
+        id TEXT PRIMARY KEY,
+        kind TEXT NOT NULL,
+        content TEXT NOT NULL,
+        source_chat_id TEXT,
+        source_message_id TEXT,
+        user_id TEXT,
+        created_at DATETIME DEFAULT (datetime('now'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_user_memories_user ON user_memories(user_id, created_at);
+
+      -- Auto-generated chat summary (one row per chat).
+      CREATE TABLE IF NOT EXISTS chat_summaries (
+        chat_id TEXT PRIMARY KEY,
+        topic TEXT,
+        takeaways TEXT,
+        updated_at DATETIME DEFAULT (datetime('now')),
+        FOREIGN KEY (chat_id) REFERENCES study_chats(id) ON DELETE CASCADE
+      );
+
+      -- Anatomy reference library — curated CC images / 3D model links.
+      -- local_path is set after the user taps "Save offline".
+      CREATE TABLE IF NOT EXISTS anatomy_library (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        system TEXT,
+        url TEXT NOT NULL,
+        kind TEXT NOT NULL DEFAULT 'image',
+        license TEXT,
+        local_path TEXT,
+        is_offline INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT (datetime('now'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_anatomy_library_system ON anatomy_library(system);
+
       -- Targets (Home/Finance)
       CREATE TABLE IF NOT EXISTS targets (
         id TEXT PRIMARY KEY,

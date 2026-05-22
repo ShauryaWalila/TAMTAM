@@ -176,11 +176,46 @@ export default function TripWorkspace({ tripId, onBack, userId, mapRef, onMarker
 
   const handleRemoveFromDay = async (itemId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    // Optimistic: drop locally first so the UI updates instantly.
+    const backup = itineraryItems;
+    setItineraryItems(prev => prev.filter((i: any) => i.id !== itemId));
     const { error } = await supabase.from('itinerary_items').delete().eq('id', itemId);
     if (error) {
       console.warn('Remove from day failed', error);
       Alert.alert('Could not remove', error.message || 'Check Supabase delete policy on itinerary_items.');
+      setItineraryItems(backup);
     }
+  };
+
+  const handleAddToDay = async (bucketItem: any, currentDayAssignedIds: any[]) => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    // Optimistic add: insert a temp row immediately for instant feedback.
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const optimistic = {
+      id: tempId,
+      trip_id: tripId,
+      bucket_item_id: bucketItem.id,
+      day_number: activeDayIndex + 1,
+      sequence: (currentDayAssignedIds.length || 0) + 1,
+      bucket_items: bucketItem,
+    };
+    setItineraryItems(prev => [...prev, optimistic]);
+    const { data, error } = await supabase
+      .from('itinerary_items')
+      .upsert({ trip_id: tripId, bucket_item_id: bucketItem.id, day_number: activeDayIndex + 1, sequence: (currentDayAssignedIds.length || 0) + 1 }, { onConflict: 'trip_id, day_number, bucket_item_id' })
+      .select('*, bucket_items(*)')
+      .single();
+    if (error || !data) {
+      // Revert temp row on failure.
+      setItineraryItems(prev => prev.filter((i: any) => i.id !== tempId));
+      if (error) {
+        console.warn('Add to day failed', error);
+        Alert.alert('Could not add', error.message || 'Check Supabase policy on itinerary_items.');
+      }
+      return;
+    }
+    // Replace temp with server-truth row.
+    setItineraryItems(prev => prev.map((i: any) => i.id === tempId ? data : i));
   };
 
   const fetchItinerary = async () => {
@@ -331,6 +366,15 @@ export default function TripWorkspace({ tripId, onBack, userId, mapRef, onMarker
   React.useEffect(() => {
     if (onCategoryChangeRef.current) onCategoryChangeRef.current(activeCategoryFilter || '');
   }, [activeCategoryFilter]);
+
+  // Ensure a category is selected the moment the dial becomes visible.
+  // Otherwise the dial mounts empty and the user has to swipe to populate it.
+  React.useEffect(() => {
+    if (currentSnap === 'mid' && dbCategories.length > 0 && !activeCategoryFilter) {
+      setActiveCategoryFilter(dbCategories[0].name);
+      requestAnimationFrame(() => dialRef.current?.scrollTo({ x: 0, animated: false }));
+    }
+  }, [currentSnap, dbCategories, activeCategoryFilter]);
   const didFitRef = React.useRef(false);
   React.useEffect(() => {
     const cb = onMarkersChangeRef.current;
@@ -441,7 +485,7 @@ export default function TripWorkspace({ tripId, onBack, userId, mapRef, onMarker
             <View style={styles.sheetInnerHeader}>{currentSnap === 'mid' ? <CategoryHeader name={activeCategoryFilter || 'EXPLORE'} isDark={isDark} /> : <Text style={[styles.sheetTitle, { color: theme.text }]}>{trip?.title || 'Trip Plan'}</Text>}</View>
             <View style={styles.listWrapper}>
               {currentSnap === 'min' ? <FlatList data={days} horizontal pagingEnabled keyExtractor={(_, i) => i.toString()} renderItem={({ item }) => (<View style={{ width: width }}><TouchableOpacity style={[styles.dayCard, { width: width - 40, height: 130, marginHorizontal: 20 }]} onPress={() => setSelectedDay(item)}><View style={styles.dayCardInnerHorizontal}><Text style={styles.dayWeekday}>{item.weekday}</Text><Text style={[styles.dayNumber, { color: theme.text }]}>Day {item.dayNumber}</Text>{(dayCounts[item.dayNumber] || 0) > 0 && <View style={[styles.countBadge, { backgroundColor: theme.tint + '15' }]}><MapPin size={10} color={theme.tint} /><Text style={[styles.countText, { color: theme.tint }]}>{dayCounts[item.dayNumber]} spots</Text></View>}<Text style={styles.dayDate}>{item.date ? format(item.date, 'dd MMM yyyy') : 'Set Date'}</Text></View></TouchableOpacity></View>)} showsHorizontalScrollIndicator={false} onMomentumScrollEnd={(e) => { const idx = Math.round(e.nativeEvent.contentOffset.x / width); setActiveDayIndex(idx); if(onDayChange) onDayChange(idx); }} snapToInterval={width} snapToAlignment="center" decelerationRate="fast" />
-              : currentSnap === 'mid' ? <View style={styles.dialWrapper}><Animated.ScrollView ref={dialRef} horizontal pagingEnabled onScroll={scrollHandler} scrollEventThrottle={16} onMomentumScrollEnd={(e) => { const idx = Math.round(e.nativeEvent.contentOffset.x / ITEM_WIDTH); if (idx >= 0 && idx < dbCategories.length) { runOnJS(setActiveCategoryFilter)(dbCategories[idx].name); runOnJS(triggerHaptic)('snap'); } }} showsHorizontalScrollIndicator={false} snapToInterval={ITEM_WIDTH} decelerationRate="fast">{dbCategories.map((cat, i) => { const categoryBucketItems = bucketItems.filter(bi => bi.category?.toLowerCase() === cat.name.toLowerCase()); const dayAssignedIds = itineraryItems.filter(i => i.day_number === activeDayIndex + 1); return <CategoryDialItem key={cat.id} cat={cat} index={i} isSelected={activeCategoryFilter === cat.name} theme={theme} scrollX={scrollX} categoryBucketItems={categoryBucketItems} dayAssignedIds={dayAssignedIds} onAddItem={async (bucketItem: any) => { await supabase.from('itinerary_items').upsert({ trip_id: tripId, bucket_item_id: bucketItem.id, day_number: activeDayIndex + 1, sequence: (dayAssignedIds.length || 0) + 1 }, { onConflict: 'trip_id, day_number, bucket_item_id' }); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); fetchItinerary(); }} onRemoveItem={handleRemoveFromDay} isDark={isDark} /> ; })}</Animated.ScrollView></View>
+              : currentSnap === 'mid' ? <View style={styles.dialWrapper}><Animated.ScrollView ref={dialRef} horizontal pagingEnabled onScroll={scrollHandler} scrollEventThrottle={16} onMomentumScrollEnd={(e) => { const idx = Math.round(e.nativeEvent.contentOffset.x / ITEM_WIDTH); if (idx >= 0 && idx < dbCategories.length) { runOnJS(setActiveCategoryFilter)(dbCategories[idx].name); runOnJS(triggerHaptic)('snap'); } }} showsHorizontalScrollIndicator={false} snapToInterval={ITEM_WIDTH} decelerationRate="fast">{dbCategories.map((cat, i) => { const categoryBucketItems = bucketItems.filter(bi => bi.category?.toLowerCase() === cat.name.toLowerCase()); const dayAssignedIds = itineraryItems.filter(i => i.day_number === activeDayIndex + 1); return <CategoryDialItem key={cat.id} cat={cat} index={i} isSelected={activeCategoryFilter === cat.name} theme={theme} scrollX={scrollX} categoryBucketItems={categoryBucketItems} dayAssignedIds={dayAssignedIds} onAddItem={(bucketItem: any) => handleAddToDay(bucketItem, dayAssignedIds)} onRemoveItem={handleRemoveFromDay} isDark={isDark} /> ; })}</Animated.ScrollView></View>
               : <DayReorderList tripId={tripId} days={days} dayCounts={dayCounts} onReorder={(newData) => setDays(newData)} onSelectDay={(d) => setSelectedDay(d)} onAddFromBucket={(dayNum) => { setActiveDayIndex(dayNum - 1); bottomSheetRef.current?.snapToIndex(1); }} onFocusDay={(dayNum) => { if (onFocusDay) onFocusDay(dayNum); }} />}
             </View>
           </BottomSheetView>
