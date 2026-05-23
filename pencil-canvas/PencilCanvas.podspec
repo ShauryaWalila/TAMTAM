@@ -11,9 +11,13 @@ Pod::Spec.new do |s|
   s.source_files     = "**/*.{h,m,mm}"
   s.requires_arc     = true
   s.frameworks       = "UIKit", "PencilKit", "Foundation"
-  s.dependency "React-Core"
 
+  # New-arch projects (RN >= 0.71) use install_modules_dependencies to wire
+  # React-Core + codegen automatically. Older projects fall back to
+  # an explicit React-Core dependency.
   if defined?(install_modules_dependencies)
     install_modules_dependencies(s)
+  else
+    s.dependency "React-Core"
   end
 end

@@ -4,13 +4,21 @@
 // state never touches stroke samples.
 
 import React, { forwardRef, useImperativeHandle, useRef } from 'react';
-import { findNodeHandle, NativeModules, requireNativeComponent, type ViewProps } from 'react-native';
+import { findNodeHandle, NativeModules, requireNativeComponent, StyleSheet, UIManager, View, type ViewProps } from 'react-native';
 
 type NativeProps = ViewProps & {
   onDrawingChange?: (e: any) => void;
 };
 
-const NativePencilCanvas = requireNativeComponent<NativeProps>('PencilCanvasView');
+// Guard: only requireNativeComponent when the manager is actually registered.
+// During development (Expo Go) or before the IPA has been rebuilt with the new
+// native module, the manager won't exist — we fall back to a transparent View
+// so the rest of the screen keeps working and the user can still draw via
+// the underlying Skia layer.
+const HAS_NATIVE = !!(UIManager as any)?.getViewManagerConfig?.('PencilCanvasView');
+const NativePencilCanvas: any = HAS_NATIVE
+  ? requireNativeComponent<NativeProps>('PencilCanvasView')
+  : View;
 const { PencilCanvasViewManager } = NativeModules as {
   PencilCanvasViewManager?: {
     clear: (tag: number) => void;
@@ -59,13 +67,23 @@ const PencilCanvas = forwardRef<PencilCanvasRef, Props>(({ onDrawingChange, styl
     },
   }), []);
 
+  // If the native module isn't compiled into the IPA yet, render an inert
+  // pass-through view so touches reach the underlying Skia canvas. The user
+  // can still draw with the legacy engine until the next rebuild.
+  if (!HAS_NATIVE) {
+    return <View style={style} pointerEvents="none" />;
+  }
+  // Wrap the native view in a regular RN View so React Native's standard
+  // `pointerEvents` handling (which disables userInteraction on the subtree)
+  // applies. The native view doesn't natively read the prop.
   return (
-    <NativePencilCanvas
-      ref={nativeRef}
-      style={style}
-      pointerEvents={pointerEvents}
-      onDrawingChange={onDrawingChange ? () => onDrawingChange() : undefined}
-    />
+    <View style={style} pointerEvents={pointerEvents}>
+      <NativePencilCanvas
+        ref={nativeRef}
+        style={StyleSheet.absoluteFill}
+        onDrawingChange={onDrawingChange ? () => onDrawingChange() : undefined}
+      />
+    </View>
   );
 });
 

@@ -27,9 +27,30 @@ export const startSyncEngine = () => {
   }, 60000);
 };
 
+// Track whether we've done at least one successful pull. If not, the NetInfo
+// listener keeps retrying when the network state flips.
+let initialFullSyncDone = false;
+let initialFullSyncRetryTimer: any = null;
+
+NetInfo.addEventListener((state) => {
+  if (state.isConnected && !initialFullSyncDone) {
+    // Network just came online and we never finished a sync. Trigger one.
+    initialFullSync(false).catch(() => {});
+  }
+});
+
 export const initialFullSync = async (shouldClear = false) => {
   const { isConnected } = await NetInfo.fetch();
-  if (!isConnected) return;
+  if (!isConnected) {
+    // Schedule a single retry in 6s in case NetInfo lied on first launch.
+    if (!initialFullSyncRetryTimer) {
+      initialFullSyncRetryTimer = setTimeout(() => {
+        initialFullSyncRetryTimer = null;
+        initialFullSync(shouldClear).catch(() => {});
+      }, 6000);
+    }
+    return;
+  }
 
   if (shouldClear) {
     clearAllData();
@@ -210,7 +231,15 @@ export const initialFullSync = async (shouldClear = false) => {
         n => db.runSync(`INSERT OR REPLACE INTO study_routines (id, user_id, title, description, start_time, end_time, date, is_completed, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [n.id, n.user_id, n.title, n.description, n.start_time, n.end_time, n.date, n.is_completed || 0, n.created_at]));
 
-      console.log('Background lazy sync complete.');    } catch (e) {
+      console.log('Background lazy sync complete.');
+      initialFullSyncDone = true;
+      // Let anyone listening know data is fresh — Study Hub, Journal, etc.
+      try {
+        const RN = require('react-native');
+        RN?.DeviceEventEmitter?.emit?.('DATA_REFRESH');
+        RN?.DeviceEventEmitter?.emit?.('refresh-dashboard');
+      } catch {}
+    } catch (e) {
       console.warn('Background sync failed:', e);
     }
   };

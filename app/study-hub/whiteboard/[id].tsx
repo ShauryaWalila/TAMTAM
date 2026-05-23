@@ -4,7 +4,9 @@ import { Canvas, Path, Skia, useCanvasRef, Group, Rect, Points, vec, Image, Text
 import PencilCanvas, { type PencilCanvasRef } from '@/components/PencilCanvas';
 import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, { useSharedValue, runOnJS, useDerivedValue, useAnimatedStyle, cancelAnimation } from 'react-native-reanimated';
-import { Eraser, Pencil, Trash2, ChevronLeft, Target, Hand, ZoomIn, RotateCcw, Highlighter, Palette, Settings2, Image as ImageIcon, Link as LinkIcon, Plus, Check, ExternalLink, Undo2, Sparkles, BrainCircuit, X, Database, PlusCircle } from 'lucide-react-native';
+import { Eraser, Pencil, Trash2, ChevronLeft, Target, Hand, ZoomIn, RotateCcw, Highlighter, Palette, Settings2, Image as ImageIcon, Link as LinkIcon, Plus, Check, ExternalLink, Undo2, Sparkles, BrainCircuit, X, Database, PlusCircle, Download } from 'lucide-react-native';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 import { MotiView, AnimatePresence } from 'moti';
 import { BlurView } from 'expo-blur';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -401,6 +403,37 @@ export default function WhiteboardScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
+  const exportBoard = async () => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      let base64: string | null = null;
+      // Prefer native PencilKit PNG snapshot (current strokes).
+      try {
+        const pkPng = await pencilRef.current?.getPng?.(3);
+        if (typeof pkPng === 'string' && pkPng.length > 200) base64 = pkPng;
+      } catch {}
+      // Fall back to Skia canvas snapshot (covers legacy strokes + images + links).
+      if (!base64) {
+        const img = canvasRef.current?.makeImageSnapshot();
+        if (img) base64 = img.encodeToBase64();
+      }
+      if (!base64) {
+        Alert.alert('Empty board', 'Nothing to export yet.');
+        return;
+      }
+      const uri = `${FileSystem.cacheDirectory}medboard_${Date.now()}.png`;
+      await FileSystem.writeAsStringAsync(uri, base64, { encoding: 'base64' });
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri);
+      } else {
+        Alert.alert('Saved', 'Board cached, sharing unavailable on this device.');
+      }
+    } catch (e: any) {
+      console.warn('Export failed', e);
+      Alert.alert('Export failed', e?.message || 'Could not export the board.');
+    }
+  };
+
   const addImage = async () => {
     const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, quality: 0.6 });
     if (!res.canceled) {
@@ -655,10 +688,37 @@ export default function WhiteboardScreen() {
       )}
 
       <View style={styles.fabWrap} pointerEvents="box-none">
-        <AnimatePresence>{isToolsExpanded && (<MotiView from={{ opacity: 0, scale: 0.5, translateY: 50 }} animate={{ opacity: 1, scale: 1, translateY: 0 }} exit={{ opacity: 0, scale: 0.5, translateY: 50 }} style={toolsStyle}><BlurView intensity={80} tint="light" style={styles.tBlur}><View style={styles.tRow}><TouchableOpacity onPress={() => setActiveTool('pen')} style={[styles.tCir, activeTool === 'pen' && { backgroundColor: theme.tint }]}><Pencil size={20} color={activeTool === 'pen' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveTool('high')} style={[styles.tCir, activeTool === 'high' && { backgroundColor: theme.tint }]}><Highlighter size={20} color={activeTool === 'high' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveTool('eraser')} style={[styles.tCir, activeTool === 'eraser' && { backgroundColor: theme.tint }]}><Eraser size={20} color={activeTool === 'eraser' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveTool('pan')} style={[styles.tCir, activeTool === 'pan' && { backgroundColor: theme.tint }]}><Hand size={20} color={activeTool === 'pan' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveMenu(activeMenu === 'settings' ? 'none' : 'settings')} style={[styles.tCir, activeMenu === 'settings' && { backgroundColor: theme.tint }]}><Settings2 size={20} color={activeMenu === 'settings' ? '#fff' : '#000'} /></TouchableOpacity><TouchableOpacity onPress={() => setActiveMenu(activeMenu === 'media' ? 'none' : 'media')} style={[styles.tCir, activeMenu === 'media' && { backgroundColor: theme.tint }]}><Plus size={20} color={activeMenu === 'media' ? '#fff' : '#000'} /></TouchableOpacity></View>
-              {activeMenu === 'settings' && (<View style={styles.tray}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}><View style={[styles.dot, { backgroundColor: color, opacity: activeTool === 'high' ? highOpacity : penOpacity }]} /><Text style={{ fontSize: 12, color: 'black' }}>Adjust Tool</Text></View><CustomSlider value={activeTool==='pen'?penSize:(activeTool==='high'?highSize:eraserSize)} onValueChange={(v:any)=>activeTool==='pen'?setPenSize(v):(activeTool==='high'?setHighSize(v):setEraserSize(v))} min={1} max={100} title="Size" theme={theme} />{activeTool !== 'eraser' && activeTool !== 'pan' && (<CustomSlider value={(activeTool==='pen'?penOpacity:highOpacity)*100} onValueChange={(v:any)=>activeTool==='pen'?setPenOpacity(v/100):setHighOpacity(v/100)} min={5} max={100} title="Opacity" theme={theme} />)}<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>{RAINBOW.map(c => <TouchableOpacity key={c} onPress={() => { setColor(c); setActiveTool('pen'); }} style={[styles.cOpt, { backgroundColor: c }, color === c && { borderColor: '#000', borderWidth: 2 }]} />)}</ScrollView></View>)}
-              {activeMenu === 'media' && (<View style={styles.tray}><TouchableOpacity onPress={addImage} style={styles.mItem}><ImageIcon size={18} color={theme.tint}/><Text style={{ color: '#000' }}>Image</Text></TouchableOpacity><TouchableOpacity onPress={() => { setEditingLinkId(null); setLUrl(''); setLTitle(''); setLinkModal(true); setIsToolsExpanded(false); }} style={styles.mItem}><LinkIcon size={18} color={theme.tint}/><Text style={{ color: '#000' }}>Link Pin</Text></TouchableOpacity><TouchableOpacity onPress={() => { setNewText(''); setTextModal(true); setIsToolsExpanded(false); }} style={styles.mItem}><Text style={{ fontSize: 18, color: theme.tint }}>Aa</Text><Text style={{ color: '#000' }}>Text / Sticker</Text></TouchableOpacity></View>)}
-              <TouchableOpacity onPress={() => { setIsReviseMode(!isReviseMode); setIsToolsExpanded(false); }} style={[styles.revBtn, { backgroundColor: isReviseMode ? '#FF2D55' : 'rgba(0,0,0,0.05)' }]}><Text style={{ color: isReviseMode ? '#fff' : '#000', fontWeight: 'bold' }}>{isReviseMode ? 'EXIT REVISION' : 'ENTER REVISION'}</Text></TouchableOpacity></BlurView></MotiView>)}</AnimatePresence>
+        <AnimatePresence>{isToolsExpanded && (
+          <MotiView from={{ opacity: 0, scale: 0.5, translateY: 50 }} animate={{ opacity: 1, scale: 1, translateY: 0 }} exit={{ opacity: 0, scale: 0.5, translateY: 50 }} style={toolsStyle}>
+            <BlurView intensity={80} tint="light" style={styles.tBlur}>
+              {/* PencilKit's native tool picker covers pen / highlighter /
+                  eraser / colors / sizes / opacity. Only show buttons for
+                  things PencilKit can't do: pan, media (image/link/sticker),
+                  revise mode. */}
+              <View style={styles.tRow}>
+                <TouchableOpacity onPress={() => setActiveTool(activeTool === 'pan' ? 'pen' : 'pan')} style={[styles.tCir, activeTool === 'pan' && { backgroundColor: theme.tint }]}>
+                  <Hand size={20} color={activeTool === 'pan' ? '#fff' : '#000'} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setActiveMenu(activeMenu === 'media' ? 'none' : 'media')} style={[styles.tCir, activeMenu === 'media' && { backgroundColor: theme.tint }]}>
+                  <Plus size={20} color={activeMenu === 'media' ? '#fff' : '#000'} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={exportBoard} style={styles.tCir}>
+                  <Download size={20} color="#000" />
+                </TouchableOpacity>
+              </View>
+              {activeMenu === 'media' && (
+                <View style={styles.tray}>
+                  <TouchableOpacity onPress={addImage} style={styles.mItem}><ImageIcon size={18} color={theme.tint}/><Text style={{ color: '#000' }}>Image</Text></TouchableOpacity>
+                  <TouchableOpacity onPress={() => { setEditingLinkId(null); setLUrl(''); setLTitle(''); setLinkModal(true); setIsToolsExpanded(false); }} style={styles.mItem}><LinkIcon size={18} color={theme.tint}/><Text style={{ color: '#000' }}>Link Pin</Text></TouchableOpacity>
+                  <TouchableOpacity onPress={() => { setNewText(''); setTextModal(true); setIsToolsExpanded(false); }} style={styles.mItem}><Text style={{ fontSize: 18, color: theme.tint }}>Aa</Text><Text style={{ color: '#000' }}>Text / Sticker</Text></TouchableOpacity>
+                </View>
+              )}
+              <TouchableOpacity onPress={() => { setIsReviseMode(!isReviseMode); setIsToolsExpanded(false); }} style={[styles.revBtn, { backgroundColor: isReviseMode ? '#FF2D55' : 'rgba(0,0,0,0.05)' }]}>
+                <Text style={{ color: isReviseMode ? '#fff' : '#000', fontWeight: 'bold' }}>{isReviseMode ? 'EXIT REVISION' : 'ENTER REVISION'}</Text>
+              </TouchableOpacity>
+            </BlurView>
+          </MotiView>
+        )}</AnimatePresence>
         <GestureDetector gesture={fabG}><Animated.View style={[styles.fab, { backgroundColor: theme.tint }, fabStyle]}><Palette size={28} color="#fff" /></Animated.View></GestureDetector>
       </View>
 

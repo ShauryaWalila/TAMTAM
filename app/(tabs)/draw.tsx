@@ -247,13 +247,30 @@ export default function DrawScreen() {
   };
 
   const exportDrawing = async () => {
-    if (paths.length === 0) {
-      Alert.alert("Empty Drawing", "There's nothing to export!");
-      return;
-    }
-
     try {
       setLoading(true);
+
+      // Try native PencilKit PNG first — that's what the user actually drew.
+      try {
+        const pkPng = await pencilRef.current?.getPng?.(3);
+        if (typeof pkPng === 'string' && pkPng.length > 200) {
+          const uri = `${FileSystem.cacheDirectory}drawing_${Date.now()}.png`;
+          await FileSystem.writeAsStringAsync(uri, pkPng, { encoding: 'base64' });
+          if (await Sharing.isAvailableAsync()) {
+            await Sharing.shareAsync(uri);
+          } else {
+            Alert.alert('Export Successful', 'Drawing saved to cache, but sharing is not available.');
+          }
+          setLoading(false);
+          return;
+        }
+      } catch {}
+
+      if (paths.length === 0) {
+        Alert.alert('Empty Drawing', "There's nothing to export!");
+        setLoading(false);
+        return;
+      }
       
       // Calculate bounding box of all paths
       let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;

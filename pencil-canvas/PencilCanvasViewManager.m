@@ -117,7 +117,10 @@ API_AVAILABLE(ios(13.4))
 
 @implementation PencilCanvasViewManager
 
-RCT_EXPORT_MODULE(PencilCanvasView)
+// Use the default module name (== class name) so NativeModules.PencilCanvasViewManager
+// is available in JS while requireNativeComponent('PencilCanvasView') auto-derives
+// the component name by stripping "Manager".
+RCT_EXPORT_MODULE()
 
 - (UIView *)view {
   if (@available(iOS 13.4, *)) {
