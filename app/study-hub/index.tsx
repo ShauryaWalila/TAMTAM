@@ -128,6 +128,19 @@ export default function StudyHubDashboard() {
       refreshFromSQLite();
     });
 
+    const pullAndRefresh = async (table: string) => {
+      try {
+        if (table === 'study_decks') {
+          const { data } = await supabase.from('study_decks').select('*');
+          if (data) data.forEach((d: any) => db.runSync(`INSERT OR REPLACE INTO study_decks (id, title, description, color, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?)`, [d.id, d.title, d.description, d.color, d.user_id, d.created_at]));
+        } else if (table === 'study_whiteboards') {
+          const { data } = await supabase.from('study_whiteboards').select('*');
+          if (data) data.forEach((b: any) => db.runSync(`INSERT OR REPLACE INTO study_whiteboards (id, title, canvas_data, updated_at) VALUES (?, ?, ?, ?)`, [b.id, b.title, typeof b.canvas_data === 'string' ? b.canvas_data : JSON.stringify(b.canvas_data || {}), b.updated_at]));
+        }
+      } catch {}
+      refreshFromSQLite();
+    };
+
     const subscription = supabase.channel('study_hub_sync')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'active_study_sessions' }, (payload) => {
         if (payload.eventType === 'INSERT' && payload.new.user_id !== currentUser) { sendStudyNotification(payload.new.user_id, 'started a study session! 🧠'); }
@@ -136,6 +149,22 @@ export default function StudyHubDashboard() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'study_exams' }, () => refreshData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'study_brain_dump' }, () => refreshData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'study_syllabus' }, () => refreshData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'study_decks' }, (payload: any) => {
+        if (payload.eventType === 'DELETE') {
+          db.runSync(`DELETE FROM study_decks WHERE id = ?`, [payload.old?.id]);
+          refreshFromSQLite();
+        } else {
+          pullAndRefresh('study_decks');
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'study_whiteboards' }, (payload: any) => {
+        if (payload.eventType === 'DELETE') {
+          db.runSync(`DELETE FROM study_whiteboards WHERE id = ?`, [payload.old?.id]);
+          refreshFromSQLite();
+        } else {
+          pullAndRefresh('study_whiteboards');
+        }
+      })
       .subscribe();
     return () => { subscription.unsubscribe(); sub.remove(); };
   }, [currentUser]);
