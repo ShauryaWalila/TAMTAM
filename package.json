@@ -34,6 +34,7 @@
     "react-native-get-random-values": "~1.11.0",
     "react-native-gifted-charts": "^1.4.76",
     "react-native-google-places-autocomplete": "^2.6.4",
+    "expo-clipboard": "~7.1.1",
     "react-native-url-polyfill": "^3.0.0"
   },
   "devDependencies": {

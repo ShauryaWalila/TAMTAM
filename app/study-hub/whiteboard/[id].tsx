@@ -7,6 +7,7 @@ import Animated, { useSharedValue, runOnJS, useDerivedValue, useAnimatedStyle, c
 import { Eraser, Pencil, Trash2, ChevronLeft, Target, Hand, ZoomIn, RotateCcw, Highlighter, Palette, Settings2, Image as ImageIcon, Link as LinkIcon, Plus, Check, ExternalLink, Undo2, Sparkles, BrainCircuit, X, Database, PlusCircle, Download } from 'lucide-react-native';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
+import StickerPicker from '@/components/StickerPicker';
 import { MotiView, AnimatePresence } from 'moti';
 import { BlurView } from 'expo-blur';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -445,6 +446,19 @@ export default function WhiteboardScreen() {
     }
   };
 
+  const [stickerOpen, setStickerOpen] = useState(false);
+  const onStickerPicked = (uri: string) => {
+    // Drop the sticker on the canvas where the user is currently looking, at
+    // a sensible default size. They can drag/resize like any other image.
+    const wX = (SCREEN_WIDTH / 2 - translateX.value) / scale.value - 90;
+    const wY = (SCREEN_HEIGHT / 2 - translateY.value) / scale.value - 90;
+    const nI = [...images, { id: generateUUID(), uri, x: wX, y: wY, width: 180, height: 180 }];
+    setImages(nI);
+    setActiveMenu('none');
+    handleSave(paths, nI, links);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
   const onPanStart = useCallback((x: number, y: number) => {
     const s = scale.value;
     const wX = (x - translateX.value) / s;
@@ -631,6 +645,12 @@ export default function WhiteboardScreen() {
             pointerEvents="auto"
           />
         )}
+
+        <StickerPicker
+          visible={stickerOpen}
+          onClose={() => setStickerOpen(false)}
+          onPicked={onStickerPicked}
+        />
       </View>
 
       <Modal visible={analysisResult !== null} transparent animationType="slide">
@@ -709,8 +729,9 @@ export default function WhiteboardScreen() {
               {activeMenu === 'media' && (
                 <View style={styles.tray}>
                   <TouchableOpacity onPress={addImage} style={styles.mItem}><ImageIcon size={18} color={theme.tint}/><Text style={{ color: '#000' }}>Image</Text></TouchableOpacity>
+                  <TouchableOpacity onPress={() => { setStickerOpen(true); setActiveMenu('none'); setIsToolsExpanded(false); }} style={styles.mItem}><Sparkles size={18} color={theme.tint}/><Text style={{ color: '#000' }}>Sticker / GIF</Text></TouchableOpacity>
                   <TouchableOpacity onPress={() => { setEditingLinkId(null); setLUrl(''); setLTitle(''); setLinkModal(true); setIsToolsExpanded(false); }} style={styles.mItem}><LinkIcon size={18} color={theme.tint}/><Text style={{ color: '#000' }}>Link Pin</Text></TouchableOpacity>
-                  <TouchableOpacity onPress={() => { setNewText(''); setTextModal(true); setIsToolsExpanded(false); }} style={styles.mItem}><Text style={{ fontSize: 18, color: theme.tint }}>Aa</Text><Text style={{ color: '#000' }}>Text / Sticker</Text></TouchableOpacity>
+                  <TouchableOpacity onPress={() => { setNewText(''); setTextModal(true); setIsToolsExpanded(false); }} style={styles.mItem}><Text style={{ fontSize: 18, color: theme.tint }}>Aa</Text><Text style={{ color: '#000' }}>Text</Text></TouchableOpacity>
                 </View>
               )}
               <TouchableOpacity onPress={() => { setIsReviseMode(!isReviseMode); setIsToolsExpanded(false); }} style={[styles.revBtn, { backgroundColor: isReviseMode ? '#FF2D55' : 'rgba(0,0,0,0.05)' }]}>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { StyleSheet, ScrollView, Pressable, View, Dimensions, Modal, TextInput, ActivityIndicator, Alert, TouchableOpacity, Image, DeviceEventEmitter } from 'react-native';
+import { StyleSheet, ScrollView, Pressable, View, Dimensions, Modal, TextInput, ActivityIndicator, Alert, TouchableOpacity, Image, DeviceEventEmitter, Platform } from 'react-native';
 import { Text, View as ThemedView } from '@/components/Themed';
 import { MotiView, AnimatePresence } from 'moti';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -761,10 +761,39 @@ function PartnerCompassCard({ theme, currentUser, partnerName }: any) {
   const [distance, setDistance] = React.useState<number | null>(null);
   const [updated, setUpdated] = React.useState<string | null>(null);
   const [status, setStatus] = React.useState<'waiting' | 'no-perm' | 'locked' | 'ready'>('waiting');
+  const [expanded, setExpanded] = React.useState(false);
+  const [partnerCoord, setPartnerCoord] = React.useState<{ lat: number; lng: number } | null>(null);
   const needleRotation = useSharedValue(0); // animated needle angle
   const pulse = useSharedValue(1);
   const targetBearingRef = React.useRef<number | null>(null);
   const headingRef = React.useRef(0);
+
+  // Distance → color bucket. Drives needle / centre dot / distance text so
+  // the user gets a single-glance "how close" signal.
+  const proximityColor = React.useMemo(() => {
+    if (distance == null) return '#FF2D55';
+    if (distance < 200) return '#FF2D55';     // very close — pink
+    if (distance < 2000) return '#FF9500';    // walking distance — amber
+    if (distance < 20000) return '#34C759';   // mint — short drive
+    return '#5AC8FA';                          // far — steel blue
+  }, [distance]);
+
+  const eta = React.useMemo(() => {
+    if (distance == null) return null;
+    if (distance < 1500) {
+      const minutes = Math.max(1, Math.round(distance / 80));
+      return `~${minutes} min walk`;
+    }
+    const minutes = Math.max(1, Math.round(distance / 600));
+    return `~${minutes} min drive`;
+  }, [distance]);
+
+  // Stale = partner hasn't pinged in > 5 minutes.
+  const isStale = React.useMemo(() => {
+    if (!updated) return false;
+    const t = new Date(updated).getTime();
+    return Date.now() - t > 5 * 60 * 1000;
+  }, [updated]);
 
   // Smooth pulse on the partner avatar dot.
   React.useEffect(() => {
@@ -823,6 +852,7 @@ function PartnerCompassCard({ theme, currentUser, partnerName }: any) {
             targetBearingRef.current = b;
             setDistance(d);
             setUpdated(partner.updated_at);
+            setPartnerCoord({ lat: partner.latitude, lng: partner.longitude });
             setStatus('ready');
             applyRotation();
           } catch {}
@@ -859,48 +889,124 @@ function PartnerCompassCard({ theme, currentUser, partnerName }: any) {
 
   const initial = (partnerName || 'P').charAt(0).toUpperCase();
 
+  const openInMaps = () => {
+    if (!partnerCoord) return;
+    const url = Platform.OS === 'ios'
+      ? `maps://?daddr=${partnerCoord.lat},${partnerCoord.lng}`
+      : `geo:${partnerCoord.lat},${partnerCoord.lng}?q=${partnerCoord.lat},${partnerCoord.lng}`;
+    require('react-native').Linking.openURL(url).catch(() => {});
+  };
+
+  const openLocationSettings = () => {
+    require('react-native').Linking.openSettings?.().catch(() => {});
+  };
+
+  const a11y = distance != null && updated
+    ? `Partner ${formatDistance(distance)} away, ${ago(updated)}`
+    : 'Partner location not available yet';
+
   return (
-    <View style={[compassStyles.card, { backgroundColor: theme.card }]}>
-      <View style={compassStyles.header}>
-        <Compass color="#FF2D55" size={16} />
-        <Text style={[compassStyles.label, { color: theme.tabIconDefault }]}>FIND {(partnerName || 'PARTNER').toUpperCase()}</Text>
-      </View>
-
-      <View style={compassStyles.dial}>
-        {/* Cardinal markers (rotate with device heading so N always points magnetic north) */}
-        <View style={[compassStyles.ring, { borderColor: theme.tabIconDefault + '30' }]} />
-        {['N','E','S','W'].map((c, i) => (
-          <Text key={c} style={[compassStyles.cardinal, {
-            color: c === 'N' ? '#FF2D55' : theme.tabIconDefault,
-            top: i === 0 ? 4 : i === 2 ? undefined : '46%',
-            bottom: i === 2 ? 4 : undefined,
-            left: i === 3 ? 6 : i === 1 ? undefined : '47%',
-            right: i === 1 ? 6 : undefined,
-          }]}>{c}</Text>
-        ))}
-
-        {status === 'ready' ? (
-          <Animated.View style={[compassStyles.needleWrap, needleStyle]}>
-            <View style={compassStyles.needleHead} />
-            <View style={compassStyles.needleTail} />
-          </Animated.View>
-        ) : (
-          <Text style={[compassStyles.idle, { color: theme.tabIconDefault }]}>
-            {status === 'no-perm' ? 'enable\nlocation' : 'waiting'}
+    <>
+      {/* Minimal tile — matches SummaryCard footprint so the row stays the
+          same height as "Our Days". Just an arrow + distance. Full compass
+          lives inside the tap-to-expand modal. */}
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={() => { try { (require('expo-haptics').impactAsync as any)?.((require('expo-haptics').ImpactFeedbackStyle as any).Light); } catch {} setExpanded(true); }}
+        accessibilityRole="button"
+        accessibilityLabel={a11y}
+        style={[styles.summaryCard, { backgroundColor: theme.card }]}
+      >
+        <View style={styles.summaryHeader}>
+          <Compass color={proximityColor} size={20} />
+          <Text style={[styles.summaryTitle, { color: theme.tabIconDefault }]} numberOfLines={1}>FIND {(partnerName || 'PARTNER').toUpperCase()}</Text>
+        </View>
+        <View style={compassStyles.miniRow}>
+          {status === 'ready' ? (
+            <Animated.View style={[compassStyles.miniArrowWrap, needleStyle, isStale && { opacity: 0.55 }]}>
+              <Navigation size={22} color={proximityColor} fill={proximityColor} />
+            </Animated.View>
+          ) : (
+            <View style={compassStyles.miniArrowWrap}>
+              <Compass size={20} color={theme.tabIconDefault} />
+            </View>
+          )}
+          <Text style={[styles.summaryValue, { color: proximityColor, marginLeft: 8 }]} numberOfLines={1}>
+            {distance != null ? formatDistance(distance) : '—'}
+          </Text>
+        </View>
+        {(eta || updated) && (
+          <Text style={[compassStyles.miniSub, { color: isStale ? '#FF9500' : theme.tabIconDefault }]} numberOfLines={1}>
+            {eta ? eta : ''}{eta && updated ? ' · ' : ''}{updated ? `${isStale ? '• ' : ''}${ago(updated)}` : ''}
           </Text>
         )}
+      </TouchableOpacity>
 
-        {/* Centre avatar */}
-        <Animated.View style={[compassStyles.centerDot, pulseStyle, { backgroundColor: '#FF2D55' }]}>
-          <Text style={compassStyles.centerInitial}>{initial}</Text>
-        </Animated.View>
-      </View>
+      <Modal visible={expanded} transparent animationType="fade" onRequestClose={() => setExpanded(false)}>
+        <Pressable style={compassStyles.modalScrim} onPress={() => setExpanded(false)}>
+          <Pressable style={[compassStyles.modalCard, { backgroundColor: theme.background }]} onPress={() => {}}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View>
+                <Text style={[compassStyles.modalTag, { color: proximityColor }]}>FINDING</Text>
+                <Text style={[compassStyles.modalTitle, { color: theme.text }]}>{partnerName || 'Partner'}</Text>
+              </View>
+              <TouchableOpacity onPress={() => setExpanded(false)}><X size={22} color={theme.tabIconDefault} /></TouchableOpacity>
+            </View>
 
-      <Text style={[compassStyles.distance, { color: theme.text }]} numberOfLines={1}>
-        {distance != null ? formatDistance(distance) : '—'}
-      </Text>
-      {updated && <Text style={[compassStyles.age, { color: theme.tabIconDefault }]}>{ago(updated)}</Text>}
-    </View>
+            <View style={compassStyles.modalDial}>
+              <View style={[compassStyles.modalRing, { borderColor: theme.text + '25' }]} />
+              {['N','E','S','W'].map((c, i) => (
+                <Text key={c} style={[compassStyles.modalCardinal, {
+                  color: c === 'N' ? proximityColor : theme.tabIconDefault,
+                  top: i === 0 ? 10 : i === 2 ? undefined : '46%',
+                  bottom: i === 2 ? 10 : undefined,
+                  left: i === 3 ? 14 : i === 1 ? undefined : '47%',
+                  right: i === 1 ? 14 : undefined,
+                }]}>{c}</Text>
+              ))}
+              {status === 'ready' && (
+                <Animated.View style={[compassStyles.modalNeedleWrap, needleStyle]}>
+                  <View style={[compassStyles.modalNeedleHead, { borderBottomColor: proximityColor }]} />
+                  <View style={[compassStyles.modalNeedleTail, { borderTopColor: proximityColor + '4D' }]} />
+                </Animated.View>
+              )}
+              <Animated.View style={[compassStyles.modalCenterDot, pulseStyle, { backgroundColor: proximityColor }]}>
+                <Text style={compassStyles.modalCenterInitial}>{initial}</Text>
+              </Animated.View>
+            </View>
+
+            <View style={compassStyles.modalStatsRow}>
+              <View style={{ alignItems: 'center' }}>
+                <Text style={[compassStyles.modalStatValue, { color: proximityColor }]}>{distance != null ? formatDistance(distance) : '—'}</Text>
+                <Text style={[compassStyles.modalStatLabel, { color: theme.tabIconDefault }]}>DISTANCE</Text>
+              </View>
+              <View style={{ alignItems: 'center' }}>
+                <Text style={[compassStyles.modalStatValue, { color: theme.text }]}>{eta ? eta.replace('~', '').split(' ')[0] : '—'}</Text>
+                <Text style={[compassStyles.modalStatLabel, { color: theme.tabIconDefault }]}>{eta ? eta.split(' ').slice(1).join(' ').toUpperCase() : 'ETA'}</Text>
+              </View>
+              <View style={{ alignItems: 'center' }}>
+                <Text style={[compassStyles.modalStatValue, { color: isStale ? '#FF9500' : theme.text }]}>{updated ? ago(updated) : '—'}</Text>
+                <Text style={[compassStyles.modalStatLabel, { color: theme.tabIconDefault }]}>UPDATED</Text>
+              </View>
+            </View>
+
+            {status === 'no-perm' ? (
+              <TouchableOpacity onPress={openLocationSettings} style={[compassStyles.modalCta, { backgroundColor: '#FF9500' }]}>
+                <Text style={compassStyles.modalCtaText}>OPEN LOCATION SETTINGS</Text>
+              </TouchableOpacity>
+            ) : partnerCoord ? (
+              <TouchableOpacity onPress={openInMaps} style={[compassStyles.modalCta, { backgroundColor: proximityColor }]}>
+                <Text style={compassStyles.modalCtaText}>OPEN IN MAPS</Text>
+              </TouchableOpacity>
+            ) : (
+              <Text style={{ color: theme.tabIconDefault, fontSize: 13, textAlign: 'center', marginTop: 8 }}>
+                Waiting for partner to share location...
+              </Text>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </>
   );
 }
 
@@ -919,6 +1025,28 @@ const compassStyles = StyleSheet.create({
   idle: { fontSize: 10, fontWeight: '800', textAlign: 'center' },
   distance: { marginTop: 10, fontSize: 16, fontWeight: '900' },
   age: { fontSize: 9, fontWeight: '700', marginTop: 1 },
+  eta: { fontSize: 10, fontWeight: '700', marginTop: 2, letterSpacing: 0.2 },
+  // Minimal-tile bits (live alongside the "Our Days" SummaryCard on home).
+  miniRow: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
+  miniArrowWrap: { width: 26, height: 26, justifyContent: 'center', alignItems: 'center' },
+  miniSub: { fontSize: 11, fontWeight: '700', marginTop: 4, letterSpacing: 0.2 },
+  modalScrim: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', padding: 24 },
+  modalCard: { borderRadius: 28, padding: 22, gap: 18 },
+  modalTag: { fontSize: 10, fontWeight: '900', letterSpacing: 1.4 },
+  modalTitle: { fontSize: 24, fontWeight: '900' },
+  modalDial: { width: 220, height: 220, alignSelf: 'center', justifyContent: 'center', alignItems: 'center' },
+  modalRing: { position: 'absolute', width: 220, height: 220, borderRadius: 110, borderWidth: 2 },
+  modalCardinal: { position: 'absolute', fontSize: 12, fontWeight: '900', letterSpacing: 0.6 },
+  modalNeedleWrap: { width: 200, height: 200, justifyContent: 'center', alignItems: 'center', position: 'absolute' },
+  modalNeedleHead: { width: 0, height: 0, borderLeftWidth: 12, borderRightWidth: 12, borderBottomWidth: 70, borderLeftColor: 'transparent', borderRightColor: 'transparent', position: 'absolute', top: 12 },
+  modalNeedleTail: { width: 0, height: 0, borderLeftWidth: 12, borderRightWidth: 12, borderTopWidth: 60, borderLeftColor: 'transparent', borderRightColor: 'transparent', position: 'absolute', bottom: 16 },
+  modalCenterDot: { width: 56, height: 56, borderRadius: 28, justifyContent: 'center', alignItems: 'center', borderWidth: 3, borderColor: 'rgba(255,255,255,0.9)' },
+  modalCenterInitial: { color: '#fff', fontWeight: '900', fontSize: 22 },
+  modalStatsRow: { flexDirection: 'row', justifyContent: 'space-around', paddingVertical: 6 },
+  modalStatValue: { fontSize: 20, fontWeight: '900' },
+  modalStatLabel: { fontSize: 9, fontWeight: '900', letterSpacing: 1.2, marginTop: 4 },
+  modalCta: { paddingVertical: 14, borderRadius: 14, alignItems: 'center' },
+  modalCtaText: { color: '#fff', fontWeight: '900', letterSpacing: 0.6 },
 });
 
 const styles = StyleSheet.create({

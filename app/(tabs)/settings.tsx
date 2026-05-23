@@ -366,9 +366,16 @@ export default function SettingsScreen() {
   const deleteChillCategory = async (id: string) => {
     Alert.alert('Delete shared space?', 'This will delete all items inside too.', [
       { text: 'Cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => { 
-        await supabase.from('chill_categories').delete().eq('id', id); 
-        fetchChillCategories(); 
+      { text: 'Delete', style: 'destructive', onPress: async () => {
+        // Cascade: delete every chill_item that belongs to this category first
+        // (Supabase FK may not have ON DELETE CASCADE), then the category.
+        try { await supabase.from('chill_items').delete().eq('category_id', id); } catch {}
+        try { db.runSync(`DELETE FROM chill_items WHERE category_id = ?`, [id]); } catch {}
+        await supabase.from('chill_categories').delete().eq('id', id);
+        try { db.runSync(`DELETE FROM chill_categories WHERE id = ?`, [id]); } catch {}
+        // Tell the Chill Zone screen to refresh now.
+        try { (require('react-native') as any).DeviceEventEmitter?.emit?.('refresh-chillzone'); } catch {}
+        fetchChillCategories();
         syncAllNotifications();
       } }
     ]);
@@ -488,12 +495,6 @@ export default function SettingsScreen() {
             theme={theme} 
             onPress={() => safePush('/next-meet')}
           />
-          <SettingsItem
-            icon={<Layout color={theme.text} size={22} />}
-            label="Widget Previews" 
-            theme={theme} 
-            onPress={() => safePush('/widget-preview')}
-          />
           <SettingsItem icon={<Bell color={theme.text} size={22} />} label="Notifications" theme={theme} right={<Switch value={isNotificationsEnabled} onValueChange={toggleNotifications} trackColor={{ true: theme.tint }} />} showChevron={false} />
         </View>
 
@@ -507,7 +508,6 @@ export default function SettingsScreen() {
           <SettingsItem icon={<Music color="#1DB954" size={22} />} label="Our Songs" theme={theme} onPress={() => setIsOurSongsVisible(true)} />
           <SettingsItem icon={<Utensils color="#FF2D55" size={22} />} label="Diet Metrics" theme={theme} onPress={() => setIsDietSettingsVisible(true)} />
           <SettingsItem icon={<Briefcase color="#AF52DE" size={22} />} label="Diet Units" theme={theme} onPress={() => setIsDietUnitsVisible(true)} />
-          <SettingsItem icon={<Heart color="#FF2D55" size={22} fill="#FF2D55" />} label="Anniversaries" theme={theme} onPress={() => { loadAnniversaries(); setIsAnniversariesVisible(true); }} />
           <SettingsItem icon={<Wrench color={theme.text} size={22} />} label="Tools" theme={theme} onPress={() => setIsToolsVisible(true)} />
           <SettingsItem icon={<LogOut color="#FF3B30" size={22} />} label="Logout" theme={theme} onPress={() => router.replace('/auth/login')} labelStyle={{ color: "#FF3B30" }} showChevron={false} />
         </View>
@@ -746,70 +746,6 @@ export default function SettingsScreen() {
       </Modal>
 
       {/* 🏷️ WARDROBE CATEGORIES MODAL */}
-      {/* 💖 ANNIVERSARIES MODAL */}
-      <Modal visible={isAnniversariesVisible} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <BlurView intensity={100} tint={colorScheme} style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: theme.text }]}>Anniversaries</Text>
-              <TouchableOpacity onPress={() => setIsAnniversariesVisible(false)}><X size={24} color={theme.text} /></TouchableOpacity>
-            </View>
-
-            <Text style={[styles.sectionLabel, { color: theme.tint }]}>Add New</Text>
-            <View style={{ gap: 10 }}>
-              <TextInput
-                style={[styles.modalInput, { backgroundColor: theme.background, color: theme.text }]}
-                placeholder="Occasion (e.g., Met for first time)"
-                placeholderTextColor={theme.tabIconDefault}
-                value={annivName}
-                onChangeText={setAnnivName}
-              />
-              <TouchableOpacity onPress={() => setAnnivPickerVisible(true)} style={[styles.modalInput, { backgroundColor: theme.background, justifyContent: 'center', height: 44, flexDirection: 'row', alignItems: 'center', gap: 8 }]}>
-                <Calendar size={16} color={theme.text} />
-                <Text style={{ color: theme.text }}>{format(annivDate, 'MMM dd, yyyy')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => { addAnniversary(); }} disabled={!annivName.trim()} style={[styles.addBtnFull, { backgroundColor: annivName.trim() ? '#FF2D55' : '#888' }]}>
-                <Text style={{ color: 'white', fontWeight: '800' }}>Add Anniversary</Text>
-              </TouchableOpacity>
-            </View>
-
-            <Text style={[styles.sectionLabel, { color: theme.tint, marginTop: 20 }]}>Saved ({anniversaries.length})</Text>
-            <FlatList
-              data={anniversaries}
-              keyExtractor={(item) => item.id}
-              ListEmptyComponent={<Text style={{ color: theme.tabIconDefault, textAlign: 'center', marginTop: 20 }}>No anniversaries yet. Add one above ✨</Text>}
-              renderItem={({ item }) => {
-                const d = new Date(item.date);
-                const now = new Date();
-                const thisYear = new Date(now.getFullYear(), d.getMonth(), d.getDate());
-                const next = thisYear < now ? new Date(now.getFullYear() + 1, d.getMonth(), d.getDate()) : thisYear;
-                const daysAway = Math.ceil((next.getTime() - now.getTime()) / 86400000);
-                return (
-                  <View style={[styles.catItem, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12 }]}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ color: theme.text, fontWeight: '700', fontSize: 16 }}>{item.name}</Text>
-                      <Text style={{ color: theme.tabIconDefault, fontSize: 12, marginTop: 2 }}>{format(d, 'MMM dd')} · in {daysAway}d</Text>
-                    </View>
-                    <TouchableOpacity onPress={() => deleteAnniversary(item.id)}>
-                      <Trash2 size={18} color="#FF3B30" />
-                    </TouchableOpacity>
-                  </View>
-                );
-              }}
-            />
-
-            {annivPickerVisible && (
-              <DateTimePicker
-                value={annivDate}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={(_, d) => { setAnnivPickerVisible(Platform.OS === 'ios'); if (d) setAnnivDate(d); }}
-              />
-            )}
-          </BlurView>
-        </View>
-      </Modal>
-
       <Modal visible={isWardrobeSettingsVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <BlurView intensity={100} tint={colorScheme} style={styles.modalContent}>

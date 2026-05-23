@@ -2,6 +2,8 @@ import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { StyleSheet, Pressable, ScrollView, Dimensions, Alert, ActivityIndicator, Image, TouchableOpacity, View, Text, DeviceEventEmitter, Modal, Platform, FlatList } from 'react-native';
 import { Canvas, Path, Skia, useCanvasRef, Group, Rect, LinearGradient, vec, Points, PaintStyle, StrokeCap, StrokeJoin, BlendMode } from '@shopify/react-native-skia';
 import PencilCanvas, { type PencilCanvasRef } from '@/components/PencilCanvas';
+import StickerPicker from '@/components/StickerPicker';
+import { Image as RNImage } from 'react-native';
 import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, { useSharedValue, useAnimatedStyle, runOnJS, withSpring, withTiming, useDerivedValue } from 'react-native-reanimated';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -50,6 +52,15 @@ export default function DrawScreen() {
   // Native PencilKit overlay. Skia legacy path state stays for backwards
   // compatibility (recording/grid mode).
   const pencilRef = useRef<PencilCanvasRef>(null);
+  const [stickerOpen, setStickerOpen] = useState(false);
+  // Stickers placed on the draw board. Each rendered as a React Native
+  // Image so animated GIF / WebP plays natively.
+  const [stickers, setStickers] = useState<Array<{ id: string; uri: string; x: number; y: number; size: number }>>([]);
+  const addStickerToBoard = (uri: string) => {
+    const id = generateUUID();
+    setStickers(s => [...s, { id, uri, x: SCREEN_WIDTH / 2 - 70, y: SCREEN_HEIGHT / 2 - 70, size: 140 }]);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
   
   const [color, setColor] = useState('#FF2D55');
   const [boardBg, setBoardBg] = useState('#FFFFFF');
@@ -541,6 +552,25 @@ export default function DrawScreen() {
               style={StyleSheet.absoluteFill}
               pointerEvents={activeTool === 'pan' ? 'none' : 'auto'}
             />
+
+            {/* Stickers layer — RN <Image> renders animated GIF/WebP natively.
+                Each sticker is draggable via a pan gesture; long-press to delete. */}
+            <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+              {stickers.map((st) => (
+                <TouchableOpacity
+                  key={st.id}
+                  activeOpacity={0.85}
+                  onLongPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                    setStickers(s => s.filter(x => x.id !== st.id));
+                  }}
+                  delayLongPress={350}
+                  style={[styles.draggableStickerWrap, { left: st.x, top: st.y, width: st.size, height: st.size }]}
+                >
+                  <RNImage source={{ uri: st.uri }} style={{ width: '100%', height: '100%' }} resizeMode="contain" />
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
         )}
 
@@ -568,11 +598,18 @@ export default function DrawScreen() {
             <TouchableOpacity onPress={() => setShowPicker('board')} style={styles.tool}><View style={[styles.colorPreview, { backgroundColor: boardBg, borderRadius: 4 }]} /><Layers size={14} color={boardBg === '#FFFFFF' ? '#000' : '#FFF'} style={{position:'absolute'}} /></TouchableOpacity>
             <View style={styles.divider} />
             <TouchableOpacity onPress={() => setShowStrokeSettings(true)} style={styles.tool}><Settings2 size={22} color="#FFF" /></TouchableOpacity>
+            <TouchableOpacity onPress={() => setStickerOpen(true)} style={styles.tool}><Text style={{ fontSize: 18 }}>🎀</Text></TouchableOpacity>
             <TouchableOpacity onPress={undoLastStroke} style={styles.tool}><Undo2 size={22} color="#FFF" /></TouchableOpacity>
             <TouchableOpacity onPress={clearAllStrokes} style={styles.tool}><Trash2 size={22} color="#FF3B30" /></TouchableOpacity>
           </BlurView>
         </View>
         )}
+
+        <StickerPicker
+          visible={stickerOpen}
+          onClose={() => setStickerOpen(false)}
+          onPicked={addStickerToBoard}
+        />
 
         {mode === 'grid' && (
           <View style={[styles.minimalDock, { bottom: insets.bottom + 20 }]}>
@@ -733,6 +770,7 @@ const styles = StyleSheet.create({
   mainDock: { position: 'absolute', alignSelf: 'center', width: '92%', elevation: 15 },
   dockBlur: { flexDirection: 'row', alignItems: 'center', padding: 10, borderRadius: 32, overflow: 'hidden', justifyContent: 'space-around', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
   tool: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
+  draggableStickerWrap: { position: 'absolute' },
   activeTool: { backgroundColor: 'rgba(255,255,255,0.1)' },
   colorPreview: { width: 24, height: 24, borderRadius: 12, borderWidth: 3, borderColor: '#FFF', elevation: 3 },
   divider: { width: 1, height: 24, backgroundColor: 'rgba(255,255,255,0.2)' },

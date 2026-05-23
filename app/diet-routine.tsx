@@ -319,8 +319,10 @@ export default function DietRoutineScreen() {
 
               return (
                 <Animated.View entering={FadeInDown} key={item.id}>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={[styles.routineCard, { backgroundColor: theme.card }]}
+                    onLongPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); deleteRoutine(item.id); }}
+                    delayLongPress={450}
                     onPress={() => {
                       setEditingId(item.id);
                       setNewRoutine({

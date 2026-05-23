@@ -1019,6 +1019,19 @@ function RoutineItemCard({ plan, theme, userName, allRecipes, allIngredients, on
       }
     });
 
+  // Long-press anywhere on the card → delete this routine item from the plan.
+  const onConfirmDelete = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    Alert.alert('Delete from plan?', 'Remove this routine item from the diet plan.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => onDelete && onDelete(plan.id) },
+    ]);
+  };
+  const longPressGesture = Gesture.LongPress()
+    .minDuration(500)
+    .onStart(() => { runOnJS(onConfirmDelete)(); });
+  const composedCardGesture = Gesture.Simultaneous(panGesture, longPressGesture);
+
   const leftHintStyle = useAnimatedStyle(() => ({
     opacity: interpolate(translateX.value, [-120, -40], [1, 0], Extrapolate.CLAMP),
     transform: [{ scale: interpolate(translateX.value, [-150, -40], [1, 0.8], Extrapolate.CLAMP) }]
@@ -1047,7 +1060,7 @@ function RoutineItemCard({ plan, theme, userName, allRecipes, allIngredients, on
     const accentColor = isShared ? '#AF52DE' : '#FF2D55';
     const accentBg = isShared ? 'rgba(175,82,222,0.1)' : 'rgba(255,45,85,0.1)';
     return (
-      <GestureDetector gesture={panGesture}>
+      <GestureDetector gesture={composedCardGesture}>
         <Animated.View style={[{ flex: 1, borderRadius: 40, padding: 30, justifyContent: 'space-between', alignItems: 'center', borderWidth: 1.5, overflow: 'hidden' }, animatedStyle]}>
           <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { justifyContent: 'center', alignItems: 'center', zIndex: 10, borderRadius: 40, overflow: 'hidden' }, leftHintStyle]}>
              <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(255, 59, 48, 0.92)', justifyContent: 'center', alignItems: 'center' }]}>

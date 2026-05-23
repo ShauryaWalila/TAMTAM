@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, View, TouchableOpacity, TextInput, ScrollView, Dimensions, KeyboardAvoidingView, Platform, Alert, ActivityIndicator, ImageBackground, Modal } from 'react-native';
 import { Text, View as ThemedView } from '@/components/Themed';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft, Plus, X, Save, Trash2, Heart, Moon, Sun, Cloud, Calendar as CalIcon } from 'lucide-react-native';
+import { ChevronLeft, Plus, X, Save, Trash2, Heart, Moon, Sun, Cloud, Calendar as CalIcon, Smile, Check } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { MotiView, AnimatePresence } from 'moti';
 import { BlurView } from 'expo-blur';
@@ -13,6 +13,8 @@ import { supabase } from '@/lib/supabase';
 import { updateTamtamWidget } from '@/lib/widget';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
+import { Image } from 'react-native';
+import StickerPicker from '@/components/StickerPicker';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -38,6 +40,11 @@ export default function DiaryScreen() {
   const [currentEntry, setCurrentEntry] = useState<any>(null);
   const [content, setContent] = useState('');
   const [selectedMood, setSelectedMood] = useState('happy');
+  const [attachments, setAttachments] = useState<string[]>([]);
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const autoSaveTimerRef = useRef<any>(null);
+  const editingIdRef = useRef<string | null>(null);
+  const [showStickerPicker, setShowStickerPicker] = useState(false);
 
   useEffect(() => {
     loadUserAndEntries();
@@ -63,35 +70,46 @@ export default function DiaryScreen() {
     setLoading(false);
   };
 
-  const saveEntry = async () => {
-    if (!content.trim()) return;
-    
-    const payload = {
+  // Auto-saves the current entry. Insert on first save (returns id), update
+  // subsequently. Debounced via runAutoSave below.
+  const persistEntry = async () => {
+    const hasContent = content.trim().length > 0;
+    const hasStickers = attachments.length > 0;
+    if (!hasContent && !hasStickers) return;
+    const payload: any = {
       user_id: username,
       content: content.trim(),
       mood: selectedMood,
+      attachments: JSON.stringify(attachments),
       updated_at: new Date().toISOString(),
     };
-
-    let error;
-    if (currentEntry) {
-      const { error: err } = await supabase.from('user_diary').update(payload).eq('id', currentEntry.id);
-      error = err;
-    } else {
-      const { error: err } = await supabase.from('user_diary').insert([payload]);
-      error = err;
-    }
-
-    if (!error) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const editingId = editingIdRef.current;
+    try {
+      if (editingId) {
+        await supabase.from('user_diary').update(payload).eq('id', editingId);
+      } else {
+        const { data, error } = await supabase.from('user_diary').insert([payload]).select().single();
+        if (!error && data?.id) editingIdRef.current = data.id;
+      }
+      setSavedAt(new Date());
       updateTamtamWidget(`Mood: ${selectedMood} - ${content.substring(0, 20)}...`);
-      setIsEditing(false);
-      setContent('');
-      setCurrentEntry(null);
-      fetchEntries(username);
-    } else {
-      Alert.alert('Error', 'Could not save your thoughts.');
-    }
+    } catch {}
+  };
+
+  const runAutoSave = () => {
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => { persistEntry(); }, 800);
+  };
+
+  const closeEditor = async () => {
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    await persistEntry();
+    setIsEditing(false);
+    setContent('');
+    setCurrentEntry(null);
+    editingIdRef.current = null;
+    setSavedAt(null);
+    fetchEntries(username);
   };
 
   const deleteEntry = async (id: string) => {
@@ -111,8 +129,33 @@ export default function DiaryScreen() {
     setCurrentEntry(entry);
     setContent(entry ? entry.content : '');
     setSelectedMood(entry ? entry.mood : 'happy');
+    // Normalise attachments — may be stored as JSON string or array.
+    let initialAtts: string[] = [];
+    if (entry?.attachments) {
+      try {
+        initialAtts = typeof entry.attachments === 'string' ? JSON.parse(entry.attachments) : entry.attachments;
+        if (!Array.isArray(initialAtts)) initialAtts = [];
+      } catch { initialAtts = []; }
+    }
+    setAttachments(initialAtts);
+    editingIdRef.current = entry ? entry.id : null;
+    setSavedAt(null);
+    setShowStickerPicker(false);
     setIsEditing(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  // Trigger auto-save whenever content / mood / stickers change.
+  useEffect(() => {
+    if (!isEditing) return;
+    if (!content.trim() && attachments.length === 0) return;
+    runAutoSave();
+  }, [content, selectedMood, attachments, isEditing]);
+
+  const parseAttachments = (raw: any): string[] => {
+    if (!raw) return [];
+    if (Array.isArray(raw)) return raw;
+    try { const p = JSON.parse(raw); return Array.isArray(p) ? p : []; } catch { return []; }
   };
 
   if (loading && !isEditing) {
@@ -150,7 +193,12 @@ export default function DiaryScreen() {
               transition={{ delay: index * 100 }}
               style={styles.entryCard}
             >
-              <TouchableOpacity activeOpacity={0.7} onPress={() => openEditor(entry)}>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => openEditor(entry)}
+                onLongPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); deleteEntry(entry.id); }}
+                delayLongPress={450}
+              >
                 <View style={styles.entryHeader}>
                   <View style={styles.dateBadge}>
                     <Text style={styles.dateDay}>{format(new Date(entry.created_at), 'dd')}</Text>
@@ -160,12 +208,20 @@ export default function DiaryScreen() {
                     <Text style={styles.entryMood}>Feeling {entry.mood}</Text>
                     <Text style={styles.entryTime}>{format(new Date(entry.created_at), 'hh:mm a')}</Text>
                   </View>
-                  <TouchableOpacity onPress={() => deleteEntry(entry.id)}>
-                    <Trash2 size={18} color="#C4A484" opacity={0.5} />
-                  </TouchableOpacity>
                 </View>
                 <View style={styles.lining}>
-                  <Text style={styles.entryContent} numberOfLines={4}>{entry.content}</Text>
+                  {!!entry.content && <Text style={styles.entryContent} numberOfLines={4}>{entry.content}</Text>}
+                  {(() => {
+                    const atts = parseAttachments(entry.attachments);
+                    if (atts.length === 0) return null;
+                    return (
+                      <View style={styles.cardStickerStrip}>
+                        {atts.slice(0, 6).map((uri, i) => (
+                          <Image key={uri + i} source={{ uri }} style={styles.cardStickerImg} resizeMode="contain" />
+                        ))}
+                      </View>
+                    );
+                  })()}
                 </View>
               </TouchableOpacity>
             </MotiView>
@@ -179,15 +235,22 @@ export default function DiaryScreen() {
           <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
           <View style={styles.editorPaper}>
             <View style={styles.editorHeader}>
-              <TouchableOpacity onPress={() => setIsEditing(false)}><X size={24} color="#5D4037" /></TouchableOpacity>
+              <TouchableOpacity onPress={closeEditor}><X size={24} color="#5D4037" /></TouchableOpacity>
               <Text style={styles.editorTitle}>{currentEntry ? 'Editing Memory' : 'New Thought'}</Text>
-              <TouchableOpacity onPress={saveEntry}><Save size={24} color="#5D4037" /></TouchableOpacity>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <Text style={{ fontSize: 10, fontWeight: '800', color: '#C4A484', letterSpacing: 0.5 }}>
+                  {savedAt ? `SAVED ${format(savedAt, 'HH:mm')}` : 'AUTOSAVE'}
+                </Text>
+                <TouchableOpacity onPress={() => setShowStickerPicker(true)}>
+                  <Smile size={22} color="#5D4037" />
+                </TouchableOpacity>
+              </View>
             </View>
 
             <View style={styles.moodPicker}>
               {MOODS.map(m => (
-                <TouchableOpacity 
-                  key={m.value} 
+                <TouchableOpacity
+                  key={m.value}
                   onPress={() => setSelectedMood(m.value)}
                   style={[styles.moodItem, selectedMood === m.value && styles.moodSelected]}
                 >
@@ -198,19 +261,41 @@ export default function DiaryScreen() {
 
             <View style={styles.paperContent}>
               <View style={styles.redMargin} />
-              <TextInput
-                style={styles.diaryInput}
-                multiline
-                placeholder="Write here..."
-                placeholderTextColor="#A0A0A0"
-                value={content}
-                onChangeText={setContent}
-                autoFocus
-              />
+              <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingRight: 20 }} keyboardShouldPersistTaps="handled">
+                <TextInput
+                  style={styles.diaryInput}
+                  multiline
+                  placeholder="Write here..."
+                  placeholderTextColor="#A0A0A0"
+                  value={content}
+                  onChangeText={setContent}
+                  autoFocus
+                />
+                {attachments.length > 0 && (
+                  <View style={styles.stickerStrip}>
+                    {attachments.map((uri, i) => (
+                      <TouchableOpacity
+                        key={uri + i}
+                        onLongPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setAttachments(a => a.filter((_, idx) => idx !== i)); }}
+                        delayLongPress={350}
+                        style={styles.stickerWrap}
+                      >
+                        <Image source={{ uri }} style={styles.stickerImg} resizeMode="contain" />
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </ScrollView>
             </View>
           </View>
         </View>
       </Modal>
+
+      <StickerPicker
+        visible={showStickerPicker}
+        onClose={() => setShowStickerPicker(false)}
+        onPicked={(uri) => { setAttachments(a => [...a, uri]); }}
+      />
     </View>
   );
 }
@@ -263,5 +348,10 @@ const styles = StyleSheet.create({
   moodSelected: { borderWidth: 2, borderColor: '#C4A484' },
   paperContent: { flex: 1, flexDirection: 'row' },
   redMargin: { width: 2, height: '100%', backgroundColor: '#FFBABA', marginLeft: 40, marginRight: 15 },
-  diaryInput: { flex: 1, paddingVertical: 20, paddingRight: 20, fontSize: 18, lineHeight: 28, color: '#5D4037', textAlignVertical: 'top', fontStyle: 'italic' }
+  diaryInput: { paddingVertical: 20, paddingRight: 20, fontSize: 18, lineHeight: 28, color: '#5D4037', textAlignVertical: 'top', fontStyle: 'italic', minHeight: 240 },
+  stickerStrip: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, paddingTop: 14, paddingBottom: 30, paddingRight: 10 },
+  stickerWrap: { width: 88, height: 88, borderRadius: 14, overflow: 'hidden', backgroundColor: 'rgba(196,164,132,0.08)' },
+  stickerImg: { width: '100%', height: '100%' },
+  cardStickerStrip: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 12 },
+  cardStickerImg: { width: 48, height: 48, borderRadius: 10 },
 });

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { StyleSheet, View, Text, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, Dimensions, Pressable, Modal, Image } from 'react-native';
-import { Shirt, Plus, X, Check, Trash2, Edit3, ChevronDown, Tags, Type, AlignLeft, Briefcase, CheckCircle2, Package, Eye, ArrowRight, Download, ChevronRight, Layers } from 'lucide-react-native';
+import { Shirt, Plus, X, Check, Trash2, Edit3, ChevronDown, Tags, Type, AlignLeft, Briefcase, CheckCircle2, Package, Eye, ArrowRight, Download, ChevronRight, Layers, Search, CheckSquare, Square } from 'lucide-react-native';
 import { MotiView, AnimatePresence } from 'moti';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -43,6 +43,8 @@ export default function Wardrobe({ userId, tripId, isSettingsMode, onClose, onDr
   
   // Selection Logic
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  // Settings-mode-only: search text + bulk-delete confirmation.
+  const [wardrobeSearch, setWardrobeSearch] = useState('');
   
   // View/Edit State
   const [viewingItem, setViewingItem] = useState<any | null>(null);
@@ -147,12 +149,30 @@ export default function Wardrobe({ userId, tripId, isSettingsMode, onClose, onDr
   };
 
   const groupedItems = useMemo(() => {
-    return items.reduce((acc: any, item) => {
-      if (!acc[item.category]) acc[item.category] = [];
-      acc[item.category].push(item);
-      return acc;
-    }, {});
-  }, [items]);
+    const q = wardrobeSearch.trim().toLowerCase();
+    return items
+      .filter(item => !q || (item.name || '').toLowerCase().includes(q) || (item.category || '').toLowerCase().includes(q) || (item.description || '').toLowerCase().includes(q))
+      .reduce((acc: any, item) => {
+        if (!acc[item.category]) acc[item.category] = [];
+        acc[item.category].push(item);
+        return acc;
+      }, {});
+  }, [items, wardrobeSearch]);
+
+  const bulkDeleteSelected = () => {
+    if (selectedIds.length === 0) return;
+    Alert.alert(`Delete ${selectedIds.length} item${selectedIds.length === 1 ? '' : 's'}?`, 'Permanent — cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: async () => {
+        try {
+          await supabase.from('wardrobe').delete().in('id', selectedIds);
+        } catch {}
+        setSelectedIds([]);
+        fetchWardrobe();
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } },
+    ]);
+  };
 
   const toggleCategory = (cat: string) => {
     setExpandedCategories(prev => prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]);
@@ -229,6 +249,35 @@ export default function Wardrobe({ userId, tripId, isSettingsMode, onClose, onDr
           </View>
         </View>
 
+        {isSettingsMode && (
+          <View style={styles.searchRow}>
+            <View style={[styles.searchInputWrap, { backgroundColor: theme.card }]}>
+              <Search size={16} color={theme.tabIconDefault} />
+              <TextInput
+                value={wardrobeSearch}
+                onChangeText={setWardrobeSearch}
+                placeholder="Search wardrobe items..."
+                placeholderTextColor={theme.tabIconDefault}
+                style={[styles.searchInputField, { color: theme.text }]}
+              />
+              {!!wardrobeSearch && (
+                <TouchableOpacity onPress={() => setWardrobeSearch('')}><X size={14} color={theme.tabIconDefault} /></TouchableOpacity>
+              )}
+            </View>
+            {selectedIds.length > 0 && (
+              <TouchableOpacity onPress={bulkDeleteSelected} style={styles.bulkDeleteBtn}>
+                <Trash2 size={16} color="#fff" />
+                <Text style={styles.bulkDeleteText}>{selectedIds.length}</Text>
+              </TouchableOpacity>
+            )}
+            {selectedIds.length === 0 && items.length > 0 && (
+              <TouchableOpacity onPress={() => setSelectedIds(items.map((i: any) => i.id))} style={[styles.bulkDeleteBtn, { backgroundColor: theme.tabIconDefault + '40' }]}>
+                <CheckSquare size={16} color={theme.text} />
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
         {loading && items.length === 0 ? (
           <View style={styles.centered}><ActivityIndicator color={theme.tint} /></View>
         ) : (
@@ -248,12 +297,14 @@ export default function Wardrobe({ userId, tripId, isSettingsMode, onClose, onDr
                         const isSelected = selectedIds.includes(item.id);
                         
                         return (
-                          <TouchableOpacity 
-                            key={item.id} 
+                          <TouchableOpacity
+                            key={item.id}
                             activeOpacity={0.8}
-                            onPress={() => tripId ? toggleSelection(item.id) : setViewingItem(item)}
+                            onPress={() => (tripId || isSettingsMode) ? toggleSelection(item.id) : setViewingItem(item)}
+                            onLongPress={() => isSettingsMode ? setViewingItem(item) : null}
+                            delayLongPress={350}
                             style={[
-                              styles.itemCard, 
+                              styles.itemCard,
                               isSelected && { borderColor: theme.tint, borderWidth: 2, backgroundColor: theme.tint + '05' },
                               isHanged && { backgroundColor: '#f9f9f9', borderColor: '#eee' }
                             ]}
@@ -345,6 +396,11 @@ export default function Wardrobe({ userId, tripId, isSettingsMode, onClose, onDr
 }
 
 const styles = StyleSheet.create({
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: HORIZONTAL_PADDING, marginBottom: 8 },
+  searchInputWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 14 },
+  searchInputField: { flex: 1, fontSize: 14 },
+  bulkDeleteBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#FF3B30', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12 },
+  bulkDeleteText: { color: '#fff', fontWeight: '900', fontSize: 13 },
   container: { flex: 1, backgroundColor: '#FFFFFF' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 25, paddingBottom: 15 },
   headerSubtitle: { fontSize: 10, fontWeight: '900', letterSpacing: 2 },
