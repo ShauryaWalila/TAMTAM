@@ -119,6 +119,86 @@ Make routines audible:
 
 Useful for cooking timers, workouts.
 
+### B10. Make Sure Budget / Finance Alerts Surface
+
+Budget breach alerts are **local notifications fired from inside TAMTAM** — no remote push, no server. To make sure they reach the lock screen / banner / vibrate properly:
+
+1. iOS **Settings → Notifications → TAMTAM**:
+   - **Allow Notifications = ON**.
+   - **Lock Screen + Notification Center + Banners = all ON**.
+   - **Banner Style** = Persistent (so a money alert doesn't vanish in 2 seconds while you scroll the web).
+   - **Sounds = ON**, **Badges = ON**.
+   - **Show Previews** = "Always" (the alert body has no figures anyway — privacy is preserved by design).
+2. **Focus filters**: by default, Focus modes (Do Not Disturb, Sleep, Work) will silence the alerts. If you want them to break through, scroll to **Notifications → TAMTAM → Time Sensitive Notifications → Allow**. Now critical money alerts ring even during DND.
+3. Inside TAMTAM, the alert grants permission on first launch. If you accidentally denied it, go to iOS Settings → TAMTAM → Notifications → Allow.
+
+**No Shortcut needed for budget alerts.** They fire when the app:
+- Saves a new transaction (yours or partner's, when sync arrives).
+- Opens the Finance screen (background scan catches anything that happened on the other device).
+
+**Privacy note:** The notification body never includes amounts, category names, or merchant descriptions. Only `"A budget limit has been reached."` plus a one-line generic hint (e.g. "Too many transactions in a short window"). Safe to leave previews on.
+
+**For partner-side breach pings** (optional): TAMTAM currently only fires the alert on the device of the user whose budget was breached. If you want partner alerts too (gentle "your partner hit a limit" ping), tell me and I'll wire it via a Supabase realtime channel.
+
+---
+
+### B9. Bank-SMS → Auto Finance Entries
+
+iOS doesn't let third-party apps read SMS. Workaround: a Personal Automation that fires on every incoming message from your bank, parses the amount + direction, and POSTs it to your TAMTAM Supabase via REST. Only legit bank messages trigger; spam is filtered out by the sender allow-list.
+
+**One-time setup per bank sender:**
+
+1. Find your bank's SMS sender ID (e.g. `HDFCBK`, `VK-SBIINB`, `BX-AXISBK`). Note it.
+2. Open **Shortcuts → Automation → +** → **Create Personal Automation** → **Message**.
+3. **Sender** → **Choose** → type/paste the bank ID. **Message contains** → leave empty (we filter in the script). **Run Without Confirmation = ON.** Next.
+4. Add Action: **Get Contents of URL** with:
+   - URL: `https://<your-project>.supabase.co/rest/v1/finances`
+   - Method: `POST`
+   - Headers:
+     - `apikey`: `<SUPABASE_ANON_KEY>`
+     - `Authorization`: `Bearer <SUPABASE_ANON_KEY>`
+     - `Content-Type`: `application/json`
+     - `Prefer`: `return=minimal`
+   - Body (JSON):
+     ```json
+     {
+       "user_id": "<your user_name in TAMTAM, lowercase>",
+       "amount": -<PARSED_AMOUNT>,
+       "category": "auto-bank",
+       "description": "<SHORT_DESC_FROM_MESSAGE>",
+       "type": "debit",
+       "transaction_date": "<YYYY-MM-DD>",
+       "source": "sms_bank",
+       "bank_ref": "<TXN_ID_OR_MSG_FIRST_60_CHARS>"
+     }
+     ```
+5. The trick: use the Shortcut's **Get Text from Input** + **Match Text** + **Calculate** actions to:
+   - Pull the SMS body (Shortcut input → `Message`).
+   - Regex out the amount: pattern `(?:Rs\.?|INR|₹)\s?([\d,]+\.?\d*)`.
+   - Regex direction: keyword `debited|sent|paid|withdrawn|w/d` → amount is negative; `credited|received|deposited|cr` → positive.
+   - Spam filter: bail out (Stop Shortcut) if the message does NOT contain any of those keywords.
+6. **Run Without Confirmation = ON.** Save.
+
+**Recommended sender allow-list (India banks):**
+`HDFCBK`, `SBIINB`, `ICICIB`, `AXISBK`, `KOTAKB`, `BOIIND`, `PNBSMS`, `YESBNK`, `IDFCFB`, `INDUSB`, `BARODA`, `CANBNK`. Create one Automation per sender you use.
+
+**For each spouse/partner**, use their own `user_id` and their own bank senders. Same Supabase endpoint, anon key works for both.
+
+**Reverse direction (income):** the same Automation handles it via the keyword regex. Amount goes in positive when the body says "credited".
+
+**Verification:** open TAMTAM → Finance tab → recent transactions list. The auto-captured row shows a small "SMS" badge (after the schema migration below). Wrong row? Long-press → delete (won't re-import the same SMS unless that exact message arrives again).
+
+**Manual entries in addition to auto:**
+- Tap **+** in Finance → add transaction → pick **today** or any back-dated date → it's stored under that date and slotted into the right grouping. `source = 'manual'`.
+
+**Trip-scoped finance:**
+- When you're inside a Trip → Plan → Finance, all the same actions apply but the entry gets `trip_id` set automatically. The home Finance screen ignores `trip_id` and shows everything (source of truth); the trip screen filters down to that trip's date range only.
+
+**Budgets:**
+- Add a budget in Finance → Budgets → choose frequency (daily / weekly / monthly / yearly). When the period rolls over, a fresh tracker for the next period auto-spawns. Old period stays in history.
+
+---
+
 ### B8. (Optional) Focus-Mode Bypass for Critical Alerts
 
 For proximity alerts you want even during Do Not Disturb:

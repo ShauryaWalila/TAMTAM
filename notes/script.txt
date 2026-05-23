@@ -2327,4 +2327,380 @@ create table if not exists public.anniversaries (
 
 
 
+  do $$
+declare
+  t text;
+  tbls text[] := array[
+    'posts','moments','trips','places','finances','tasks','profiles',
+    'timetable','meetings','targets','calendar_events',
+    'bucket_items','wardrobe','itinerary_items','itinerary_outfits','trip_canvas',
+    'wardrobe_categories','trip_wardrobe','bucket_categories',
+    'user_balances','trip_balances',
+    'wishlist',
+    'chill_categories','chill_items',
+    'haptic_signals',
+    'study_decks','study_cards','study_whiteboards','focus_sessions','active_study_sessions',
+    'study_exams','study_habit_log','study_brain_dump','study_syllabus','study_naps','study_routines',
+    'user_diary',
+    'trip_songs',
+    'diet_metrics','diet_units','ingredients','recipes','recipe_ingredients',
+    'diet_plans','diet_settings','diet_goals',
+    'anniversaries',
+    'system_config'
+  ];
+begin
+  -- Make sure anniversaries exists before iterating.
+  create table if not exists public.anniversaries (
+    id text primary key,
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+    name text not null,
+    date text not null,
+    created_by text
+  );
+
+  foreach t in array tbls loop
+    -- Skip tables that don't exist (some may not have been created in this DB).
+    if not exists (
+      select 1 from information_schema.tables
+      where table_schema = 'public' and table_name = t
+    ) then
+      raise notice 'skip %: not in this DB', t;
+      continue;
+    end if;
+
+    -- Enable RLS.
+    execute format('alter table public.%I enable row level security', t);
+
+    -- Drop legacy policies that may block anon / DELETE.
+    execute format('drop policy if exists "Allow all for authenticated users" on public.%I', t);
+    execute format('drop policy if exists "Shared Diet Access"               on public.%I', t);
+    execute format('drop policy if exists "Enable access for all"            on public.%I', t);
+    execute format('drop policy if exists "Public access"                    on public.%I', t);
+    execute format('drop policy if exists "Shared Access"                    on public.%I', t);
+    execute format('drop policy if exists "Allow public read access"         on public.%I', t);
+    execute format('drop policy if exists "Allow authenticated insert"       on public.%I', t);
+    execute format('drop policy if exists "Allow authenticated delete"       on public.%I', t);
+    execute format('drop policy if exists "Allow authenticated read access"  on public.%I', t);
+    execute format('drop policy if exists "TAMTAM full access"               on public.%I', t);
+
+    -- Single permissive policy: anon + authenticated, all operations.
+    execute format(
+      'create policy "TAMTAM full access" on public.%I as permissive for all to public using (true) with check (true)',
+      t
+    );
+
+    -- Enable realtime (silently skip if already added).
+    begin
+      execute format('alter publication supabase_realtime add table public.%I', t);
+    exception when duplicate_object then
+      null;
+    end;
+  end loop;
+end $$;
+
+
+
+
+
+select schemaname, tablename, policyname, cmd, roles
+from   pg_policies
+where  schemaname = 'public'
+order  by tablename, policyname;
+
+
+
+
+
+
+
+
+create table if not exists public.study_chats (
+    id text primary key,
+    title text not null default 'New Chat',
+    user_id text,
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+    updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+  );
+
+  create table if not exists public.study_chat_messages (
+    id text primary key,
+    chat_id text not null references public.study_chats(id) on delete cascade,
+    sender text not null,
+    text text not null,
+    data text,
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null
+  );
+
+  create index if not exists idx_study_chat_messages_chat
+    on public.study_chat_messages(chat_id, created_at);
+
+  -- RLS: permissive (anon + authenticated) so the anon-key client can read/write
+  alter table public.study_chats         enable row level security;
+  alter table public.study_chat_messages enable row level security;
+
+  drop policy if exists "TAMTAM full access" on public.study_chats;
+  drop policy if exists "TAMTAM full access" on public.study_chat_messages;
+
+  create policy "TAMTAM full access" on public.study_chats
+    as permissive for all to public using (true) with check (true);
+  create policy "TAMTAM full access" on public.study_chat_messages
+    as permissive for all to public using (true) with check (true);
+
+  -- Realtime so messages propagate live across devices
+  do $$ begin
+    begin alter publication supabase_realtime add table public.study_chats; exception when duplicate_object then null;
+  end;
+    begin alter publication supabase_realtime add table public.study_chat_messages; exception when duplicate_object then
+   null; end;
+  end $$;
+
+  -- Sanity check
+  select tablename, policyname, cmd, roles
+  from   pg_policies
+  where  schemaname = 'public' and tablename in ('study_chats','study_chat_messages')
+  order  by tablename, policyname;
+
+
+
+
+
+
+
+
+
+
+   create table if not exists public.user_memories (
+    id text primary key,
+    kind text not null,
+    content text not null,
+    source_chat_id text,
+    source_message_id text,
+    user_id text,
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null
+  );
+  create index if not exists idx_user_memories_user on public.user_memories(user_id, created_at);
+
+  create table if not exists public.chat_summaries (
+    chat_id text primary key references public.study_chats(id) on delete cascade,
+    topic text,
+    takeaways text,
+    updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+  );
+
+  alter table public.user_memories  enable row level security;
+  alter table public.chat_summaries enable row level security;
+  drop policy if exists "TAMTAM full access" on public.user_memories;
+  drop policy if exists "TAMTAM full access" on public.chat_summaries;
+  create policy "TAMTAM full access" on public.user_memories  as permissive for all to public using (true) with check
+  (true);
+  create policy "TAMTAM full access" on public.chat_summaries as permissive for all to public using (true) with check
+  (true);
+
+  do $$ begin
+    begin alter publication supabase_realtime add table public.user_memories;  exception when duplicate_object then
+  null; end;
+    begin alter publication supabase_realtime add table public.chat_summaries; exception when duplicate_object then
+  null; end;
+  end $$;
+
+
+
+
+
+
+
+
+
+  create table if not exists public.anatomy_library (
+    id text primary key,
+    title text not null,
+    system text,
+    url text not null,
+    kind text not null default 'image',
+    license text,
+    local_path text,
+    is_offline integer default 0,
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null
+  );
+
+  alter table public.anatomy_library enable row level security;
+  drop policy if exists "TAMTAM full access" on public.anatomy_library;
+  create policy "TAMTAM full access" on public.anatomy_library
+    as permissive for all to public using (true) with check (true);
+
+  do $$ begin
+    begin alter publication supabase_realtime add table public.anatomy_library; exception when duplicate_object then
+  null; end;
+  end $$;
+
+
+
+
+
+
+
+
+
+
+ create table if not exists public.partner_locations (
+    user_id text primary key,
+    latitude double precision not null,
+    longitude double precision not null,
+    accuracy double precision,
+    updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+  );
+
+  alter table public.partner_locations enable row level security;
+  drop policy if exists "TAMTAM full access" on public.partner_locations;
+  create policy "TAMTAM full access" on public.partner_locations
+    as permissive for all to public using (true) with check (true);
+
+  do $$ begin
+    begin alter publication supabase_realtime add table public.partner_locations; exception when duplicate_object then
+  null; end;
+  end $$;
+
+
+
+
+
+
+
+  -- Finance overhaul: add columns for back-dated entries, SMS auto-capture,
+  -- and trip-scoping.
+
+  alter table public.finances add column if not exists transaction_date date;
+  alter table public.finances add column if not exists source text default 'manual';
+  alter table public.finances add column if not exists bank_ref text;
+  alter table public.finances add column if not exists trip_id uuid references public.trips(id) on delete set null;
+
+  create index if not exists idx_finances_user_date on public.finances(user_id, transaction_date desc);
+  create index if not exists idx_finances_trip       on public.finances(trip_id);
+  create index if not exists idx_finances_bank_ref   on public.finances(bank_ref);
+
+  -- Dedupe protection so a Shortcut firing twice for the same SMS won't double-add.
+  create unique index if not exists uniq_finances_bank_ref
+    on public.finances(user_id, bank_ref)
+    where bank_ref is not null;
+
+  -- Starting balance per user (one row each). Source of truth for "what was in
+  -- the account before TAMTAM started tracking". All finance.amount rows then
+  -- aggregate on top.
+  create table if not exists public.account_starting_balance (
+    user_id text primary key,
+    amount numeric(14, 2) not null default 0,
+    currency text default 'INR',
+    updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+  );
+
+  alter table public.account_starting_balance enable row level security;
+  drop policy if exists "TAMTAM full access" on public.account_starting_balance;
+  create policy "TAMTAM full access" on public.account_starting_balance
+    as permissive for all to public using (true) with check (true);
+
+  -- Budgets: recurring + frequency. Keep current `targets` table; add columns
+  -- for auto-recur logic. The app reads `last_period_end` to decide if it
+  -- needs to spawn the next period.
+  alter table public.targets add column if not exists frequency text;       -- 'daily' | 'weekly' | 'monthly' | 'yearly'
+  alter table public.targets add column if not exists is_recurring boolean default true;
+  alter table public.targets add column if not exists last_period_end date;
+
+  -- Realtime + already in the publication via one-shot SQL; re-add to be sure.
+  do $$ begin
+    begin alter publication supabase_realtime add table public.account_starting_balance; exception when duplicate_object
+   then null; end;
+  end $$;
+
+
+
+
+
+
+
+  alter table public.targets add column if not exists kind text default 'period_overall';
+  -- 'period_overall'    — all expenses in window vs target
+  -- 'period_category'   — expenses in window filtered by category
+  -- 'single_txn'        — alert if ANY transaction > target
+  -- 'velocity'          — alert if > target transactions within window
+  alter table public.targets add column if not exists threshold_pct numeric default 1.0;
+  alter table public.targets add column if not exists notified_at timestamp with time zone;
+  alter table public.targets add column if not exists notify_on_warn boolean default false;
+
+
+
+
+
+
+
+
+  -- User-learnt category rules. Tiny: ~50 bytes/row.
+  create table if not exists public.user_finance_rules (
+    id text primary key,
+    user_id text not null,
+    pattern text not null,                -- lowercase substring or regex token
+    category text not null,
+    is_regex boolean default false,
+    hit_count integer default 1,
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null
+  );
+  create index if not exists idx_user_rules_user on public.user_finance_rules(user_id);
+  alter table public.user_finance_rules enable row level security;
+  drop policy if exists "TAMTAM full access" on public.user_finance_rules;
+  create policy "TAMTAM full access" on public.user_finance_rules as permissive for all to public using (true) with
+  check (true);
+
+  -- Year-end-friendly monthly snapshots. 12 rows/user/year. Negligible.
+  create table if not exists public.monthly_snapshots (
+    user_id text not null,
+    ym text not null,                     -- 'YYYY-MM'
+    total_expense numeric(14, 2) default 0,
+    total_income  numeric(14, 2) default 0,
+    close_balance numeric(14, 2) default 0,
+    txn_count integer default 0,
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+    primary key (user_id, ym)
+  );
+  alter table public.monthly_snapshots enable row level security;
+  drop policy if exists "TAMTAM full access" on public.monthly_snapshots;
+  create policy "TAMTAM full access" on public.monthly_snapshots as permissive for all to public using (true) with check
+   (true);
+
+  -- Gift jar: ideas captured for partner. Only visible to capturer.
+  create table if not exists public.gift_jar (
+    id text primary key,
+    captured_by text not null,            -- this user
+    for_partner text not null,            -- partner user_id
+    text text not null,
+    source text default 'manual',         -- 'manual' | 'diary' | 'chill_item'
+    source_ref text,                       -- id of source row
+    is_given boolean default false,
+    captured_at timestamp with time zone default timezone('utc'::text, now()) not null
+  );
+  create index if not exists idx_gift_jar_capturer on public.gift_jar(captured_by);
+  alter table public.gift_jar enable row level security;
+  drop policy if exists "TAMTAM full access" on public.gift_jar;
+  create policy "TAMTAM full access" on public.gift_jar as permissive for all to public using (true) with check (true);
+
+  -- finances: add a column for one-tap split linkage so mirror rows reference back.
+  alter table public.finances add column if not exists split_from text;
+
+  do $$ begin
+    begin alter publication supabase_realtime add table public.user_finance_rules; exception when duplicate_object then
+  null; end;
+    begin alter publication supabase_realtime add table public.monthly_snapshots;  exception when duplicate_object then
+  null; end;
+    begin alter publication supabase_realtime add table public.gift_jar;           exception when duplicate_object then
+  null; end;
+  end $$;
+
+
+
+
+
+
+
+
+
+
+
   

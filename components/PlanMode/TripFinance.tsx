@@ -137,11 +137,20 @@ export default function TripFinance({ tripId, trip, onClose }: TripFinanceProps)
 
   const fetchTransactions = async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from('finances')
-      .select('*')
-      .eq('trip_id', tripId)
-      .order('created_at', { ascending: false });
+    // Trip-scoped query. A row counts toward this trip if EITHER:
+    //   (a) trip_id matches explicitly (manual trip-finance entries), OR
+    //   (b) transaction_date falls inside the trip's date range
+    //       (auto-captured SMS rows during the trip — main finance is source
+    //       of truth but the trip view filters them down to its window).
+    const startDate = trip?.start_date ? new Date(trip.start_date).toISOString().slice(0, 10) : null;
+    const endDate = trip?.end_date ? new Date(trip.end_date).toISOString().slice(0, 10) : null;
+    let query = supabase.from('finances').select('*');
+    if (startDate && endDate) {
+      query = query.or(`trip_id.eq.${tripId},and(transaction_date.gte.${startDate},transaction_date.lte.${endDate})`);
+    } else {
+      query = query.eq('trip_id', tripId);
+    }
+    const { data } = await query.order('created_at', { ascending: false });
     if (data) setTransactions(data);
     setLoading(false);
   };

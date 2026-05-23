@@ -111,13 +111,13 @@ export const initialFullSync = async (shouldClear = false) => {
   // 2. BACKGROUND DATA (The rest, non-blocking)
   const backgroundSync = async () => {
     try {
-      await syncTable('finances', supabase.from('finances').select('*').order('created_at', { ascending: false }).limit(50),
-        n => db.runSync(`INSERT OR REPLACE INTO finances (id, created_at, amount, category, description, user_id, type) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
-          [n.id, n.created_at, n.amount, n.category, n.description, n.user_id, n.type]));
+      await syncTable('finances', supabase.from('finances').select('*').order('created_at', { ascending: false }).limit(200),
+        n => db.runSync(`INSERT OR REPLACE INTO finances (id, created_at, amount, category, description, user_id, type, transaction_date, source, bank_ref, trip_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [n.id, n.created_at, n.amount, n.category, n.description, n.user_id, n.type, n.transaction_date, n.source, n.bank_ref, n.trip_id]));
 
-      await syncTable('targets', supabase.from('targets').select('*'), 
-        n => db.runSync(`INSERT OR REPLACE INTO targets (id, created_at, title, target_amount, current_amount, category, user_id, type, period, start_date, end_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
-          [n.id, n.created_at, n.title, n.target_amount, n.current_amount, n.category, n.user_id, n.type, n.period, n.start_date, n.end_date]));
+      await syncTable('targets', supabase.from('targets').select('*'),
+        n => db.runSync(`INSERT OR REPLACE INTO targets (id, created_at, title, target_amount, current_amount, category, user_id, type, period, start_date, end_date, kind, threshold_pct, notified_at, notify_on_warn) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [n.id, n.created_at, n.title, n.target_amount, n.current_amount, n.category, n.user_id, n.type, n.period, n.start_date, n.end_date, n.kind, n.threshold_pct, n.notified_at, n.notify_on_warn ? 1 : 0]));
 
       await syncTable('study_decks', supabase.from('study_decks').select('*'), 
         d => db.runSync(`INSERT OR REPLACE INTO study_decks (id, title, description, color, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?)`, 
@@ -197,6 +197,18 @@ export const initialFullSync = async (shouldClear = false) => {
       await syncTable('partner_locations', supabase.from('partner_locations').select('*'),
         n => db.runSync(`INSERT OR REPLACE INTO partner_locations (user_id, latitude, longitude, accuracy, updated_at) VALUES (?, ?, ?, ?, ?)`,
           [n.user_id, n.latitude, n.longitude, n.accuracy, n.updated_at]), 'user_id');
+
+      await syncTable('user_finance_rules', supabase.from('user_finance_rules').select('*'),
+        n => db.runSync(`INSERT OR REPLACE INTO user_finance_rules (id, user_id, pattern, category, is_regex, hit_count, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [n.id, n.user_id, n.pattern, n.category, n.is_regex ? 1 : 0, n.hit_count, n.created_at]));
+
+      await syncTable('monthly_snapshots', supabase.from('monthly_snapshots').select('*'),
+        n => db.runSync(`INSERT OR REPLACE INTO monthly_snapshots (user_id, ym, total_expense, total_income, close_balance, txn_count, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [n.user_id, n.ym, n.total_expense, n.total_income, n.close_balance, n.txn_count, n.created_at]), 'ym');
+
+      await syncTable('gift_jar', supabase.from('gift_jar').select('*'),
+        n => db.runSync(`INSERT OR REPLACE INTO gift_jar (id, captured_by, for_partner, text, source, source_ref, is_given, captured_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [n.id, n.captured_by, n.for_partner, n.text, n.source, n.source_ref, n.is_given ? 1 : 0, n.captured_at]));
 
       // DIET SYSTEM SYNC
       await syncTable('diet_settings', supabase.from('diet_settings').select('*'),

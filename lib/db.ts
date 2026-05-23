@@ -205,7 +205,11 @@ export const initDB = () => {
         type TEXT,
         period TEXT,
         start_date DATE,
-        end_date DATE
+        end_date DATE,
+        kind TEXT DEFAULT 'period_overall',
+        threshold_pct REAL DEFAULT 1.0,
+        notified_at TEXT,
+        notify_on_warn INTEGER DEFAULT 0
       );
 
       -- Calendar Events (Home)
@@ -226,8 +230,53 @@ export const initDB = () => {
         category TEXT,
         description TEXT,
         user_id TEXT,
-        type TEXT
+        type TEXT,
+        transaction_date TEXT,
+        source TEXT DEFAULT 'manual',
+        bank_ref TEXT,
+        trip_id TEXT,
+        split_from TEXT
       );
+
+      -- Learnt category rules (auto-improves categoriser over time).
+      CREATE TABLE IF NOT EXISTS user_finance_rules (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        pattern TEXT NOT NULL,
+        category TEXT NOT NULL,
+        is_regex INTEGER DEFAULT 0,
+        hit_count INTEGER DEFAULT 1,
+        created_at DATETIME DEFAULT (datetime('now'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_user_rules_user ON user_finance_rules(user_id);
+
+      -- One row per (user, YYYY-MM). End-of-month auto-snapshot.
+      CREATE TABLE IF NOT EXISTS monthly_snapshots (
+        user_id TEXT NOT NULL,
+        ym TEXT NOT NULL,
+        total_expense REAL DEFAULT 0,
+        total_income REAL DEFAULT 0,
+        close_balance REAL DEFAULT 0,
+        txn_count INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT (datetime('now')),
+        PRIMARY KEY (user_id, ym)
+      );
+
+      -- Gift idea jar.
+      CREATE TABLE IF NOT EXISTS gift_jar (
+        id TEXT PRIMARY KEY,
+        captured_by TEXT NOT NULL,
+        for_partner TEXT NOT NULL,
+        text TEXT NOT NULL,
+        source TEXT DEFAULT 'manual',
+        source_ref TEXT,
+        is_given INTEGER DEFAULT 0,
+        captured_at DATETIME DEFAULT (datetime('now'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_gift_jar_capturer ON gift_jar(captured_by);
+      CREATE INDEX IF NOT EXISTS idx_finances_user_date ON finances(user_id, transaction_date DESC);
+      CREATE INDEX IF NOT EXISTS idx_finances_trip ON finances(trip_id);
+      CREATE INDEX IF NOT EXISTS idx_finances_bank_ref ON finances(bank_ref);
 
       -- Study Decks
       CREATE TABLE IF NOT EXISTS study_decks (

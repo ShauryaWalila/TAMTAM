@@ -7,7 +7,15 @@ import Colors from '@/constants/Colors';
 import { Wallet, Plus, X, Trash2, ArrowDownCircle, ArrowUpCircle, Filter, PieChart as PieChartIcon, Landmark, ReceiptText, Users, User, Target, ChevronRight, TrendingUp, Heart, Calendar, Clock, RotateCcw, Download } from 'lucide-react-native';
 import { format, addDays, addWeeks, addMonths, isAfter, isBefore, startOfDay, endOfDay, differenceInDays } from 'date-fns';
 import { supabase } from '@/lib/supabase';
-import { db, queueSyncOperation } from '@/lib/db';
+import { db, queueSyncOperation, generateUUID } from '@/lib/db';
+import { categoriseDescription, ALL_CATEGORIES, CATEGORY_META } from '@/lib/financeCategories';
+import { runBudgetRollover } from '@/lib/budgets';
+import { checkAllBudgetAlerts } from '@/lib/budgetAlerts';
+import {
+  smartCategorise, learnCategoryRule,
+  detectSubscriptions, predictBills, computeSpendingForecast,
+  splitTransactionWithPartner, ensureMonthlySnapshots,
+} from '@/lib/financeIntelligence';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import * as SecureStore from 'expo-secure-store';
@@ -90,6 +98,7 @@ export default function FinanceScreen() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showTargetModal, setShowTargetModal] = useState(false);
   const [showBalanceModal, setShowBalanceModal] = useState(false);
+  const [recatTxn, setRecatTxn] = useState<any | null>(null);
   const [balanceEditUser, setBalanceEditUser] = useState<'me' | 'partner' | null>(null);
   const [editBalance, setEditBalance] = useState('');
   
@@ -110,7 +119,14 @@ export default function FinanceScreen() {
   const [targetTitle, setTargetTitle] = useState('');
   const [targetAmount, setTargetAmount] = useState('');
   const [targetType, setTargetType] = useState<'budget' | 'savings'>('budget');
-  const [targetPeriod, setTargetPeriod] = useState<'weekly' | 'monthly' | 'custom'>('monthly');
+  const [targetPeriod, setTargetPeriod] = useState<'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom'>('monthly');
+  // Budget kind — drives the alert engine. period_overall = whole window.
+  // period_category = window + single category. single_txn = any txn > amount.
+  // velocity = transaction COUNT cap in window.
+  const [targetKind, setTargetKind] = useState<'period_overall' | 'period_category' | 'single_txn' | 'velocity'>('period_overall');
+  const [targetCategory, setTargetCategory] = useState<string>('All');
+  const [targetThresholdPct, setTargetThresholdPct] = useState<number>(1.0); // 0.8 = warn at 80%
+  const [targetRecurring, setTargetRecurring] = useState<boolean>(true);
   const [startDate, setStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(format(addMonths(new Date(), 1), 'yyyy-MM-dd'));
 
@@ -165,9 +181,17 @@ export default function FinanceScreen() {
       const other = name?.toLowerCase() === 'pratishth' ? 'love' : 'pratishth';
       setOtherUserName(other);
       
+      // Roll over any recurring budgets whose period ended.
+      if (name) runBudgetRollover(name);
+      // Background-check budget breaches every time the screen mounts so the
+      // user gets reminded even if the breach happened on the partner's device.
+      if (name) checkAllBudgetAlerts(name).catch(() => {});
+      // Ensure last-12-months snapshot rows exist (idempotent, skips already-written months).
+      if (name) ensureMonthlySnapshots(name);
+
       // Load from SQLite first
       refreshFromSQLite();
-      
+
       if (name && other) {
         fetchBalances(name, other);
       }
@@ -319,21 +343,43 @@ export default function FinanceScreen() {
     if (!amount || isNaN(parseFloat(amount)) || !currentUserName) return;
     setIsSaving(true);
     const id = generateUUID();
-    const payload = {
+    // Auto-categorise unless the user already set one explicitly. Uses
+    // smartCategorise which prefers user-learnt rules over the built-in
+    // patterns, so corrections stick over time.
+    const desc = description.trim();
+    const autoCategory = (category === 'Other' || !category)
+      ? smartCategorise(currentUserName, desc, type === 'income' ? parseFloat(amount) : -parseFloat(amount))
+      : category;
+    // Compose the back-dated transaction_date from the day/month/year wheels.
+    const monthIdx = Math.max(0, MONTHS.indexOf(selMonth));
+    const txnDate = `${selYear}-${String(monthIdx + 1).padStart(2, '0')}-${String(selDay).padStart(2, '0')}`;
+    const payload: any = {
       id,
       amount: parseFloat(amount),
       type,
-      category,
-      description: description.trim(),
+      category: autoCategory,
+      description: desc,
       user_id: currentUserName.toLowerCase(),
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      transaction_date: txnDate,
+      source: 'manual',
     };
 
     try {
-      db.runSync(`INSERT INTO finances (id, amount, type, category, description, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
-        [payload.id, payload.amount, payload.type, payload.category, payload.description, payload.user_id, payload.created_at]);
-      
+      db.runSync(`INSERT INTO finances (id, amount, type, category, description, user_id, created_at, transaction_date, source) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [payload.id, payload.amount, payload.type, payload.category, payload.description, payload.user_id, payload.created_at, payload.transaction_date, payload.source]);
+
       queueSyncOperation('finances', payload.id, 'INSERT', payload);
+
+      // After every save, scan budgets — fires a local notification if any
+      // limit was breached. Notification has NO figures, no category, no
+      // description — privacy preserved.
+      if (currentUserName) {
+        checkAllBudgetAlerts(currentUserName, {
+          amount: parseFloat(amount),
+          category: autoCategory,
+        }).catch(() => {});
+      }
 
       setShowAddModal(false);
       setAmount(''); setDescription('');
@@ -372,15 +418,22 @@ export default function FinanceScreen() {
     
     let finalStart = startDate;
     let finalEnd = endDate;
-    if (targetPeriod === 'weekly') {
-      finalStart = format(startOfDay(new Date()), 'yyyy-MM-dd');
-      finalEnd = format(addWeeks(new Date(), 1), 'yyyy-MM-dd');
+    const todayStart = format(startOfDay(new Date()), 'yyyy-MM-dd');
+    if (targetPeriod === 'daily') {
+      finalStart = todayStart;
+      finalEnd = todayStart;
+    } else if (targetPeriod === 'weekly') {
+      finalStart = todayStart;
+      finalEnd = format(addDays(addWeeks(new Date(), 1), -1), 'yyyy-MM-dd');
     } else if (targetPeriod === 'monthly') {
-      finalStart = format(startOfDay(new Date()), 'yyyy-MM-dd');
-      finalEnd = format(addMonths(new Date(), 1), 'yyyy-MM-dd');
+      finalStart = todayStart;
+      finalEnd = format(addDays(addMonths(new Date(), 1), -1), 'yyyy-MM-dd');
+    } else if (targetPeriod === 'yearly') {
+      finalStart = todayStart;
+      finalEnd = format(addDays(addMonths(new Date(), 12), -1), 'yyyy-MM-dd');
     }
 
-    const payload = {
+    const payload: any = {
       id,
       title: targetTitle,
       target_amount: parseFloat(targetAmount),
@@ -389,14 +442,19 @@ export default function FinanceScreen() {
       period: targetPeriod,
       start_date: finalStart,
       end_date: finalEnd,
-      category: 'General',
+      category: targetKind === 'period_category' ? targetCategory : 'All',
       user_id: currentUserName.toLowerCase(),
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      kind: targetKind,
+      threshold_pct: targetThresholdPct,
+      notify_on_warn: targetThresholdPct < 1.0 ? 1 : 0,
+      is_recurring: targetRecurring ? 1 : 0,
+      frequency: targetPeriod,
     };
 
     try {
-      db.runSync(`INSERT INTO targets (id, title, target_amount, current_amount, type, period, start_date, end_date, category, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
-        [payload.id, payload.title, payload.target_amount, payload.current_amount, payload.type, payload.period, payload.start_date, payload.end_date, payload.category, payload.user_id, payload.created_at]);
+      db.runSync(`INSERT INTO targets (id, title, target_amount, current_amount, type, period, start_date, end_date, category, user_id, created_at, kind, threshold_pct, notify_on_warn) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [payload.id, payload.title, payload.target_amount, payload.current_amount, payload.type, payload.period, payload.start_date, payload.end_date, payload.category, payload.user_id, payload.created_at, payload.kind, payload.threshold_pct, payload.notify_on_warn]);
       
       queueSyncOperation('targets', payload.id, 'INSERT', payload);
 
@@ -660,22 +718,32 @@ export default function FinanceScreen() {
                   transition={{ delay: i < 10 ? i * 50 : 0 }} 
                   style={[styles.txCard, { backgroundColor: theme.card }]}
                 >
-                  <View style={[styles.txIcon, { backgroundColor: isDebit ? '#FF3B3015' : '#34C75915' }]}>
-                    <Text style={{ fontSize: 18 }}>{CATEGORIES.find(c => c.id === t.category)?.icon || (isDebit ? '💸' : '💰')}</Text>
-                  </View>
+                  <TouchableOpacity
+                    onPress={() => setRecatTxn(t)}
+                    style={[styles.txIcon, { backgroundColor: (CATEGORY_META[t.category as keyof typeof CATEGORY_META]?.color || (isDebit ? '#FF3B30' : '#34C759')) + '15' }]}
+                  >
+                    <Text style={{ fontSize: 18 }}>{CATEGORY_META[t.category as keyof typeof CATEGORY_META]?.emoji || CATEGORIES.find(c => c.id === t.category)?.icon || (isDebit ? '💸' : '💰')}</Text>
+                  </TouchableOpacity>
                   <View style={styles.txMain}>
-                    <Text style={[styles.txDesc, { color: theme.text }]} numberOfLines={1}>
-                      {t.description || t.category}
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={[styles.txDesc, { color: theme.text, flexShrink: 1 }]} numberOfLines={1}>
+                        {t.description || t.category}
+                      </Text>
+                      {t.source === 'sms_bank' && (
+                        <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, backgroundColor: '#5856D620' }}>
+                          <Text style={{ fontSize: 9, fontWeight: '900', color: '#5856D6', letterSpacing: 0.5 }}>SMS</Text>
+                        </View>
+                      )}
+                    </View>
                     <Text style={[styles.txDate, { color: theme.tabIconDefault }]}>
-                      {format(new Date(t.created_at), 'h:mm a')} • {format(new Date(t.created_at), 'MMM d')}
+                      {t.transaction_date ? format(new Date(t.transaction_date), 'MMM d, yyyy') : format(new Date(t.created_at), 'MMM d, yyyy')} · {t.category || 'Misc'}
                     </Text>
                   </View>
                   <View style={styles.txEnd}>
                     <Text style={[styles.txAmt, { color: isDebit ? '#FF3B30' : '#34C759' }]}>
                       {isDebit ? '-' : '+'}₹{t.amount.toLocaleString()}
                     </Text>
-                    <TouchableOpacity onPress={() => deleteTransaction(t.id)}>
+                    <TouchableOpacity onPress={() => deleteTransaction(t.id)} onLongPress={() => deleteTransaction(t.id)} delayLongPress={350}>
                       <Trash2 color={theme.tabIconDefault} size={14} />
                     </TouchableOpacity>
                   </View>
@@ -818,14 +886,64 @@ export default function FinanceScreen() {
                   <TextInput style={[styles.smallInput, { color: theme.text, fontSize: 20 }]} placeholder="Goal Name (e.g. New Trip)" placeholderTextColor={theme.tabIconDefault} value={targetTitle} onChangeText={setTargetTitle} />
                   <TextInput style={[styles.bigInput, { color: theme.text }]} placeholder="Amount ₹" placeholderTextColor={theme.tabIconDefault} keyboardType="numeric" value={targetAmount} onChangeText={setTargetAmount} />
                   
+                  <Text style={[styles.inputLabel, { color: theme.tabIconDefault, marginTop: 15 }]}>KIND</Text>
+                  <View style={[styles.freqRow, { flexWrap: 'wrap' }]}>
+                    {[
+                      { k: 'period_overall',  label: 'OVERALL CAP' },
+                      { k: 'period_category', label: 'CATEGORY CAP' },
+                      { k: 'single_txn',      label: 'SINGLE-TXN CAP' },
+                      { k: 'velocity',        label: 'TXN COUNT CAP' },
+                    ].map(({ k, label }) => (
+                      <TouchableOpacity key={k} onPress={() => setTargetKind(k as any)} style={[styles.freqBtn, { backgroundColor: theme.background }, targetKind === k && { backgroundColor: theme.tint }]}>
+                        <Text style={[styles.freqLabel, { color: targetKind === k ? '#FFF' : theme.text, fontSize: 10 }]}>{label}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                  {targetKind === 'period_category' && (
+                    <>
+                      <Text style={[styles.inputLabel, { color: theme.tabIconDefault, marginTop: 15 }]}>CATEGORY</Text>
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 6 }}>
+                        {ALL_CATEGORIES.map(c => (
+                          <TouchableOpacity key={c} onPress={() => setTargetCategory(c)} style={[styles.freqBtn, { backgroundColor: targetCategory === c ? theme.tint : theme.background }]}>
+                            <Text style={{ color: targetCategory === c ? '#FFF' : theme.text, fontSize: 11, fontWeight: '800' }}>{CATEGORY_META[c].emoji} {c}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </>
+                  )}
+
                   <Text style={[styles.inputLabel, { color: theme.tabIconDefault, marginTop: 15 }]}>PERIOD</Text>
-                  <View style={styles.freqRow}>
-                    {['weekly', 'monthly', 'custom'].map(p => (
+                  <View style={[styles.freqRow, { flexWrap: 'wrap' }]}>
+                    {['daily', 'weekly', 'monthly', 'yearly', 'custom'].map(p => (
                       <TouchableOpacity key={p} onPress={() => setTargetPeriod(p as any)} style={[styles.freqBtn, { backgroundColor: theme.background }, targetPeriod === p && { backgroundColor: theme.tint }]}>
                         <Text style={[styles.freqLabel, { color: targetPeriod === p ? '#FFF' : theme.text }]}>{p.toUpperCase()}</Text>
                       </TouchableOpacity>
                     ))}
                   </View>
+
+                  <Text style={[styles.inputLabel, { color: theme.tabIconDefault, marginTop: 15 }]}>ALERT WHEN</Text>
+                  <View style={[styles.freqRow, { flexWrap: 'wrap' }]}>
+                    {[
+                      { pct: 0.5, label: '50%' },
+                      { pct: 0.8, label: '80%' },
+                      { pct: 1.0, label: '100%' },
+                    ].map(({ pct, label }) => (
+                      <TouchableOpacity key={pct} onPress={() => setTargetThresholdPct(pct)} style={[styles.freqBtn, { backgroundColor: theme.background }, targetThresholdPct === pct && { backgroundColor: theme.tint }]}>
+                        <Text style={[styles.freqLabel, { color: targetThresholdPct === pct ? '#FFF' : theme.text }]}>{label}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                  <TouchableOpacity
+                    onPress={() => setTargetRecurring(r => !r)}
+                    style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, marginTop: 10 }}
+                  >
+                    <Text style={{ color: theme.text, fontSize: 13, fontWeight: '700' }}>Auto-recur after period ends</Text>
+                    <View style={{ width: 40, height: 24, borderRadius: 12, padding: 2, backgroundColor: targetRecurring ? theme.tint : theme.tabIconDefault + '40' }}>
+                      <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff', transform: [{ translateX: targetRecurring ? 16 : 0 }] }} />
+                    </View>
+                  </TouchableOpacity>
 
                   {targetPeriod === 'custom' && (
                     <View style={{ flexDirection: 'row', gap: 10, marginTop: 15 }}>
@@ -861,6 +979,46 @@ export default function FinanceScreen() {
           </MotiView>
         )}
       </AnimatePresence>
+
+      {/* Tap a transaction's icon → pick a new category. The choice is saved
+          AND remembered, so the next time same merchant SMS / description
+          arrives the app auto-tags it correctly. */}
+      {recatTxn && (
+        <View style={styles.modalOverlay}>
+          <BlurView intensity={60} tint={colorScheme} style={StyleSheet.absoluteFill} />
+          <TouchableOpacity style={StyleSheet.absoluteFill} onPress={() => setRecatTxn(null)} />
+          <View style={[styles.modalContent, { backgroundColor: theme.card, width: '90%', maxHeight: '80%' }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: theme.text }]} numberOfLines={1}>Categorise: {recatTxn.description || recatTxn.category}</Text>
+              <TouchableOpacity onPress={() => setRecatTxn(null)}><X color={theme.text} size={24} /></TouchableOpacity>
+            </View>
+            <Text style={{ color: theme.tabIconDefault, fontSize: 11, fontWeight: '700', letterSpacing: 0.5, marginBottom: 8 }}>NEW CATEGORY · TAMTAM WILL REMEMBER THIS</Text>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {ALL_CATEGORIES.map(cat => (
+                  <TouchableOpacity
+                    key={cat}
+                    onPress={() => {
+                      if (!currentUserName) return;
+                      try {
+                        db.runSync(`UPDATE finances SET category = ? WHERE id = ?`, [cat, recatTxn.id]);
+                        queueSyncOperation('finances', recatTxn.id, 'UPDATE', { category: cat });
+                        learnCategoryRule(currentUserName, recatTxn.description || '', cat);
+                        refreshFromSQLite();
+                      } catch {}
+                      setRecatTxn(null);
+                    }}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 14, backgroundColor: cat === recatTxn.category ? theme.tint : theme.background }}
+                  >
+                    <Text style={{ fontSize: 14 }}>{CATEGORY_META[cat].emoji}</Text>
+                    <Text style={{ color: cat === recatTxn.category ? '#fff' : theme.text, fontSize: 12, fontWeight: '700' }}>{cat}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      )}
     </ThemedView>
   );
 }
