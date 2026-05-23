@@ -278,11 +278,13 @@ export default function WhiteboardScreen() {
     const newPath = { id: generateUUID(), path: nP, color: activeTool === 'eraser' ? '#fff' : color, strokeWidth: sw, isEraser: activeTool === 'eraser', opacity: activeTool === 'high' ? highOpacity : (activeTool === 'eraser' ? 1 : penOpacity), startX: wX, startY: wY, swOrig: sw };
     currentPathRef.current = newPath;
     lastPointRef.current = { x: wX, y: wY };
+    firstSampleRef.current = true;
     setCurrentPath(newPath);
   }, [activeTool, color, penSize, highSize, eraserSize, penOpacity, highOpacity, scale, translateX, translateY]);
 
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
   const rafPendingRef = useRef(false);
+  const firstSampleRef = useRef(true);
 
   const onDrawUpdate = useCallback((x: number, y: number) => {
     const cp = currentPathRef.current;
@@ -290,9 +292,6 @@ export default function WhiteboardScreen() {
     const wX = (x - translateX.value) / scale.value;
     const wY = (y - translateY.value) / scale.value;
     const lp = lastPointRef.current;
-    // Quadratic smoothing: each new sample becomes a quad control point with
-    // the midpoint of (previous, current) as the end-point. Removes the
-    // jagged line-segments that show up at high sample rates (Apple Pencil).
     if (lp) {
       const midX = (lp.x + wX) / 2;
       const midY = (lp.y + wY) / 2;
@@ -302,9 +301,14 @@ export default function WhiteboardScreen() {
     }
     lastPointRef.current = { x: wX, y: wY };
 
-    // Throttle React re-renders to the display vsync (~60-120 Hz). Pencil
-    // emits ~120 samples/sec; without this, every setState collides with the
-    // next sample and the stroke skips.
+    // First sample after touchDown renders synchronously so the very start of
+    // the stroke is visible immediately. Subsequent samples are batched to
+    // vsync so we never miss strokes at 120Hz Apple Pencil rate.
+    if (firstSampleRef.current) {
+      firstSampleRef.current = false;
+      setCurrentPath({ ...cp });
+      return;
+    }
     if (rafPendingRef.current) return;
     rafPendingRef.current = true;
     requestAnimationFrame(() => {
@@ -320,8 +324,10 @@ export default function WhiteboardScreen() {
       let finalPath = cp.path.copy();
       const bounds = finalPath.getBounds();
       if (bounds.width < 0.1 && bounds.height < 0.1) {
+        // Degenerate stroke -> render as solid round-capped dot, not a ring.
         finalPath = Skia.Path.Make();
-        finalPath.addCircle(cp.startX, cp.startY, cp.swOrig / 2);
+        finalPath.moveTo(cp.startX, cp.startY);
+        finalPath.lineTo(cp.startX + 0.01, cp.startY + 0.01);
       }
       const finalized = { ...cp, path: finalPath };
       if (reviseRef.current) setGlassPaths(p => [...p, finalized]);
@@ -339,8 +345,11 @@ export default function WhiteboardScreen() {
     const wX = (x - translateX.value) / s;
     const wY = (y - translateY.value) / s;
     const sw = (activeTool === 'high' ? highSize : (activeTool === 'eraser' ? eraserSize : penSize)) / s;
+    // Solid dot rendered via a zero-length stroke + round cap. Avoids the
+    // hollow "ring" that addCircle produces under style="stroke".
     const dotPath = Skia.Path.Make();
-    dotPath.addCircle(wX, wY, sw / 2);
+    dotPath.moveTo(wX, wY);
+    dotPath.lineTo(wX + 0.01, wY + 0.01);
     const dot = { id: generateUUID(), path: dotPath, color: activeTool === 'eraser' ? '#fff' : color, strokeWidth: sw, isEraser: activeTool === 'eraser', opacity: activeTool === 'high' ? highOpacity : (activeTool === 'eraser' ? 1 : penOpacity), startX: wX, startY: wY, swOrig: sw };
     if (reviseRef.current) setGlassPaths(p => [...p, dot]);
     else setPaths(prev => { const next = [...prev, dot]; handleSave(next); return next; });
@@ -470,7 +479,20 @@ export default function WhiteboardScreen() {
     translateX.value = focalX.value - (focalX.value - savedTranslateX.value) * s; translateY.value = focalY.value - (focalY.value - savedTranslateY.value) * s;
     scale.value = nS; runOnJS(setZoomText)(`${Math.round(nS * 100)}%`);
   }).onEnd(() => { savedScale.value = scale.value; savedTranslateX.value = translateX.value; savedTranslateY.value = translateY.value; });
-  const composedGesture = Gesture.Simultaneous(Gesture.Exclusive(drawGesture, dotTapGesture, handGesture), pinchGesture, Gesture.Pan().minPointers(3).onUpdate(e => { translateX.value = savedTranslateX.value + e.translationX; translateY.value = savedTranslateY.value + e.translationY; }).onEnd(() => { savedTranslateX.value = translateX.value; savedTranslateY.value = translateY.value; }));
+  // 3-finger pan: capped to 3 pointers so pinch can't piggyback. Saves
+  // translateX/Y on start so the pan tracks correctly without compounding zoom.
+  const threeFingerPan = Gesture.Pan()
+    .minPointers(3)
+    .maxPointers(3)
+    .onStart(() => { savedTranslateX.value = translateX.value; savedTranslateY.value = translateY.value; })
+    .onUpdate(e => { translateX.value = savedTranslateX.value + e.translationX; translateY.value = savedTranslateY.value + e.translationY; })
+    .onEnd(() => { savedTranslateX.value = translateX.value; savedTranslateY.value = translateY.value; });
+  // Race the 3-finger pan against pinch+draw so the moment a 3rd finger lands
+  // pinch can't activate and screw up the zoom.
+  const composedGesture = Gesture.Race(
+    threeFingerPan,
+    Gesture.Simultaneous(Gesture.Exclusive(drawGesture, dotTapGesture, handGesture), pinchGesture),
+  );
 
   const animatedTransform = useDerivedValue(() => [{ translateX: translateX.value }, { translateY: translateY.value }, { scale: scale.value }]);
   const fabG = Gesture.Exclusive(Gesture.Tap().numberOfTaps(2).onEnd(() => runOnJS(setIsDraggable)(!isDraggable)), Gesture.Tap().numberOfTaps(1).onEnd(() => runOnJS(setIsToolsExpanded)(!isToolsExpanded)), Gesture.Pan().enabled(isDraggable).onStart(() => { savedFabX.value = fabX.value; savedFabY.value = fabY.value; }).onUpdate(e => { fabX.value = savedFabX.value + e.translationX; fabY.value = savedFabY.value + e.translationY; }));

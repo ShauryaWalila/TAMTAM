@@ -140,6 +140,10 @@ export default function DrawScreen() {
   };
 
   // ✍️ Core Drawing Logic
+  const lastPointRef = useRef<{ x: number; y: number } | null>(null);
+  const rafPendingRef = useRef(false);
+  const firstSampleRef = useRef(true);
+
   const onStart = (x: number, y: number) => {
     const id = generateUUID();
     const newPath = Skia.Path.Make();
@@ -157,6 +161,8 @@ export default function DrawScreen() {
     };
 
     activePathRef.current = pathData;
+    lastPointRef.current = { x: adjX, y: adjY };
+    firstSampleRef.current = true;
     setCurrentLocalPath(pathData);
 
     // Recording: open a new stroke buffer, anchor session start on first stroke.
@@ -168,13 +174,32 @@ export default function DrawScreen() {
   };
 
   const onUpdate = (x: number, y: number) => {
-    if (activePathRef.current) {
-      const adjX = (x - translateX.value) / scale.value;
-      const adjY = (y - translateY.value) / scale.value;
-      activePathRef.current.path.lineTo(adjX, adjY);
-      setCurrentLocalPath({ ...activePathRef.current });
-      recordingPointsRef.current.push([adjX, adjY]);
+    const cp = activePathRef.current;
+    if (!cp) return;
+    const adjX = (x - translateX.value) / scale.value;
+    const adjY = (y - translateY.value) / scale.value;
+    const lp = lastPointRef.current;
+    if (lp) {
+      const midX = (lp.x + adjX) / 2;
+      const midY = (lp.y + adjY) / 2;
+      cp.path.quadTo(lp.x, lp.y, midX, midY);
+    } else {
+      cp.path.lineTo(adjX, adjY);
     }
+    lastPointRef.current = { x: adjX, y: adjY };
+    recordingPointsRef.current.push([adjX, adjY]);
+    if (firstSampleRef.current) {
+      firstSampleRef.current = false;
+      setCurrentLocalPath({ ...cp });
+      return;
+    }
+    if (rafPendingRef.current) return;
+    rafPendingRef.current = true;
+    requestAnimationFrame(() => {
+      rafPendingRef.current = false;
+      const cur = activePathRef.current;
+      if (cur) setCurrentLocalPath({ ...cur });
+    });
   };
 
   const onEnd = () => {
@@ -197,6 +222,8 @@ export default function DrawScreen() {
       recordingPointsRef.current = [];
 
       activePathRef.current = null;
+      lastPointRef.current = null;
+      rafPendingRef.current = false;
       setTimeout(() => setCurrentLocalPath(null), 16);
     }
   };
@@ -364,10 +391,14 @@ export default function DrawScreen() {
       savedTranslateY.value = translateY.value;
     });
 
-  const composedGesture = Gesture.Simultaneous(
-    Gesture.Exclusive(drawGesture, tapGesture, panGesture),
-    pinchGesture,
-    threeFingerPan
+  // 3-finger pan races pinch+draw so pinch can't piggyback on a 3-finger
+  // touch and zoom weirdly.
+  const composedGesture = Gesture.Race(
+    threeFingerPan,
+    Gesture.Simultaneous(
+      Gesture.Exclusive(drawGesture, tapGesture, panGesture),
+      pinchGesture,
+    ),
   );
 
   const animatedTransform = useDerivedValue(() => [{ translateX: translateX.value }, { translateY: translateY.value }, { scale: scale.value }]);
