@@ -17,14 +17,17 @@ if (!lines.some(l => l.includes('https://cdn.cocoapods.org/'))) {
   lines.unshift("source 'https://cdn.cocoapods.org/'");
 }
 
-// 2. Local podspec overrides for RN's third-party C++ deps.
+// 2. Local podspec overrides for RN's third-party C++ deps + our own native
+//    module(s) that live in the repo.
 const deps = [
   "  pod 'boost', :podspec => '../node_modules/react-native/third-party-podspecs/boost.podspec'",
   "  pod 'DoubleConversion', :podspec => '../node_modules/react-native/third-party-podspecs/DoubleConversion.podspec'",
   "  pod 'fast_float', :podspec => '../node_modules/react-native/third-party-podspecs/fast_float.podspec'",
   "  pod 'fmt', :podspec => '../node_modules/react-native/third-party-podspecs/fmt.podspec'",
   "  pod 'glog', :podspec => '../node_modules/react-native/third-party-podspecs/glog.podspec'",
-  "  pod 'RCT-Folly', :podspec => '../node_modules/react-native/third-party-podspecs/RCT-Folly.podspec'"
+  "  pod 'RCT-Folly', :podspec => '../node_modules/react-native/third-party-podspecs/RCT-Folly.podspec'",
+  // In-repo: native PencilKit wrapper (see /pencil-canvas).
+  "  pod 'PencilCanvas', :path => '../pencil-canvas'"
 ];
 
 // 3. Post-install fix-ups applied to every pod target.

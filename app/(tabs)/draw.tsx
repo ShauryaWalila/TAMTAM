@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { StyleSheet, Pressable, ScrollView, Dimensions, Alert, ActivityIndicator, Image, TouchableOpacity, View, Text, DeviceEventEmitter, Modal, Platform, FlatList } from 'react-native';
 import { Canvas, Path, Skia, useCanvasRef, Group, Rect, LinearGradient, vec, Points, PaintStyle, StrokeCap, StrokeJoin, BlendMode } from '@shopify/react-native-skia';
-import { PencilKitView, type PencilKitRef } from 'react-native-pencil-kit';
+import PencilCanvas, { type PencilCanvasRef } from '@/components/PencilCanvas';
 import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, { useSharedValue, useAnimatedStyle, runOnJS, withSpring, withTiming, useDerivedValue } from 'react-native-reanimated';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -47,10 +47,9 @@ export default function DrawScreen() {
   const [paths, setPaths] = useState<DrawingPath[]>([]);
   const [currentLocalPath, setCurrentLocalPath] = useState<DrawingPath | null>(null);
   const activePathRef = useRef<DrawingPath | null>(null);
-  // Native PencilKit handles all real drawing input. Legacy Skia path state
-  // stays for back-compat (existing recordings / grid mode).
-  const pencilRef = useRef<PencilKitRef>(null);
-  const pkLoadedRef = useRef(false);
+  // Native PencilKit overlay. Skia legacy path state stays for backwards
+  // compatibility (recording/grid mode).
+  const pencilRef = useRef<PencilCanvasRef>(null);
   
   const [color, setColor] = useState('#FF2D55');
   const [boardBg, setBoardBg] = useState('#FFFFFF');
@@ -237,14 +236,14 @@ export default function DrawScreen() {
     setPaths(prev => prev.slice(0, -1));
     recordedStrokesRef.current = recordedStrokesRef.current.slice(0, -1);
     if (recordedStrokesRef.current.length === 0) recordingSessionStartRef.current = 0;
-    try { pencilRef.current?.undo?.(); } catch {}
+    try { pencilRef.current?.undo(); } catch {}
   };
 
   const clearAllStrokes = () => {
     setPaths([]);
     recordedStrokesRef.current = [];
     recordingSessionStartRef.current = 0;
-    try { pencilRef.current?.clear?.(); } catch {}
+    try { pencilRef.current?.clear(); } catch {}
   };
 
   const exportDrawing = async () => {
@@ -426,13 +425,13 @@ export default function DrawScreen() {
     const id = generateUUID();
     const now = new Date().toISOString();
     try {
-      // Prefer the PencilKit PNG snapshot — it's what the user actually drew
-      // on the native canvas. Falls back to Skia snapshot for legacy strokes.
+      // Prefer the native PencilKit PNG snapshot — that's what the user
+      // actually drew. Fall back to Skia snapshot for legacy strokes.
       let base64: string | null = null;
       try {
-        const pkPng = await pencilRef.current?.getBase64PngData?.({ scale: 2 });
+        const pkPng = await pencilRef.current?.getPng?.(2);
         if (typeof pkPng === 'string' && pkPng.length > 100) {
-          base64 = pkPng.startsWith('data:') ? pkPng : `data:image/png;base64,${pkPng}`;
+          base64 = `data:image/png;base64,${pkPng}`;
         }
       } catch {}
       if (!base64) {
@@ -462,7 +461,7 @@ export default function DrawScreen() {
         setPaths([]);
         recordedStrokesRef.current = [];
         recordingSessionStartRef.current = 0;
-        try { pencilRef.current?.clear?.(); } catch {}
+        try { pencilRef.current?.clear(); } catch {}
         refreshFromSQLite(); setShowHistory(true);
       }
     } catch (e) { console.warn(e); } finally { setLoading(false); }
@@ -518,21 +517,12 @@ export default function DrawScreen() {
               </Canvas>
             </GestureDetector>
 
-            {/* Native Apple PencilKit overlay for low-latency 120 Hz Pencil
-                input. Touches pass through to Skia gesture when in pan mode. */}
-            <PencilKitView
+            {/* Native PencilKit overlay — owns stroke input. Touches pass
+                through when in pan mode. */}
+            <PencilCanvas
               ref={pencilRef}
               style={StyleSheet.absoluteFill}
               pointerEvents={activeTool === 'pan' ? 'none' : 'auto'}
-              alwaysBounceVertical={false}
-              alwaysBounceHorizontal={false}
-              isOpaque={false}
-              drawingPolicy="anyinput"
-              onCanvasViewDidFinishRendering={() => {
-                if (pkLoadedRef.current) return;
-                pkLoadedRef.current = true;
-                try { pencilRef.current?.showToolPicker?.(); } catch {}
-              }}
             />
           </View>
         )}

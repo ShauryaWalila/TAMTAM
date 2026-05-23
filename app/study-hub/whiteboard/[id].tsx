@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { StyleSheet, View, TouchableOpacity, Dimensions, ScrollView, Modal, TextInput, Linking, Alert, ActivityIndicator, DeviceEventEmitter } from 'react-native';
 import { Canvas, Path, Skia, useCanvasRef, Group, Rect, Points, vec, Image, Text as SkiaText, useImage, matchFont, Circle, RoundedRect } from '@shopify/react-native-skia';
-import { PencilKitView, type PencilKitRef } from 'react-native-pencil-kit';
+import PencilCanvas, { type PencilCanvasRef } from '@/components/PencilCanvas';
 import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, { useSharedValue, runOnJS, useDerivedValue, useAnimatedStyle, cancelAnimation } from 'react-native-reanimated';
 import { Eraser, Pencil, Trash2, ChevronLeft, Target, Hand, ZoomIn, RotateCcw, Highlighter, Palette, Settings2, Image as ImageIcon, Link as LinkIcon, Plus, Check, ExternalLink, Undo2, Sparkles, BrainCircuit, X, Database, PlusCircle } from 'lucide-react-native';
@@ -77,12 +77,11 @@ export default function WhiteboardScreen() {
   const insets = useSafeAreaInsets();
   const theme = Colors[useColorScheme() ?? 'light'];
   const canvasRef = useCanvasRef();
-  // PencilKit (native Apple PencilKit) — handles all drawing input on iOS.
-  // Skia canvas below it stays for images, links, stickers, glass overlay.
-  const pencilRef = useRef<PencilKitRef>(null);
-  const pencilRefGlass = useRef<PencilKitRef>(null);
+  // Native PencilKit canvas — handles all stroke input at 120 Hz with zero
+  // React latency. Skia canvas underneath stays for images/links/stickers.
+  const pencilRef = useRef<PencilCanvasRef>(null);
+  const pencilRefGlass = useRef<PencilCanvasRef>(null);
   const [pkBase64, setPkBase64] = useState<string | null>(null);
-  const pkLoadedRef = useRef(false);
   const pkLatestBase64Ref = useRef<string | null>(null);
 
   const [paths, setPaths] = useState<any[]>([]);
@@ -162,17 +161,16 @@ export default function WhiteboardScreen() {
     setBoard(data);
     let cd = data.canvas_data || {};
     if (typeof cd === 'string') { try { cd = JSON.parse(cd); } catch (e) { cd = {}; } }
-    // Legacy strokes (Skia SVG paths from before the PencilKit migration) stay
-    // rendered as a read-only background. New strokes go to PencilKit.
+    // Legacy Skia strokes stay as a read-only background. New strokes go to
+    // PencilKit (stored as cd.pkBase64).
     const rawPaths = Array.isArray(cd) ? cd : (cd.paths || []);
     setPaths(rawPaths.map((p: any) => ({ ...p, path: Skia.Path.MakeFromSVGString(p.pathString) || Skia.Path.Make() })));
     setImages(data.images || cd.images || []);
     setLinks(data.links || cd.links || []);
-    // PencilKit drawing blob — load once the native view is ready.
     const incomingPk: string | null = cd.pkBase64 || null;
     setPkBase64(incomingPk);
-    if (incomingPk && pkLoadedRef.current && pencilRef.current) {
-      try { pencilRef.current.loadBase64Data(incomingPk); } catch {}
+    if (incomingPk) {
+      try { pencilRef.current?.loadBase64(incomingPk); } catch {}
     }
   };
 
@@ -182,9 +180,12 @@ export default function WhiteboardScreen() {
       setIsSaving(true);
       const savePaths = fP ?? pathsRef.current;
       const sP = savePaths.map((p: any) => ({ id: p.id, color: p.color, strokeWidth: p.strokeWidth, isEraser: p.isEraser, opacity: p.opacity || 1, pathString: p.path?.toSVGString?.() || '' }));
-      // Grab the latest PencilKit blob (collected via onToolPickerVisibilityDidChange / onChange).
-      const pkData = pkLatestBase64Ref.current ?? pkBase64 ?? null;
-      const canvasData = { paths: sP, images: fI ?? imagesRef.current, links: fL ?? linksRef.current, pkBase64: pkData };
+      // Refresh the PencilKit blob right before persisting.
+      try {
+        const live = await pencilRef.current?.getBase64?.();
+        if (typeof live === 'string') pkLatestBase64Ref.current = live;
+      } catch {}
+      const canvasData = { paths: sP, images: fI ?? imagesRef.current, links: fL ?? linksRef.current, pkBase64: pkLatestBase64Ref.current ?? pkBase64 ?? null };
       const updatedAt = new Date().toISOString();
       db.runSync(`INSERT OR REPLACE INTO study_whiteboards (id, title, canvas_data, updated_at) VALUES (?, ?, ?, ?)`, [id as string, boardRef.current?.title || 'Board', JSON.stringify(canvasData), updatedAt]);
       // NOTE: do NOT include last_editor here — that column may not exist on
@@ -543,7 +544,7 @@ export default function WhiteboardScreen() {
 
       <View style={{ flex: 1 }}>
         <GestureDetector gesture={composedGesture}>
-          <Canvas ref={canvasRef} style={StyleSheet.absoluteFill} pointerEvents="auto">
+          <Canvas ref={canvasRef} style={StyleSheet.absoluteFill}>
             <Group transform={animatedTransform}>
               <Rect x={-15000} y={-15000} width={30000} height={30000} color="#fff" />
               {showGrid && <Points points={gridPoints} mode="points" color="#f0f0f0" strokeWidth={2} />}
@@ -576,53 +577,25 @@ export default function WhiteboardScreen() {
           </Canvas>
         </GestureDetector>
 
-        {/* Native Apple PencilKit overlay — handles all stroke input with
-            zero-latency 120 Hz Pencil rendering. Pointer events are routed to
-            it only when the user is in a drawing tool, otherwise touches fall
-            through to the Skia gesture handler (for moving images, selecting
-            links, etc.). */}
-        <PencilKitView
+        {/* Native PencilKit overlay — owns all stroke input. pointerEvents
+            flips so when the user is in a non-drawing tool, touches pass
+            through to the Skia gesture handler for image / link selection. */}
+        <PencilCanvas
           ref={pencilRef}
           style={StyleSheet.absoluteFill}
           pointerEvents={(['pen', 'high', 'eraser'].includes(activeTool) && !reviseRef.current) ? 'auto' : 'none'}
-          alwaysBounceVertical={false}
-          alwaysBounceHorizontal={false}
-          isOpaque={false}
-          drawingPolicy="anyinput"
-          onCanvasViewDidFinishRendering={() => {
-            if (pkLoadedRef.current) return;
-            pkLoadedRef.current = true;
-            try {
-              if (pkBase64) pencilRef.current?.loadBase64Data(pkBase64);
-              // Show iOS native tool picker so user gets infinite colours,
-              // every pen / highlighter / pencil / marker option natively.
-              pencilRef.current?.showToolPicker?.();
-            } catch {}
-          }}
-          onCanvasViewDrawingDidChange={async () => {
-            try {
-              const b64 = await pencilRef.current?.getBase64Data?.();
-              if (typeof b64 === 'string') {
-                pkLatestBase64Ref.current = b64;
-                if ((globalThis as any).__pkSaveDeb) clearTimeout((globalThis as any).__pkSaveDeb);
-                (globalThis as any).__pkSaveDeb = setTimeout(() => handleSave(), 600);
-              }
-            } catch {}
+          onDrawingChange={() => {
+            if ((globalThis as any).__pkSaveDeb) clearTimeout((globalThis as any).__pkSaveDeb);
+            (globalThis as any).__pkSaveDeb = setTimeout(() => handleSave(), 600);
           }}
         />
 
-        {/* Glass / Revise mode — separate PencilKit overlay that never saves */}
+        {/* Glass / revise mode — second canvas, drawings never persisted. */}
         {isReviseMode && (
-          <PencilKitView
+          <PencilCanvas
             ref={pencilRefGlass}
             style={StyleSheet.absoluteFill}
             pointerEvents="auto"
-            alwaysBounceVertical={false}
-            isOpaque={false}
-            drawingPolicy="anyinput"
-            onCanvasViewDidFinishRendering={() => {
-              try { pencilRefGlass.current?.showToolPicker?.(); } catch {}
-            }}
           />
         )}
       </View>
