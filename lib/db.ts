@@ -1,6 +1,33 @@
 import * as SQLite from 'expo-sqlite';
+import { DeviceEventEmitter } from 'react-native';
 
 export const db = SQLite.openDatabaseSync('tamtam_offline.db');
+
+// ── Reminder-touching tables. Any write here triggers a debounced
+// `reminders-changed` event so the app re-schedules local notifications
+// without the user having to touch iOS Shortcuts per item.
+const REMINDER_TABLES = new Set([
+  'chill_items',
+  'timetable',
+  'calendar_events',
+  'meetings',
+  'study_routines',
+  'study_exams',
+  'diet_plans',
+  'anniversaries',
+]);
+const REMINDER_TABLE_RE = new RegExp(
+  `\\b(?:INSERT\\s+INTO|UPDATE|DELETE\\s+FROM)\\s+(${[...REMINDER_TABLES].join('|')})\\b`,
+  'i'
+);
+const _origRunSync = db.runSync.bind(db);
+(db as any).runSync = (sql: string, ...params: any[]) => {
+  const res = _origRunSync(sql, ...params);
+  if (typeof sql === 'string' && REMINDER_TABLE_RE.test(sql)) {
+    try { DeviceEventEmitter.emit('reminders-changed'); } catch {}
+  }
+  return res;
+};
 
 export const generateUUID = () => {
   // Pure JS UUID v4 implementation

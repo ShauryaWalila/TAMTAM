@@ -1,10 +1,18 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
-import { Platform } from 'react-native';
+import { Platform, DeviceEventEmitter } from 'react-native';
 import Constants from 'expo-constants';
 import { supabase } from './supabase';
 import { db } from './db';
 import { addWeeks, addMonths, addYears, set, isAfter, startOfDay, isBefore, setDay } from 'date-fns';
+
+// Single event channel. Any time a reminder-source row is created / edited /
+// deleted, callers should emit 'reminders-changed' — a debounced listener
+// (registered in app/_layout.tsx) calls syncAllNotifications.
+export const REMINDERS_CHANGED = 'reminders-changed';
+export const emitRemindersChanged = () => {
+  try { DeviceEventEmitter.emit(REMINDERS_CHANGED); } catch {}
+};
 
 export async function registerForPushNotificationsAsync() {
   let token;
@@ -99,6 +107,74 @@ export async function syncAllNotifications() {
         if (isAfter(d, now)) addToMap(d, { ...item, type: 'calendar' }, true);
       }
     }
+
+    // ── MEETINGS (couple meet-ups, anniversaries-as-meeting, etc.)
+    try {
+      const meetings = db.getAllSync(`SELECT * FROM meetings`) as any[];
+      for (const m of meetings || []) {
+        if (!m.date) continue;
+        const base = new Date(m.date);
+        const [hh, mm] = (m.time || '09:00').split(':').map((x: string) => parseInt(x, 10));
+        const d = set(base, { hours: hh || 9, minutes: mm || 0, seconds: 0, milliseconds: 0 });
+        if (isAfter(d, now)) addToMap(d, { ...m, title: m.occasion_name || 'Meeting', type: 'meeting' }, true);
+      }
+    } catch {}
+
+    // ── STUDY ROUTINES
+    try {
+      const sroutines = db.getAllSync(`SELECT * FROM study_routines WHERE date IS NOT NULL AND (is_completed IS NULL OR is_completed = 0)`) as any[];
+      for (const r of sroutines || []) {
+        if (!r.date) continue;
+        const base = new Date(r.date);
+        const [hh, mm] = (r.start_time || '09:00').split(':').map((x: string) => parseInt(x, 10));
+        const d = set(base, { hours: hh || 9, minutes: mm || 0, seconds: 0, milliseconds: 0 });
+        if (isAfter(d, now)) addToMap(d, { ...r, title: r.title || 'Study task', type: 'study_routine' }, true);
+      }
+    } catch {}
+
+    // ── STUDY EXAMS (T-1-day countdown + day-of)
+    try {
+      const exams = db.getAllSync(`SELECT * FROM study_exams WHERE exam_date IS NOT NULL`) as any[];
+      for (const e of exams || []) {
+        const examDay = startOfDay(new Date(e.exam_date));
+        const dayOf  = set(examDay, { hours: 8, minutes: 0 });
+        const dayBef = set(addWeeks(examDay, 0), { hours: 18, minutes: 0 });
+        dayBef.setDate(dayBef.getDate() - 1);
+        if (isAfter(dayBef, now)) addToMap(dayBef, { ...e, title: `Exam tomorrow: ${e.title}`, type: 'exam' }, true);
+        if (isAfter(dayOf, now))  addToMap(dayOf,  { ...e, title: `Exam today: ${e.title}`,    type: 'exam' }, true);
+      }
+    } catch {}
+
+    // ── DIET PLANS (meal-time reminders for today + tomorrow only — keeps
+    //    iOS 64-pending-notification budget under control)
+    try {
+      const todayStr = now.toISOString().slice(0, 10);
+      const tomorrow = new Date(now.getTime() + 86400000);
+      const tomorrowStr = tomorrow.toISOString().slice(0, 10);
+      const plans = db.getAllSync(
+        `SELECT * FROM diet_plans WHERE date IN (?, ?) AND (is_eaten IS NULL OR is_eaten = 0) AND meal_time IS NOT NULL`,
+        [todayStr, tomorrowStr]
+      ) as any[];
+      for (const p of plans || []) {
+        const base = new Date(p.date);
+        const [hh, mm] = (p.meal_time || '09:00').split(':').map((x: string) => parseInt(x, 10));
+        const d = set(base, { hours: hh || 9, minutes: mm || 0, seconds: 0, milliseconds: 0 });
+        if (isAfter(d, now)) addToMap(d, { ...p, title: 'Meal time', type: 'diet' }, true);
+      }
+    } catch {}
+
+    // ── ANNIVERSARIES (yearly recurring couple milestones)
+    try {
+      const anns = db.getAllSync(`SELECT * FROM anniversaries`) as any[];
+      for (const a of anns || []) {
+        if (!a.date) continue;
+        const base = new Date(a.date);
+        // Compute the next occurrence (this year or next).
+        let next = new Date(now.getFullYear(), base.getMonth(), base.getDate(), 9, 0, 0);
+        if (next < now) next = new Date(now.getFullYear() + 1, base.getMonth(), base.getDate(), 9, 0, 0);
+        addToMap(next, { ...a, title: `Anniversary: ${a.name}`, type: 'anniversary' }, true);
+      }
+    } catch {}
   } catch (err) {
     console.warn('Sync notifications local read error', err);
   }

@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
 import * as Notifications from 'expo-notifications';
 import * as Haptics from 'expo-haptics';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Platform, DeviceEventEmitter, AppState } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { MotiView, AnimatePresence } from 'moti';
 import { Bell, Clock, MapPin, X, CheckCircle2 } from 'lucide-react-native';
@@ -15,7 +15,7 @@ import { useColorScheme } from '@/components/useColorScheme';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
-import { syncAllNotifications } from '@/lib/notifications';
+import { syncAllNotifications, REMINDERS_CHANGED } from '@/lib/notifications';
 import { initLocationSystem } from '@/lib/location';
 import { initDB } from '@/lib/db';
 import { startSyncEngine, initialFullSync } from '@/lib/syncEngine';
@@ -154,6 +154,27 @@ export default function RootLayout() {
       if (diaryChannel) supabase.removeChannel(diaryChannel);
       if (momentsChannel) supabase.removeChannel(momentsChannel);
       if (postsChannel) supabase.removeChannel(postsChannel);
+    };
+  }, []);
+
+  // Auto-resync local notifications on every reminder mutation + on app
+  // foreground. Debounced so a burst of edits triggers exactly one reschedule.
+  useEffect(() => {
+    let pending: any = null;
+    const trigger = () => {
+      if (pending) clearTimeout(pending);
+      pending = setTimeout(() => { syncAllNotifications().catch(() => {}); }, 600);
+    };
+    const sub = DeviceEventEmitter.addListener(REMINDERS_CHANGED, trigger);
+    const appStateSub = AppState.addEventListener('change', (s) => {
+      if (s === 'active') trigger();
+    });
+    // Re-sync when realtime delivers any partner-side reminder change.
+    DeviceEventEmitter.addListener('DATA_REFRESH', trigger);
+    return () => {
+      sub.remove();
+      appStateSub.remove();
+      if (pending) clearTimeout(pending);
     };
   }, []);
 

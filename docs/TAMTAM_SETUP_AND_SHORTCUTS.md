@@ -28,53 +28,33 @@ Single source for everything you need to know to install TAMTAM via SideStore an
 
 Open the **Shortcuts** app → **Automation** tab → tap **+** (top right) → **Create Personal Automation**. Every recipe below starts from that screen.
 
-### B1. Routines / Schedules (one Shortcut per recurring item)
+### B1. Time-based reminders — handled inside the app (NO Shortcut needed)
 
-App location: `(tabs)/our-life` → routines + `(tabs)/settings` → timetable rows.
+**You do not need to create one Shortcut per reminder anymore.** The app schedules iOS local notifications automatically every time you create / edit / delete any of these from inside TAMTAM:
 
-For each routine row (day + time + activity):
+- Routines + timetable rows (`(tabs)/index` + `(tabs)/settings`)
+- Chill-Zone time reminders (`type: 'reminder'`, `remType: 'time'`)
+- Calendar events
+- Couple meetings
+- Study routines + exam dates (T-1-day + day-of)
+- Diet plans (today + tomorrow meal-time)
+- Anniversaries (yearly recurring)
 
-1. Trigger: **Time of Day** → set time → **Weekly** → check matching weekday → Next.
-2. Action: **Show Notification**
-   - Title: `⏰ Starting: <activity>`
-   - Body: `Time for your routine ✨`
-3. **Run Without Confirmation = ON.** Save.
+How: `lib/notifications.ts → syncAllNotifications()` reads every reminder source from the local SQLite DB and pushes them into `UNUserNotificationCenter` via `expo-notifications`. It runs:
+- on app launch (`app/_layout.tsx`),
+- every time you bring the app to the foreground,
+- on every mutation to a reminder table (auto-fired from `lib/db.ts`'s `runSync` patch — debounced 600 ms),
+- on every partner-side change delivered through the realtime `DATA_REFRESH` event.
 
-Repeat once per (day, time, activity). If a routine repeats on multiple days, create one automation per day.
+**One-time setup:** the first launch will prompt for Notification permission — tap **Allow**. That's it. No per-item Shortcut, ever.
 
-### B2. Chill-Zone Time Reminders
+> **Cap:** iOS limits each app to ~64 pending local notifications. The sync prunes old ones first (`cancelAllScheduledNotificationsAsync`) on each rebuild, then schedules upcoming events. Diet plans are scoped to today + tomorrow to stay under the cap.
 
-App location: `(tabs)/chill-zone` → items with `type: 'reminder'` and `remType: 'time'`.
+> **Free Apple Dev:** local notifications work fully. Only *remote push* (APNs) requires a paid account — TAMTAM doesn't use it.
 
-For each reminder:
+### B4. Proximity Alerts (memories / wishlist pins) — also handled by the app
 
-1. Trigger: **Time of Day** → set time → **Once** or **Daily/Weekly** as appropriate → Next.
-2. Action: **Show Notification**
-   - Title: `⏰ <reminder name>`
-   - Body: `Starting now ❤️`
-3. (Optional) Add second action: **Open App** → TAMTAM.
-4. **Run Without Confirmation = ON.** Save.
-
-If reminder has end_at, repeat with title `✅ Finished: <name>` at end time.
-
-### B3. Calendar Events (one-off dated items)
-
-Two options:
-
-**Option A — iOS Calendar app (recommended for one-off dates):**
-1. Open Calendar → New Event.
-2. Title: `📅 <event name>`
-3. Date + 9:00 AM (app's default trigger time).
-4. Alert: "At time of event". Save.
-
-**Option B — Shortcuts:**
-1. Trigger: Time of Day → set date + time → **Once**.
-2. Action: Show Notification → title `📅 <event name>` → body `Today's plan ✨`.
-3. Run Without Confirmation = ON. Save.
-
-### B4. Proximity Alerts (memories / wishlist pins)
-
-App location: `lib/location.ts` geofences on shared memories + wishlist spots.
+App location: `lib/location.ts` registers iOS geofences automatically for shared memories + wishlist spots and fires a local notification on arrival. The Shortcut recipe below is **only** a backup if iOS rejects an in-app geofence (rare — happens past the ~20-region per-app limit).
 
 For each location pin:
 
@@ -110,14 +90,72 @@ Real-time touches/diary/study pings from Supabase only deliver while app is fore
 
 Heavier hand: skip this if you don't need real-time partner pings (most days you'll open the app yourself anyway).
 
-### B7. (Optional) Spoken Routine Announcer
+### B7. (Optional) Spoken Routine Announcer — only if you want TTS on top of the in-app notification
 
-Make routines audible:
+The app already shows the routine notification (B1). If you also want iOS to *speak* it aloud, create a Shortcut **per recurring routine** (downside: same per-item duplication you wanted to avoid — only set this up for the 1–2 routines you really want spoken):
+
 1. Trigger: Time of Day, weekday + time matching a routine.
-2. Action: **Speak Text** → `Time for <activity>` → then **Show Notification** for visual.
+2. Action: **Speak Text** → `Time for <activity>`.
 3. Run Without Confirmation = ON. Save.
 
-Useful for cooking timers, workouts.
+### B11. Auto-Refresh SideStore + the TAMTAM IPA (no more weekly manual refresh)
+
+Free Apple Dev IPAs expire every 7 days. Goal: device re-signs TAMTAM (and every other sideloaded app) automatically, with zero manual steps, ever again.
+
+The mechanism is **SideStore's Background Refresh**. It uses iOS background fetch to wake SideStore up periodically; when awake, it re-signs all installed apps using your Anisette + pairing-file credentials. The Shortcut layer below acts as a "kick the wheels" backup in case iOS doesn't grant a background slot for a few days.
+
+**One-time setup (do this once, never again):**
+
+1. **Anisette server** — SideStore needs an anisette server to mint Apple auth tokens.
+   - SideStore Settings → **Server URL** → use either:
+     - `https://ani.sidestore.io` (community-hosted, free, default)
+     - OR self-host: https://github.com/SideStore/SideStore-Anisette-Server (best for reliability)
+   - Whichever you pick, save and confirm a successful test.
+2. **Pairing file** — generated by Jitterbug on a Mac/PC ONE time, uploaded to SideStore. Once installed, SideStore stores it; no further computer needed.
+   - Follow https://docs.sidestore.io/getting-started — about 10 minutes total.
+3. **iOS background refresh** — enable it for SideStore:
+   - iOS Settings → **General → Background App Refresh** = ON (master switch).
+   - Find **SideStore** in that same list → toggle ON.
+4. **Inside SideStore** → Settings → enable **Background Refresh**. Some builds also offer **"Refresh attempts per day"** — set to 24 if available.
+5. **VPN trick (SideStore needs an active VPN to refresh in background):**
+   - SideStore installs a local VPN config (loopback) on first run. Make sure **iOS Settings → VPN → SideStore = Connected**. Set the VPN status to "Connect on Demand" if shown.
+   - Without this active VPN, background refresh silently no-ops.
+
+**Auto-launch Shortcut (the safety net):**
+
+In case iOS de-prioritises SideStore's background slot, set up a Personal Automation that opens SideStore daily — when it opens, it auto-refreshes everything (this is its default behavior).
+
+1. iOS **Shortcuts → Automation → +** → **Create Personal Automation**.
+2. **Time of Day** → set to **3:00 AM** (or any time the device is usually plugged in / on WiFi but you're not using it).
+3. **Daily** → Next.
+4. Add action: **Open App** → choose **SideStore**.
+5. **Run Without Confirmation = ON**. Save.
+
+That's it. SideStore opens silently at 3 AM, refreshes all installed apps, certificates renew before the 7-day clock runs out.
+
+**Tighter version (recommended) — twice daily:**
+- Create the same Automation again at **3:00 PM** as a second insurance ping.
+- iOS allows multiple Personal Automations triggering on the same action.
+
+**Plus a weekly safety reminder (only fires if something went wrong):**
+- Personal Automation → **Time of Day → Weekly → Saturday 10 AM**.
+- Action: **Show Notification** → title `"🔁 Check SideStore"`, body `"Quick glance to ensure TAMTAM and SideStore haven't expired."`.
+- Run Without Confirmation = ON.
+
+If everything's running on rails you'll never have to act on this reminder — but it surfaces a problem within a day instead of waiting until the app silently dies.
+
+**Conditions that must stay true for fully-hands-off refresh:**
+- iPhone/iPad regularly plugged in at night, on the same WiFi as your anisette server (if self-hosted).
+- VPN profile for SideStore stays enabled.
+- iOS doesn't kill SideStore's background slot for too many days (this happens if you NEVER open the app — the daily auto-launch above prevents that).
+
+**If something does break:**
+- iOS will show an "Untrusted Developer" prompt next time you launch TAMTAM. The auto-launch Shortcut + SideStore's refresh will fix it within hours.
+- Worst case: open SideStore manually, tap **Refresh All**. One tap, ~10 seconds.
+
+**The bigger picture:** free Apple Dev + SideStore is the trade-off. The above turns it from a weekly chore into a self-healing system. As long as your phone charges at night and your anisette server stays up, you'll never have to think about the 7-day window again.
+
+---
 
 ### B10. Make Sure Budget / Finance Alerts Surface
 
@@ -339,11 +377,10 @@ await Notifications.cancelAllScheduledNotificationsAsync();
 
 - [ ] SideStore IPA installed (Part A1).
 - [ ] Trust developer cert (Part A1.3).
-- [ ] First-launch permission prompts granted: Notifications, Location, Photos, Camera, FaceID.
-- [ ] Routines → one Shortcut each (B1).
-- [ ] Chill-zone reminders with remType:time → one Shortcut each (B2).
-- [ ] Upcoming calendar events → iOS Calendar entries OR Shortcuts (B3).
-- [ ] Shared memory pins → "Arrive" Shortcut each (B4).
-- [ ] Wishlist spots → "Arrive" Shortcut each (B4).
-- [ ] Re-sign reminder Shortcut (B5).
+- [ ] First-launch permission prompts granted: **Notifications**, Location (Always), Photos, Camera, FaceID. Notifications must be **Allow** — that unlocks the entire in-app reminder system (B1).
+- [ ] SideStore auto-refresh stack (B11): Anisette server URL set, pairing file imported, iOS Background App Refresh ON for SideStore + TAMTAM, SideStore Background Refresh ON, daily 3 AM + 3 PM Open-App Shortcuts (B11), weekly Saturday safety reminder.
+- [ ] Bank-SMS Shortcut(s) per bank sender (B9) — *only* one Shortcut needed per **bank**, not per transaction.
+- [ ] (Optional, redundant) Re-sign weekly reminder (B5) — only if you don't trust B11 yet.
 - [ ] (Optional) Hourly app-open Shortcuts (B6) for real-time partner events.
+
+**You do not need any Shortcuts for routines, calendar events, chill-zone reminders, meetings, study schedules, exams, diet plans, anniversaries, or memory / wishlist geofences.** The app handles all of those via local notifications (see B1).
