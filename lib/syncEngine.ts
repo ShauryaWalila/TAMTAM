@@ -115,6 +115,17 @@ export const initialFullSync = async (shouldClear = false) => {
         n => db.runSync(`INSERT OR REPLACE INTO finances (id, created_at, amount, category, description, user_id, type, transaction_date, source, bank_ref, trip_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [n.id, n.created_at, n.amount, n.category, n.description, n.user_id, n.type, n.transaction_date, n.source, n.bank_ref, n.trip_id]));
 
+      // SMS inbox — raw rows pushed by the universal Shortcut. Parser runs
+      // against unprocessed rows after sync completes.
+      await syncTable('sms_inbox', supabase.from('sms_inbox').select('*').order('received_at', { ascending: false }).limit(500),
+        n => db.runSync(`INSERT OR REPLACE INTO sms_inbox (id, user_id, sender, body, body_hash, received_at, processed_at, decision, confidence, parsed_amount, parsed_direction, parsed_merchant, parsed_category, matched_txn_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [n.id, n.user_id, n.sender, n.body, n.body_hash, n.received_at, n.processed_at, n.decision, n.confidence, n.parsed_amount, n.parsed_direction, n.parsed_merchant, n.parsed_category, n.matched_txn_id, n.created_at]));
+
+      // Per-user sender blocklist (#8).
+      await syncTable('sms_sender_blocklist', supabase.from('sms_sender_blocklist').select('*'),
+        n => db.runSync(`INSERT OR REPLACE INTO sms_sender_blocklist (id, user_id, sender_prefix, original_sender, created_at) VALUES (?, ?, ?, ?, ?)`,
+          [n.id, n.user_id, n.sender_prefix, n.original_sender, n.created_at]));
+
       await syncTable('targets', supabase.from('targets').select('*'),
         n => db.runSync(`INSERT OR REPLACE INTO targets (id, created_at, title, target_amount, current_amount, category, user_id, type, period, start_date, end_date, kind, threshold_pct, notified_at, notify_on_warn) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [n.id, n.created_at, n.title, n.target_amount, n.current_amount, n.category, n.user_id, n.type, n.period, n.start_date, n.end_date, n.kind, n.threshold_pct, n.notified_at, n.notify_on_warn ? 1 : 0]));

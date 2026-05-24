@@ -180,51 +180,147 @@ Budget breach alerts are **local notifications fired from inside TAMTAM** — no
 
 ---
 
-### B9. Bank-SMS → Auto Finance Entries
+### B9. Universal Bank-SMS Capture (one Shortcut, every bank, every UPI app)
 
-iOS doesn't let third-party apps read SMS. Workaround: a Personal Automation that fires on every incoming message from your bank, parses the amount + direction, and POSTs it to your TAMTAM Supabase via REST. Only legit bank messages trigger; spam is filtered out by the sender allow-list.
+iOS does not let third-party apps read SMS. **One** Personal Automation captures every transactional SMS — bank, UPI, wallet, card — and posts it raw to a Supabase inbox table. The app does **all** parsing, dedup, spam filtering, and confidence scoring on-device.
 
-**One-time setup per bank sender:**
+**Why one Shortcut, not one per bank:**
+- Sender prefixes rotate ("VK-HDFCBK" today, "AD-HDFCBNK" tomorrow). Sender allowlists rot.
+- UPI apps (PhonePe, GPay, Paytm) send via varied transport SMS sender IDs.
+- iOS message IDs rotate per device → unreliable for dedup. The app dedups via a hash of `(sender + body[:240])` — same SMS = same hash always.
+- Confidence is decided by message *shape*, not source. Parser slots ambiguous rows into a Pending Review tray you tap-approve inside the app.
 
-1. Find your bank's SMS sender ID (e.g. `HDFCBK`, `VK-SBIINB`, `BX-AXISBK`). Note it.
-2. Open **Shortcuts → Automation → +** → **Create Personal Automation** → **Message**.
-3. **Sender** → **Choose** → type/paste the bank ID. **Message contains** → leave empty (we filter in the script). **Run Without Confirmation = ON.** Next.
-4. Add Action: **Get Contents of URL** with:
-   - URL: `https://<your-project>.supabase.co/rest/v1/finances`
+**One-time setup (per phone):**
+
+1. **Shortcuts → Automation → + → Create Personal Automation → Message.**
+2. **Sender** = leave **Any**. **Message contains** = leave empty. Tap **Next**.
+3. Add Action: **If** → "Shortcut Input → Content" → **contains** → `Rs ` → **OK**. Then **Add Action → Otherwise** is empty (you don't need it).
+   - To match more variants, repeat the **If** as an **Or** group with: `Rs.`, `INR`, `₹`, `debited`, `credited`, `UPI`, `paid`, `received`. The whole **If** block is just a coarse pre-filter to skip OTPs / delivery / promo SMS at the device so battery + Supabase quota don't burn. App does the *real* filter.
+4. Inside the **If** body, add Action: **Get Contents of URL**.
+   - URL: `https://<your-project>.supabase.co/rest/v1/sms_inbox`
    - Method: `POST`
    - Headers:
      - `apikey`: `<SUPABASE_ANON_KEY>`
      - `Authorization`: `Bearer <SUPABASE_ANON_KEY>`
      - `Content-Type`: `application/json`
-     - `Prefer`: `return=minimal`
-   - Body (JSON):
+     - `Prefer`: `resolution=ignore-duplicates,return=minimal`
+   - Request Body → **JSON**:
      ```json
      {
-       "user_id": "<your user_name in TAMTAM, lowercase>",
-       "amount": -<PARSED_AMOUNT>,
-       "category": "auto-bank",
-       "description": "<SHORT_DESC_FROM_MESSAGE>",
-       "type": "debit",
-       "transaction_date": "<YYYY-MM-DD>",
-       "source": "sms_bank",
-       "bank_ref": "<TXN_ID_OR_MSG_FIRST_60_CHARS>"
+       "user_id":     "<your user_name lowercase, e.g. pratishth>",
+       "sender":      "Shortcut Input → Sender",
+       "body":        "Shortcut Input → Content",
+       "received_at": "Current Date (ISO 8601)"
      }
      ```
-5. The trick: use the Shortcut's **Get Text from Input** + **Match Text** + **Calculate** actions to:
-   - Pull the SMS body (Shortcut input → `Message`).
-   - Regex out the amount: pattern `(?:Rs\.?|INR|₹)\s?([\d,]+\.?\d*)`.
-   - Regex direction: keyword `debited|sent|paid|withdrawn|w/d` → amount is negative; `credited|received|deposited|cr` → positive.
-   - Spam filter: bail out (Stop Shortcut) if the message does NOT contain any of those keywords.
-6. **Run Without Confirmation = ON.** Save.
+     *Tip: tap each magic-variable placeholder in the Shortcut UI, set type → Sender / Content / Current Date.*
+5. **Run Without Confirmation = ON.** Save.
 
-**Recommended sender allow-list (India banks):**
-`HDFCBK`, `SBIINB`, `ICICIB`, `AXISBK`, `KOTAKB`, `BOIIND`, `PNBSMS`, `YESBNK`, `IDFCFB`, `INDUSB`, `BARODA`, `CANBNK`. Create one Automation per sender you use.
+That's it. **One** Shortcut per phone. Never touch it again. Add a new bank, new UPI app, switch carriers — same Shortcut still works.
 
-**For each spouse/partner**, use their own `user_id` and their own bank senders. Same Supabase endpoint, anon key works for both.
+**For your partner:** they set up the identical Shortcut on their phone with their own `user_id`. Same Supabase endpoint, same anon key, independent ledgers.
 
-**Reverse direction (income):** the same Automation handles it via the keyword regex. Amount goes in positive when the body says "credited".
+**How the app decides (server-side schema does **not** auto-insert into finances — the app does):**
 
-**Verification:** open TAMTAM → Finance tab → recent transactions list. The auto-captured row shows a small "SMS" badge (after the schema migration below). Wrong row? Long-press → delete (won't re-import the same SMS unless that exact message arrives again).
+| Stage | Action |
+|---|---|
+| 1. Dedup | Postgres unique index on `body_hash` → identical SMS dropped silently |
+| 2. Spam denylist | Body matches `OTP / KYC / cashback eligible / won / lucky draw / loan offer` → discarded |
+| 3. Must have amount | Regex `(Rs\.?|INR|₹)\s*\d[\d,.]*` → reject if no amount |
+| 4. Direction | Verb scan: `debited/spent/paid/sent/withdrawn` → debit; `credited/received/refund/deposited` → credit; both → closer-to-amount wins; neither → review tray |
+| 5. Merchant | Regex `to <NAME>` / `at <NAME>` / `VPA <vpa@bank>` |
+| 6. Category | `lib/financeCategories.ts` rule table (no AI, on-device) |
+| 7. Confidence | base 0.45 + 0.30 (direction) + 0.15 (merchant) + 0.10 (bank-shape sender) |
+| 8. Auto-insert? | If `confidence ≥ threshold` (default 70%) **and** direction known → straight into `finances`. Else → Pending Review tray. |
+
+**Adjustable confidence threshold:** open TAMTAM → Finance → tap the "SMS waiting for review" banner → slider at top (50% / 60% / 70% / 80% / 90%). Lower = more auto-adds, more mistakes. Higher = stricter, more rows in review. Default 70% is calibrated for typical Indian bank SMS.
+
+**Pending Review tray:** any uncertain SMS appears in the banner. One tap per row: ✅ Add (with parsed amount / merchant / category pre-filled, editable) or ❌ Discard (marks as spam, never re-imported even if the same SMS resyncs).
+
+**Verification:** open TAMTAM → Finance. Auto-captured rows show an "SMS" badge. The Pending Review banner shows the count waiting for your call.
+
+**Reset / debugging:** Pending Review modal → confidence slider → adjust → app re-runs the parser over all 'review'-marked rows against the new threshold.
+
+#### B9.1 — Supabase migration (run once)
+
+In Supabase SQL Editor:
+
+```sql
+-- Table
+CREATE TABLE IF NOT EXISTS sms_inbox (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  user_id TEXT NOT NULL,
+  sender TEXT,
+  body TEXT NOT NULL,
+  body_hash TEXT NOT NULL,
+  received_at TIMESTAMPTZ DEFAULT now(),
+  processed_at TIMESTAMPTZ,
+  decision TEXT,
+  confidence REAL,
+  parsed_amount REAL,
+  parsed_direction TEXT,
+  parsed_merchant TEXT,
+  parsed_category TEXT,
+  matched_txn_id TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  CONSTRAINT sms_inbox_body_hash_uniq UNIQUE (body_hash)
+);
+
+-- Hash trigger: dedup identical SMS even if sent twice.
+CREATE OR REPLACE FUNCTION sms_inbox_compute_hash() RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.body_hash IS NULL OR NEW.body_hash = '' THEN
+    NEW.body_hash = encode(
+      sha256( (lower(coalesce(NEW.sender,'')) || '|' || left(lower(coalesce(NEW.body,'')), 240))::bytea ),
+      'hex'
+    );
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS sms_inbox_hash_trg ON sms_inbox;
+CREATE TRIGGER sms_inbox_hash_trg BEFORE INSERT ON sms_inbox
+  FOR EACH ROW EXECUTE FUNCTION sms_inbox_compute_hash();
+
+-- Open RLS — same pattern as the rest of TAMTAM tables.
+ALTER TABLE sms_inbox ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS sms_inbox_anon_all ON sms_inbox;
+CREATE POLICY sms_inbox_anon_all ON sms_inbox FOR ALL TO anon USING (true) WITH CHECK (true);
+
+-- Realtime broadcast so the app re-runs the parser the moment a new SMS lands.
+ALTER PUBLICATION supabase_realtime ADD TABLE sms_inbox;
+```
+
+The Shortcut posts `body_hash` empty → trigger computes it → unique index drops the second identical SMS silently (HTTP 201 → 0 rows). Zero duplicate-handling logic needed in the Shortcut.
+
+#### B9.2 — Sender blocklist + auto-redaction (delta migration)
+
+Adds: per-user blocklist (#8). Redaction (#11) is purely client-side, no schema change.
+
+```sql
+CREATE TABLE IF NOT EXISTS sms_sender_blocklist (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  sender_prefix TEXT NOT NULL,
+  original_sender TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  CONSTRAINT sms_blocklist_uniq UNIQUE (user_id, sender_prefix)
+);
+CREATE INDEX IF NOT EXISTS idx_sms_blocklist_user ON sms_sender_blocklist(user_id);
+
+ALTER TABLE sms_sender_blocklist ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS sms_blocklist_anon ON sms_sender_blocklist;
+CREATE POLICY sms_blocklist_anon ON sms_sender_blocklist FOR ALL TO anon USING (true) WITH CHECK (true);
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname='supabase_realtime' AND tablename='sms_sender_blocklist') THEN
+    EXECUTE 'ALTER PUBLICATION supabase_realtime ADD TABLE sms_sender_blocklist';
+  END IF;
+END $$;
+```
+
+**Recurring detection (#5)** is purely on-device — no schema change. Tagged via existing `finances.source = 'sms_bank_recurring'`.
 
 **Manual entries in addition to auto:**
 - Tap **+** in Finance → add transaction → pick **today** or any back-dated date → it's stored under that date and slotted into the right grouping. `source = 'manual'`.
@@ -379,7 +475,7 @@ await Notifications.cancelAllScheduledNotificationsAsync();
 - [ ] Trust developer cert (Part A1.3).
 - [ ] First-launch permission prompts granted: **Notifications**, Location (Always), Photos, Camera, FaceID. Notifications must be **Allow** — that unlocks the entire in-app reminder system (B1).
 - [ ] SideStore auto-refresh stack (B11): Anisette server URL set, pairing file imported, iOS Background App Refresh ON for SideStore + TAMTAM, SideStore Background Refresh ON, daily 3 AM + 3 PM Open-App Shortcuts (B11), weekly Saturday safety reminder.
-- [ ] Bank-SMS Shortcut(s) per bank sender (B9) — *only* one Shortcut needed per **bank**, not per transaction.
+- [ ] Universal SMS-capture Shortcut (B9) — **one** Shortcut per phone, sender=Any, catches every bank / UPI / wallet / card SMS. App handles dedup, spam, confidence, recurring detection on-device.
 - [ ] (Optional, redundant) Re-sign weekly reminder (B5) — only if you don't trust B11 yet.
 - [ ] (Optional) Hourly app-open Shortcuts (B6) for real-time partner events.
 

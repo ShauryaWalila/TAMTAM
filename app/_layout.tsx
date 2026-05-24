@@ -16,6 +16,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
 import { syncAllNotifications, REMINDERS_CHANGED } from '@/lib/notifications';
+import { processSmsInbox, redactOldSmsBodies } from '@/lib/smsParser';
 import { initLocationSystem } from '@/lib/location';
 import { initDB } from '@/lib/db';
 import { startSyncEngine, initialFullSync } from '@/lib/syncEngine';
@@ -90,7 +91,39 @@ export default function RootLayout() {
     syncMeetingWidget();
     syncRoutineWidget();
     syncDistanceWidget();
+
+    // 6. PROCESS ANY SMS-INBOX ROWS WAITING FOR THE PARSER + DAILY REDACTION SWEEP (#11)
+    try {
+      const userName = await SecureStore.getItemAsync('user_name');
+      if (userName) {
+        await processSmsInbox(userName);
+        try { redactOldSmsBodies(userName); } catch {}
+      }
+    } catch {}
   };
+
+  // Re-run the SMS parser whenever the app comes to the foreground or a
+  // DATA_REFRESH event fires (new sms_inbox rows just synced down).
+  useEffect(() => {
+    let pending: any = null;
+    const trigger = async () => {
+      if (pending) return; // coalesce bursts
+      pending = setTimeout(async () => {
+        pending = null;
+        try {
+          const u = await SecureStore.getItemAsync('user_name');
+          if (u) await processSmsInbox(u);
+        } catch {}
+      }, 800);
+    };
+    const appSub = AppState.addEventListener('change', (s) => { if (s === 'active') trigger(); });
+    const refreshSub = DeviceEventEmitter.addListener('DATA_REFRESH', trigger);
+    return () => {
+      appSub.remove();
+      refreshSub.remove();
+      if (pending) clearTimeout(pending);
+    };
+  }, []);
 
   useEffect(() => {
     let diaryChannel: any;

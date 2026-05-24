@@ -305,6 +305,49 @@ export const initDB = () => {
       CREATE INDEX IF NOT EXISTS idx_finances_trip ON finances(trip_id);
       CREATE INDEX IF NOT EXISTS idx_finances_bank_ref ON finances(bank_ref);
 
+      -- ── SMS-INBOX (raw SMS dumped by the universal Shortcut). One row per
+      -- inbound transactional SMS. Parser turns "high-confidence" rows into
+      -- `finances` entries; "low-confidence" rows wait in a Pending Review
+      -- tray on the Finance tab.
+      CREATE TABLE IF NOT EXISTS sms_inbox (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        sender TEXT,
+        body TEXT NOT NULL,
+        body_hash TEXT NOT NULL UNIQUE,         -- sha256(sender + body[:240]) — dedupe (msg id rotates, hash doesn't)
+        received_at DATETIME,                   -- when SMS arrived on device
+        processed_at DATETIME,                  -- when parser ran (NULL = unprocessed)
+        decision TEXT,                          -- 'inserted' | 'review' | 'spam'
+        confidence REAL,                        -- 0..1
+        parsed_amount REAL,
+        parsed_direction TEXT,                  -- 'debit' | 'credit'
+        parsed_merchant TEXT,
+        parsed_category TEXT,
+        matched_txn_id TEXT,                    -- → finances.id (when decision='inserted')
+        created_at DATETIME DEFAULT (datetime('now'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_sms_inbox_unprocessed ON sms_inbox(user_id, processed_at);
+      CREATE INDEX IF NOT EXISTS idx_sms_inbox_decision ON sms_inbox(user_id, decision);
+
+      -- Per-user sender blocklist. Normalized prefix (strip leading "XX-").
+      -- Any incoming SMS from a blocked sender skips parsing → marked 'spam' immediately.
+      CREATE TABLE IF NOT EXISTS sms_sender_blocklist (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        sender_prefix TEXT NOT NULL,        -- normalized: uppercase, no "XX-" prefix
+        original_sender TEXT,               -- raw form at the time of blocking, for display
+        created_at DATETIME DEFAULT (datetime('now')),
+        UNIQUE(user_id, sender_prefix)
+      );
+      CREATE INDEX IF NOT EXISTS idx_sms_blocklist_user ON sms_sender_blocklist(user_id);
+
+      -- Default confidence threshold. Rows with confidence >= this auto-insert
+      -- into finances; lower scores go to Pending Review. User-adjustable in
+      -- Finance → Settings.
+      INSERT OR IGNORE INTO system_config (key, value) VALUES ('sms_confidence_threshold', '0.7');
+      -- Day-bucket of the last redaction sweep. Cleared bodies > 30 days old.
+      INSERT OR IGNORE INTO system_config (key, value) VALUES ('sms_last_redaction_ymd', '');
+
       -- Study Decks
       CREATE TABLE IF NOT EXISTS study_decks (
         id TEXT PRIMARY KEY,

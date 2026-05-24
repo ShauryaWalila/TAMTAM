@@ -2703,4 +2703,368 @@ create table if not exists public.study_chats (
 
 
 
+
+
+
+  ALTER TABLE finances ADD COLUMN IF NOT EXISTS transaction_date DATE;
+  ALTER TABLE finances ADD COLUMN IF NOT EXISTS source TEXT DEFAULT 'manual';
+  ALTER TABLE finances ADD COLUMN IF NOT EXISTS bank_ref TEXT;
+  ALTER TABLE finances ADD COLUMN IF NOT EXISTS trip_id TEXT;
+  ALTER TABLE finances ADD COLUMN IF NOT EXISTS split_from TEXT;
+  CREATE INDEX IF NOT EXISTS idx_finances_user_date ON finances(user_id, transaction_date DESC);
+  CREATE INDEX IF NOT EXISTS idx_finances_trip ON finances(trip_id);
+  CREATE INDEX IF NOT EXISTS idx_finances_bank_ref ON finances(bank_ref);
+
+  -- ── 2. targets: budget-alert metadata
+  ALTER TABLE targets ADD COLUMN IF NOT EXISTS kind TEXT DEFAULT 'period_overall';
+  ALTER TABLE targets ADD COLUMN IF NOT EXISTS threshold_pct REAL DEFAULT 1.0;
+  ALTER TABLE targets ADD COLUMN IF NOT EXISTS notified_at TIMESTAMPTZ;
+  ALTER TABLE targets ADD COLUMN IF NOT EXISTS notify_on_warn BOOLEAN DEFAULT FALSE;
+
+  -- ── 3. Finance intelligence tables
+  CREATE TABLE IF NOT EXISTS user_finance_rules (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    pattern TEXT NOT NULL,
+    category TEXT NOT NULL,
+    is_regex INTEGER DEFAULT 0,
+    hit_count INTEGER DEFAULT 1,
+    created_at TIMESTAMPTZ DEFAULT now()
+  );
+  CREATE INDEX IF NOT EXISTS idx_user_rules_user ON user_finance_rules(user_id);
+
+  CREATE TABLE IF NOT EXISTS monthly_snapshots (
+    user_id TEXT NOT NULL,
+    ym TEXT NOT NULL,
+    total_expense REAL DEFAULT 0,
+    total_income REAL DEFAULT 0,
+    close_balance REAL DEFAULT 0,
+    txn_count INTEGER DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    PRIMARY KEY (user_id, ym)
+  );
+
+  CREATE TABLE IF NOT EXISTS gift_jar (
+    id TEXT PRIMARY KEY,
+    captured_by TEXT NOT NULL,
+    for_partner TEXT NOT NULL,
+    text TEXT NOT NULL,
+    source TEXT DEFAULT 'manual',
+    source_ref TEXT,
+    is_given INTEGER DEFAULT 0,
+    captured_at TIMESTAMPTZ DEFAULT now()
+  );
+  CREATE INDEX IF NOT EXISTS idx_gift_jar_capturer ON gift_jar(captured_by);
+
+  -- ── 4. SMS-INBOX (this session)
+  CREATE TABLE IF NOT EXISTS sms_inbox (
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    user_id TEXT NOT NULL,
+    sender TEXT,
+    body TEXT NOT NULL,
+    body_hash TEXT NOT NULL,
+    received_at TIMESTAMPTZ DEFAULT now(),
+    processed_at TIMESTAMPTZ,
+    decision TEXT,
+    confidence REAL,
+    parsed_amount REAL,
+    parsed_direction TEXT,
+    parsed_merchant TEXT,
+    parsed_category TEXT,
+    matched_txn_id TEXT,
+    created_at TIMESTAMPTZ DEFAULT now()
+  );
+
+  DO $$ BEGIN
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_constraint WHERE conname = 'sms_inbox_body_hash_uniq'
+    ) THEN
+      ALTER TABLE sms_inbox ADD CONSTRAINT sms_inbox_body_hash_uniq UNIQUE (body_hash);
+    END IF;
+  END $$;
+
+  CREATE INDEX IF NOT EXISTS idx_sms_inbox_unprocessed ON sms_inbox(user_id, processed_at);
+  CREATE INDEX IF NOT EXISTS idx_sms_inbox_decision   ON sms_inbox(user_id, decision);
+
+  CREATE OR REPLACE FUNCTION sms_inbox_compute_hash() RETURNS TRIGGER AS $$
+  BEGIN
+    IF NEW.body_hash IS NULL OR NEW.body_hash = '' THEN
+      NEW.body_hash = encode(
+        sha256( (lower(coalesce(NEW.sender,'')) || '|' || left(lower(coalesce(NEW.body,'')), 240))::bytea ),
+        'hex'
+      );
+    END IF;
+    RETURN NEW;
+  END;
+  $$ LANGUAGE plpgsql;
+
+  DROP TRIGGER IF EXISTS sms_inbox_hash_trg ON sms_inbox;
+  CREATE TRIGGER sms_inbox_hash_trg BEFORE INSERT ON sms_inbox
+    FOR EACH ROW EXECUTE FUNCTION sms_inbox_compute_hash();
+
+  -- ── 5. RLS — permissive for anon (matches rest of TAMTAM tables)
+  ALTER TABLE user_finance_rules  ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE monthly_snapshots   ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE gift_jar            ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE sms_inbox           ENABLE ROW LEVEL SECURITY;
+
+  DROP POLICY IF EXISTS user_finance_rules_anon ON user_finance_rules;
+  CREATE POLICY user_finance_rules_anon ON user_finance_rules FOR ALL TO anon USING (true) WITH CHECK (true);
+
+  DROP POLICY IF EXISTS monthly_snapshots_anon ON monthly_snapshots;
+  CREATE POLICY monthly_snapshots_anon ON monthly_snapshots FOR ALL TO anon USING (true) WITH CHECK (true);
+
+  DROP POLICY IF EXISTS gift_jar_anon ON gift_jar;
+  CREATE POLICY gift_jar_anon ON gift_jar FOR ALL TO anon USING (true) WITH CHECK (true);
+
+  DROP POLICY IF EXISTS sms_inbox_anon ON sms_inbox;
+  CREATE POLICY sms_inbox_anon ON sms_inbox FOR ALL TO anon USING (true) WITH CHECK (true);
+
+  -- ── 6. Realtime — app re-runs parser on every new SMS row
+  DO $$ BEGIN
+    PERFORM 1 FROM pg_publication_tables WHERE pubname='supabase_realtime' AND tablename='sms_inbox';
+    IF NOT FOUND THEN
+      EXECUTE 'ALTER PUBLICATION supabase_realtime ADD TABLE sms_inbox';
+    END IF;
+  END $$;
+
+  DO $$ BEGIN
+    PERFORM 1 FROM pg_publication_tables WHERE pubname='supabase_realtime' AND tablename='finances';
+    IF NOT FOUND THEN
+      EXECUTE 'ALTER PUBLICATION supabase_realtime ADD TABLE finances';
+    END IF;
+  END $$;
+
+  DO $$ BEGIN
+    PERFORM 1 FROM pg_publication_tables WHERE pubname='supabase_realtime' AND tablename='targets';
+    IF NOT FOUND THEN
+      EXECUTE 'ALTER PUBLICATION supabase_realtime ADD TABLE targets';
+    END IF;
+      EXECUTE 'ALTER PUBLICATION supabase_realtime ADD TABLE targets';
+    END IF;
+  END $$;
+
+  -- Done. Verify with: SELECT table_name FROM information_schema.tables WHERE table_schema='public' ORDER BY 1;
+
+   ALTER TABLE monthly_snapshots   ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE gift_jar            ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE sms_inbox           ENABLE ROW LEVEL SECURITY;
+
+  DROP POLICY IF EXISTS user_finance_rules_anon ON user_finance_rules;
+  CREATE POLICY user_finance_rules_anon ON user_finance_rules FOR ALL TO anon USING (true) WITH CHECK (true);
+
+  DROP POLICY IF EXISTS monthly_snapshots_anon ON monthly_snapshots;
+  CREATE POLICY monthly_snapshots_anon ON monthly_snapshots FOR ALL TO anon USING (true) WITH CHECK (true);
+
+  DROP POLICY IF EXISTS gift_jar_anon ON gift_jar;
+  CREATE POLICY gift_jar_anon ON gift_jar FOR ALL TO anon USING (true) WITH CHECK (true);
+
+  DROP POLICY IF EXISTS sms_inbox_anon ON sms_inbox;
+  CREATE POLICY sms_inbox_anon ON sms_inbox FOR ALL TO anon USING (true) WITH CHECK (true);
+
+  -- ── 6. Realtime — app re-runs parser on every new SMS row
+  DO $$ BEGIN
+    PERFORM 1 FROM pg_publication_tables WHERE pubname='supabase_realtime' AND tablename='sms_inbox';
+    IF NOT FOUND THEN
+      EXECUTE 'ALTER PUBLICATION supabase_realtime ADD TABLE sms_inbox';
+    END IF;
+  END $$;
+
+  DO $$ BEGIN
+    PERFORM 1 FROM pg_publication_tables WHERE pubname='supabase_realtime' AND tablename='finances';
+    IF NOT FOUND THEN
+      EXECUTE 'ALTER PUBLICATION supabase_realtime ADD TABLE finances';
+    END IF;
+  END $$;
+
+  DO $$ BEGIN
+    PERFORM 1 FROM pg_publication_tables WHERE pubname='supabase_realtime' AND tablename='targets';
+    IF NOT FOUND THEN
+      EXECUTE 'ALTER PUBLICATION supabase_realtime ADD TABLE targets';
+    END IF;
+  END $$;
+
+
+
+
+
+
+
+
+
+
+
+
+
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+  -- ── 1. finances additions
+  ALTER TABLE finances ADD COLUMN IF NOT EXISTS transaction_date DATE;
+  ALTER TABLE finances ADD COLUMN IF NOT EXISTS source TEXT DEFAULT 'manual';
+  ALTER TABLE finances ADD COLUMN IF NOT EXISTS bank_ref TEXT;
+  ALTER TABLE finances ADD COLUMN IF NOT EXISTS trip_id TEXT;
+  ALTER TABLE finances ADD COLUMN IF NOT EXISTS split_from TEXT;
+  CREATE INDEX IF NOT EXISTS idx_finances_user_date ON finances(user_id, transaction_date DESC);
+  CREATE INDEX IF NOT EXISTS idx_finances_trip      ON finances(trip_id);
+  CREATE INDEX IF NOT EXISTS idx_finances_bank_ref  ON finances(bank_ref);
+
+  -- ── 2. targets additions
+  ALTER TABLE targets ADD COLUMN IF NOT EXISTS kind TEXT DEFAULT 'period_overall';
+  ALTER TABLE targets ADD COLUMN IF NOT EXISTS threshold_pct REAL DEFAULT 1.0;
+  ALTER TABLE targets ADD COLUMN IF NOT EXISTS notified_at TIMESTAMPTZ;
+  ALTER TABLE targets ADD COLUMN IF NOT EXISTS notify_on_warn BOOLEAN DEFAULT FALSE;
+
+  -- ── 3. Finance intelligence tables
+  CREATE TABLE IF NOT EXISTS user_finance_rules (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    pattern TEXT NOT NULL,
+    category TEXT NOT NULL,
+    is_regex INTEGER DEFAULT 0,
+    hit_count INTEGER DEFAULT 1,
+    created_at TIMESTAMPTZ DEFAULT now()
+  );
+  CREATE INDEX IF NOT EXISTS idx_user_rules_user ON user_finance_rules(user_id);
+
+  CREATE TABLE IF NOT EXISTS monthly_snapshots (
+    user_id TEXT NOT NULL,
+    ym TEXT NOT NULL,
+    total_expense REAL DEFAULT 0,
+    total_income REAL DEFAULT 0,
+    close_balance REAL DEFAULT 0,
+    txn_count INTEGER DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    PRIMARY KEY (user_id, ym)
+  );
+
+  CREATE TABLE IF NOT EXISTS gift_jar (
+    id TEXT PRIMARY KEY,
+    captured_by TEXT NOT NULL,
+    for_partner TEXT NOT NULL,
+    text TEXT NOT NULL,
+    source TEXT DEFAULT 'manual',
+    source_ref TEXT,
+    is_given INTEGER DEFAULT 0,
+    captured_at TIMESTAMPTZ DEFAULT now()
+  );
+  CREATE INDEX IF NOT EXISTS idx_gift_jar_capturer ON gift_jar(captured_by);
+
+  -- ── 4. SMS-INBOX
+  CREATE TABLE IF NOT EXISTS sms_inbox (
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    user_id TEXT NOT NULL,
+    sender TEXT,
+    body TEXT NOT NULL,
+    body_hash TEXT NOT NULL,
+    received_at TIMESTAMPTZ DEFAULT now(),
+    processed_at TIMESTAMPTZ,
+    decision TEXT,
+    confidence REAL,
+    parsed_amount REAL,
+    parsed_direction TEXT,
+    parsed_merchant TEXT,
+    parsed_category TEXT,
+    matched_txn_id TEXT,
+    created_at TIMESTAMPTZ DEFAULT now()
+  );
+
+  DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'sms_inbox_body_hash_uniq') THEN
+      ALTER TABLE sms_inbox ADD CONSTRAINT sms_inbox_body_hash_uniq UNIQUE (body_hash);
+    END IF;
+  END $$;
+
+  CREATE INDEX IF NOT EXISTS idx_sms_inbox_unprocessed ON sms_inbox(user_id, processed_at);
+  CREATE INDEX IF NOT EXISTS idx_sms_inbox_decision    ON sms_inbox(user_id, decision);
+
+  CREATE OR REPLACE FUNCTION sms_inbox_compute_hash() RETURNS TRIGGER AS $$
+  BEGIN
+    IF NEW.body_hash IS NULL OR NEW.body_hash = '' THEN
+      NEW.body_hash = encode(
+        sha256( (lower(coalesce(NEW.sender,'')) || '|' || left(lower(coalesce(NEW.body,'')), 240))::bytea ),
+        'hex'
+      );
+    END IF;
+    RETURN NEW;
+  END;
+  $$ LANGUAGE plpgsql;
+
+  DROP TRIGGER IF EXISTS sms_inbox_hash_trg ON sms_inbox;
+  CREATE TRIGGER sms_inbox_hash_trg BEFORE INSERT ON sms_inbox
+    FOR EACH ROW EXECUTE FUNCTION sms_inbox_compute_hash();
+
+  -- ── 5. RLS — permissive anon (matches rest of TAMTAM)
+  ALTER TABLE user_finance_rules  ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE monthly_snapshots   ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE gift_jar            ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE sms_inbox           ENABLE ROW LEVEL SECURITY;
+
+  DROP POLICY IF EXISTS user_finance_rules_anon ON user_finance_rules;
+  CREATE POLICY user_finance_rules_anon ON user_finance_rules FOR ALL TO anon USING (true) WITH CHECK (true);
+
+  DROP POLICY IF EXISTS monthly_snapshots_anon ON monthly_snapshots;
+  CREATE POLICY monthly_snapshots_anon ON monthly_snapshots FOR ALL TO anon USING (true) WITH CHECK (true);
+
+  DROP POLICY IF EXISTS gift_jar_anon ON gift_jar;
+  CREATE POLICY gift_jar_anon ON gift_jar FOR ALL TO anon USING (true) WITH CHECK (true);
+
+  DROP POLICY IF EXISTS sms_inbox_anon ON sms_inbox;
+  CREATE POLICY sms_inbox_anon ON sms_inbox FOR ALL TO anon USING (true) WITH CHECK (true);
+
+  -- ── 6. Realtime publication
+  DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname='supabase_realtime' AND tablename='sms_inbox') THEN
+      EXECUTE 'ALTER PUBLICATION supabase_realtime ADD TABLE sms_inbox';
+    END IF;
+  END $$;
+
+  DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname='supabase_realtime' AND tablename='finances') THEN
+      EXECUTE 'ALTER PUBLICATION supabase_realtime ADD TABLE finances';
+    END IF;
+  END $$;
+
+  DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname='supabase_realtime' AND tablename='targets') THEN
+      EXECUTE 'ALTER PUBLICATION supabase_realtime ADD TABLE targets';
+    END IF;
+  END $$;
+
+
+
+
+
+
+
+
+
+
+  CREATE TABLE IF NOT EXISTS sms_sender_blocklist (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    sender_prefix TEXT NOT NULL,
+    original_sender TEXT,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    CONSTRAINT sms_blocklist_uniq UNIQUE (user_id, sender_prefix)
+  );
+  CREATE INDEX IF NOT EXISTS idx_sms_blocklist_user ON sms_sender_blocklist(user_id);
+
+  ALTER TABLE sms_sender_blocklist ENABLE ROW LEVEL SECURITY;
+  DROP POLICY IF EXISTS sms_blocklist_anon ON sms_sender_blocklist;
+  CREATE POLICY sms_blocklist_anon ON sms_sender_blocklist FOR ALL TO anon USING (true) WITH CHECK (true);
+
+  DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname='supabase_realtime' AND
+  tablename='sms_sender_blocklist') THEN
+      EXECUTE 'ALTER PUBLICATION supabase_realtime ADD TABLE sms_sender_blocklist';
+    END IF;
+  END $$;
+
+
+
+
+
+
+
+
   

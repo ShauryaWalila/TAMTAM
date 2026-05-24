@@ -12,6 +12,14 @@ import { categoriseDescription, ALL_CATEGORIES, CATEGORY_META } from '@/lib/fina
 import { runBudgetRollover } from '@/lib/budgets';
 import { checkAllBudgetAlerts } from '@/lib/budgetAlerts';
 import {
+  processSmsInbox, listPendingReview, countPendingReview,
+  approvePendingReview, discardPendingReview, blockSender,
+  getConfidenceThreshold, setConfidenceThreshold,
+  type PendingReviewRow,
+} from '@/lib/smsParser';
+import { Modal } from 'react-native';
+import { AlertCircle, CheckCircle2, XCircle, Sliders, Ban, Repeat } from 'lucide-react-native';
+import {
   smartCategorise, learnCategoryRule,
   detectSubscriptions, predictBills, computeSpendingForecast,
   splitTransactionWithPartner, ensureMonthlySnapshots,
@@ -99,6 +107,12 @@ export default function FinanceScreen() {
   const [showTargetModal, setShowTargetModal] = useState(false);
   const [showBalanceModal, setShowBalanceModal] = useState(false);
   const [recatTxn, setRecatTxn] = useState<any | null>(null);
+
+  // SMS Pending Review
+  const [pendingReviewCount, setPendingReviewCount] = useState(0);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [pendingRows, setPendingRows] = useState<PendingReviewRow[]>([]);
+  const [confidenceThreshold, setConfidenceThresholdState] = useState(0.7);
   const [balanceEditUser, setBalanceEditUser] = useState<'me' | 'partner' | null>(null);
   const [editBalance, setEditBalance] = useState('');
   
@@ -188,6 +202,13 @@ export default function FinanceScreen() {
       if (name) checkAllBudgetAlerts(name).catch(() => {});
       // Ensure last-12-months snapshot rows exist (idempotent, skips already-written months).
       if (name) ensureMonthlySnapshots(name);
+
+      // SMS-inbox: process anything waiting, then refresh the pending-review count.
+      if (name) {
+        try { await processSmsInbox(name); } catch {}
+        setPendingReviewCount(countPendingReview(name));
+      }
+      setConfidenceThresholdState(getConfidenceThreshold());
 
       // Load from SQLite first
       refreshFromSQLite();
@@ -628,6 +649,22 @@ export default function FinanceScreen() {
             const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent;
             if (layoutMeasurement.height + contentOffset.y >= contentSize.height - 300 && hasMore && !isFetchingMore) fetchTransactions();
           }} scrollEventThrottle={16} contentContainerStyle={{ paddingBottom: insets.bottom + 80 }}>
+            {pendingReviewCount > 0 && (
+              <TouchableOpacity
+                onPress={() => {
+                  if (currentUserName) setPendingRows(listPendingReview(currentUserName));
+                  setShowReviewModal(true);
+                }}
+                style={{ marginHorizontal: 20, marginTop: 12, padding: 14, borderRadius: 16, backgroundColor: '#FFB02E22', borderWidth: 1, borderColor: '#FFB02E66', flexDirection: 'row', alignItems: 'center', gap: 12 }}
+              >
+                <AlertCircle size={22} color="#FFB02E" />
+                <View style={{ flex: 1, backgroundColor: 'transparent' }}>
+                  <Text style={{ color: theme.text, fontWeight: '700', fontSize: 14 }}>{pendingReviewCount} SMS waiting for review</Text>
+                  <Text style={{ color: theme.tabIconDefault, fontSize: 12, marginTop: 2 }}>Parser is unsure — tap to approve or discard.</Text>
+                </View>
+                <ChevronRight size={18} color={theme.tabIconDefault} />
+              </TouchableOpacity>
+            )}
             <View style={styles.header}>
               <View style={{ backgroundColor: 'transparent' }}>
                 <Text style={[styles.title, { color: theme.text }]}>Analytics</Text>
@@ -729,9 +766,15 @@ export default function FinanceScreen() {
                       <Text style={[styles.txDesc, { color: theme.text, flexShrink: 1 }]} numberOfLines={1}>
                         {t.description || t.category}
                       </Text>
-                      {t.source === 'sms_bank' && (
+                      {(t.source === 'sms_bank' || t.source === 'sms_bank_recurring') && (
                         <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, backgroundColor: '#5856D620' }}>
                           <Text style={{ fontSize: 9, fontWeight: '900', color: '#5856D6', letterSpacing: 0.5 }}>SMS</Text>
+                        </View>
+                      )}
+                      {t.source === 'sms_bank_recurring' && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, backgroundColor: '#FF950020' }}>
+                          <Repeat size={9} color="#FF9500" />
+                          <Text style={{ fontSize: 9, fontWeight: '900', color: '#FF9500', letterSpacing: 0.5 }}>RECUR</Text>
                         </View>
                       )}
                     </View>
@@ -1019,6 +1062,130 @@ export default function FinanceScreen() {
           </View>
         </View>
       )}
+
+      {/* SMS Pending Review modal */}
+      <Modal visible={showReviewModal} animationType="slide" transparent onRequestClose={() => setShowReviewModal(false)}>
+        <View style={{ flex: 1, backgroundColor: '#000A', justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: theme.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: insets.bottom + 20, maxHeight: '90%' }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <Text style={{ color: theme.text, fontSize: 20, fontWeight: '800' }}>SMS Review</Text>
+              <TouchableOpacity onPress={() => setShowReviewModal(false)}><X size={24} color={theme.text} /></TouchableOpacity>
+            </View>
+
+            {/* Confidence threshold slider (stepped) */}
+            <View style={{ backgroundColor: theme.card, padding: 14, borderRadius: 14, marginBottom: 16 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <Sliders size={16} color={theme.tabIconDefault} />
+                <Text style={{ color: theme.text, fontWeight: '700', fontSize: 14 }}>Auto-add confidence</Text>
+                <Text style={{ color: theme.tabIconDefault, fontSize: 12, marginLeft: 'auto' }}>≥ {Math.round(confidenceThreshold * 100)}%</Text>
+              </View>
+              <View style={{ flexDirection: 'row', gap: 6 }}>
+                {[0.5, 0.6, 0.7, 0.8, 0.9].map(v => (
+                  <TouchableOpacity
+                    key={v}
+                    onPress={() => {
+                      setConfidenceThreshold(v);
+                      setConfidenceThresholdState(v);
+                      if (currentUserName) {
+                        processSmsInbox(currentUserName).then(() => {
+                          setPendingRows(listPendingReview(currentUserName));
+                          setPendingReviewCount(countPendingReview(currentUserName));
+                        });
+                      }
+                    }}
+                    style={{ flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: Math.abs(confidenceThreshold - v) < 0.01 ? theme.tint : theme.card, borderWidth: 1, borderColor: theme.tint + '55', alignItems: 'center' }}
+                  >
+                    <Text style={{ color: Math.abs(confidenceThreshold - v) < 0.01 ? '#fff' : theme.text, fontWeight: '700', fontSize: 12 }}>{Math.round(v * 100)}%</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <Text style={{ color: theme.tabIconDefault, fontSize: 11, marginTop: 8, lineHeight: 16 }}>
+                Higher = stricter. Lower = more auto-adds, more mistakes for you to discard. Default 70%.
+              </Text>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {pendingRows.length === 0 && (
+                <View style={{ padding: 40, alignItems: 'center' }}>
+                  <CheckCircle2 size={48} color="#34C759" />
+                  <Text style={{ color: theme.text, marginTop: 12, fontWeight: '700' }}>All clear</Text>
+                  <Text style={{ color: theme.tabIconDefault, fontSize: 12, marginTop: 4, textAlign: 'center' }}>No SMS waiting for your decision.</Text>
+                </View>
+              )}
+              {pendingRows.map(row => (
+                <View key={row.id} style={{ backgroundColor: theme.card, padding: 14, borderRadius: 14, marginBottom: 10 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                    <Text style={{ color: theme.tabIconDefault, fontSize: 11, fontWeight: '700' }}>{row.sender || 'unknown'}</Text>
+                    <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, backgroundColor: '#FFB02E33' }}>
+                      <Text style={{ color: '#FFB02E', fontSize: 10, fontWeight: '800' }}>{Math.round((row.confidence || 0) * 100)}%</Text>
+                    </View>
+                    {row.parsed_direction && (
+                      <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, backgroundColor: row.parsed_direction === 'credit' ? '#34C75933' : '#FF3B3033' }}>
+                        <Text style={{ color: row.parsed_direction === 'credit' ? '#34C759' : '#FF3B30', fontSize: 10, fontWeight: '800' }}>{row.parsed_direction.toUpperCase()}</Text>
+                      </View>
+                    )}
+                  </View>
+                  {row.parsed_amount != null && (
+                    <Text style={{ color: theme.text, fontSize: 18, fontWeight: '800', marginBottom: 4 }}>
+                      ₹{row.parsed_amount.toLocaleString()} {row.parsed_merchant ? `→ ${row.parsed_merchant}` : ''}
+                    </Text>
+                  )}
+                  <Text style={{ color: theme.tabIconDefault, fontSize: 12, marginBottom: 10 }} numberOfLines={3}>{row.body}</Text>
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (currentUserName) {
+                          approvePendingReview(row.id, currentUserName);
+                          setPendingRows(listPendingReview(currentUserName));
+                          setPendingReviewCount(countPendingReview(currentUserName));
+                          fetchTransactions(true);
+                        }
+                      }}
+                      style={{ flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: '#34C759', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                    >
+                      <CheckCircle2 size={16} color="#fff" />
+                      <Text style={{ color: '#fff', fontWeight: '700' }}>Add</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => {
+                        discardPendingReview(row.id);
+                        if (currentUserName) {
+                          setPendingRows(listPendingReview(currentUserName));
+                          setPendingReviewCount(countPendingReview(currentUserName));
+                        }
+                      }}
+                      style={{ flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: '#FF3B30', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                    >
+                      <XCircle size={16} color="#fff" />
+                      <Text style={{ color: '#fff', fontWeight: '700' }}>Discard</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (!currentUserName) return;
+                        Alert.alert(
+                          'Block sender?',
+                          `Future SMS from "${row.sender || 'unknown'}" will be auto-marked spam.`,
+                          [
+                            { text: 'Cancel', style: 'cancel' },
+                            { text: 'Block', style: 'destructive', onPress: () => {
+                              blockSender(currentUserName, row.sender || '');
+                              setPendingRows(listPendingReview(currentUserName));
+                              setPendingReviewCount(countPendingReview(currentUserName));
+                            }},
+                          ]
+                        );
+                      }}
+                      style={{ paddingVertical: 10, paddingHorizontal: 12, borderRadius: 10, backgroundColor: theme.card, borderWidth: 1, borderColor: '#FF3B3066', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                    >
+                      <Ban size={16} color="#FF3B30" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </ThemedView>
   );
 }
