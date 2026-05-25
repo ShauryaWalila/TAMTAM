@@ -305,10 +305,9 @@ export const initDB = () => {
       CREATE INDEX IF NOT EXISTS idx_finances_trip ON finances(trip_id);
       CREATE INDEX IF NOT EXISTS idx_finances_bank_ref ON finances(bank_ref);
 
-      -- ── SMS-INBOX (raw SMS dumped by the universal Shortcut). One row per
-      -- inbound transactional SMS. Parser turns "high-confidence" rows into
-      -- `finances` entries; "low-confidence" rows wait in a Pending Review
-      -- tray on the Finance tab.
+      -- SMS-INBOX: raw SMS dumped by the universal Shortcut. One row per
+      -- inbound transactional SMS. Parser turns high-confidence rows into
+      -- finances entries; low-confidence rows wait in Pending Review tray.
       CREATE TABLE IF NOT EXISTS sms_inbox (
         id TEXT PRIMARY KEY,
         user_id TEXT NOT NULL,
