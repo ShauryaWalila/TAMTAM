@@ -55,21 +55,7 @@ export async function registerForPushNotificationsAsync() {
 
 export async function syncAllNotifications() {
   console.log('Syncing all notifications from local DB...');
-  // iOS 26 occasionally throws here if the call lands before the permission
-  // grant settles, or if the notification subsystem is mid-state-flip.
-  // Swallow and continue — worst case we get a few duplicates next sweep.
-  try { await Notifications.cancelAllScheduledNotificationsAsync(); }
-  catch (e) { console.warn('cancelAll failed', e); }
-
-  // Don't even attempt to schedule if permission isn't granted yet — calling
-  // scheduleNotificationAsync without permission can throw NSException on iOS 26.
-  try {
-    const { status } = await Notifications.getPermissionsAsync();
-    if (status !== 'granted') {
-      console.log('Notif permission not granted; skipping schedule.');
-      return;
-    }
-  } catch {}
+  await Notifications.cancelAllScheduledNotificationsAsync();
 
   const now = new Date();
   const scheduleMap: Record<string, { starts: any[], ends: any[] }> = {};
@@ -216,30 +202,19 @@ export async function syncAllNotifications() {
       body = "Well done! This task is now complete. ✨";
     }
 
-    try {
-      // iOS notification subsystem capped at ~64 pending. Bail out gracefully
-      // if we hit the cap so the throw doesn't escape as an NSException.
-      if (scheduledCount >= 60) break;
-      // iOS rejects huge intervals (> ~5 years). Clamp to 365 days.
-      const safeSeconds = Math.max(1, Math.min(secondsFromNow, 365 * 86400));
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title,
-          body,
-          data: { type: 'smart_update', events },
-          sound: true,
-          ...(Platform.OS === 'android' ? { channelId: 'default' } : {}),
-        },
-        trigger: Platform.OS === 'ios'
-          ? { type: 'timeInterval', seconds: safeSeconds, repeats: false } as any
-          : { type: 'calendar', year: triggerDate.getFullYear(), month: triggerDate.getMonth(), day: triggerDate.getDate(), hour: triggerDate.getHours(), minute: triggerDate.getMinutes(), repeats: false } as any,
-      });
-      scheduledCount++;
-    } catch (e) {
-      // Per-event swallow. One bad item (e.g. NaN seconds, nil data) won't
-      // crash the whole sync or escape as an NSException.
-      console.warn('schedule failed for', timeStr, e);
-    }
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title,
+        body,
+        data: { type: 'smart_update', events },
+        sound: true,
+        ...(Platform.OS === 'android' ? { channelId: 'default' } : {}),
+      },
+      trigger: Platform.OS === 'ios'
+        ? { type: 'timeInterval', seconds: Math.max(1, secondsFromNow), repeats: false } as any
+        : { type: 'calendar', year: triggerDate.getFullYear(), month: triggerDate.getMonth(), day: triggerDate.getDate(), hour: triggerDate.getHours(), minute: triggerDate.getMinutes(), repeats: false } as any,
+    });
+    scheduledCount++;
   }
 
   console.log(`Sync complete. Scheduled ${scheduledCount} smart notification windows.`);

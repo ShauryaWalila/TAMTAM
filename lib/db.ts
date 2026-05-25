@@ -355,12 +355,9 @@ export const initDB = () => {
       );
       CREATE INDEX IF NOT EXISTS idx_sms_blocklist_user ON sms_sender_blocklist(user_id);
 
-      -- Default confidence threshold. Rows with confidence >= this auto-insert
-      -- into finances; lower scores go to Pending Review. User-adjustable in
-      -- Finance → Settings.
-      INSERT OR IGNORE INTO system_config (key, value) VALUES ('sms_confidence_threshold', '0.7');
-      -- Day-bucket of the last redaction sweep. Cleared bodies > 30 days old.
-      INSERT OR IGNORE INTO system_config (key, value) VALUES ('sms_last_redaction_ymd', '');
+      -- (system_config seed INSERTs moved to the bottom, AFTER system_config
+      -- table is created. Doing them here on a fresh install would throw
+      -- "no such table: system_config" and abort the whole schema block.)
 
       -- Study Decks
       CREATE TABLE IF NOT EXISTS study_decks (
@@ -523,6 +520,8 @@ export const initDB = () => {
       -- Pre-populate with default keys if table just created (optional)
       INSERT OR IGNORE INTO system_config (key, value) VALUES ('groq_api_key', '');
       INSERT OR IGNORE INTO system_config (key, value) VALUES ('spotify_client_id', '');
+      INSERT OR IGNORE INTO system_config (key, value) VALUES ('sms_confidence_threshold', '0.7');
+      INSERT OR IGNORE INTO system_config (key, value) VALUES ('sms_last_redaction_ymd', '');
 
       -- ==========================================
       -- FTS5: ULTRA-FAST LOCAL SEARCH ENGINE

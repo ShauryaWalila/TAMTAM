@@ -1,201 +1,140 @@
-pod install
-  shell: /bin/bash -e {0}
-  
-Using Expo modules
-[Expo] Enabling modular headers for pod ExpoModulesCore
-[Expo] Enabling modular headers for pod React-RCTAppDelegate
-[Expo] Enabling modular headers for pod React-RCTFabric
-[Expo] Enabling modular headers for pod ReactAppDependencyProvider
-[Expo] Enabling modular headers for pod React-Core
-[Expo] Enabling modular headers for pod ReactCodegen
-[Expo] Enabling modular headers for pod RCTRequired
-[Expo] Enabling modular headers for pod RCTTypeSafety
-[Expo] Enabling modular headers for pod ReactCommon
-[Expo] Enabling modular headers for pod React-NativeModulesApple
-[Expo] Enabling modular headers for pod Yoga
-[Expo] Enabling modular headers for pod React-Fabric
-[Expo] Enabling modular headers for pod React-graphics
-[Expo] Enabling modular headers for pod React-utils
-[Expo] Enabling modular headers for pod React-featureflags
-[Expo] Enabling modular headers for pod React-debug
-[Expo] Enabling modular headers for pod React-ImageManager
-[Expo] Enabling modular headers for pod React-rendererdebug
-[Expo] Enabling modular headers for pod React-jsi
-[Expo] Enabling modular headers for pod React-renderercss
-[Expo] Enabling modular headers for pod hermes-engine
-[Expo] Enabling modular headers for pod glog
-[Expo] Enabling modular headers for pod boost
-[Expo] Enabling modular headers for pod DoubleConversion
-[Expo] Enabling modular headers for pod fast_float
-[Expo] Enabling modular headers for pod fmt
-[Expo] Enabling modular headers for pod RCT-Folly
-[Expo] Enabling modular headers for pod SocketRocket
-[Expo] Enabling modular headers for pod ZXingObjC
-[Expo] Enabling modular headers for pod RNScreens
-SK_GRAPHITE: OFF (Graphite symbols not found in libskia)
-[Lottie React Native] Using install_modules_dependencies
-Found 16 modules for target `TAMTAM`
-link_native_modules! {:ios_packages=>[{:configurations=>[], :name=>"@react-native-async-storage/async-storage", :root=>"/Users/runner/work/TAMTAM/TAMTAM/node_modules/@react-native-async-storage/async-storage", :path=>"../node_modules/@react-native-async-storage/async-storage", :podspec_path=>"/Users/runner/work/TAMTAM/TAMTAM/node_modules/@react-native-async-storage/async-storage/RNCAsyncStorage.podspec", :script_phases=>[]}, {:configurations=>[], :name=>"@react-native-community/datetimepicker", :root=>"/Users/runner/work/TAMTAM/TAMTAM/node_modules/@react-native-community/datetimepicker", :path=>"../node_modules/@react-native-community/datetimepicker", :podspec_path=>"/Users/runner/work/TAMTAM/TAMTAM/node_modules/@react-native-community/datetimepicker/RNDateTimePicker.podspec", :script_phases=>[]}, {:configurations=>[], :name=>"@react-native-community/netinfo", :root=>"/Users/runner/work/TAMTAM/TAMTAM/node_modules/@react-native-community/netinfo", :path=>"../node_modules/@react-native-community/netinfo", :podspec_path=>"/Users/runner/work/TAMTAM/TAMTAM/node_modules/@react-native-community/netinfo/react-native-netinfo.podspec", :script_phases=>[]}, {:configurations=>[], :name=>"@shopify/react-native-skia", :root=>"/Users/runner/work/TAMTAM/TAMTAM/node_modules/@shopify/react-native-skia", :path=>"../node_modules/@shopify/react-native-skia", :podspec_path=>"/Users/runner/work/TAMTAM/TAMTAM/node_modules/@shopify/react-native-skia/react-native-skia.podspec", :script_phases=>[]}, {:configurations=>[], :name=>"expo", :root=>"/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo", :path=>"../node_modules/expo", :podspec_path=>"/Users/runner/work/TAMTAM/TAMTAM/node_modules/expo/Expo.podspec", :script_phases=>[]}, {:configurations=>[], :name=>"lottie-react-native", :root=>"/Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native", :path=>"../node_modules/lottie-react-native", :podspec_path=>"/Users/runner/work/TAMTAM/TAMTAM/node_modules/lottie-react-native/lottie-react-native.podspec", :script_phases=>[]}, {:configurations=>[], :name=>"react-native-gesture-handler", :root=>"/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-gesture-handler", :path=>"../node_modules/react-native-gesture-handler", :podspec_path=>"/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-gesture-handler/RNGestureHandler.podspec", :script_phases=>[]}, {:configurations=>[], :name=>"react-native-get-random-values", :root=>"/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-get-random-values", :path=>"../node_modules/react-native-get-random-values", :podspec_path=>"/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-get-random-values/react-native-get-random-values.podspec", :script_phases=>[]}, {:configurations=>[], :name=>"react-native-maps", :root=>"/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps", :path=>"../node_modules/react-native-maps", :podspec_path=>"/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-maps/react-native-maps.podspec", :script_phases=>[]}, {:configurations=>[], :name=>"react-native-pager-view", :root=>"/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-pager-view", :path=>"../node_modules/react-native-pager-view", :podspec_path=>"/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-pager-view/react-native-pager-view.podspec", :script_phases=>[]}, {:configurations=>[], :name=>"react-native-reanimated", :root=>"/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated", :path=>"../node_modules/react-native-reanimated", :podspec_path=>"/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-reanimated/RNReanimated.podspec", :script_phases=>[]}, {:configurations=>[], :name=>"react-native-safe-area-context", :root=>"/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-safe-area-context", :path=>"../node_modules/react-native-safe-area-context", :podspec_path=>"/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-safe-area-context/react-native-safe-area-context.podspec", :script_phases=>[]}, {:configurations=>[], :name=>"react-native-screens", :root=>"/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens", :path=>"../node_modules/react-native-screens", :podspec_path=>"/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-screens/RNScreens.podspec", :script_phases=>[]}, {:configurations=>[], :name=>"react-native-svg", :root=>"/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-svg", :path=>"../node_modules/react-native-svg", :podspec_path=>"/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-svg/RNSVG.podspec", :script_phases=>[]}, {:configurations=>[], :name=>"react-native-webview", :root=>"/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-webview", :path=>"../node_modules/react-native-webview", :podspec_path=>"/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-webview/react-native-webview.podspec", :script_phases=>[]}, {:configurations=>[], :name=>"react-native-worklets", :root=>"/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-worklets", :path=>"../node_modules/react-native-worklets", :podspec_path=>"/Users/runner/work/TAMTAM/TAMTAM/node_modules/react-native-worklets/RNWorklets.podspec", :script_phases=>[]}], :ios_project_root_path=>"/Users/runner/work/TAMTAM/TAMTAM/ios", :react_native_path=>"../node_modules/react-native"}
-SK_GRAPHITE: OFF (Graphite symbols not found in libskia)
-[Lottie React Native] Using install_modules_dependencies
-Auto-linking React Native modules for target `TAMTAM`: RNCAsyncStorage, RNDateTimePicker, RNGestureHandler, RNReanimated, RNSVG, RNScreens, RNWorklets, lottie-react-native, react-native-get-random-values, react-native-maps, react-native-netinfo, react-native-pager-view, react-native-safe-area-context, react-native-skia, and react-native-webview
-Framework build type is static library
-[ReactNativeDependencies] Setting up ReactNativeDependencies...
-[ReactNativeDependencies] Building from source: false
-[ReactNativeDependencies] Using release tarball
-[ReactNativeDependencies] Using tarball from URL: https://repo1.maven.org/maven2/com/facebook/react/react-native-artifacts/0.81.4/react-native-artifacts-0.81.4-reactnative-dependencies-debug.tar.gz
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
+[WARN] 2026-05-25T11:54:21.990Z
+Sync notifications local read error Error: FunctionCallException: Calling the 'prepareSync' function has failed (at ExpoModulesCore/SyncFunctionDefinition.swift:137)
+→ Caused by: SQLiteErrorException: Error code 1: no such table: chill_items (at ExpoSQLite/SQLiteModule.swift:382)
+Error: FunctionCallException: Calling the 'prepareSync' function has failed (at ExpoModulesCore/SyncFunctionDefinition.swift:137)
+→ Caused by: SQLiteErrorException: Error code 1: no such table: chill_items (at ExpoSQLite/SQLiteModule.swift:382)
+    at prepareSync (native)
+    at prepareSync (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:326563:40)
+    at getAllSync (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:326781:41)
+    at ?anon_0_ (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:340990:42)
+    at next (native)
+    at asyncGeneratorStep (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:42944:19)
+    at _next (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:42958:29)
+    at tryCallOne (address at InternalBytecode.js:1:1180)
+    at anonymous (address at InternalBytecode.js:1:1874)
 
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
-100 18.3M  100 18.3M    0     0  91.1M      0 --:--:-- --:--:-- --:--:-- 91.2M
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
+---
 
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
-100  9.9M  100  9.9M    0     0  61.4M      0 --:--:-- --:--:-- --:--:-- 61.6M
-[ReactNativeDependencies] Source: {:http=>"https://repo1.maven.org/maven2/com/facebook/react/react-native-artifacts/0.81.4/react-native-artifacts-0.81.4-reactnative-dependencies-debug.tar.gz"}
-[ReactNativeCore] Setting up ReactNativeCore...
-[ReactNativeCore] Building from source: false
-[ReactNativeCore] Using tarball from URL: https://repo1.maven.org/maven2/com/facebook/react/react-native-artifacts/0.81.4/react-native-artifacts-0.81.4-reactnative-core-debug.tar.gz
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
+[WARN] 2026-05-25T11:54:21.418Z
+Sync notifications local read error Error: FunctionCallException: Calling the 'prepareSync' function has failed (at ExpoModulesCore/SyncFunctionDefinition.swift:137)
+→ Caused by: SQLiteErrorException: Error code 1: no such table: chill_items (at ExpoSQLite/SQLiteModule.swift:382)
+Error: FunctionCallException: Calling the 'prepareSync' function has failed (at ExpoModulesCore/SyncFunctionDefinition.swift:137)
+→ Caused by: SQLiteErrorException: Error code 1: no such table: chill_items (at ExpoSQLite/SQLiteModule.swift:382)
+    at prepareSync (native)
+    at prepareSync (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:326563:40)
+    at getAllSync (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:326781:41)
+    at ?anon_0_ (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:340990:42)
+    at next (native)
+    at asyncGeneratorStep (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:42944:19)
+    at _next (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:42958:29)
+    at tryCallOne (address at InternalBytecode.js:1:1180)
+    at anonymous (address at InternalBytecode.js:1:1874)
 
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
- 36 78.5M   36 28.4M    0     0   105M      0 --:--:-- --:--:-- --:--:--  105M
-100 78.5M  100 78.5M    0     0   141M      0 --:--:-- --:--:-- --:--:--  141M
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
+---
 
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
-100 26.3M  100 26.3M    0     0   100M      0 --:--:-- --:--:-- --:--:--  100M
-[ReactNativeCore] Source: {:http=>"https://repo1.maven.org/maven2/com/facebook/react/react-native-artifacts/0.81.4/react-native-artifacts-0.81.4-reactnative-core-debug.tar.gz"}
-Configuring the target with the New Architecture
-[ReactNativeCore] Using React Native Core and React Native Dependencies prebuilt versions.
-[Codegen] Analyzing /Users/runner/work/TAMTAM/TAMTAM/package.json
-[Codegen] Searching for codegen-enabled libraries in the app.
-[Codegen] The "codegenConfig" field is not defined in package.json. Assuming there is nothing to generate at the app level.
-[Codegen] Searching for codegen-enabled libraries in react-native.config.js
-[Codegen] Found @react-native-async-storage/async-storage
-[Codegen] Found @react-native-community/datetimepicker
-[Codegen] Found @shopify/react-native-skia
-[Codegen] Found lottie-react-native
-[Codegen] Found react-native-gesture-handler
-[Codegen] Found react-native-pager-view
-[Codegen] Found react-native-reanimated
-[Codegen] Found react-native-safe-area-context
-[Codegen] Found react-native-screens
-[Codegen] Found react-native-svg
-[Codegen] Found react-native-webview
-[Codegen] Found react-native-worklets
-[Codegen] Processing rnasyncstorage
-[Codegen] Searching for podspec in the project dependencies.
-[Codegen] Supported Apple platforms: ios, macos, tvos, visionos for rnasyncstorage
-[Codegen] Processing RNDateTimePickerCGen
-[Codegen] Searching for podspec in the project dependencies.
-[Codegen] Supported Apple platforms: ios, visionos for RNDateTimePickerCGen
-[Codegen] Processing rnskia
-[Codegen] Searching for podspec in the project dependencies.
-[Codegen] Supported Apple platforms: ios, macos, tvos for rnskia
-[Codegen] Processing lottiereactnative
-[Codegen] Searching for podspec in the project dependencies.
-[Codegen] Supported Apple platforms: ios, macos, tvos, visionos for lottiereactnative
-[Codegen] Processing rngesturehandler_codegen
-[Codegen] Searching for podspec in the project dependencies.
-[Codegen] Supported Apple platforms: ios, macos, tvos, visionos for rngesturehandler_codegen
-[Codegen] Processing pagerview
-[Codegen] Searching for podspec in the project dependencies.
-[Codegen] Supported Apple platforms: ios, visionos for pagerview
-[Codegen] Processing rnreanimated
-[Codegen] Searching for podspec in the project dependencies.
-[Codegen] Supported Apple platforms: ios, macos, tvos, visionos for rnreanimated
-[Codegen] Processing safeareacontext
-[Codegen] Searching for podspec in the project dependencies.
-[Codegen] Supported Apple platforms: ios, macos, tvos, visionos for safeareacontext
-[Codegen] Processing rnscreens
-[Codegen] Searching for podspec in the project dependencies.
-[Codegen] Supported Apple platforms: ios, tvos, visionos for rnscreens
-[Codegen] Processing rnsvg
-[Codegen] Searching for podspec in the project dependencies.
-[Codegen] Supported Apple platforms: ios, macos, tvos, visionos for rnsvg
-[Codegen] Processing RNCWebViewSpec
-[Codegen] Searching for podspec in the project dependencies.
-[Codegen] Supported Apple platforms: ios, macos, visionos for RNCWebViewSpec
-[Codegen] Processing rnworklets
-[Codegen] Searching for podspec in the project dependencies.
-[Codegen] Supported Apple platforms: ios, macos, tvos, visionos for rnworklets
-[Codegen] Generating Native Code for rnasyncstorage - ios
-[Codegen] Generated artifacts: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios
-[Codegen] Generating Native Code for RNDateTimePickerCGen - ios
-[Codegen] Generated artifacts: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios
-[Codegen] Generating Native Code for rnskia - ios
-[Codegen] Generated artifacts: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios
-[Codegen] Generating Native Code for lottiereactnative - ios
-[Codegen] Generated artifacts: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios
-[Codegen] Generating Native Code for rngesturehandler_codegen - ios
-[Codegen] Generated artifacts: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios
-[Codegen] Generating Native Code for pagerview - ios
-[Codegen] Generated artifacts: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios
-[Codegen] Generating Native Code for rnreanimated - ios
-[Codegen] Generated artifacts: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios
-[Codegen] Generating Native Code for safeareacontext - ios
-[Codegen] Generated artifacts: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios
-[Codegen] Generating Native Code for rnscreens - ios
-[Codegen] Generated artifacts: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios
-[Codegen] Generating Native Code for rnsvg - ios
-[Codegen] Generated artifacts: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios
-[Codegen] Generating Native Code for RNCWebViewSpec - ios
-[Codegen] Generated artifacts: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios
-[Codegen] Generating Native Code for rnworklets - ios
-[Codegen] Generated artifacts: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios
-[Codegen] Generating RCTThirdPartyComponentsProvider.h
-[Codegen] Generated artifact: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios/RCTThirdPartyComponentsProvider.h
-[Codegen] Generating RCTThirdPartyComponentsProvider.mm
-[Codegen] Crawling @shopify/react-native-skia library for components
-[Codegen] Match found SkiaPictureView -> SkiaPictureView
-[Codegen] [DEPRECATED] @shopify/react-native-skia should add the 'ios.componentProvider' property in their codegenConfig
-[Codegen] Generated artifact: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios/RCTThirdPartyComponentsProvider.mm
-[Codegen] Generating RCTModulesProvider.h
-[Codegen] Generated artifact: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios/RCTModuleProviders.h
-[Codegen] Generating RCTModuleProviders.mm
-[Codegen] Generated artifact: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios/RCTModuleProviders.mm
-[Codegen] Generating RCTAppDependencyProvider
-[Codegen] Generated artifact: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios/RCTAppDependencyProvider.h
-[Codegen] Generated artifact: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios/RCTAppDependencyProvider.mm
-[Codegen] Generated podspec: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios/ReactAppDependencyProvider.podspec
-[Codegen] Generated podspec: /Users/runner/work/TAMTAM/TAMTAM/ios/build/generated/ios/ReactCodegen.podspec
-[Codegen] Done.
-Analyzing dependencies
-Fetching podspec for `DoubleConversion` from `../node_modules/react-native/third-party-podspecs/DoubleConversion.podspec`
-Fetching podspec for `RCT-Folly` from `../node_modules/react-native/third-party-podspecs/RCT-Folly.podspec`
-Fetching podspec for `React-Core-prebuilt` from `../node_modules/react-native/React-Core-prebuilt.podspec`
-[ReactNativeCore] Using tarball from URL: https://repo1.maven.org/maven2/com/facebook/react/react-native-artifacts/0.81.4/react-native-artifacts-0.81.4-reactnative-core-debug.tar.gz
-Fetching podspec for `ReactNativeDependencies` from `../node_modules/react-native/third-party-podspecs/ReactNativeDependencies.podspec`
-[ReactNativeDependencies] Using release tarball
-[ReactNativeDependencies] Using tarball from URL: https://repo1.maven.org/maven2/com/facebook/react/react-native-artifacts/0.81.4/react-native-artifacts-0.81.4-reactnative-dependencies-debug.tar.gz
-Fetching podspec for `boost` from `../node_modules/react-native/third-party-podspecs/boost.podspec`
-Fetching podspec for `fmt` from `../node_modules/react-native/third-party-podspecs/fmt.podspec`
-Fetching podspec for `glog` from `../node_modules/react-native/third-party-podspecs/glog.podspec`
-Fetching podspec for `hermes-engine` from `../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec`
-[Hermes] Using release tarball from URL: https://repo1.maven.org/maven2/com/facebook/react/react-native-artifacts/0.81.4/react-native-artifacts-0.81.4-hermes-ios-debug.tar.gz
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
-  0 29.0M    0 87100    0     0  1126k      0  0:00:26 --:--:--  0:00:26 1119k
-100 29.0M  100 29.0M    0     0   106M      0 --:--:-- --:--:-- --:--:--  106M
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
-100 20.3M  100 20.3M    0     0  89.9M      0 --:--:-- --:--:-- --:--:-- 90.0M
-[Lottie React Native] Using install_modules_dependencies
-SK_GRAPHITE: OFF (Graphite symbols not found in libskia)
-Adding spec repo `trunk` with CDN `https://cdn.cocoapods.org/`
-[!] Unable to find a specification for `fast_float (= 8.0.0)` depended upon by `RCT-Folly`
-
-You have either:
- * out-of-date source repos which you can update with `pod repo update` or with `pod install --repo-update`.
- * mistyped the name or version.
- * not added the source repo that hosts the Podspec to your Podfile.
-Error: Process completed with exit code 1.
+[ERROR] 2026-05-25T11:54:21.357Z
+Failed to initialize local DB Error: FunctionCallException: Calling the 'execSync' function has failed (at ExpoModulesCore/SyncFunctionDefinition.swift:137)
+→ Caused by: SQLiteErrorException: no such table: system_config (at ExpoSQLite/SQLiteModule.swift:360)
+Error: FunctionCallException: Calling the 'execSync' function has failed (at ExpoModulesCore/SyncFunctionDefinition.swift:137)
+→ Caused by: SQLiteErrorException: no such table: system_config (at ExpoSQLite/SQLiteModule.swift:360)
+    at execSync (native)
+    at execSync (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:326537:44)
+    at initDB (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:325411:18)
+    at ?anon_0_ (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:465030:29)
+    at next (native)
+    at asyncGeneratorStep (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:42944:19)
+    at _next (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:42958:29)
+    at anonymous (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:42963:14)
+    at tryCallTwo (address at InternalBytecode.js:1:1222)
+    at doResolve (address at InternalBytecode.js:1:2541)
+    at Promise (address at InternalBytecode.js:1:1318)
+    at anonymous (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:42955:25)
+    at apply (native)
+    at initApp (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:465099:27)
+    at anonymous (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:465023:16)
+    at commitHookEffectListMount (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:18901:36)
+    at commitPassiveMountOnFiber (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19434:50)
+    at recursivelyTraversePassiveMountEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19425:129)
+    at commitPassiveMountOnFiber (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19465:518)
+    at recursivelyTraversePassiveMountEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19425:129)
+    at commitPassiveMountOnFiber (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19458:47)
+    at recursivelyTraversePassiveMountEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19425:129)
+    at commitPassiveMountOnFiber (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19473:47)
+    at recursivelyTraversePassiveMountEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19425:129)
+    at commitPassiveMountOnFiber (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19473:47)
+    at recursivelyTraversePassiveMountEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19425:129)
+    at commitPassiveMountOnFiber (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19433:47)
+    at recursivelyTraversePassiveMountEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19425:129)
+    at commitPassiveMountOnFiber (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19433:47)
+    at recursivelyTraversePassiveMountEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19425:129)
+    at commitPassiveMountOnFiber (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19433:47)
+    at recursivelyTraversePassiveMountEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19425:129)
+    at commitPassiveMountOnFiber (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19473:47)
+    at recursivelyTraversePassiveMountEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19425:129)
+    at commitPassiveMountOnFiber (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19473:47)
+    at recursivelyTraversePassiveMountEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19425:129)
+    at commitPassiveMountOnFiber (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19433:47)
+    at recursivelyTraversePassiveMountEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19425:129)
+    at commitPassiveMountOnFiber (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19473:47)
+    at recursivelyTraversePassiveMountEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19425:129)
+    at commitPassiveMountOnFiber (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19473:47)
+    at recursivelyTraversePassiveMountEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19425:129)
+    at commitPassiveMountOnFiber (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19473:47)
+    at recursivelyTraversePassiveMountEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19425:129)
+    at commitPassiveMountOnFiber (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19433:47)
+    at recursivelyTraversePassiveMountEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19425:129)
+    at commitPassiveMountOnFiber (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19473:47)
+    at recursivelyTraversePassiveMountEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19425:129)
+    at commitPassiveMountOnFiber (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19473:47)
+    at recursivelyTraversePassiveMountEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19425:129)
+    ... skipping 47 frames
+    at recursivelyTraversePassiveMountEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19425:129)
+    at commitPassiveMountOnFiber (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19433:47)
+    at recursivelyTraversePassiveMountEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19425:129)
+    at commitPassiveMountOnFiber (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19473:47)
+    at recursivelyTraversePassiveMountEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19425:129)
+    at commitPassiveMountOnFiber (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19473:47)
+    at recursivelyTraversePassiveMountEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19425:129)
+    at commitPassiveMountOnFiber (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19473:47)
+    at recursivelyTraversePassiveMountEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19425:129)
+    at commitPassiveMountOnFiber (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19473:47)
+    at recursivelyTraversePassiveMountEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19425:129)
+    at commitPassiveMountOnFiber (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19473:47)
+    at recursivelyTraversePassiveMountEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19425:129)
+    at commitPassiveMountOnFiber (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19473:47)
+    at recursivelyTraversePassiveMountEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19425:129)
+    at commitPassiveMountOnFiber (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19433:47)
+    at recursivelyTraversePassiveMountEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19425:129)
+    at commitPassiveMountOnFiber (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19473:47)
+    at recursivelyTraversePassiveMountEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19425:129)
+    at commitPassiveMountOnFiber (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19473:47)
+    at recursivelyTraversePassiveMountEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19425:129)
+    at commitPassiveMountOnFiber (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19473:47)
+    at recursivelyTraversePassiveMountEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19425:129)
+    at commitPassiveMountOnFiber (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19433:47)
+    at recursivelyTraversePassiveMountEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19425:129)
+    at commitPassiveMountOnFiber (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19473:47)
+    at recursivelyTraversePassiveMountEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19425:129)
+    at commitPassiveMountOnFiber (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19433:47)
+    at recursivelyTraversePassiveMountEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19425:129)
+    at commitPassiveMountOnFiber (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19433:47)
+    at recursivelyTraversePassiveMountEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19425:129)
+    at commitPassiveMountOnFiber (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19433:47)
+    at recursivelyTraversePassiveMountEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19425:129)
+    at commitPassiveMountOnFiber (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19473:47)
+    at recursivelyTraversePassiveMountEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19425:129)
+    at commitPassiveMountOnFiber (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19433:47)
+    at recursivelyTraversePassiveMountEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19425:129)
+    at commitPassiveMountOnFiber (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19473:47)
+    at recursivelyTraversePassiveMountEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19425:129)
+    at commitPassiveMountOnFiber (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19433:47)
+    at recursivelyTraversePassiveMountEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19425:129)
+    at commitPassiveMountOnFiber (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19473:47)
+    at recursivelyTraversePassiveMountEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19425:129)
+    at commitPassiveMountOnFiber (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:19440:47)
+    at flushPassiveEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:20294:32)
+    at flushPendingEffects (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:20270:31)
+    at performSyncWorkOnRoot (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:16090:28)
+    at flushSyncWorkAcrossRoots_impl (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:16013:397)
+    at processRootScheduleInMicrotask (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:16032:34)
+    at anonymous (/Users/runner/work/TAMTAM/TAMTAM/ios/build/Build/Products/Release-iphoneos/main.jsbundle:16095:144)
