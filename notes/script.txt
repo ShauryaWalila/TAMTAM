@@ -3067,4 +3067,70 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 
 
-  
+  CREATE TABLE IF NOT EXISTS user_balances (
+    user_id TEXT PRIMARY KEY,
+    balance REAL DEFAULT 0,
+    updated_at TIMESTAMPTZ DEFAULT now()
+  );
+  ALTER TABLE user_balances ENABLE ROW LEVEL SECURITY;
+  DROP POLICY IF EXISTS user_balances_anon ON user_balances;
+  CREATE POLICY user_balances_anon ON user_balances FOR ALL TO anon USING (true) WITH CHECK (true);
+
+  DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname='supabase_realtime' AND tablename='user_balances')
+  THEN
+      EXECUTE 'ALTER PUBLICATION supabase_realtime ADD TABLE user_balances';
+    END IF;
+  END $$;
+
+
+
+
+
+
+
+  UPDATE finances SET type = 'credit' WHERE type = 'income';
+  UPDATE finances SET type = 'debit'  WHERE type = 'expense';
+
+
+
+
+
+
+
+   -- ── 1. timetable audience column
+  ALTER TABLE timetable ADD COLUMN IF NOT EXISTS for_user TEXT;
+  CREATE INDEX IF NOT EXISTS idx_timetable_for_user ON timetable(for_user);
+
+  -- ── 2. study_routines audience column
+  ALTER TABLE study_routines ADD COLUMN IF NOT EXISTS for_user TEXT;
+  CREATE INDEX IF NOT EXISTS idx_study_routines_for_user ON study_routines(for_user);
+
+  -- ── 3. Realtime publication (idempotent)
+  DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname='supabase_realtime' AND tablename='timetable') THEN
+      EXECUTE 'ALTER PUBLICATION supabase_realtime ADD TABLE timetable';
+    END IF;
+  END $$;
+
+  DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname='supabase_realtime' AND tablename='study_routines')
+   THEN
+      EXECUTE 'ALTER PUBLICATION supabase_realtime ADD TABLE study_routines';
+    END IF;
+  END $$;
+
+  -- ── 4. RLS — anon access (matches existing pattern)
+  ALTER TABLE timetable ENABLE ROW LEVEL SECURITY;
+  DROP POLICY IF EXISTS timetable_anon ON timetable;
+  CREATE POLICY timetable_anon ON timetable FOR ALL TO anon USING (true) WITH CHECK (true);
+
+  ALTER TABLE study_routines ENABLE ROW LEVEL SECURITY;
+  DROP POLICY IF EXISTS study_routines_anon ON study_routines;
+  CREATE POLICY study_routines_anon ON study_routines FOR ALL TO anon USING (true) WITH CHECK (true);
+
+  -- ── 5. (Optional) Backfill legacy rows: existing rows have for_user=NULL.
+  -- App falls back to user_id automatically, so this is cosmetic. Run only if
+  -- you want explicit values shown in admin queries.
+  -- UPDATE timetable      SET for_user = user_id WHERE for_user IS NULL;
+  -- UPDATE study_routines SET for_user = user_id WHERE for_user IS NULL;

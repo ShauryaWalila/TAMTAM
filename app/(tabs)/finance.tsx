@@ -19,6 +19,7 @@ import {
 } from '@/lib/smsParser';
 import { Modal } from 'react-native';
 import { AlertCircle, CheckCircle2, XCircle, Sliders, Ban, Repeat } from 'lucide-react-native';
+import { displayName } from '@/lib/displayName';
 import {
   smartCategorise, learnCategoryRule,
   detectSubscriptions, predictBills, computeSpendingForecast,
@@ -763,7 +764,7 @@ export default function FinanceScreen() {
             <View style={[styles.filterBar, { backgroundColor: theme.card }]}>
               <TouchableOpacity onPress={() => setUserFilter('me')} style={[styles.filterOption, userFilter === 'me' && { backgroundColor: theme.tint }]}><User color={userFilter === 'me' ? '#FFF' : theme.tabIconDefault} size={16} /><Text style={[styles.filterText, { color: userFilter === 'me' ? '#FFF' : theme.tabIconDefault }]}>Me</Text></TouchableOpacity>
               <TouchableOpacity onPress={() => setUserFilter('both')} style={[styles.filterOption, userFilter === 'both' && { backgroundColor: theme.tint }]}><Users color={userFilter === 'both' ? '#FFF' : theme.tabIconDefault} size={16} /><Text style={[styles.filterText, { color: userFilter === 'both' ? '#FFF' : theme.tabIconDefault }]}>Us</Text></TouchableOpacity>
-              <TouchableOpacity onPress={() => setUserFilter('partner')} style={[styles.filterOption, userFilter === 'partner' && { backgroundColor: theme.tint }]}><Heart color={userFilter === 'partner' ? '#FFF' : theme.tabIconDefault} size={16} /><Text style={[styles.filterText, { color: userFilter === 'partner' ? '#FFF' : theme.tabIconDefault }]}>Love</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => setUserFilter('partner')} style={[styles.filterOption, userFilter === 'partner' && { backgroundColor: theme.tint }]}><Heart color={userFilter === 'partner' ? '#FFF' : theme.tabIconDefault} size={16} /><Text style={[styles.filterText, { color: userFilter === 'partner' ? '#FFF' : theme.tabIconDefault }]}>{displayName(otherUserName)}</Text></TouchableOpacity>
             </View>
 
             {/* Bank Balance Card */}
@@ -962,7 +963,7 @@ export default function FinanceScreen() {
                   <TouchableOpacity onPress={() => setShowBalanceModal(false)}><X color={theme.text} size={24} /></TouchableOpacity>
                 </View>
                 <Text style={{ color: theme.tabIconDefault, marginBottom: 20, fontSize: 13, lineHeight: 18 }}>
-                  Setting your own initial balance ({currentUserName?.toUpperCase()}). Partner sets theirs on their own device.
+                  Setting your own initial balance ({displayName(currentUserName).toUpperCase()}). Partner sets theirs on their own device.
                 </Text>
                 <TextInput 
                   style={[styles.bigInput, { color: theme.text, marginBottom: 20 }]} 

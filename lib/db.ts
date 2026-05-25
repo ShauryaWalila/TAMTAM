@@ -120,7 +120,8 @@ export const initDB = () => {
         time TEXT,
         end_time TEXT,
         activity TEXT,
-        user_id TEXT
+        user_id TEXT,
+        for_user TEXT           -- target audience: 'pratishth' | 'love' | 'both'. NULL = legacy → defaults to creator.
       );
 
       -- Meetings (Home)
@@ -507,6 +508,7 @@ export const initDB = () => {
         end_time TEXT,   -- HH:mm
         date DATE NOT NULL, -- yyyy-MM-dd
         is_completed INTEGER DEFAULT 0,
+        for_user TEXT,                 -- audience: 'pratishth' | 'love' | 'both'. NULL = legacy → user_id.
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
 
@@ -703,6 +705,10 @@ export const initDB = () => {
       `-- Local Migration: Add missing columns if they don't exist`
 
     try { db.execSync('ALTER TABLE trip_songs ADD COLUMN album_art TEXT;'); } catch(e) {}
+    // Routine audience — who the timetable row should notify. NULL on legacy
+    // rows → falls back to the creator at scheduling time.
+    try { db.execSync('ALTER TABLE timetable ADD COLUMN for_user TEXT;'); } catch(e) {}
+    try { db.execSync('ALTER TABLE study_routines ADD COLUMN for_user TEXT;'); } catch(e) {}
     try { db.execSync('ALTER TABLE study_syllabus ADD COLUMN theory_status TEXT DEFAULT "none";'); } catch(e) {}
     try { db.execSync('ALTER TABLE study_syllabus ADD COLUMN practical_status TEXT DEFAULT "none";'); } catch(e) {}
     try { db.execSync('ALTER TABLE study_syllabus ADD COLUMN theory_last_reviewed DATETIME;'); } catch(e) {}

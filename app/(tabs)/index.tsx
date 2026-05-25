@@ -18,6 +18,7 @@ import { db, queueSyncOperation, generateUUID, isTombstoned } from '@/lib/db';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import LottieView from 'lottie-react-native';
+import { displayName } from '@/lib/displayName';
 import * as SecureStore from 'expo-secure-store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { syncAllNotifications } from '@/lib/notifications';
@@ -111,6 +112,8 @@ export default function DashboardScreen() {
   const [newTime, setNewTime] = useState('');
   const [newEndTime, setNewEndTime] = useState('');
   const [newActivity, setNewActivity] = useState('');
+  // Routine audience picker — 'me' (default) / 'partner' / 'both'.
+  const [routineFor, setRoutineFor] = useState<'me' | 'partner' | 'both'>('me');
 
   // --- Calendar States ---
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -156,9 +159,9 @@ export default function DashboardScreen() {
 
     const timeSub = supabase.channel('db_time').on('postgres_changes', { event: '*', schema: 'public', table: 'timetable' }, (p) => {
       if (p.eventType !== 'DELETE') {
-        const n = p.new;
-        db.runSync(`INSERT OR REPLACE INTO timetable (id, created_at, day, time, end_time, activity, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
-          [n.id, n.created_at, n.day, n.time, n.end_time, n.activity, n.user_id]);
+        const n: any = p.new;
+        db.runSync(`INSERT OR REPLACE INTO timetable (id, created_at, day, time, end_time, activity, user_id, for_user) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [n.id, n.created_at, n.day, n.time, n.end_time, n.activity, n.user_id, n.for_user || null]);
       } else {
         db.runSync(`DELETE FROM timetable WHERE id = ?`, [p.old.id]);
       }
@@ -232,8 +235,8 @@ export default function DashboardScreen() {
 
       // Sync Timetable
       const { data: ttData } = await supabase.from('timetable').select('*');
-      if (ttData) ttData.forEach(n => db.runSync(`INSERT OR REPLACE INTO timetable (id, created_at, day, time, end_time, activity, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
-        [n.id, n.created_at, n.day, n.time, n.end_time, n.activity, n.user_id]));
+      if (ttData) ttData.forEach((n: any) => db.runSync(`INSERT OR REPLACE INTO timetable (id, created_at, day, time, end_time, activity, user_id, for_user) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [n.id, n.created_at, n.day, n.time, n.end_time, n.activity, n.user_id, n.for_user || null]));
 
       // Sync Calendar
       const { data: cData } = await supabase.from('calendar_events').select('*');
@@ -395,6 +398,12 @@ export default function DashboardScreen() {
     }
     setIsSaving(true);
     const id = generateUUID();
+    // Audience: 'me' / 'partner' / 'both'. Translate to absolute user_id so each
+    // device can filter independently without re-resolving partner identity.
+    let forUser: string;
+    if (routineFor === 'partner') forUser = partnerName;
+    else if (routineFor === 'both') forUser = 'both';
+    else forUser = currentUserName.toLowerCase();
     const payload = {
       id,
       day: selectedDay,
@@ -402,16 +411,17 @@ export default function DashboardScreen() {
       end_time: newEndTime || null,
       activity: newActivity,
       user_id: currentUserName.toLowerCase(),
+      for_user: forUser,
       created_at: new Date().toISOString()
     };
 
     try {
-      db.runSync(`INSERT INTO timetable (id, day, time, end_time, activity, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
-        [payload.id, payload.day, payload.time, payload.end_time, payload.activity, payload.user_id, payload.created_at]);
-      
+      db.runSync(`INSERT INTO timetable (id, day, time, end_time, activity, user_id, for_user, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [payload.id, payload.day, payload.time, payload.end_time, payload.activity, payload.user_id, payload.for_user, payload.created_at]);
+
       queueSyncOperation('timetable', payload.id, 'INSERT', payload);
 
-      setNewTime(''); setNewEndTime(''); setNewActivity('');
+      setNewTime(''); setNewEndTime(''); setNewActivity(''); setRoutineFor('me');
       fetchTimetable();
       syncAllNotifications();
     } catch (e) {
@@ -580,7 +590,7 @@ export default function DashboardScreen() {
             <Text style={[styles.momentBody, { color: theme.text }]}>"{motm}"</Text>
             <View style={styles.motmFooter}>
               <Heart size={14} color={theme.tint} fill={theme.tint} />
-              <Text style={[styles.motmAuthor, { color: theme.tabIconDefault }]}>FROM {partnerName.toUpperCase()}</Text>
+              <Text style={[styles.motmAuthor, { color: theme.tabIconDefault }]}>FROM {displayName(partnerName).toUpperCase()}</Text>
             </View>
           </BlurView>
         </MotiView>
@@ -712,12 +722,39 @@ export default function DashboardScreen() {
                   <TouchableOpacity onPress={() => setShowPicker('start')} style={styles.pickerTrigger}><View style={styles.inputGroup}><Clock color={theme.tint} size={18} /><Text style={[styles.pickerValue, { color: newTime ? theme.text : theme.tabIconDefault }]}>{newTime || 'Start Time'}</Text></View><ChevronDown color={theme.tabIconDefault} size={18} /></TouchableOpacity>
                   <TouchableOpacity onPress={() => setShowPicker('end')} style={styles.pickerTrigger}><View style={styles.inputGroup}><Clock color={theme.tint} size={18} /><Text style={[styles.pickerValue, { color: newEndTime ? theme.text : theme.tabIconDefault }]}>{newEndTime || 'End Time (Optional)'}</Text></View><ChevronDown color={theme.tabIconDefault} size={18} /></TouchableOpacity>
                   <View style={[styles.inputGroup, styles.activityInput]}><MessageCircle color={theme.tint} size={18} /><TextInput style={[styles.input, { color: theme.text }]} placeholder="What's happening?" placeholderTextColor={theme.tabIconDefault} value={newActivity} onChangeText={setNewActivity} /></View>
+                  {/* Audience picker — Me / Partner / Both. Notifications fire on every device whose user matches for_user (or for_user='both'). */}
+                  <View style={{ flexDirection: 'row', gap: 6, marginVertical: 8 }}>
+                    {(['me','partner','both'] as const).map(opt => {
+                      const label = opt === 'me' ? displayName(currentUserName) : opt === 'partner' ? displayName(partnerName) : 'Both';
+                      const active = routineFor === opt;
+                      return (
+                        <TouchableOpacity key={opt} onPress={() => setRoutineFor(opt)} style={{ flex: 1, paddingVertical: 10, borderRadius: 12, backgroundColor: active ? theme.tint : theme.background, borderWidth: 1, borderColor: theme.tint + '40', alignItems: 'center' }}>
+                          <Text style={{ color: active ? '#fff' : theme.text, fontWeight: '700', fontSize: 12 }}>{label}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
                   <TouchableOpacity onPress={addRoutineEvent} disabled={isSaving} style={[styles.addBtn, { backgroundColor: theme.tint }]}>{isSaving ? <ActivityIndicator size="small" color="#FFF" /> : <><Plus color="#FFF" size={20} /><Text style={styles.addBtnText}>Add to {selectedDay}</Text></>}</TouchableOpacity>
                 </View>
                 <ScrollView style={{ maxHeight: 200 }} showsVerticalScrollIndicator={false}>
-                  {timetable.filter(e => e.day === selectedDay).map(event => (
-                    <View key={event.id} style={[styles.manageCard, { backgroundColor: theme.background }]}><View style={{ backgroundColor: 'transparent' }}><Text style={[styles.manageTime, { color: theme.tint }]}>{event.time}{event.end_time ? ` — ${event.end_time}` : ''}</Text><Text style={[styles.manageActivity, { color: theme.text }]}>{event.activity}</Text></View><TouchableOpacity onPress={() => deleteRoutineEvent(event.id)} style={styles.deleteBtn}><Trash2 color="#FF3B30" size={18} /></TouchableOpacity></View>
-                  ))}
+                  {timetable.filter(e => e.day === selectedDay).map(event => {
+                    const audience = (event.for_user || event.user_id || '').toLowerCase();
+                    const badge = audience === 'both' ? 'BOTH' : displayName(audience).toUpperCase();
+                    return (
+                      <View key={event.id} style={[styles.manageCard, { backgroundColor: theme.background }]}>
+                        <View style={{ backgroundColor: 'transparent', flex: 1 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'transparent' }}>
+                            <Text style={[styles.manageTime, { color: theme.tint }]}>{event.time}{event.end_time ? ` — ${event.end_time}` : ''}</Text>
+                            <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, backgroundColor: theme.tint + '20' }}>
+                              <Text style={{ fontSize: 9, fontWeight: '900', color: theme.tint, letterSpacing: 0.5 }}>{badge}</Text>
+                            </View>
+                          </View>
+                          <Text style={[styles.manageActivity, { color: theme.text }]}>{event.activity}</Text>
+                        </View>
+                        <TouchableOpacity onPress={() => deleteRoutineEvent(event.id)} style={styles.deleteBtn}><Trash2 color="#FF3B30" size={18} /></TouchableOpacity>
+                      </View>
+                    );
+                  })}
                 </ScrollView>
               </MotiView>
             </View>

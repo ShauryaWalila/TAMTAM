@@ -5,6 +5,7 @@ import Constants from 'expo-constants';
 import { supabase } from './supabase';
 import { db } from './db';
 import { addWeeks, addMonths, addYears, set, isAfter, startOfDay, isBefore, setDay } from 'date-fns';
+import * as SecureStore from 'expo-secure-store';
 
 // Single event channel. Any time a reminder-source row is created / edited /
 // deleted, callers should emit 'reminders-changed' — a debounced listener
@@ -81,21 +82,32 @@ export async function syncAllNotifications() {
       }
     }
 
+    // Resolve current device user for audience filter. Schedule a routine row
+    // only if its for_user matches this device, partner-set-for-me, or 'both'.
+    // Legacy rows (for_user IS NULL) default to creator (user_id).
+    let me = '';
+    try { me = (await SecureStore.getItemAsync('user_name')) || ''; } catch {}
+    me = me.trim().toLowerCase();
+
     const routines = db.getAllSync(`SELECT * FROM timetable`) as any[];
     if (routines) {
       const DAY_MAP: Record<string, number> = { 'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6 };
       for (const item of routines) {
+        const audience = (item.for_user || item.user_id || '').trim().toLowerCase();
+        // Only schedule on this device if the row is targeted at me or both.
+        if (me && audience !== me && audience !== 'both') continue;
+
         const dayIdx = DAY_MAP[item.day];
         if (dayIdx === undefined) continue;
         const [time, period] = item.time.split(' ');
         let [hours, minutes] = time.split(':').map(Number);
         if (period === 'PM' && hours !== 12) hours += 12;
         if (period === 'AM' && hours === 12) hours = 0;
-        
+
         let d = set(new Date(), { hours, minutes, seconds: 0, milliseconds: 0 });
         d = setDay(d, dayIdx, { weekStartsOn: 0 });
         if (!isAfter(d, now)) d = addWeeks(d, 1);
-        
+
         addToMap(d, { ...item, title: item.activity, type: 'routine' }, true);
       }
     }
@@ -120,11 +132,14 @@ export async function syncAllNotifications() {
       }
     } catch {}
 
-    // ── STUDY ROUTINES
+    // ── STUDY ROUTINES (audience-filtered same as timetable)
     try {
       const sroutines = db.getAllSync(`SELECT * FROM study_routines WHERE date IS NOT NULL AND (is_completed IS NULL OR is_completed = 0)`) as any[];
       for (const r of sroutines || []) {
         if (!r.date) continue;
+        const audience = (r.for_user || r.user_id || '').trim().toLowerCase();
+        if (me && audience !== me && audience !== 'both') continue;
+
         const base = new Date(r.date);
         const [hh, mm] = (r.start_time || '09:00').split(':').map((x: string) => parseInt(x, 10));
         const d = set(base, { hours: hh || 9, minutes: mm || 0, seconds: 0, milliseconds: 0 });

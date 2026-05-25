@@ -13,6 +13,7 @@ import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import RadialNavigator from '@/components/RadialNavigator';
 import { MotiView, AnimatePresence } from 'moti';
+import { displayName } from '@/lib/displayName';
 import { format, differenceInDays, startOfToday, eachDayOfInterval, subDays, differenceInMinutes, startOfDay, isAfter, addDays, addWeeks, addMonths, isSameDay, startOfMonth, endOfMonth, startOfWeek, endOfWeek, subMonths } from 'date-fns';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { sendStudyNotification } from '@/lib/notifications';
@@ -89,6 +90,7 @@ export default function StudyHubDashboard() {
 
   const [isRoutineModalVisible, setIsRoutineModalVisible] = useState(false);
   const [routineTitle, setRoutineTitle] = useState('');
+  const [routineFor, setRoutineFor] = useState<'me' | 'partner' | 'both'>('me');
   const [routineDesc, setRoutineDesc] = useState('');
   const [routineStart, setRoutineStart] = useState('09:00');
   const [routineEnd, setRoutineEnd] = useState('10:00');
@@ -252,6 +254,11 @@ export default function StudyHubDashboard() {
       for (let i = 1; i < 3; i++) datesToInsert.push(format(addMonths(baseDate, i), 'yyyy-MM-dd'));
     }
 
+    // Resolve absolute for_user from the 'me'/'partner'/'both' picker so each device can filter cleanly.
+    const meLower = (currentUser || '').trim().toLowerCase();
+    const partner = meLower === 'pratishth' ? 'love' : 'pratishth';
+    const forUser = routineFor === 'me' ? meLower : routineFor === 'partner' ? partner : 'both';
+
     try {
       datesToInsert.forEach(d => {
         const id = generateUUID();
@@ -264,10 +271,11 @@ export default function StudyHubDashboard() {
           end_time: routineEnd,
           date: d,
           is_completed: 0,
+          for_user: forUser,
           created_at: new Date().toISOString()
         };
-        db.runSync(`INSERT INTO study_routines (id, user_id, title, description, start_time, end_time, date, is_completed, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [payload.id, payload.user_id, payload.title, payload.description, payload.start_time, payload.end_time, payload.date, payload.is_completed, payload.created_at]);
+        db.runSync(`INSERT INTO study_routines (id, user_id, title, description, start_time, end_time, date, is_completed, for_user, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [payload.id, payload.user_id, payload.title, payload.description, payload.start_time, payload.end_time, payload.date, payload.is_completed, payload.for_user, payload.created_at]);
         queueSyncOperation('study_routines', id, 'INSERT', payload);
       });
 
@@ -275,6 +283,7 @@ export default function StudyHubDashboard() {
       setRoutineTitle('');
       setRoutineDesc('');
       setRoutineRecurrence('none');
+      setRoutineFor('me');
       refreshRoutinesFromSQLite();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (e) {}
@@ -315,9 +324,9 @@ export default function StudyHubDashboard() {
       sourceItems.forEach(item => {
         const id = generateUUID();
         const payload = { ...item, id, date: targetDateStr, is_completed: 0, created_at: new Date().toISOString() };
-        delete payload.rowid; // Ensure no SQLite internal rowid is copied
-        db.runSync(`INSERT INTO study_routines (id, user_id, title, description, start_time, end_time, date, is_completed, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [payload.id, payload.user_id, payload.title, payload.description, payload.start_time, payload.end_time, payload.date, payload.is_completed, payload.created_at]);
+        delete payload.rowid;
+        db.runSync(`INSERT INTO study_routines (id, user_id, title, description, start_time, end_time, date, is_completed, for_user, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [payload.id, payload.user_id, payload.title, payload.description, payload.start_time, payload.end_time, payload.date, payload.is_completed, payload.for_user || null, payload.created_at]);
         queueSyncOperation('study_routines', id, 'INSERT', payload);
       });
 
@@ -679,7 +688,18 @@ export default function StudyHubDashboard() {
                 {item.is_completed === 1 && <Check size={14} color="#fff" />}
               </TouchableOpacity>
               <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={[styles.routineTitle, { color: theme.text }, item.is_completed === 1 && { textDecorationLine: 'line-through', opacity: 0.5 }]}>{item.title}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={[styles.routineTitle, { color: theme.text }, item.is_completed === 1 && { textDecorationLine: 'line-through', opacity: 0.5 }]}>{item.title}</Text>
+                  {(() => {
+                    const audience = (item.for_user || item.user_id || '').toLowerCase();
+                    const badge = audience === 'both' ? 'BOTH' : displayName(audience).toUpperCase();
+                    return (
+                      <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, backgroundColor: theme.tint + '20' }}>
+                        <Text style={{ fontSize: 9, fontWeight: '900', color: theme.tint, letterSpacing: 0.5 }}>{badge}</Text>
+                      </View>
+                    );
+                  })()}
+                </View>
                 <Text style={styles.routineTime}>{item.start_time} - {item.end_time}</Text>
               </View>
               <TouchableOpacity onPress={() => deleteRoutine(item.id)}>
@@ -804,6 +824,20 @@ export default function StudyHubDashboard() {
 
               {showStartTimePicker && <DateTimePicker mode="time" is24Hour value={new Date()} onChange={(e, d) => { setShowStartTimePicker(false); if (d) setRoutineStart(format(d, 'HH:mm')); }} />}
               {showEndTimePicker && <DateTimePicker mode="time" is24Hour value={new Date()} onChange={(e, d) => { setShowEndTimePicker(false); if (d) setRoutineEnd(format(d, 'HH:mm')); }} />}
+
+              <Text style={styles.modalLabel}>FOR</Text>
+              <View style={{ flexDirection: 'row', gap: 6, marginBottom: 12 }}>
+                {(['me','partner','both'] as const).map(opt => {
+                  const partnerKey = (currentUser || '').toLowerCase() === 'pratishth' ? 'love' : 'pratishth';
+                  const label = opt === 'me' ? displayName(currentUser) : opt === 'partner' ? displayName(partnerKey) : 'Both';
+                  const active = routineFor === opt;
+                  return (
+                    <TouchableOpacity key={opt} onPress={() => setRoutineFor(opt)} style={{ flex: 1, paddingVertical: 10, borderRadius: 12, backgroundColor: active ? theme.tint : theme.background, borderWidth: 1, borderColor: theme.tint + '40', alignItems: 'center' }}>
+                      <Text style={{ color: active ? '#fff' : theme.text, fontWeight: '700', fontSize: 12 }}>{label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
 
               <TouchableOpacity onPress={addStudyRoutine} style={[styles.saveBtn, { backgroundColor: theme.tint }]}>
                 <Text style={styles.saveBtnText}>Save Task</Text>

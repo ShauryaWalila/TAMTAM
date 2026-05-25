@@ -94,8 +94,8 @@ export const initialFullSync = async (shouldClear = false) => {
         [n.id, n.created_at, n.type, n.date, n.occasion_name, n.user_id, n.weekday, n.day_of_month, n.time, n.is_recurring ? 1 : 0, n.frequency, n.recurring_type]));
 
     await syncTable('timetable', supabase.from('timetable').select('*'),
-      n => db.runSync(`INSERT OR REPLACE INTO timetable (id, created_at, day, time, end_time, activity, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [n.id, n.created_at, n.day, n.time, n.end_time, n.activity, n.user_id]));
+      n => db.runSync(`INSERT OR REPLACE INTO timetable (id, created_at, day, time, end_time, activity, user_id, for_user) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [n.id, n.created_at, n.day, n.time, n.end_time, n.activity, n.user_id, n.for_user || null]));
 
     await syncTable('calendar_events', supabase.from('calendar_events').select('*'),
       n => db.runSync(`INSERT OR REPLACE INTO calendar_events (id, created_at, event_date, title, user_id, frequency) VALUES (?, ?, ?, ?, ?, ?)`,
@@ -251,8 +251,8 @@ export const initialFullSync = async (shouldClear = false) => {
           [n.id, n.date, n.meal_time, n.type, n.item_id, n.quantity, n.unit, n.user_id, n.is_eaten || 0, n.is_shared || 0, n.is_recurring || 0, n.days_of_week || '0,1,2,3,4,5,6', n.cycle_week || 0, n.created_at]));
 
       await syncTable('study_routines', supabase.from('study_routines').select('*'),
-        n => db.runSync(`INSERT OR REPLACE INTO study_routines (id, user_id, title, description, start_time, end_time, date, is_completed, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [n.id, n.user_id, n.title, n.description, n.start_time, n.end_time, n.date, n.is_completed || 0, n.created_at]));
+        n => db.runSync(`INSERT OR REPLACE INTO study_routines (id, user_id, title, description, start_time, end_time, date, is_completed, for_user, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [n.id, n.user_id, n.title, n.description, n.start_time, n.end_time, n.date, n.is_completed || 0, n.for_user || null, n.created_at]));
 
       console.log('Background lazy sync complete.');
       initialFullSyncDone = true;
