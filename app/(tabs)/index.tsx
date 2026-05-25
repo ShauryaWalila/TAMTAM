@@ -198,9 +198,13 @@ export default function DashboardScreen() {
   }, [partnerName]);
 
   const init = async () => {
-    const name = await SecureStore.getItemAsync('user_name');
+    const raw = await SecureStore.getItemAsync('user_name');
+    // Normalize: trim + lowercase. Stale stored values with trailing spaces or
+    // capitals were collapsing the !== 'pratishth' check → partnerName resolved
+    // wrong → "FROM PRATISHTH" appeared on Pratishth's own device.
+    const name = (raw || '').trim().toLowerCase();
     setCurrentUserName(name);
-    const partner = name?.toLowerCase() === 'pratishth' ? 'love' : 'pratishth';
+    const partner = name === 'pratishth' ? 'love' : 'pratishth';
     setPartnerName(partner);
 
     // Initial load from SQLite
@@ -510,12 +514,44 @@ export default function DashboardScreen() {
     <ThemedView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 20 }]}>
         
-        {/* Header */}
+        {/* Header — long-press the greeting to view the in-app debug log (captures the iOS NSException reason that Console.app would normally show). */}
         <View style={styles.header}>
-          <View>
+          <TouchableOpacity
+            onLongPress={async () => {
+              try {
+                const { dbg } = await import('@/lib/debugLog');
+                const log = await dbg.recent();
+                // Two slices: short preview for the Alert body (iOS truncates
+                // long Alert text), full dump for the clipboard.
+                const preview = log.length
+                  ? log.slice(0, 12).map(e => `[${e.level.toUpperCase()}] ${e.at.slice(11, 19)}\n${e.msg.slice(0, 300)}`).join('\n\n')
+                  : 'No errors captured.';
+                const fullDump = log.length
+                  ? log.map(e => `[${e.level.toUpperCase()}] ${e.at}\n${e.msg}`).join('\n\n---\n\n')
+                  : 'No errors captured.';
+                Alert.alert('Debug log (latest)', preview, [
+                  { text: 'Copy all', onPress: async () => {
+                    try {
+                      const Clipboard = await import('expo-clipboard');
+                      await Clipboard.setStringAsync(fullDump);
+                      // Tiny confirmation toast via a second Alert.
+                      setTimeout(() => Alert.alert('Copied', `${log.length} entries copied. Paste in chat.`), 100);
+                    } catch (err: any) {
+                      Alert.alert('Copy failed', String(err?.message || err));
+                    }
+                  }},
+                  { text: 'Clear', style: 'destructive', onPress: () => dbg.clear() },
+                  { text: 'OK' },
+                ]);
+              } catch (e: any) {
+                Alert.alert('Debug', String(e?.message || e));
+              }
+            }}
+            delayLongPress={700}
+          >
             <Text style={[styles.greeting, { color: theme.text }]}>Hello, TAMTAM</Text>
             <Text style={[styles.subtitle, { color: theme.tabIconDefault }]}>Thinking of you today</Text>
-          </View>
+          </TouchableOpacity>
           <TouchableOpacity onPress={() => DeviceEventEmitter.emit('show-navigator')}>
             <LottieView autoPlay loop source={{ uri: 'https://assets9.lottiefiles.com/packages/lf20_at6mscsc.json' }} style={styles.lottieHeart} />
           </TouchableOpacity>

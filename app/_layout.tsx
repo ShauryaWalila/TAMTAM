@@ -17,6 +17,10 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
 import { syncAllNotifications, REMINDERS_CHANGED } from '@/lib/notifications';
 import { processSmsInbox, redactOldSmsBodies } from '@/lib/smsParser';
+import { installDebugCapture } from '@/lib/debugLog';
+
+// Install before anything else so even module-init errors are captured.
+installDebugCapture();
 import { initLocationSystem } from '@/lib/location';
 import { initDB } from '@/lib/db';
 import { startSyncEngine, initialFullSync } from '@/lib/syncEngine';
@@ -58,74 +62,75 @@ export default function RootLayout() {
   }, [loaded, appIsReady]);
 
   const initApp = async () => {
-    // 0. INITIALIZE OFFLINE DB & SYNC ENGINE
-    initDB();
-    startSyncEngine();
-    initialFullSync(false);
+    // EVERY step wrapped — a single failing native module can no longer crash boot.
+    try { initDB(); } catch (e) { console.warn('initDB fail', e); }
+    try { startSyncEngine(); } catch (e) { console.warn('startSyncEngine fail', e); }
+    try { initialFullSync(false); } catch (e) { console.warn('initialFullSync fail', e); }
 
-    // 1. REQUEST PERMISSIONS
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
-    }
-    
-    if (finalStatus !== 'granted') {
-      console.log('Failed to get permissions for notifications!');
-    }
-
-    // 2. INITIALIZE LOCATION (FOR PROXIMITY)
-    await initLocationSystem();
-
-    // 3. CONFIGURE ANDROID CHANNEL
-    if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync('default', {
-        name: 'default',
-        importance: Notifications.AndroidImportance.MAX,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#FF231F7C',
-      });
-    }
-
-    // 4. SYNC ALL NOTIFICATIONS (Reminders, Routines, Calendar)
-    //    Fire-and-forget so a notification subsystem hiccup never blocks boot.
-    syncAllNotifications().catch(e => console.warn('syncAllNotifications boot fail', e));
-
-    // 5. INITIAL WIDGET SYNC
-    syncMeetingWidget();
-    syncRoutineWidget();
-    syncDistanceWidget();
-
-    // 6. PROCESS ANY SMS-INBOX ROWS WAITING FOR THE PARSER + DAILY REDACTION SWEEP (#11)
+    // Permissions — wrapped so iOS 26 keychain/notif quirks can't NSException
+    // out of the async chain and abort boot.
     try {
-      const userName = await SecureStore.getItemAsync('user_name');
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      if (existingStatus !== 'granted') {
+        try { await Notifications.requestPermissionsAsync(); } catch (e) { console.warn('reqPerms fail', e); }
+      }
+    } catch (e) { console.warn('getPerms fail', e); }
+
+    try { await initLocationSystem(); } catch (e) { console.warn('initLocationSystem fail', e); }
+
+    if (Platform.OS === 'android') {
+      try {
+        await Notifications.setNotificationChannelAsync('default', {
+          name: 'default',
+          importance: Notifications.AndroidImportance.MAX,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: '#FF231F7C',
+        });
+      } catch (e) { console.warn('setChannel fail', e); }
+    }
+
+    // Fire-and-forget so a notification subsystem hiccup never blocks boot.
+    try { syncAllNotifications().catch(e => console.warn('syncAllNotifications boot fail', e)); } catch {}
+
+    try { syncMeetingWidget(); } catch {}
+    try { syncRoutineWidget(); } catch {}
+    try { syncDistanceWidget(); } catch {}
+
+    // SMS-inbox parser + redaction sweep. Normalise user_name so casing /
+    // whitespace from a stale SecureStore write can't shoot down the query.
+    try {
+      const raw = await SecureStore.getItemAsync('user_name');
+      const userName = (raw || '').trim().toLowerCase();
       if (userName) {
-        await processSmsInbox(userName);
-        try { redactOldSmsBodies(userName); } catch {}
+        try { await processSmsInbox(userName); } catch (e) { console.warn('processSmsInbox fail', e); }
+        try { redactOldSmsBodies(userName); } catch (e) { console.warn('redact fail', e); }
       }
     } catch {}
   };
 
   // Re-run the SMS parser whenever the app comes to the foreground or a
-  // DATA_REFRESH event fires (new sms_inbox rows just synced down).
+  // DATA_REFRESH event fires. Every native call is try/catched so an iOS 26
+  // SecureStore / TurboModule hiccup can't take the app down.
   useEffect(() => {
     let pending: any = null;
     const trigger = async () => {
-      if (pending) return; // coalesce bursts
+      if (pending) return;
       pending = setTimeout(async () => {
         pending = null;
         try {
-          const u = await SecureStore.getItemAsync('user_name');
+          const raw = await SecureStore.getItemAsync('user_name');
+          const u = (raw || '').trim().toLowerCase();
           if (u) await processSmsInbox(u);
-        } catch {}
+        } catch (e) { console.warn('SMS parser tick fail', e); }
       }, 800);
     };
-    const appSub = AppState.addEventListener('change', (s) => { if (s === 'active') trigger(); });
-    const refreshSub = DeviceEventEmitter.addListener('DATA_REFRESH', trigger);
+    let appSub: any = null;
+    let refreshSub: any = null;
+    try { appSub = AppState.addEventListener('change', (s) => { if (s === 'active') trigger(); }); } catch {}
+    try { refreshSub = DeviceEventEmitter.addListener('DATA_REFRESH', trigger); } catch {}
     return () => {
-      appSub.remove();
-      refreshSub.remove();
+      try { appSub?.remove(); } catch {}
+      try { refreshSub?.remove(); } catch {}
       if (pending) clearTimeout(pending);
     };
   }, []);

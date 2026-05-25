@@ -20,14 +20,29 @@ const REMINDER_TABLE_RE = new RegExp(
   `\\b(?:INSERT\\s+INTO|UPDATE|DELETE\\s+FROM)\\s+(${[...REMINDER_TABLES].join('|')})\\b`,
   'i'
 );
-const _origRunSync = db.runSync.bind(db);
-(db as any).runSync = (sql: string, ...params: any[]) => {
-  const res = _origRunSync(sql, ...params);
-  if (typeof sql === 'string' && REMINDER_TABLE_RE.test(sql)) {
-    try { DeviceEventEmitter.emit('reminders-changed'); } catch {}
+// Install the override defensively: JSI host objects on some RN versions
+// reject property assignment → would crash the entire module at import.
+// Also guard against double-install (hot-reload re-importing db.ts).
+if (!(db as any).__runSyncPatched) {
+  try {
+    const _origRunSync: (...args: any[]) => any = (db as any).runSync;
+    (db as any).runSync = function patchedRunSync(sql: string, ...params: any[]) {
+      // Use Function.prototype.call to keep `this === db` for the JSI host
+      // call. `.bind()` on host functions misbehaves on some iOS builds.
+      const res = _origRunSync.call(db, sql, ...params);
+      if (typeof sql === 'string' && REMINDER_TABLE_RE.test(sql)) {
+        try { DeviceEventEmitter.emit('reminders-changed'); } catch {}
+      }
+      return res;
+    };
+    (db as any).__runSyncPatched = true;
+  } catch (e) {
+    // Patch failed (host object frozen / non-writable). Falls back to the
+    // original db.runSync — reminders-changed won't auto-fire but app still works.
+    // Callers that need it can emit it explicitly.
+    console.warn('db.runSync patch failed:', e);
   }
-  return res;
-};
+}
 
 export const generateUUID = () => {
   // Pure JS UUID v4 implementation
