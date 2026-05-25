@@ -1063,10 +1063,11 @@ export default function FinanceScreen() {
         </View>
       )}
 
-      {/* SMS Pending Review modal */}
-      <Modal visible={showReviewModal} animationType="slide" transparent onRequestClose={() => setShowReviewModal(false)}>
+      {/* SMS Pending Review modal — children gated for Fabric/iOS 26 safety; fixed maxHeight in px (percentage strings break Auto Layout on Fabric) */}
+      <Modal visible={showReviewModal} animationType="slide" transparent onRequestClose={() => setShowReviewModal(false)} presentationStyle="overFullScreen">
+        {showReviewModal && (
         <View style={{ flex: 1, backgroundColor: '#000A', justifyContent: 'flex-end' }}>
-          <View style={{ backgroundColor: theme.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: insets.bottom + 20, maxHeight: '90%' }}>
+          <View style={{ backgroundColor: theme.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: insets.bottom + 20, maxHeight: Math.round(Dimensions.get('window').height * 0.9) }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <Text style={{ color: theme.text, fontSize: 20, fontWeight: '800' }}>SMS Review</Text>
               <TouchableOpacity onPress={() => setShowReviewModal(false)}><X size={24} color={theme.text} /></TouchableOpacity>
@@ -1185,6 +1186,7 @@ export default function FinanceScreen() {
             </ScrollView>
           </View>
         </View>
+        )}
       </Modal>
     </ThemedView>
   );

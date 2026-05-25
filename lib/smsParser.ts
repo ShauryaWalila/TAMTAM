@@ -286,12 +286,18 @@ export interface ProcessReport {
 }
 
 export async function processSmsInbox(userId: string): Promise<ProcessReport> {
-  const threshold = getConfidenceThreshold();
-  const rows = db.getAllSync<any>(
-    `SELECT * FROM sms_inbox WHERE user_id = ? AND processed_at IS NULL ORDER BY received_at ASC LIMIT 200`,
-    [userId]
-  );
   const report: ProcessReport = { processed: 0, inserted: 0, needsReview: 0, spam: 0 };
+  const threshold = getConfidenceThreshold();
+  let rows: any[] = [];
+  try {
+    rows = db.getAllSync<any>(
+      `SELECT * FROM sms_inbox WHERE user_id = ? AND processed_at IS NULL ORDER BY received_at ASC LIMIT 200`,
+      [userId]
+    );
+  } catch (e) {
+    // Table not yet created (initDB still running, or migration pending). Skip silently.
+    return report;
+  }
 
   for (const row of rows) {
     // #8 — blocklist short-circuit. Block-listed sender → spam, skip parsing entirely.
@@ -373,19 +379,23 @@ export interface PendingReviewRow {
 }
 
 export function listPendingReview(userId: string, limit = 50): PendingReviewRow[] {
-  return db.getAllSync<PendingReviewRow>(
-    `SELECT id, sender, body, received_at, confidence, parsed_amount, parsed_direction, parsed_merchant, parsed_category
-     FROM sms_inbox WHERE user_id = ? AND decision = 'review' ORDER BY received_at DESC LIMIT ?`,
-    [userId, limit]
-  );
+  try {
+    return db.getAllSync<PendingReviewRow>(
+      `SELECT id, sender, body, received_at, confidence, parsed_amount, parsed_direction, parsed_merchant, parsed_category
+       FROM sms_inbox WHERE user_id = ? AND decision = 'review' ORDER BY received_at DESC LIMIT ?`,
+      [userId, limit]
+    );
+  } catch { return []; }
 }
 
 export function countPendingReview(userId: string): number {
-  const r = db.getFirstSync<{ c: number }>(
-    `SELECT COUNT(*) AS c FROM sms_inbox WHERE user_id = ? AND decision = 'review'`,
-    [userId]
-  );
-  return r?.c || 0;
+  try {
+    const r = db.getFirstSync<{ c: number }>(
+      `SELECT COUNT(*) AS c FROM sms_inbox WHERE user_id = ? AND decision = 'review'`,
+      [userId]
+    );
+    return r?.c || 0;
+  } catch { return 0; }
 }
 
 // One-tap actions from the Pending Review banner.

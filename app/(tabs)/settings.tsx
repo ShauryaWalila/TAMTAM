@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { StyleSheet, ScrollView, Pressable, Switch, View, Image, ActivityIndicator, Alert, Modal, TextInput, FlatList, TouchableOpacity, DeviceEventEmitter, Platform } from 'react-native';
+import { StyleSheet, ScrollView, Pressable, Switch, View, Image, ActivityIndicator, Alert, Modal, TextInput, FlatList, TouchableOpacity, DeviceEventEmitter, Platform, Dimensions } from 'react-native';
 import { Text, View as ThemedView } from '@/components/Themed';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
@@ -764,23 +764,27 @@ export default function SettingsScreen() {
         </View>
       </Modal>
 
-      {/* 👕 MASTER WARDROBE MODAL */}
-      <Modal visible={isWardrobeVisible} animationType="slide">
-        <Wardrobe 
-          userId={userName || ''} 
-          isSettingsMode={true} 
-          onClose={() => setIsWardrobeVisible(false)} 
-        />
+      {/* 👕 MASTER WARDROBE MODAL — children gated so heavy tree only mounts when modal is presented (Fabric/iOS 26 crashes on unmount of heavy never-visible children) */}
+      <Modal visible={isWardrobeVisible} animationType="slide" onRequestClose={() => setIsWardrobeVisible(false)}>
+        {isWardrobeVisible && (
+          <Wardrobe
+            userId={userName || ''}
+            isSettingsMode={true}
+            onClose={() => setIsWardrobeVisible(false)}
+          />
+        )}
       </Modal>
 
-      {/* 🎵 OUR SONGS MODAL */}
-      <Modal visible={isOurSongsVisible} animationType="slide">
-        <TripSoundtrack 
-          tripId="MASTER" 
-          tripName="Our Songs" 
-          isMaster={true} 
-          onClose={() => setIsOurSongsVisible(false)} 
-        />
+      {/* 🎵 OUR SONGS MODAL — same Fabric-safe gating */}
+      <Modal visible={isOurSongsVisible} animationType="slide" onRequestClose={() => setIsOurSongsVisible(false)}>
+        {isOurSongsVisible && (
+          <TripSoundtrack
+            tripId="MASTER"
+            tripName="Our Songs"
+            isMaster={true}
+            onClose={() => setIsOurSongsVisible(false)}
+          />
+        )}
       </Modal>
 
       {/* 🥦 DIET METRICS MODAL */}
@@ -909,7 +913,7 @@ const styles = StyleSheet.create({
   settingsItemLeft: { flexDirection: 'row', alignItems: 'center' },
   settingsLabel: { fontSize: 16, fontWeight: '600', marginLeft: 12 },
   modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' },
-  modalContent: { height: '90%', borderTopLeftRadius: 35, borderTopRightRadius: 35, padding: 25, overflow: 'hidden' },
+  modalContent: { height: Math.round(Dimensions.get('window').height * 0.9), borderTopLeftRadius: 35, borderTopRightRadius: 35, padding: 25, overflow: 'hidden' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 },
   modalTitle: { fontSize: 22, fontWeight: '900' },
   formCard: { backgroundColor: 'rgba(150,150,150,0.05)', padding: 20, borderRadius: 25, marginBottom: 25, gap: 15 },
