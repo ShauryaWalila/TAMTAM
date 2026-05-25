@@ -128,6 +128,10 @@ export default function FinanceScreen() {
   const [category, setCategory] = useState('Other');
   const [description, setDescription] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  // When set, the Add modal is in EDIT mode for this txn id (UPDATE not INSERT).
+  // Setting state via openEditModal(txn) pre-fills all fields.
+  const [editTxnId, setEditTxnId] = useState<string | null>(null);
+  const [editOriginal, setEditOriginal] = useState<any | null>(null); // snapshot for learn-on-change
 
   // Target Form
   const [targetTitle, setTargetTitle] = useState('');
@@ -360,41 +364,79 @@ export default function FinanceScreen() {
     }
   };
 
+  const openEditModal = (t: any) => {
+    setEditTxnId(t.id);
+    setEditOriginal({ category: t.category, amount: t.amount, type: t.type, description: t.description, source: t.source });
+    setAmount(String(t.amount));
+    setType((t.type === 'credit' ? 'credit' : 'debit'));
+    setCategory(t.category || 'Other');
+    setDescription(t.description || '');
+    if (t.transaction_date) {
+      const d = new Date(t.transaction_date);
+      setSelDay(String(d.getDate()).padStart(2, '0'));
+      setSelMonth(MONTHS[d.getMonth()]);
+      setSelYear(String(d.getFullYear()));
+    }
+    setShowAddModal(true);
+  };
+
   const handleSaveTransaction = async () => {
     if (!amount || isNaN(parseFloat(amount)) || !currentUserName) return;
     setIsSaving(true);
-    const id = generateUUID();
-    // Auto-categorise unless the user already set one explicitly. Uses
-    // smartCategorise which prefers user-learnt rules over the built-in
-    // patterns, so corrections stick over time.
     const desc = description.trim();
     const autoCategory = (category === 'Other' || !category)
-      ? smartCategorise(currentUserName, desc, type === 'income' ? parseFloat(amount) : -parseFloat(amount))
+      ? smartCategorise(currentUserName, desc, type === 'credit' ? parseFloat(amount) : -parseFloat(amount))
       : category;
-    // Compose the back-dated transaction_date from the day/month/year wheels.
     const monthIdx = Math.max(0, MONTHS.indexOf(selMonth));
     const txnDate = `${selYear}-${String(monthIdx + 1).padStart(2, '0')}-${String(selDay).padStart(2, '0')}`;
-    const payload: any = {
-      id,
-      amount: parseFloat(amount),
-      type,
-      category: autoCategory,
-      description: desc,
-      user_id: currentUserName.toLowerCase(),
-      created_at: new Date().toISOString(),
-      transaction_date: txnDate,
-      source: 'manual',
-    };
 
     try {
-      db.runSync(`INSERT INTO finances (id, amount, type, category, description, user_id, created_at, transaction_date, source) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [payload.id, payload.amount, payload.type, payload.category, payload.description, payload.user_id, payload.created_at, payload.transaction_date, payload.source]);
+      if (editTxnId) {
+        // EDIT path — UPDATE existing row + learn from any change.
+        db.runSync(
+          `UPDATE finances SET amount = ?, type = ?, category = ?, description = ?, transaction_date = ? WHERE id = ?`,
+          [parseFloat(amount), type, autoCategory, desc, txnDate, editTxnId]
+        );
+        queueSyncOperation('finances', editTxnId, 'UPDATE', {
+          amount: parseFloat(amount), type, category: autoCategory, description: desc, transaction_date: txnDate,
+        });
 
-      queueSyncOperation('finances', payload.id, 'INSERT', payload);
+        // Confidence boost / pattern learning: if the user changed the category
+        // (or any signal) on a SMS-captured row, the parser was wrong about
+        // *this kind of merchant*. Save a user_finance_rules pattern so the
+        // next SMS with the same description root auto-categorises right.
+        if (editOriginal && desc) {
+          const catChanged = editOriginal.category !== autoCategory;
+          const fromSms = editOriginal.source === 'sms_bank' || editOriginal.source === 'sms_bank_recurring';
+          if (catChanged) {
+            learnCategoryRule(currentUserName, desc, autoCategory);
+          }
+          // If the edit came from a SMS row AND the user kept it (didn't delete),
+          // also persist the description as a positive sample — boosts confidence
+          // next time a near-identical SMS arrives.
+          if (fromSms) {
+            learnCategoryRule(currentUserName, desc, autoCategory);
+          }
+        }
+      } else {
+        // ADD path — INSERT new row.
+        const id = generateUUID();
+        const payload: any = {
+          id,
+          amount: parseFloat(amount),
+          type,
+          category: autoCategory,
+          description: desc,
+          user_id: currentUserName.toLowerCase(),
+          created_at: new Date().toISOString(),
+          transaction_date: txnDate,
+          source: 'manual',
+        };
+        db.runSync(`INSERT INTO finances (id, amount, type, category, description, user_id, created_at, transaction_date, source) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [payload.id, payload.amount, payload.type, payload.category, payload.description, payload.user_id, payload.created_at, payload.transaction_date, payload.source]);
+        queueSyncOperation('finances', payload.id, 'INSERT', payload);
+      }
 
-      // After every save, scan budgets — fires a local notification if any
-      // limit was breached. Notification has NO figures, no category, no
-      // description — privacy preserved.
       if (currentUserName) {
         checkAllBudgetAlerts(currentUserName, {
           amount: parseFloat(amount),
@@ -404,31 +446,63 @@ export default function FinanceScreen() {
 
       setShowAddModal(false);
       setAmount(''); setDescription('');
+      setEditTxnId(null); setEditOriginal(null);
       refreshFromSQLite();
     } catch (e) {}
     finally { setIsSaving(false); }
   };
 
   const handleSaveBalance = async () => {
-    const targetId = balanceEditUser === 'me' ? currentUserName : otherUserName;
-    if (!targetId) return;
-    
+    // Each user edits only their own balance. Behaviour:
+    //   • FIRST-TIME (no base set yet AND no txns for this user) → write base directly.
+    //   • SUBSEQUENT update → DO NOT mutate the base. Compute delta vs current displayed
+    //     "my" balance and insert a "Balance Adjustment" finances row of type
+    //     credit (if delta > 0) or debit (if delta < 0). This makes the change
+    //     auditable + reversible: deleting the adjustment row reverts the
+    //     change. Same machinery as any other transaction.
+    if (!currentUserName) return;
     setIsSaving(true);
     const newBal = parseFloat(editBalance) || 0;
+    const userIdLower = currentUserName.toLowerCase();
+
+    // "My" current displayed balance = stored base + sum of my own txns.
+    const myTxnNet = transactions
+      .filter(t => t.user_id === userIdLower)
+      .reduce((s, t) => s + (t.type === 'credit' ? t.amount : -t.amount), 0);
+    const currentMineDisplay = myBalance + myTxnNet;
+    const delta = newBal - currentMineDisplay;
+
     try {
-      // For balance, we just queue an upsert to Supabase but update local state immediately
-      const { error } = await supabase.from('user_balances').upsert({
-        user_id: targetId.toLowerCase(),
-        balance: newBal
-      });
-      
-      if (!error) {
-        if (balanceEditUser === 'me') setMyBalance(newBal);
-        else setPartnerBalance(newBal);
-        setShowBalanceModal(false);
-        setBalanceEditUser(null);
+      const isFirstTime = myBalance === 0 && myTxnNet === 0;
+      if (isFirstTime) {
+        // Initial base — direct upsert, no adjustment txn.
+        const { error } = await supabase.from('user_balances').upsert({
+          user_id: userIdLower,
+          balance: newBal,
+        });
+        if (!error) setMyBalance(newBal);
+      } else if (Math.abs(delta) > 0.005) {
+        // Subsequent update — create an auditable adjustment txn.
+        const id = generateUUID();
+        const today = new Date().toISOString().slice(0, 10);
+        const txnType = delta > 0 ? 'credit' : 'debit';
+        const amount = Math.abs(delta);
+        db.runSync(
+          `INSERT INTO finances (id, created_at, amount, category, description, user_id, type, transaction_date, source)
+           VALUES (?, datetime('now'), ?, ?, ?, ?, ?, ?, 'balance_adjustment')`,
+          [id, amount, 'Balance Adjustment', delta > 0 ? 'Balance correction (up)' : 'Balance correction (down)', userIdLower, txnType, today]
+        );
+        queueSyncOperation('finances', id, 'INSERT', {
+          id, amount, category: 'Balance Adjustment',
+          description: delta > 0 ? 'Balance correction (up)' : 'Balance correction (down)',
+          user_id: userIdLower, type: txnType, transaction_date: today,
+          source: 'balance_adjustment', created_at: new Date().toISOString(),
+        });
+        refreshFromSQLite();
       }
-    } catch (e) {}
+      setShowBalanceModal(false);
+      setBalanceEditUser(null);
+    } catch {}
     setIsSaving(false);
   };
 
@@ -671,18 +745,17 @@ export default function FinanceScreen() {
                 <Text style={[styles.subtitle, { color: theme.tabIconDefault }]}>Our financial journey</Text>
               </View>
               <View style={{ flexDirection: 'row', gap: 10 }}>
-                {currentUserName?.toLowerCase() === 'pratishth' && (
-                  <TouchableOpacity 
-                    onPress={() => {
-                      setBalanceEditUser('me');
-                      setEditBalance(myBalance.toString());
-                      setShowBalanceModal(true);
-                    }} 
-                    style={[styles.fab, { backgroundColor: '#555' }]}
-                  >
-                    <Landmark color="#FFF" size={20} />
-                  </TouchableOpacity>
-                )}
+                {/* Bank balance editor — accessible to BOTH users so each can set / update their own starting balance. The modal's Me/Love toggle picks whose balance to edit. */}
+                <TouchableOpacity
+                  onPress={() => {
+                    setBalanceEditUser('me');
+                    setEditBalance(myBalance.toString());
+                    setShowBalanceModal(true);
+                  }}
+                  style={[styles.fab, { backgroundColor: '#555' }]}
+                >
+                  <Landmark color="#FFF" size={20} />
+                </TouchableOpacity>
                 <TouchableOpacity onPress={() => setShowAddModal(true)} style={[styles.fab, { backgroundColor: theme.tint }]}><Plus color="#FFF" size={24} /></TouchableOpacity>
               </View>
             </View>
@@ -700,15 +773,12 @@ export default function FinanceScreen() {
                   <Landmark size={18} color="white" opacity={0.9} />
                   <Text style={{ color: 'white', fontWeight: 'bold', opacity: 0.9 }}>TOTAL MONEY IN BANK</Text>
                 </View>
-                <TouchableOpacity 
-                  onPress={() => { 
-                    if (userFilter === 'both') {
-                      Alert.alert('Select User', 'Please select Me or Love to update individual base balances.');
-                      return;
-                    }
-                    setBalanceEditUser(userFilter === 'me' ? 'me' : 'partner');
-                    setEditBalance(userFilter === 'me' ? myBalance.toString() : partnerBalance.toString()); 
-                    setShowBalanceModal(true); 
+                <TouchableOpacity
+                  onPress={() => {
+                    // Each user can only edit their OWN base balance.
+                    setBalanceEditUser('me');
+                    setEditBalance(myBalance.toString());
+                    setShowBalanceModal(true);
                   }}
                   style={{ padding: 4 }}
                 >
@@ -761,8 +831,8 @@ export default function FinanceScreen() {
                   >
                     <Text style={{ fontSize: 18 }}>{CATEGORY_META[t.category as keyof typeof CATEGORY_META]?.emoji || CATEGORIES.find(c => c.id === t.category)?.icon || (isDebit ? '💸' : '💰')}</Text>
                   </TouchableOpacity>
-                  <View style={styles.txMain}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <TouchableOpacity style={styles.txMain} onPress={() => openEditModal(t)} activeOpacity={0.6}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'transparent' }}>
                       <Text style={[styles.txDesc, { color: theme.text, flexShrink: 1 }]} numberOfLines={1}>
                         {t.description || t.category}
                       </Text>
@@ -777,11 +847,16 @@ export default function FinanceScreen() {
                           <Text style={{ fontSize: 9, fontWeight: '900', color: '#FF9500', letterSpacing: 0.5 }}>RECUR</Text>
                         </View>
                       )}
+                      {t.source === 'balance_adjustment' && (
+                        <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, backgroundColor: '#8E8E9320' }}>
+                          <Text style={{ fontSize: 9, fontWeight: '900', color: '#8E8E93', letterSpacing: 0.5 }}>ADJ</Text>
+                        </View>
+                      )}
                     </View>
                     <Text style={[styles.txDate, { color: theme.tabIconDefault }]}>
                       {t.transaction_date ? format(new Date(t.transaction_date), 'MMM d, yyyy') : format(new Date(t.created_at), 'MMM d, yyyy')} · {t.category || 'Misc'}
                     </Text>
-                  </View>
+                  </TouchableOpacity>
                   <View style={styles.txEnd}>
                     <Text style={[styles.txAmt, { color: isDebit ? '#FF3B30' : '#34C759' }]}>
                       {isDebit ? '-' : '+'}₹{t.amount.toLocaleString()}
@@ -857,9 +932,9 @@ export default function FinanceScreen() {
           <MotiView key="txModal" from={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={StyleSheet.absoluteFill}>
             <View style={styles.modalOverlay}>
               <BlurView intensity={60} tint={colorScheme} style={StyleSheet.absoluteFill} />
-              <TouchableOpacity style={StyleSheet.absoluteFill} onPress={() => setShowAddModal(false)} />
+              <TouchableOpacity style={StyleSheet.absoluteFill} onPress={() => { setShowAddModal(false); setEditTxnId(null); setEditOriginal(null); }} />
               <MotiView from={{ translateY: 300 }} animate={{ translateY: 0 }} style={[styles.modalContent, { backgroundColor: theme.card }]}>
-                <View style={styles.modalHeader}><Text style={[styles.modalTitle, { color: theme.text }]}>New Entry</Text><TouchableOpacity onPress={() => setShowAddModal(false)}><X color={theme.text} size={24} /></TouchableOpacity></View>
+                <View style={styles.modalHeader}><Text style={[styles.modalTitle, { color: theme.text }]}>{editTxnId ? 'Edit Entry' : 'New Entry'}</Text><TouchableOpacity onPress={() => { setShowAddModal(false); setEditTxnId(null); setEditOriginal(null); }}><X color={theme.text} size={24} /></TouchableOpacity></View>
                 <View style={styles.typeSwitch}>
                   <TouchableOpacity onPress={() => setType('debit')} style={[styles.typeOption, type === 'debit' && { backgroundColor: '#FF3B30' }]}><Text style={[styles.typeText, { color: type === 'debit' ? '#FFF' : theme.tabIconDefault }]}>Spent</Text></TouchableOpacity>
                   <TouchableOpacity onPress={() => setType('credit')} style={[styles.typeOption, type === 'credit' && { backgroundColor: '#34C759' }]}><Text style={[styles.typeText, { color: type === 'credit' ? '#FFF' : theme.tabIconDefault }]}>Received</Text></TouchableOpacity>
@@ -887,14 +962,8 @@ export default function FinanceScreen() {
                   <TouchableOpacity onPress={() => setShowBalanceModal(false)}><X color={theme.text} size={24} /></TouchableOpacity>
                 </View>
                 <Text style={{ color: theme.tabIconDefault, marginBottom: 20, fontSize: 13, lineHeight: 18 }}>
-                  Setting initial balance for {balanceEditUser === 'me' ? currentUserName?.toUpperCase() : otherUserName?.toUpperCase()}.
+                  Setting your own initial balance ({currentUserName?.toUpperCase()}). Partner sets theirs on their own device.
                 </Text>
-                {currentUserName?.toLowerCase() === 'pratishth' && (
-                  <View style={[styles.typeSwitch, { marginBottom: 15 }]}>
-                    <TouchableOpacity onPress={() => { setBalanceEditUser('me'); setEditBalance(myBalance.toString()); }} style={[styles.typeOption, balanceEditUser === 'me' && { backgroundColor: theme.tint }]}><Text style={{ color: balanceEditUser === 'me' ? '#FFF' : '#888', fontWeight: 'bold' }}>Me</Text></TouchableOpacity>
-                    <TouchableOpacity onPress={() => { setBalanceEditUser('partner'); setEditBalance(partnerBalance.toString()); }} style={[styles.typeOption, balanceEditUser === 'partner' && { backgroundColor: theme.tint }]}><Text style={{ color: balanceEditUser === 'partner' ? '#FFF' : '#888', fontWeight: 'bold' }}>Love</Text></TouchableOpacity>
-                  </View>
-                )}
                 <TextInput 
                   style={[styles.bigInput, { color: theme.text, marginBottom: 20 }]} 
                   placeholder="₹ 0.00" 

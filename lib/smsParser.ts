@@ -226,7 +226,7 @@ export function detectRecurringMatch(userId: string, merchant: string | undefine
   // Match by amount window (fast path).
   const amtHit = db.getFirstSync<{ c: number }>(
     `SELECT COUNT(*) AS c FROM finances
-     WHERE user_id = ? AND type = 'expense'
+     WHERE user_id = ? AND type = 'debit'
        AND transaction_date BETWEEN ? AND ?
        AND amount BETWEEN ? AND ?`,
     [userId, lo, hi, ampLow, ampHigh]
@@ -238,7 +238,7 @@ export function detectRecurringMatch(userId: string, merchant: string | undefine
     const token = '%' + merchant.toLowerCase().split(/\s+/)[0] + '%';
     const merHit = db.getFirstSync<{ c: number }>(
       `SELECT COUNT(*) AS c FROM finances
-       WHERE user_id = ? AND type = 'expense'
+       WHERE user_id = ? AND type = 'debit'
          AND transaction_date BETWEEN ? AND ?
          AND LOWER(IFNULL(description,'')) LIKE ?`,
       [userId, lo, hi, token]
@@ -327,11 +327,13 @@ export async function processSmsInbox(userId: string): Promise<ProcessReport> {
     if (meetsBar) {
       const txnId = generateUUID();
       const today = new Date().toISOString().slice(0, 10);
-      const type = parsed.direction === 'credit' ? 'income' : 'expense';
+      // App-wide convention uses 'credit' | 'debit' (matches the manual-entry UI
+// and the totalNetBalance math). Don't switch to 'income'/'expense' here.
+const type = parsed.direction === 'credit' ? 'credit' : 'debit';
       const desc = parsed.merchant || row.body.slice(0, 80);
 
       // #5 — recurring fingerprint: if a similar txn fired ~30 days ago, tag this one.
-      const isRecurring = type === 'expense' && detectRecurringMatch(userId, parsed.merchant, parsed.amount!);
+      const isRecurring = type === 'debit' && detectRecurringMatch(userId, parsed.merchant, parsed.amount!);
       const source = isRecurring ? 'sms_bank_recurring' : 'sms_bank';
 
       db.runSync(
@@ -410,8 +412,8 @@ export function approvePendingReview(inboxId: string, userId: string, overrides?
 
   const txnId = generateUUID();
   const today = new Date().toISOString().slice(0, 10);
-  const type = direction === 'credit' ? 'income' : 'expense';
-  const isRecurring = type === 'expense' && detectRecurringMatch(userId, merchant, amount);
+  const type = direction === 'credit' ? 'credit' : 'debit';
+  const isRecurring = type === 'debit' && detectRecurringMatch(userId, merchant, amount);
   const source = isRecurring ? 'sms_bank_recurring' : 'sms_bank';
   db.runSync(
     `INSERT INTO finances (id, created_at, amount, category, description, user_id, type, transaction_date, source, bank_ref)
