@@ -28,10 +28,14 @@ const { width } = Dimensions.get('window');
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
+    // SDK 54 shape — `shouldShowAlert` was split into `shouldShowBanner` + `shouldShowList`.
+    // Keeping the deprecated key alongside is a no-op on new SDKs and avoids any host throw.
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
-  }),
+  } as any),
 });
 
 export default function RootLayout() {
@@ -85,7 +89,8 @@ export default function RootLayout() {
     }
 
     // 4. SYNC ALL NOTIFICATIONS (Reminders, Routines, Calendar)
-    await syncAllNotifications();
+    //    Fire-and-forget so a notification subsystem hiccup never blocks boot.
+    syncAllNotifications().catch(e => console.warn('syncAllNotifications boot fail', e));
 
     // 5. INITIAL WIDGET SYNC
     syncMeetingWidget();
