@@ -3369,3 +3369,4 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
   -- F. Schema sanity — sms_inbox hash trigger
   SELECT trigger_name FROM information_schema.triggers
   WHERE event_object_table = 'sms_inbox';
+  
