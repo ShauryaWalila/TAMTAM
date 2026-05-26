@@ -15,6 +15,7 @@
 
 import { db, generateUUID, queueSyncOperation } from './db';
 import { categoriseDescription } from './financeCategories';
+import { checkAllBudgetAlerts } from './budgetAlerts';
 
 // ── Tunables (also configurable per-user via system_config later if needed)
 const SPAM_DENY_RE = /\b(otp|verification\s*code|won|win\s+a\s+|cashback\s+eligible|click\s*here|kyc\s*(update|expir)|loan\s+approved|emi\s+offer|congratulations|lucky\s+draw|prize|lottery|insurance\s+quote)\b/i;
@@ -188,12 +189,24 @@ export function blockSender(userId: string, sender: string): void {
     });
   } catch {}
   // Mark every existing row from this sender as spam so the Pending Review tray clears.
-  db.runSync(
-    `UPDATE sms_inbox SET decision = 'spam', processed_at = datetime('now')
-     WHERE user_id = ? AND (decision = 'review' OR processed_at IS NULL)
-       AND UPPER(REPLACE(IFNULL(sender,''),' ','')) LIKE '%' || ? || '%'`,
-    [userId, prefix]
-  );
+  // Fetch IDs first so we can queue a sync UPDATE per row.
+  try {
+    const rows = db.getAllSync<{ id: string }>(
+      `SELECT id FROM sms_inbox WHERE user_id = ? AND (decision = 'review' OR processed_at IS NULL)
+         AND UPPER(REPLACE(IFNULL(sender,''),' ','')) LIKE '%' || ? || '%'`,
+      [userId, prefix]
+    );
+    db.runSync(
+      `UPDATE sms_inbox SET decision = 'spam', processed_at = datetime('now')
+       WHERE user_id = ? AND (decision = 'review' OR processed_at IS NULL)
+         AND UPPER(REPLACE(IFNULL(sender,''),' ','')) LIKE '%' || ? || '%'`,
+      [userId, prefix]
+    );
+    const nowIso = new Date().toISOString();
+    for (const r of rows || []) {
+      try { queueSyncOperation('sms_inbox', r.id, 'UPDATE', { decision: 'spam', processed_at: nowIso }); } catch {}
+    }
+  } catch {}
 }
 
 export function unblockSender(userId: string, senderPrefix: string): void {
@@ -258,6 +271,18 @@ export function redactOldSmsBodies(userId: string): number {
   if (last === today) return 0;
 
   const cutoffIso = new Date(Date.now() - 30 * 86400000).toISOString();
+  // Fetch IDs so we can sync redaction back to Supabase too — otherwise the
+  // partner's device still holds the un-redacted body.
+  let redactedIds: string[] = [];
+  try {
+    const rows = db.getAllSync<{ id: string }>(
+      `SELECT id FROM sms_inbox
+       WHERE user_id = ? AND decision IS NOT NULL AND decision != 'review'
+         AND received_at < ? AND body != '[redacted]'`,
+      [userId, cutoffIso]
+    );
+    redactedIds = (rows || []).map(r => r.id);
+  } catch {}
   const result: any = db.runSync(
     `UPDATE sms_inbox
        SET body = '[redacted]'
@@ -267,6 +292,9 @@ export function redactOldSmsBodies(userId: string): number {
        AND body != '[redacted]'`,
     [userId, cutoffIso]
   );
+  for (const id of redactedIds) {
+    try { queueSyncOperation('sms_inbox', id, 'UPDATE', { body: '[redacted]' }); } catch {}
+  }
 
   db.runSync(
     `INSERT INTO system_config (key, value, updated_at)
@@ -285,6 +313,46 @@ export interface ProcessReport {
   spam: number;
 }
 
+// ── One-time backfill: every locally-decided row gets pushed back to
+// Supabase as an UPDATE. Fixes the historical case where the parser
+// processed rows but never queued the sync. Marker flag in system_config
+// makes this idempotent — runs once per device per app version.
+export function backfillSmsInboxToSupabase(userId: string): number {
+  try {
+    const flag = db.getFirstSync<{ value: string }>(
+      `SELECT value FROM system_config WHERE key = 'sms_backfill_v1_done'`
+    )?.value;
+    if (flag === '1') return 0;
+  } catch {}
+
+  let queued = 0;
+  try {
+    const rows = db.getAllSync<any>(
+      `SELECT * FROM sms_inbox WHERE user_id = ? AND decision IS NOT NULL`,
+      [userId]
+    );
+    for (const r of rows || []) {
+      try {
+        queueSyncOperation('sms_inbox', r.id, 'UPDATE', {
+          processed_at: r.processed_at, decision: r.decision, confidence: r.confidence,
+          parsed_amount: r.parsed_amount, parsed_direction: r.parsed_direction,
+          parsed_merchant: r.parsed_merchant, parsed_category: r.parsed_category,
+          matched_txn_id: r.matched_txn_id,
+        });
+        queued++;
+      } catch {}
+    }
+  } catch {}
+
+  try {
+    db.runSync(
+      `INSERT INTO system_config (key, value, updated_at) VALUES ('sms_backfill_v1_done', '1', datetime('now'))
+       ON CONFLICT(key) DO UPDATE SET value='1', updated_at=datetime('now')`
+    );
+  } catch {}
+  return queued;
+}
+
 export async function processSmsInbox(userId: string): Promise<ProcessReport> {
   const report: ProcessReport = { processed: 0, inserted: 0, needsReview: 0, spam: 0 };
   const threshold = getConfidenceThreshold();
@@ -300,12 +368,15 @@ export async function processSmsInbox(userId: string): Promise<ProcessReport> {
   }
 
   for (const row of rows) {
+    const nowIso = new Date().toISOString();
+
     // #8 — blocklist short-circuit. Block-listed sender → spam, skip parsing entirely.
     if (isBlockedSender(userId, row.sender || '')) {
       db.runSync(
         `UPDATE sms_inbox SET processed_at = datetime('now'), decision = 'spam', confidence = 0 WHERE id = ?`,
         [row.id]
       );
+      try { queueSyncOperation('sms_inbox', row.id, 'UPDATE', { processed_at: nowIso, decision: 'spam', confidence: 0 }); } catch {}
       report.spam++;
       report.processed++;
       continue;
@@ -318,6 +389,7 @@ export async function processSmsInbox(userId: string): Promise<ProcessReport> {
         `UPDATE sms_inbox SET processed_at = datetime('now'), decision = 'spam', confidence = ?, parsed_amount = NULL WHERE id = ?`,
         [parsed.confidence, row.id]
       );
+      try { queueSyncOperation('sms_inbox', row.id, 'UPDATE', { processed_at: nowIso, decision: 'spam', confidence: parsed.confidence, parsed_amount: null }); } catch {}
       report.spam++;
       report.processed++;
       continue;
@@ -325,40 +397,69 @@ export async function processSmsInbox(userId: string): Promise<ProcessReport> {
 
     const meetsBar = parsed.confidence >= threshold && !!parsed.direction;
     if (meetsBar) {
-      const txnId = generateUUID();
-      const today = new Date().toISOString().slice(0, 10);
-      // App-wide convention uses 'credit' | 'debit' (matches the manual-entry UI
-// and the totalNetBalance math). Don't switch to 'income'/'expense' here.
-const type = parsed.direction === 'credit' ? 'credit' : 'debit';
-      const desc = parsed.merchant || row.body.slice(0, 80);
+      // Idempotency guard: if a `finances` row already exists with this
+      // bank_ref (= sms_inbox.id), reuse it instead of inserting a duplicate.
+      // Protects against re-processing on fresh installs / cross-device pulls.
+      let txnId: string | null = null;
+      try {
+        const existing = db.getFirstSync<{ id: string }>(`SELECT id FROM finances WHERE bank_ref = ?`, [row.id]);
+        if (existing?.id) txnId = existing.id;
+      } catch {}
 
+      const today = new Date().toISOString().slice(0, 10);
+      // App-wide convention uses 'credit' | 'debit' (matches manual-entry UI + totalNetBalance math).
+      const type = parsed.direction === 'credit' ? 'credit' : 'debit';
+      const desc = parsed.merchant || row.body.slice(0, 80);
       // #5 — recurring fingerprint: if a similar txn fired ~30 days ago, tag this one.
       const isRecurring = type === 'debit' && detectRecurringMatch(userId, parsed.merchant, parsed.amount!);
       const source = isRecurring ? 'sms_bank_recurring' : 'sms_bank';
 
-      db.runSync(
-        `INSERT INTO finances (id, created_at, amount, category, description, user_id, type, transaction_date, source, bank_ref)
-         VALUES (?, datetime('now'), ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [txnId, parsed.amount!, parsed.category || 'Misc', desc, userId, type, today, source, row.id]
-      );
-      // Mirror to Supabase via existing sync queue.
-      try {
-        queueSyncOperation('finances', txnId, 'INSERT', {
-          id: txnId, amount: parsed.amount, category: parsed.category || 'Misc',
-          description: desc, user_id: userId, type, transaction_date: today,
-          source, bank_ref: row.id, created_at: new Date().toISOString(),
-        });
-      } catch {}
+      const isNewTxn = !txnId;
+      if (isNewTxn) {
+        txnId = generateUUID();
+        db.runSync(
+          `INSERT INTO finances (id, created_at, amount, category, description, user_id, type, transaction_date, source, bank_ref)
+           VALUES (?, datetime('now'), ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [txnId, parsed.amount!, parsed.category || 'Misc', desc, userId, type, today, source, row.id]
+        );
+        // Mirror to Supabase via existing sync queue.
+        try {
+          queueSyncOperation('finances', txnId, 'INSERT', {
+            id: txnId, amount: parsed.amount, category: parsed.category || 'Misc',
+            description: desc, user_id: userId, type, transaction_date: today,
+            source, bank_ref: row.id, created_at: new Date().toISOString(),
+          });
+        } catch {}
+      }
       db.runSync(
         `UPDATE sms_inbox SET processed_at = datetime('now'), decision = 'inserted', confidence = ?, parsed_amount = ?, parsed_direction = ?, parsed_merchant = ?, parsed_category = ?, matched_txn_id = ? WHERE id = ?`,
         [parsed.confidence, parsed.amount!, parsed.direction!, parsed.merchant || null, parsed.category || null, txnId, row.id]
       );
+      try {
+        queueSyncOperation('sms_inbox', row.id, 'UPDATE', {
+          processed_at: nowIso, decision: 'inserted', confidence: parsed.confidence,
+          parsed_amount: parsed.amount, parsed_direction: parsed.direction,
+          parsed_merchant: parsed.merchant || null, parsed_category: parsed.category || null,
+          matched_txn_id: txnId,
+        });
+      } catch {}
+      // Fire budget alert (privacy-preserving — no figures in body) for the auto-inserted txn.
+      try {
+        checkAllBudgetAlerts(userId, { amount: parsed.amount!, category: parsed.category || 'Misc' }).catch(() => {});
+      } catch {}
       report.inserted++;
     } else {
       db.runSync(
         `UPDATE sms_inbox SET processed_at = datetime('now'), decision = 'review', confidence = ?, parsed_amount = ?, parsed_direction = ?, parsed_merchant = ?, parsed_category = ? WHERE id = ?`,
         [parsed.confidence, parsed.amount!, parsed.direction || null, parsed.merchant || null, parsed.category || null, row.id]
       );
+      try {
+        queueSyncOperation('sms_inbox', row.id, 'UPDATE', {
+          processed_at: nowIso, decision: 'review', confidence: parsed.confidence,
+          parsed_amount: parsed.amount, parsed_direction: parsed.direction || null,
+          parsed_merchant: parsed.merchant || null, parsed_category: parsed.category || null,
+        });
+      } catch {}
       report.needsReview++;
     }
     report.processed++;
@@ -410,27 +511,40 @@ export function approvePendingReview(inboxId: string, userId: string, overrides?
   const category = overrides?.category ?? row.parsed_category ?? 'Misc';
   if (!amount || amount <= 0) return;
 
-  const txnId = generateUUID();
+  // Idempotency — don't double-insert if this sms_inbox row already has a matched txn.
+  let txnId: string | null = null;
+  try {
+    const existing = db.getFirstSync<{ id: string }>(`SELECT id FROM finances WHERE bank_ref = ?`, [inboxId]);
+    if (existing?.id) txnId = existing.id;
+  } catch {}
+
   const today = new Date().toISOString().slice(0, 10);
   const type = direction === 'credit' ? 'credit' : 'debit';
   const isRecurring = type === 'debit' && detectRecurringMatch(userId, merchant, amount);
   const source = isRecurring ? 'sms_bank_recurring' : 'sms_bank';
-  db.runSync(
-    `INSERT INTO finances (id, created_at, amount, category, description, user_id, type, transaction_date, source, bank_ref)
-     VALUES (?, datetime('now'), ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [txnId, amount, category, merchant, userId, type, today, source, inboxId]
-  );
-  try {
-    queueSyncOperation('finances', txnId, 'INSERT', {
-      id: txnId, amount, category, description: merchant, user_id: userId, type,
-      transaction_date: today, source, bank_ref: inboxId,
-      created_at: new Date().toISOString(),
-    });
-  } catch {}
+
+  if (!txnId) {
+    txnId = generateUUID();
+    db.runSync(
+      `INSERT INTO finances (id, created_at, amount, category, description, user_id, type, transaction_date, source, bank_ref)
+       VALUES (?, datetime('now'), ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [txnId, amount, category, merchant, userId, type, today, source, inboxId]
+    );
+    try {
+      queueSyncOperation('finances', txnId, 'INSERT', {
+        id: txnId, amount, category, description: merchant, user_id: userId, type,
+        transaction_date: today, source, bank_ref: inboxId,
+        created_at: new Date().toISOString(),
+      });
+    } catch {}
+  }
   db.runSync(
     `UPDATE sms_inbox SET decision = 'inserted', matched_txn_id = ? WHERE id = ?`,
     [txnId, inboxId]
   );
+  try { queueSyncOperation('sms_inbox', inboxId, 'UPDATE', { decision: 'inserted', matched_txn_id: txnId }); } catch {}
+  // Budget alert fires for manual approvals too.
+  try { checkAllBudgetAlerts(userId, { amount, category }).catch(() => {}); } catch {}
 }
 
 export function discardPendingReview(inboxId: string) {
@@ -438,4 +552,5 @@ export function discardPendingReview(inboxId: string) {
     `UPDATE sms_inbox SET decision = 'spam' WHERE id = ?`,
     [inboxId]
   );
+  try { queueSyncOperation('sms_inbox', inboxId, 'UPDATE', { decision: 'spam' }); } catch {}
 }

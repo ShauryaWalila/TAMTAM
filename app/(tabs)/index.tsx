@@ -19,7 +19,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import LottieView from 'lottie-react-native';
 import { displayName } from '@/lib/displayName';
-import { refreshAllNow } from '@/lib/syncEngine';
+import { refreshAllNow, processSyncQueue } from '@/lib/syncEngine';
 import * as SecureStore from 'expo-secure-store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { syncAllNotifications } from '@/lib/notifications';
@@ -899,7 +899,7 @@ function PartnerCompassCard({ theme, currentUser, partnerName }: any) {
   React.useEffect(() => {
     if (!currentUser) return;
     let headingSub: any = null;
-    let posInterval: any = null;
+    let posWatchSub: any = null;
     let recomputeInterval: any = null;
     let realtimeChan: any = null;
     let live = true;
@@ -909,14 +909,22 @@ function PartnerCompassCard({ theme, currentUser, partnerName }: any) {
         const { status: pstatus } = await Location.requestForegroundPermissionsAsync();
         if (pstatus !== 'granted') { if (live) setStatus('no-perm'); return; }
 
-        const writeMine = async () => {
-          try {
-            const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        // High accuracy + 10s push cadence (or every 10m of movement, whichever
+        // hits first). watchPositionAsync is far cheaper than polling — iOS
+        // only delivers events on real GPS deltas rather than burning radio on
+        // a fixed timer. Battery hit: modest.
+        const seedPos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+        recordOwnLocation(currentUser, seedPos.coords.latitude, seedPos.coords.longitude, seedPos.coords.accuracy ?? undefined);
+        posWatchSub = await Location.watchPositionAsync(
+          { accuracy: Location.Accuracy.High, timeInterval: 10 * 1000, distanceInterval: 10 },
+          (pos: any) => {
+            if (!live) return;
             recordOwnLocation(currentUser, pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy ?? undefined);
-          } catch {}
-        };
-        await writeMine();
-        posInterval = setInterval(writeMine, 60 * 1000);
+            // Force-flush sync queue so partner sees the new position within
+            // seconds rather than waiting up to 60s for the next periodic flush.
+            try { processSyncQueue(); } catch {}
+          }
+        );
 
         headingSub = await Location.watchHeadingAsync((h: any) => {
           if (!live) return;
@@ -943,7 +951,7 @@ function PartnerCompassCard({ theme, currentUser, partnerName }: any) {
           } catch {}
         };
         await recompute();
-        recomputeInterval = setInterval(recompute, 15 * 1000);
+        recomputeInterval = setInterval(recompute, 5 * 1000);
 
         realtimeChan = supabase.channel('partner-locations').on('postgres_changes',
           { event: '*', schema: 'public', table: 'partner_locations', filter: `user_id=eq.${partnerName}` },
@@ -963,7 +971,7 @@ function PartnerCompassCard({ theme, currentUser, partnerName }: any) {
     return () => {
       live = false;
       if (headingSub?.remove) headingSub.remove();
-      if (posInterval) clearInterval(posInterval);
+      if (posWatchSub?.remove) posWatchSub.remove();
       if (recomputeInterval) clearInterval(recomputeInterval);
       if (realtimeChan) supabase.removeChannel(realtimeChan);
     };

@@ -581,6 +581,9 @@ export const initDB = () => {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
 
+      -- (No AI cache table — once an ingredient is saved its values live in
+      -- `ingredients`; re-querying the LLM is cheap and avoids stale junk.)
+
       -- Diet Units (g, ml, serving, etc.)
       CREATE TABLE IF NOT EXISTS diet_units (
         id TEXT PRIMARY KEY,

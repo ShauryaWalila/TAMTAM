@@ -606,14 +606,33 @@ export default function FinanceScreen() {
   const totalSpent = filteredTransactions.filter(t => t.type === 'debit').reduce((sum, t) => sum + t.amount, 0);
   const totalReceived = filteredTransactions.filter(t => t.type === 'credit').reduce((sum, t) => sum + t.amount, 0);
 
-  const totalNetBalance = useMemo(() => {
-    // Global net balance from all transactions ever recorded (not just filtered)
-    return transactions.reduce((sum, t) => {
-      return t.type === 'credit' ? sum + t.amount : sum - t.amount;
-    }, 0);
-  }, [transactions]);
+  // Per-user nets so partner's spend doesn't shrink MY displayed balance.
+  // Each user's bank balance = their base + only their own transactions.
+  const myNetBalance = useMemo(() => {
+    const meId = currentUserName?.toLowerCase();
+    if (!meId) return 0;
+    return transactions
+      .filter(t => t.user_id === meId)
+      .reduce((sum, t) => t.type === 'credit' ? sum + t.amount : sum - t.amount, 0);
+  }, [transactions, currentUserName]);
 
-  let currentBankBalance = (userFilter === 'both' ? (myBalance + partnerBalance) : (userFilter === 'me' ? myBalance : partnerBalance)) + totalNetBalance;
+  const partnerNetBalance = useMemo(() => {
+    const pId = otherUserName?.toLowerCase();
+    if (!pId) return 0;
+    return transactions
+      .filter(t => t.user_id === pId)
+      .reduce((sum, t) => t.type === 'credit' ? sum + t.amount : sum - t.amount, 0);
+  }, [transactions, otherUserName]);
+
+  // Kept for back-compat (other code may reference it). Combined household net.
+  const totalNetBalance = myNetBalance + partnerNetBalance;
+
+  let currentBankBalance =
+    userFilter === 'both'
+      ? (myBalance + partnerBalance + myNetBalance + partnerNetBalance)
+      : userFilter === 'me'
+        ? (myBalance + myNetBalance)
+        : (partnerBalance + partnerNetBalance);
 
   const exportPDF = async () => {
     if (userFilter === 'both') {

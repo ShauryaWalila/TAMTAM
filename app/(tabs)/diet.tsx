@@ -3,7 +3,8 @@ import { StyleSheet, View, Text, ScrollView, TouchableOpacity, TextInput, Modal,
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { BlurView } from 'expo-blur';
-import { Plus, Search, ChevronRight, ChevronDown, Trash2, Edit2, Save, X, Utensils, TrendingUp, Calendar, PieChart, Clock, Rotate3d, Info, CheckCircle2, ChevronLeft, User, Users, Settings } from 'lucide-react-native';
+import { Plus, Search, ChevronRight, ChevronDown, Trash2, Edit2, Save, X, Utensils, TrendingUp, Calendar, PieChart, Clock, Rotate3d, Info, CheckCircle2, ChevronLeft, User, Users, Settings, Sparkles } from 'lucide-react-native';
+import { enrichIngredient, approveAndCreateNewMetrics, type EnrichResult, type AiNutrientValue, type AiUnitSuggestion } from '@/lib/dietAi';
 import Animated, { FadeIn, FadeInDown, SlideInBottom, useSharedValue, useAnimatedStyle, withSpring, withTiming, interpolate, interpolateColor, runOnJS, Extrapolate } from 'react-native-reanimated';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { db, generateUUID, queueSyncOperation } from '@/lib/db';
@@ -1486,6 +1487,12 @@ function IngredientsTab({ theme, searchQuery, userName }: any) {
   const [showOptions, setShowOptions] = useState<any | null>(null);
   const [showDetails, setShowDetails] = useState<any | null>(null);
   const [newIng, setNewIng] = useState({ name: '', nutrients: {} as any, base_quantity: 100, base_unit: 'g' });
+  // AI review state — populated by enrichIngredient(); user reviews + edits values in a modal.
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiReview, setAiReview] = useState<EnrichResult | null>(null);
+  const [aiEditedValues, setAiEditedValues] = useState<Record<string, number>>({});
+  const [aiApprovedMetrics, setAiApprovedMetrics] = useState<Set<string>>(new Set());
+  const [aiApprovedUnits, setAiApprovedUnits] = useState<Set<string>>(new Set());
   const [metrics, setMetrics] = useState<any[]>([]);
   const [units, setUnits] = useState<any[]>([]);
   const [isUnitDropdownOpen, setIsUnitDropdownOpen] = useState(false);
@@ -1520,6 +1527,75 @@ function IngredientsTab({ theme, searchQuery, userName }: any) {
   const handleEdit = (ing: any) => {
     setNewIng({ name: ing.name, nutrients: JSON.parse(ing.nutrients || '{}'), base_quantity: ing.base_quantity || 100, base_unit: ing.base_unit || 'g' });
     setEditingIngId(ing.id); setShowOptions(null); setShowAdd(true);
+  };
+
+  const runAiFill = async () => {
+    if (!newIng.name?.trim()) {
+      Alert.alert('Name needed', 'Type an ingredient name first.');
+      return;
+    }
+    setAiBusy(true);
+    try {
+      const ctx = {
+        metrics: (metrics || []).map((m: any) => ({ id: m.id, name: m.name, unit: m.unit || '' })),
+        units:   (units   || []).map((u: any) => ({ id: u.id, name: u.name })),
+      };
+      const result = await enrichIngredient(newIng.name.trim(), ctx);
+      // Seed edited values with AI's suggestions; user can tweak before confirming.
+      const seeded: Record<string, number> = {};
+      for (const v of result.values) seeded[v.metric_id || v.metric_name] = v.value;
+      setAiEditedValues(seeded);
+      // Default: every new metric / unit is approved. User can uncheck if they want to skip.
+      setAiApprovedMetrics(new Set(result.new_metrics.map(m => m.metric_name)));
+      setAiApprovedUnits(new Set(result.new_units.map(u => u.unit_id)));
+      setAiReview(result);
+    } catch (e: any) {
+      Alert.alert('AI fill failed', String(e?.message || e));
+    } finally {
+      setAiBusy(false);
+    }
+  };
+
+  const acceptAiReview = () => {
+    if (!aiReview) return;
+    // 1. Create any approved new metrics / units in local DB → get fresh IDs.
+    const { metric_id_map } = approveAndCreateNewMetrics(
+      aiReview.new_metrics,
+      aiReview.new_units,
+      aiApprovedMetrics,
+      aiApprovedUnits
+    );
+
+    // 2. Build the nutrients object for newIng using either the existing metric_id
+    //    or the freshly-created one. Skip rows that were unapproved new-metrics.
+    const nutrients: Record<string, number> = {};
+    for (const v of aiReview.values) {
+      let id = v.metric_id;
+      if (!id && v.is_new_metric) {
+        if (!aiApprovedMetrics.has(v.metric_name)) continue;
+        id = metric_id_map[v.metric_name];
+      }
+      if (!id) continue;
+      const edited = aiEditedValues[v.metric_id || v.metric_name];
+      nutrients[id] = (typeof edited === 'number' && isFinite(edited)) ? edited : v.value;
+    }
+
+    setNewIng({
+      ...newIng,
+      name: aiReview.ingredient || newIng.name,
+      base_quantity: aiReview.base_quantity,
+      base_unit: aiReview.base_unit.unit_id,
+      nutrients,
+    });
+
+    // 3. Reload metrics + units lists so UI shows newly-added rows.
+    try { loadMetrics(); } catch {}
+    try { loadUnits(); } catch {}
+
+    setAiReview(null);
+    setAiEditedValues({});
+    setAiApprovedMetrics(new Set());
+    setAiApprovedUnits(new Set());
   };
 
   const saveIngredient = () => {
@@ -1608,7 +1684,17 @@ function IngredientsTab({ theme, searchQuery, userName }: any) {
               <TouchableOpacity onPress={() => setShowAdd(false)}><X size={24} color={theme.text} /></TouchableOpacity>
             </View>
             <ScrollView showsVerticalScrollIndicator={false}>
-              <TextInput placeholder="Ingredient Name" style={[styles.input, { color: theme.text, borderColor: theme.card }]} value={newIng.name} onChangeText={t => setNewIng({...newIng, name: t})} />
+              <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                <TextInput placeholder="Ingredient Name" style={[styles.input, { color: theme.text, borderColor: theme.card, flex: 1 }]} value={newIng.name} onChangeText={t => setNewIng({...newIng, name: t})} />
+                <TouchableOpacity
+                  onPress={runAiFill}
+                  disabled={aiBusy || !newIng.name?.trim()}
+                  style={{ paddingHorizontal: 14, paddingVertical: 12, borderRadius: 14, backgroundColor: '#5856D6', flexDirection: 'row', alignItems: 'center', gap: 6, opacity: (aiBusy || !newIng.name?.trim()) ? 0.5 : 1 }}
+                >
+                  <Sparkles size={16} color="#fff" />
+                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>{aiBusy ? '...' : 'AI Fill'}</Text>
+                </TouchableOpacity>
+              </View>
               
               <View style={{ flexDirection: 'row', gap: 15, marginBottom: 20 }}>
                 <View style={{ flex: 1 }}>
@@ -1647,6 +1733,117 @@ function IngredientsTab({ theme, searchQuery, userName }: any) {
 
               <TouchableOpacity onPress={saveIngredient} style={[styles.saveButton, { backgroundColor: '#34C759' }]}><Save size={20} color="white" /><Text style={styles.saveButtonText}>Save Ingredient</Text></TouchableOpacity>
               <View style={{ height: 100 }} />
+            </ScrollView>
+          </View>
+        </BlurView>
+      </Modal>
+
+      {/* AI REVIEW MODAL — shown after AI Fill returns. User edits values, ticks/unticks new metrics + units, then Confirms to apply. Nothing is written to DB until Confirm. */}
+      <Modal visible={!!aiReview} transparent animationType="slide" onRequestClose={() => setAiReview(null)}>
+        <BlurView intensity={80} tint="dark" style={{ flex: 1, justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: theme.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: '90%' }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: theme.text, fontSize: 20, fontWeight: '800' }}>AI Suggestion</Text>
+                <Text style={{ color: theme.tabIconDefault, fontSize: 12 }} numberOfLines={1}>
+                  {aiReview?.ingredient} · per {aiReview?.base_quantity}{aiReview?.base_unit.display_name}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setAiReview(null)}><X size={24} color={theme.text} /></TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {/* New units suggested */}
+              {(aiReview?.new_units || []).length > 0 && (
+                <View style={{ marginBottom: 16 }}>
+                  <Text style={{ color: theme.tabIconDefault, fontSize: 11, fontWeight: '800', letterSpacing: 0.5, marginBottom: 6 }}>NEW UNIT TO CREATE</Text>
+                  {aiReview!.new_units.map(u => {
+                    const checked = aiApprovedUnits.has(u.unit_id);
+                    return (
+                      <TouchableOpacity
+                        key={u.unit_id}
+                        onPress={() => {
+                          const next = new Set(aiApprovedUnits);
+                          if (checked) next.delete(u.unit_id); else next.add(u.unit_id);
+                          setAiApprovedUnits(next);
+                        }}
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, backgroundColor: theme.card, borderRadius: 12, marginBottom: 6 }}
+                      >
+                        {checked ? <CheckCircle2 size={20} color={theme.tint} /> : <View style={{ width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: theme.tabIconDefault }} />}
+                        <Text style={{ color: theme.text, flex: 1 }}>{u.display_name} <Text style={{ color: theme.tabIconDefault, fontSize: 12 }}>({u.unit_id})</Text></Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+
+              {/* New metrics suggested */}
+              {(aiReview?.new_metrics || []).length > 0 && (
+                <View style={{ marginBottom: 16 }}>
+                  <Text style={{ color: theme.tabIconDefault, fontSize: 11, fontWeight: '800', letterSpacing: 0.5, marginBottom: 6 }}>NEW METRICS TO CREATE</Text>
+                  {aiReview!.new_metrics.map(m => {
+                    const checked = aiApprovedMetrics.has(m.metric_name);
+                    return (
+                      <TouchableOpacity
+                        key={m.metric_name}
+                        onPress={() => {
+                          const next = new Set(aiApprovedMetrics);
+                          if (checked) next.delete(m.metric_name); else next.add(m.metric_name);
+                          setAiApprovedMetrics(next);
+                        }}
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, backgroundColor: theme.card, borderRadius: 12, marginBottom: 6 }}
+                      >
+                        {checked ? <CheckCircle2 size={20} color={theme.tint} /> : <View style={{ width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: theme.tabIconDefault }} />}
+                        <Text style={{ color: theme.text, flex: 1 }}>{m.display_name} <Text style={{ color: theme.tabIconDefault, fontSize: 12 }}>({m.unit})</Text></Text>
+                        <Text style={{ color: theme.tabIconDefault, fontSize: 10 }}>{Math.round(m.confidence * 100)}%</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+
+              {/* Values — editable */}
+              <Text style={{ color: theme.tabIconDefault, fontSize: 11, fontWeight: '800', letterSpacing: 0.5, marginBottom: 6 }}>VALUES (TAP TO EDIT)</Text>
+              {(aiReview?.values || []).map(v => {
+                const key = v.metric_id || v.metric_name;
+                const isNewSkipped = v.is_new_metric && !aiApprovedMetrics.has(v.metric_name);
+                const confColor = v.confidence >= 0.85 ? '#34C759' : v.confidence >= 0.6 ? '#FFB02E' : '#FF3B30';
+                return (
+                  <View key={key} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 10, backgroundColor: isNewSkipped ? theme.background : theme.card, borderRadius: 12, marginBottom: 6, opacity: isNewSkipped ? 0.4 : 1 }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: theme.text, fontSize: 13, fontWeight: '600' }}>{v.display_name}</Text>
+                      <Text style={{ color: theme.tabIconDefault, fontSize: 10 }}>{v.unit}{v.is_new_metric ? ' · NEW' : ''}</Text>
+                    </View>
+                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: confColor }} />
+                    <TextInput
+                      keyboardType="decimal-pad"
+                      value={String(aiEditedValues[key] ?? v.value)}
+                      onChangeText={t => {
+                        const n = parseFloat(t);
+                        setAiEditedValues(prev => ({ ...prev, [key]: isNaN(n) ? 0 : n }));
+                      }}
+                      style={{ width: 80, padding: 8, borderRadius: 8, backgroundColor: theme.background, color: theme.text, textAlign: 'right', fontWeight: '700' }}
+                      editable={!isNewSkipped}
+                    />
+                  </View>
+                );
+              })}
+
+              {aiReview?.notes ? (
+                <View style={{ padding: 10, backgroundColor: theme.card, borderRadius: 12, marginVertical: 10 }}>
+                  <Text style={{ color: theme.tabIconDefault, fontSize: 11 }}>{aiReview.notes}</Text>
+                </View>
+              ) : null}
+
+              <View style={{ flexDirection: 'row', gap: 10, marginTop: 10, marginBottom: 40 }}>
+                <TouchableOpacity onPress={() => setAiReview(null)} style={{ flex: 1, paddingVertical: 14, borderRadius: 12, backgroundColor: theme.card, alignItems: 'center' }}>
+                  <Text style={{ color: theme.text, fontWeight: '700' }}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={acceptAiReview} style={{ flex: 1, paddingVertical: 14, borderRadius: 12, backgroundColor: '#34C759', alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 }}>
+                  <CheckCircle2 size={18} color="#fff" />
+                  <Text style={{ color: '#fff', fontWeight: '800' }}>Apply</Text>
+                </TouchableOpacity>
+              </View>
             </ScrollView>
           </View>
         </BlurView>

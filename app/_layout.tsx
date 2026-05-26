@@ -16,7 +16,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
 import { syncAllNotifications, REMINDERS_CHANGED } from '@/lib/notifications';
-import { processSmsInbox, redactOldSmsBodies } from '@/lib/smsParser';
+import { processSmsInbox, redactOldSmsBodies, backfillSmsInboxToSupabase } from '@/lib/smsParser';
 import { installDebugCapture } from '@/lib/debugLog';
 
 // Install before anything else so even module-init errors are captured.
@@ -100,11 +100,12 @@ export default function RootLayout() {
     syncRoutineWidget();
     syncDistanceWidget();
 
-    // 6. PROCESS ANY SMS-INBOX ROWS WAITING FOR THE PARSER
+    // 6. PROCESS ANY SMS-INBOX ROWS WAITING FOR THE PARSER + one-time backfill
     try {
       const raw = await SecureStore.getItemAsync('user_name');
       const userName = (raw || '').trim().toLowerCase();
       if (userName) {
+        backfillSmsInboxToSupabase(userName); // fixes existing Supabase rows with NULL columns
         await processSmsInbox(userName);
         redactOldSmsBodies(userName);
       }
