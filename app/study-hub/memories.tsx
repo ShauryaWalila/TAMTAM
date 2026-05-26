@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Alert, RefreshControl } from 'react-native';
 import { Text, View as ThemedView } from '@/components/Themed';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
@@ -9,6 +9,7 @@ import { ChevronLeft, Plus, Trash2, X, Bookmark, AlertTriangle, Star, Calendar, 
 import * as SecureStore from 'expo-secure-store';
 import * as Haptics from 'expo-haptics';
 import { listMemories, addMemory, deleteMemory, MemoryKind, Memory } from '@/lib/studyMemories';
+import { refreshAllNow } from '@/lib/syncEngine';
 
 const KIND_META: { kind: MemoryKind; label: string; icon: any; color: string }[] = [
   { kind: 'pinned_answer', label: 'Pinned answer', icon: Star, color: '#FFD60A' },
@@ -29,6 +30,7 @@ export default function MemoriesScreen() {
   const [addOpen, setAddOpen] = useState(false);
   const [newKind, setNewKind] = useState<MemoryKind>('manual');
   const [newContent, setNewContent] = useState('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const refresh = (uid: string) => setMemories(listMemories(uid));
 
@@ -70,7 +72,18 @@ export default function MemoriesScreen() {
         <TouchableOpacity onPress={() => setAddOpen(true)} style={[styles.iconBtn, { backgroundColor: theme.tint + '15' }]}><Plus size={22} color={theme.tint} /></TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 60 }}>
+      <ScrollView
+        contentContainerStyle={{ padding: 16, paddingBottom: 60 }}
+        refreshControl={<RefreshControl
+          refreshing={isRefreshing}
+          onRefresh={async () => {
+            setIsRefreshing(true);
+            try { await refreshAllNow(); } catch {}
+            setIsRefreshing(false);
+          }}
+          tintColor={theme?.tint || '#5856D6'}
+        />}
+      >
         {KIND_META.map(meta => {
           const list = grouped[meta.kind] || [];
           if (list.length === 0) return null;

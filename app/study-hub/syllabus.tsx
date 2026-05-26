@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo, memo } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, Dimensions,Modal } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, Dimensions,Modal, RefreshControl } from 'react-native';
 import { Text, View as ThemedView } from '@/components/Themed';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { db, queueSyncOperation, generateUUID } from '@/lib/db';
+import { refreshAllNow } from '@/lib/syncEngine';
 import * as SecureStore from 'expo-secure-store';
 import { ChevronLeft, Plus, Trash2, ChevronDown, ChevronRight, Circle, PlayCircle, CheckCircle2, Sparkles, Edit3, X, Search, BookOpen, Layers, Microscope, BookText } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -192,6 +193,7 @@ export default function SyllabusTracker() {
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [newItemTitle, setNewItemTitle] = useState('');
   const [targetParentId, setTargetParentId] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => { init(); }, []);
   // Guarantee the add-subject input is empty whenever the modal closes so the
@@ -331,7 +333,19 @@ export default function SyllabusTracker() {
         </AnimatePresence>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl
+          refreshing={isRefreshing}
+          onRefresh={async () => {
+            setIsRefreshing(true);
+            try { await refreshAllNow(); } catch {}
+            setIsRefreshing(false);
+          }}
+          tintColor={theme?.tint || '#5856D6'}
+        />}
+      >
         {rootNodes.map(root => (
           <SyllabusNode key={root.id} item={root} allNodes={filteredNodes} level={0} isEditMode={isEditMode} onToggleStatus={toggleStatus} onAddSubtopic={(pid) => { setTargetParentId(pid); setIsAddModalVisible(true); }} onDelete={handleDelete} theme={theme} isSearching={searchQuery.length > 0} expandedIds={expandedIds} />
         ))}

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Image, Modal, ActivityIndicator, Dimensions, Alert, TextInput } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Image, Modal, ActivityIndicator, Dimensions, Alert, TextInput, RefreshControl } from 'react-native';
 import { Text, View as ThemedView } from '@/components/Themed';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
@@ -9,6 +9,7 @@ import { ChevronLeft, Download, Trash2, ExternalLink, X, Wifi, WifiOff, Globe, P
 import { WebView } from 'react-native-webview';
 import { ensureSeeded, listLibrary, listSystems, saveOffline, removeOffline, LibraryItem } from '@/lib/anatomyLibrary';
 import { db, generateUUID, queueSyncOperation } from '@/lib/db';
+import { refreshAllNow } from '@/lib/syncEngine';
 import * as Haptics from 'expo-haptics';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -32,6 +33,7 @@ export default function AnatomyLibraryScreen() {
   const [addSystem, setAddSystem] = useState('');
   const [addUrl, setAddUrl] = useState('');
   const [addKind, setAddKind] = useState<'image' | 'web' | '3d'>('image');
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const refresh = () => {
     ensureSeeded();
@@ -138,7 +140,18 @@ export default function AnatomyLibraryScreen() {
         ))}
       </ScrollView>
 
-      <ScrollView contentContainerStyle={styles.grid}>
+      <ScrollView
+        contentContainerStyle={styles.grid}
+        refreshControl={<RefreshControl
+          refreshing={isRefreshing}
+          onRefresh={async () => {
+            setIsRefreshing(true);
+            try { await refreshAllNow(); } catch {}
+            setIsRefreshing(false);
+          }}
+          tintColor={theme?.tint || '#5856D6'}
+        />}
+      >
         {filtered.map(item => {
           const isWeb = item.kind === 'web';
           const is3d = item.kind === '3d';

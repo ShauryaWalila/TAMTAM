@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, TextInput, Modal, Alert, Dimensions, Platform, FlatList, DeviceEventEmitter } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, TextInput, Modal, Alert, Dimensions, Platform, FlatList, DeviceEventEmitter, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { BlurView } from 'expo-blur';
 import { Plus, Search, ChevronLeft, ChevronRight, ChevronDown, Trash2, Edit2, Save, X, Utensils, Calendar, Clock, Rotate3d, Info, PieChart, Repeat, CalendarDays,Settings } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInDown, SlideInBottom, useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { db, generateUUID, queueSyncOperation } from '@/lib/db';
+import { refreshAllNow } from '@/lib/syncEngine';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import * as SecureStore from 'expo-secure-store';
@@ -43,6 +44,7 @@ export default function DietRoutineScreen() {
   const [showAdd, setShowAdd] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [userName, setUserName] = useState('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   // -- CONFIGURATION STATE --
   const [cycleLength, setCycleLength] = useState<number>(4);
@@ -291,7 +293,18 @@ export default function DietRoutineScreen() {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 120 }}>
+      <ScrollView
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 120 }}
+        refreshControl={<RefreshControl
+          refreshing={isRefreshing}
+          onRefresh={async () => {
+            setIsRefreshing(true);
+            try { await refreshAllNow(); } catch {}
+            setIsRefreshing(false);
+          }}
+          tintColor={theme?.tint || '#5856D6'}
+        />}
+      >
         {filteredRoutines.length === 0 ? (
           <Animated.View entering={FadeInDown} style={styles.emptyContainer}>
             <CalendarDays size={60} color={theme.text} opacity={0.1} />

@@ -3,6 +3,7 @@ import { useColorScheme } from "@/components/useColorScheme";
 import Colors from "@/constants/Colors";
 import { supabase, supabaseAnonKey, supabaseUrl } from "@/lib/supabase";
 import { db, queueSyncOperation, generateUUID, isTombstoned } from "@/lib/db";
+import { refreshAllNow } from '@/lib/syncEngine';
 import * as base64js from "base64-js";
 import { format, formatDistanceToNow } from "date-fns";
 import * as FileSystem from "expo-file-system/legacy";
@@ -30,6 +31,7 @@ import {
   Alert,
   Image,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -107,6 +109,7 @@ export default function JournalScreen() {
   const insets = useSafeAreaInsets();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [inputText, setInputText] = useState("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   
@@ -404,7 +407,7 @@ export default function JournalScreen() {
 
   return (
     <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}
         onScroll={(e) => {
           handleScroll(e);
@@ -414,6 +417,15 @@ export default function JournalScreen() {
           }
         }}
         scrollEventThrottle={16}
+        refreshControl={<RefreshControl
+          refreshing={isRefreshing}
+          onRefresh={async () => {
+            setIsRefreshing(true);
+            try { await refreshAllNow(); } catch {}
+            setIsRefreshing(false);
+          }}
+          tintColor={theme?.tint || '#5856D6'}
+        />}
       >
         {loading && posts.length === 0 ? (
           <ActivityIndicator size="large" color={theme.tint} style={{ marginTop: 40 }} />

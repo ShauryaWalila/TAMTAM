@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, TextInput, Modal, FlatList, Alert, Dimensions, Platform, DeviceEventEmitter } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, TextInput, Modal, FlatList, Alert, Dimensions, Platform, DeviceEventEmitter, RefreshControl } from 'react-native';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { BlurView } from 'expo-blur';
@@ -7,6 +7,7 @@ import { Plus, Search, ChevronRight, ChevronDown, Trash2, Edit2, Save, X, Utensi
 import Animated, { FadeIn, FadeInDown, SlideInBottom, useSharedValue, useAnimatedStyle, withSpring, withTiming, interpolate, interpolateColor, runOnJS, Extrapolate } from 'react-native-reanimated';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { db, generateUUID, queueSyncOperation } from '@/lib/db';
+import { refreshAllNow } from '@/lib/syncEngine';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import * as SecureStore from 'expo-secure-store';
@@ -30,6 +31,7 @@ export default function DietScreen() {
   const [showSettings, setShowSettings] = useState(false);
   const [userName, setUserName] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const dietPlanRef = useRef<any>(null);
 
   useEffect(() => {
@@ -138,7 +140,18 @@ export default function DietScreen() {
         <View style={{ flex: 1 }}>
           {activeTab === 'PLAN' && userName !== '' && <DietPlanTab ref={dietPlanRef} theme={theme} searchQuery={searchQuery} userName={userName} setActiveTab={setActiveTab} refreshKey={refreshKey} />}
           {activeTab !== 'PLAN' && (
-            <ScrollView contentContainerStyle={styles.scrollContent}>
+            <ScrollView
+              contentContainerStyle={styles.scrollContent}
+              refreshControl={<RefreshControl
+                refreshing={isRefreshing}
+                onRefresh={async () => {
+                  setIsRefreshing(true);
+                  try { await refreshAllNow(); } catch {}
+                  setIsRefreshing(false);
+                }}
+                tintColor={theme?.tint || '#5856D6'}
+              />}
+            >
               {activeTab === 'RECIPES' && <RecipesTab theme={theme} searchQuery={searchQuery} userName={userName} />}
               {activeTab === 'INGREDIENTS' && <IngredientsTab theme={theme} searchQuery={searchQuery} userName={userName} />}
               {activeTab === 'REPORT' && <DietReportTab theme={theme} userName={userName} refreshKey={refreshKey} />}

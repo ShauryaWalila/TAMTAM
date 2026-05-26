@@ -23,7 +23,7 @@ import { installDebugCapture } from '@/lib/debugLog';
 installDebugCapture();
 import { initLocationSystem } from '@/lib/location';
 import { initDB } from '@/lib/db';
-import { startSyncEngine, initialFullSync } from '@/lib/syncEngine';
+import { startSyncEngine, initialFullSync, setupGlobalRealtime } from '@/lib/syncEngine';
 import { updateDrawingWidget, updateTouchWidget } from '@/lib/widget';
 import { syncDistanceWidget, syncMeetingWidget, syncRoutineWidget } from '@/lib/widgetSync';
 import * as SecureStore from 'expo-secure-store';
@@ -62,6 +62,10 @@ export default function RootLayout() {
     initDB();
     startSyncEngine();
     initialFullSync(false);
+    // Global realtime — single channel listens to every public.* table.
+    // Any partner-side INSERT/UPDATE/DELETE upserts into local SQLite within
+    // ~200 ms and fires DATA_REFRESH so visible screens re-fetch.
+    setupGlobalRealtime();
 
     // 1. REQUEST PERMISSIONS
     const { status: existingStatus } = await Notifications.getPermissionsAsync();

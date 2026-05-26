@@ -33,7 +33,9 @@ declare
     'study_chats','study_chat_messages',
     'user_memories','chat_summaries',
     'anatomy_library',
-    'partner_locations'
+    'partner_locations',
+    -- Added with finance intelligence + SMS-inbox + audience routine work
+    'sms_inbox','sms_sender_blocklist','user_finance_rules','monthly_snapshots','gift_jar'
   ];
 begin
   -- Make sure anniversaries exists before iterating.

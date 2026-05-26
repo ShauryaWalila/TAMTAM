@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput, FlatList, Dimensions, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, ActivityIndicator, DeviceEventEmitter, Pressable } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput, FlatList, Dimensions, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, ActivityIndicator, DeviceEventEmitter, Pressable, RefreshControl } from 'react-native';
 import { Text, View as ThemedView } from '@/components/Themed';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
@@ -18,6 +18,7 @@ import { format, differenceInDays, startOfToday, eachDayOfInterval, subDays, dif
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { sendStudyNotification } from '@/lib/notifications';
 import { getMotivationalBoost } from '@/lib/aiEngine';
+import { refreshAllNow } from '@/lib/syncEngine';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -111,6 +112,7 @@ export default function StudyHubDashboard() {
 
   const [isNapping, setIsNapping] = useState(false);
   const [napStartTime, setNapStartTime] = useState<Date | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -562,7 +564,19 @@ export default function StudyHubDashboard() {
 
       <AnimatePresence>{isSearchVisible && (<MotiView from={{ opacity: 0, translateY: -20 }} animate={{ opacity: 1, translateY: 0 }} exit={{ opacity: 0, translateY: -20 }} style={[styles.searchOverlay, { backgroundColor: theme.card }]}><SearchIcon size={18} color={theme.tabIconDefault} /><TextInput style={[styles.searchInput, { color: theme.text }]} placeholder="Search everything..." placeholderTextColor={theme.tabIconDefault} autoFocus value={searchQuery} onChangeText={setSearchQuery} /><TouchableOpacity onPress={() => { setIsSearchVisible(false); setSearchQuery(''); }} style={styles.closeSearch}><X size={20} color={theme.text} /></TouchableOpacity></MotiView>)}</AnimatePresence>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl
+          refreshing={isRefreshing}
+          onRefresh={async () => {
+            setIsRefreshing(true);
+            try { await refreshAllNow(); } catch {}
+            setIsRefreshing(false);
+          }}
+          tintColor={theme?.tint || '#5856D6'}
+        />}
+      >
         {partnerSession && partnerSession.user_id !== currentUser && (
           <MotiView from={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={[styles.partnerCard, { backgroundColor: '#FF2D55' }]}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}><Bell size={18} color="#fff" /><Text style={styles.partnerText}>Partner is studying right now! ❤️</Text></View></MotiView>
         )}

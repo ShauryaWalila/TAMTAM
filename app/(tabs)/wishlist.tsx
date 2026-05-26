@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Dimensions, Modal, TextInput, ActivityIndicator, Alert, Image, DeviceEventEmitter, Linking, FlatList, ScrollView, Platform, Share } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
-import { Search, Plus, X, Navigation as NavIcon, Globe, MapPin, Heart, MessageCircle, ArrowRight, Trash2, Map as MapIcon, ChevronDown, Sparkles, Copy, ExternalLink, MapPinned, ChevronRight, Users, Wifi } from 'lucide-react-native';
+import { Search, Plus, X, Navigation as NavIcon, Globe, MapPin, Heart, MessageCircle, ArrowRight, Trash2, Map as MapIcon, ChevronDown, Sparkles, Copy, ExternalLink, MapPinned, ChevronRight, Users, Wifi, RefreshCw } from 'lucide-react-native';
+import { refreshAllNow } from '@/lib/syncEngine';
 import { MotiView, AnimatePresence } from 'moti';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -187,6 +188,14 @@ export default function WishlistScreen() {
           </Marker>
         ))}
       </MapView>
+
+      {/* Floating manual sync — map screens have no pull-to-refresh scroll. */}
+      <TouchableOpacity
+        onPress={async () => { try { await refreshAllNow(); } catch {} }}
+        style={{ position: 'absolute', top: insets.top + 60, right: 20, width: 44, height: 44, borderRadius: 22, backgroundColor: '#FFFFFFEE', alignItems: 'center', justifyContent: 'center', zIndex: 2000, shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 4 }}
+      >
+        <RefreshCw size={20} color={theme.tint} />
+      </TouchableOpacity>
 
       <View style={[styles.topOverlay, { top: insets.top + 10 }]}>
         {/* <View style={styles.statusRow}>

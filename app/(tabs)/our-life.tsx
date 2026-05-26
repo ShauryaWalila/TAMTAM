@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, View, Pressable, TouchableOpacity, Text, Dimensions, Alert, Image, ActivityIndicator, Modal } from 'react-native';
 import MapView, { Marker, Callout } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { Map as MapIcon, MapPin, Plane, Plus, Search, Layers, X, Navigation as NavIcon, Menu, Sparkles, CheckCircle2 } from 'lucide-react-native';
+import { Map as MapIcon, MapPin, Plane, Plus, Search, Layers, X, Navigation as NavIcon, Menu, Sparkles, CheckCircle2, RefreshCw } from 'lucide-react-native';
+import { refreshAllNow } from '@/lib/syncEngine';
 import { MotiView, AnimatePresence } from 'moti';
 import { BlurView } from 'expo-blur';
 import { WebView } from 'react-native-webview';
@@ -290,6 +291,15 @@ export default function OurLifeScreen() {
         )}
       </MapView>
 
+      {/* Map screens don't have a pull-to-refresh scroll. Floating sync button gives manual re-pull. */}
+      {!activePin && !searchVisible && !activeTripId && (
+        <TouchableOpacity
+          onPress={async () => { try { await refreshAllNow(); } catch {} }}
+          style={{ position: 'absolute', top: 60, right: 20, width: 44, height: 44, borderRadius: 22, backgroundColor: '#FFFFFFEE', alignItems: 'center', justifyContent: 'center', zIndex: 2000, shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 4 }}
+        >
+          <RefreshCw size={20} color={theme.tint} />
+        </TouchableOpacity>
+      )}
       <AnimatePresence>
         {!activePin && !searchVisible && !activeTripId && (
           <View style={styles.fabContainer}>

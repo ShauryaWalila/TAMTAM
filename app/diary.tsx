@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, TouchableOpacity, TextInput, ScrollView, Dimensions, KeyboardAvoidingView, Platform, Alert, ActivityIndicator, ImageBackground, Modal } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, TextInput, ScrollView, Dimensions, KeyboardAvoidingView, Platform, Alert, ActivityIndicator, ImageBackground, Modal, RefreshControl } from 'react-native';
 import { Text, View as ThemedView } from '@/components/Themed';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, Plus, X, Save, Trash2, Heart, Moon, Sun, Cloud, Calendar as CalIcon, Smile, Check } from 'lucide-react-native';
@@ -11,6 +11,7 @@ import * as SecureStore from 'expo-secure-store';
 import { format } from 'date-fns';
 import { supabase } from '@/lib/supabase';
 import { updateTamtamWidget } from '@/lib/widget';
+import { refreshAllNow } from '@/lib/syncEngine';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
 import { Image } from 'react-native';
@@ -34,6 +35,7 @@ export default function DiaryScreen() {
   const [entries, setEntries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   // Editor State
   const [isEditing, setIsEditing] = useState(false);
@@ -178,7 +180,19 @@ export default function DiaryScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl
+          refreshing={isRefreshing}
+          onRefresh={async () => {
+            setIsRefreshing(true);
+            try { await refreshAllNow(); } catch {}
+            setIsRefreshing(false);
+          }}
+          tintColor={theme?.tint || '#5856D6'}
+        />}
+      >
         {entries.length === 0 ? (
           <View style={styles.emptyState}>
             <Heart size={40} color="#C4A484" opacity={0.3} />

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, TextInput, Modal, Alert, Dimensions, Platform, FlatList, DeviceEventEmitter } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, TextInput, Modal, Alert, Dimensions, Platform, FlatList, DeviceEventEmitter, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { BlurView } from 'expo-blur';
 import { Plus, Search, ChevronLeft, ChevronRight, ChevronDown, Trash2, Edit2, Save, X, Utensils, Calendar, Clock, Rotate3d, Info, PieChart, Repeat, CalendarDays, Settings, CheckCircle2, TrendingUp } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInDown, SlideInBottom } from 'react-native-reanimated';
 import { db, generateUUID, queueSyncOperation } from '@/lib/db';
+import { refreshAllNow } from '@/lib/syncEngine';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import * as SecureStore from 'expo-secure-store';
@@ -26,6 +27,7 @@ export default function ConsumedHistoryScreen() {
   const [showAdd, setShowAdd] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [userName, setUserName] = useState('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   const [showStats, setShowStats] = useState<any | null>(null);
   const [showOptions, setShowOptions] = useState<any | null>(null);
@@ -240,7 +242,19 @@ export default function ConsumedHistoryScreen() {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120 }}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl
+          refreshing={isRefreshing}
+          onRefresh={async () => {
+            setIsRefreshing(true);
+            try { await refreshAllNow(); } catch {}
+            setIsRefreshing(false);
+          }}
+          tintColor={theme?.tint || '#5856D6'}
+        />}
+      >
         {consumed.length === 0 ? (
           <View style={styles.emptyContainer}>
             <CheckCircle2 size={60} color={theme.text} opacity={0.1} />

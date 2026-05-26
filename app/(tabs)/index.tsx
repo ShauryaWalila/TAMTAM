@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { StyleSheet, ScrollView, Pressable, View, Dimensions, Modal, TextInput, ActivityIndicator, Alert, TouchableOpacity, Image, DeviceEventEmitter, Platform } from 'react-native';
+import { StyleSheet, ScrollView, Pressable, View, Dimensions, Modal, TextInput, ActivityIndicator, Alert, TouchableOpacity, Image, DeviceEventEmitter, Platform, RefreshControl } from 'react-native';
 import { Text, View as ThemedView } from '@/components/Themed';
 import { MotiView, AnimatePresence } from 'moti';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -19,6 +19,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import LottieView from 'lottie-react-native';
 import { displayName } from '@/lib/displayName';
+import { refreshAllNow } from '@/lib/syncEngine';
 import * as SecureStore from 'expo-secure-store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { syncAllNotifications } from '@/lib/notifications';
@@ -114,6 +115,13 @@ export default function DashboardScreen() {
   const [newActivity, setNewActivity] = useState('');
   // Routine audience picker — 'me' (default) / 'partner' / 'both'.
   const [routineFor, setRoutineFor] = useState<'me' | 'partner' | 'both'>('me');
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onPullToRefresh = async () => {
+    setRefreshing(true);
+    try { await refreshAllNow(); } catch {}
+    setRefreshing(false);
+  };
 
   // --- Calendar States ---
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -522,7 +530,11 @@ export default function DashboardScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 20 }]}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 20 }]}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onPullToRefresh} tintColor={theme.tint} />}
+      >
         
         {/* Header — long-press the greeting to view the in-app debug log (captures the iOS NSException reason that Console.app would normally show). */}
         <View style={styles.header}>

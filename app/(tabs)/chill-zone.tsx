@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Modal, TextInput, FlatList, Dimensions, Image, KeyboardAvoidingView, Platform } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Modal, TextInput, FlatList, Dimensions, Image, KeyboardAvoidingView, Platform, RefreshControl, DeviceEventEmitter } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -23,6 +23,7 @@ import TicTacToeBoard from '@/components/ChillZone/TicTacToeBoard';
 import SmartLocationPicker from '@/components/Map/SmartLocationPicker';
 
 import { syncAllNotifications } from '@/lib/notifications';
+import { refreshAllNow } from '@/lib/syncEngine';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CARD_SIZE = (SCREEN_WIDTH - 60) / 2;
@@ -94,6 +95,22 @@ export default function ChillZoneScreen() {
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [editItem, setEditItem] = useState<any | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Re-pull from local SQLite when global realtime or the 30s background tick
+  // delivers any change — keeps the chill-zone list live regardless of source.
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener('DATA_REFRESH', () => {
+      try { refreshFromSQLite(); } catch {}
+    });
+    return () => sub.remove();
+  }, []);
+
+  const onPullToRefresh = async () => {
+    setRefreshing(true);
+    try { await refreshAllNow(); refreshFromSQLite(); } catch {}
+    setRefreshing(false);
+  };
 
   useEffect(() => {
     init();
@@ -249,7 +266,11 @@ export default function ChillZoneScreen() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
-        <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 120 }]} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={[styles.content, { paddingBottom: 120 }]}
+          showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onPullToRefresh} tintColor={theme.tint} />}
+        >
           <View style={styles.header}>
             <View>
               <Text style={[styles.title, { color: theme.text }]}>Chill Zone</Text>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { StyleSheet, ScrollView, Pressable, View, Dimensions, ActivityIndicator, Alert, TouchableOpacity, TextInput, DeviceEventEmitter } from 'react-native';
+import { StyleSheet, ScrollView, Pressable, View, Dimensions, ActivityIndicator, Alert, TouchableOpacity, TextInput, DeviceEventEmitter, RefreshControl } from 'react-native';
 import { Text, View as ThemedView } from '@/components/Themed';
 import { MotiView, AnimatePresence } from 'moti';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -20,6 +20,7 @@ import {
 import { Modal } from 'react-native';
 import { AlertCircle, CheckCircle2, XCircle, Sliders, Ban, Repeat } from 'lucide-react-native';
 import { displayName } from '@/lib/displayName';
+import { refreshAllNow } from '@/lib/syncEngine';
 import {
   smartCategorise, learnCategoryRule,
   detectSubscriptions, predictBills, computeSpendingForecast,
@@ -114,6 +115,7 @@ export default function FinanceScreen() {
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [pendingRows, setPendingRows] = useState<PendingReviewRow[]>([]);
   const [confidenceThreshold, setConfidenceThresholdState] = useState(0.7);
+  const [isFinanceRefreshing, setIsFinanceRefreshing] = useState(false);
   const [balanceEditUser, setBalanceEditUser] = useState<'me' | 'partner' | null>(null);
   const [editBalance, setEditBalance] = useState('');
   
@@ -719,11 +721,25 @@ export default function FinanceScreen() {
       <ScrollView ref={scrollViewRef} horizontal pagingEnabled showsHorizontalScrollIndicator={false} onMomentumScrollEnd={(e) => setCurrentPage(Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH))} style={styles.pagerView}>
         {/* CARD 1: ACTIVITY */}
         <View style={{ width: SCREEN_WIDTH }}>
-          <ScrollView showsVerticalScrollIndicator={false} onScroll={(e) => {
-            handleScroll(e);
-            const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent;
-            if (layoutMeasurement.height + contentOffset.y >= contentSize.height - 300 && hasMore && !isFetchingMore) fetchTransactions();
-          }} scrollEventThrottle={16} contentContainerStyle={{ paddingBottom: insets.bottom + 80 }}>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            onScroll={(e) => {
+              handleScroll(e);
+              const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent;
+              if (layoutMeasurement.height + contentOffset.y >= contentSize.height - 300 && hasMore && !isFetchingMore) fetchTransactions();
+            }}
+            scrollEventThrottle={16}
+            contentContainerStyle={{ paddingBottom: insets.bottom + 80 }}
+            refreshControl={<RefreshControl
+              refreshing={isFinanceRefreshing}
+              onRefresh={async () => {
+                setIsFinanceRefreshing(true);
+                try { await refreshAllNow(); fetchTransactions(true); if (currentUserName && otherUserName) fetchBalances(currentUserName, otherUserName); } catch {}
+                setIsFinanceRefreshing(false);
+              }}
+              tintColor={theme.tint}
+            />}
+          >
             {pendingReviewCount > 0 && (
               <TouchableOpacity
                 onPress={() => {

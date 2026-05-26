@@ -3134,3 +3134,245 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
   -- you want explicit values shown in admin queries.
   -- UPDATE timetable      SET for_user = user_id WHERE for_user IS NULL;
   -- UPDATE study_routines SET for_user = user_id WHERE for_user IS NULL;
+
+
+
+
+
+
+
+
+
+
+
+
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+  -- ── 1. finances column additions
+  ALTER TABLE finances ADD COLUMN IF NOT EXISTS transaction_date DATE;
+  ALTER TABLE finances ADD COLUMN IF NOT EXISTS source TEXT DEFAULT 'manual';
+  ALTER TABLE finances ADD COLUMN IF NOT EXISTS bank_ref TEXT;
+  ALTER TABLE finances ADD COLUMN IF NOT EXISTS trip_id TEXT;
+  ALTER TABLE finances ADD COLUMN IF NOT EXISTS split_from TEXT;
+  CREATE INDEX IF NOT EXISTS idx_finances_user_date ON finances(user_id, transaction_date DESC);
+  CREATE INDEX IF NOT EXISTS idx_finances_trip      ON finances(trip_id);
+  CREATE INDEX IF NOT EXISTS idx_finances_bank_ref  ON finances(bank_ref);
+
+  -- ── 2. targets column additions
+  ALTER TABLE targets ADD COLUMN IF NOT EXISTS kind TEXT DEFAULT 'period_overall';
+  ALTER TABLE targets ADD COLUMN IF NOT EXISTS threshold_pct REAL DEFAULT 1.0;
+  ALTER TABLE targets ADD COLUMN IF NOT EXISTS notified_at TIMESTAMPTZ;
+  ALTER TABLE targets ADD COLUMN IF NOT EXISTS notify_on_warn BOOLEAN DEFAULT FALSE;
+
+  -- ── 3. timetable + study_routines audience
+  ALTER TABLE timetable       ADD COLUMN IF NOT EXISTS for_user TEXT;
+  ALTER TABLE study_routines  ADD COLUMN IF NOT EXISTS for_user TEXT;
+  CREATE INDEX IF NOT EXISTS idx_timetable_for_user      ON timetable(for_user);
+  CREATE INDEX IF NOT EXISTS idx_study_routines_for_user ON study_routines(for_user);
+
+  -- ── 4. user_balances (if not exists)
+  CREATE TABLE IF NOT EXISTS user_balances (
+    user_id TEXT PRIMARY KEY,
+    balance REAL DEFAULT 0,
+    updated_at TIMESTAMPTZ DEFAULT now()
+  );
+
+  -- ── 5. Finance intelligence tables
+  CREATE TABLE IF NOT EXISTS user_finance_rules (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    pattern TEXT NOT NULL,
+    category TEXT NOT NULL,
+    is_regex INTEGER DEFAULT 0,
+    hit_count INTEGER DEFAULT 1,
+    created_at TIMESTAMPTZ DEFAULT now()
+  );
+  CREATE INDEX IF NOT EXISTS idx_user_rules_user ON user_finance_rules(user_id);
+
+  CREATE TABLE IF NOT EXISTS monthly_snapshots (
+    user_id TEXT NOT NULL,
+    ym TEXT NOT NULL,
+    total_expense REAL DEFAULT 0,
+    total_income REAL DEFAULT 0,
+    close_balance REAL DEFAULT 0,
+    txn_count INTEGER DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    PRIMARY KEY (user_id, ym)
+  );
+
+  CREATE TABLE IF NOT EXISTS gift_jar (
+    id TEXT PRIMARY KEY,
+    captured_by TEXT NOT NULL,
+    for_partner TEXT NOT NULL,
+    text TEXT NOT NULL,
+    source TEXT DEFAULT 'manual',
+    source_ref TEXT,
+    is_given INTEGER DEFAULT 0,
+    captured_at TIMESTAMPTZ DEFAULT now()
+  );
+  CREATE INDEX IF NOT EXISTS idx_gift_jar_capturer ON gift_jar(captured_by);
+
+  -- ── 6. SMS inbox + dedupe trigger
+  CREATE TABLE IF NOT EXISTS sms_inbox (
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    user_id TEXT NOT NULL,
+    sender TEXT,
+    body TEXT NOT NULL,
+    body_hash TEXT NOT NULL,
+    received_at TIMESTAMPTZ DEFAULT now(),
+    processed_at TIMESTAMPTZ,
+    decision TEXT,
+    confidence REAL,
+    parsed_amount REAL,
+    parsed_direction TEXT,
+    parsed_merchant TEXT,
+    parsed_category TEXT,
+    matched_txn_id TEXT,
+    created_at TIMESTAMPTZ DEFAULT now()
+  );
+  DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'sms_inbox_body_hash_uniq') THEN
+      ALTER TABLE sms_inbox ADD CONSTRAINT sms_inbox_body_hash_uniq UNIQUE (body_hash);
+    END IF;
+  END $$;
+  CREATE INDEX IF NOT EXISTS idx_sms_inbox_unprocessed ON sms_inbox(user_id, processed_at);
+  CREATE INDEX IF NOT EXISTS idx_sms_inbox_decision    ON sms_inbox(user_id, decision);
+
+  CREATE OR REPLACE FUNCTION sms_inbox_compute_hash() RETURNS TRIGGER AS $$
+  BEGIN
+    IF NEW.body_hash IS NULL OR NEW.body_hash = '' THEN
+      NEW.body_hash = encode(
+        sha256( (lower(coalesce(NEW.sender,'')) || '|' || left(lower(coalesce(NEW.body,'')), 240))::bytea ),
+        'hex'
+      );
+    END IF;
+    RETURN NEW;
+  END;
+  $$ LANGUAGE plpgsql;
+  DROP TRIGGER IF EXISTS sms_inbox_hash_trg ON sms_inbox;
+  CREATE TRIGGER sms_inbox_hash_trg BEFORE INSERT ON sms_inbox
+    FOR EACH ROW EXECUTE FUNCTION sms_inbox_compute_hash();
+
+  -- ── 7. SMS sender blocklist
+  CREATE TABLE IF NOT EXISTS sms_sender_blocklist (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    sender_prefix TEXT NOT NULL,
+    original_sender TEXT,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    CONSTRAINT sms_blocklist_uniq UNIQUE (user_id, sender_prefix)
+  );
+  CREATE INDEX IF NOT EXISTS idx_sms_blocklist_user ON sms_sender_blocklist(user_id);
+
+  -- ── 8. anniversaries (if not exists)
+  CREATE TABLE IF NOT EXISTS anniversaries (
+    id text primary key,
+    created_at timestamptz default now() not null,
+    name text not null,
+    date text not null,
+    created_by text
+  );
+
+  -- ── 9. RLS + realtime — every table TAMTAM uses
+  DO $$
+  DECLARE
+    t text;
+    tbls text[] := array[
+      'posts','moments','trips','places','finances','tasks','profiles',
+      'timetable','meetings','targets','calendar_events',
+      'bucket_items','wardrobe','itinerary_items','itinerary_outfits','trip_canvas',
+      'wardrobe_categories','trip_wardrobe','bucket_categories',
+      'user_balances','trip_balances',
+      'wishlist',
+      'chill_categories','chill_items',
+      'haptic_signals',
+      'study_decks','study_cards','study_whiteboards','focus_sessions','active_study_sessions',
+      'study_exams','study_habit_log','study_brain_dump','study_syllabus','study_naps','study_routines',
+      'user_diary',
+      'trip_songs',
+      'diet_metrics','diet_units','ingredients','recipes','recipe_ingredients',
+      'diet_plans','diet_settings','diet_goals',
+      'anniversaries',
+      'system_config',
+      'study_chats','study_chat_messages',
+      'user_memories','chat_summaries',
+      'anatomy_library',
+      'partner_locations',
+      'sms_inbox','sms_sender_blocklist','user_finance_rules','monthly_snapshots','gift_jar'
+    ];
+  BEGIN
+    FOREACH t IN ARRAY tbls LOOP
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = t
+      ) THEN
+        RAISE NOTICE 'skip %: not in this DB', t;
+        CONTINUE;
+      END IF;
+
+      EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY', t);
+
+      EXECUTE format('DROP POLICY IF EXISTS "Allow all for authenticated users" ON public.%I', t);
+      EXECUTE format('DROP POLICY IF EXISTS "Shared Diet Access"               ON public.%I', t);
+      EXECUTE format('DROP POLICY IF EXISTS "Enable access for all"            ON public.%I', t);
+      EXECUTE format('DROP POLICY IF EXISTS "Public access"                    ON public.%I', t);
+      EXECUTE format('DROP POLICY IF EXISTS "Shared Access"                    ON public.%I', t);
+      EXECUTE format('DROP POLICY IF EXISTS "Allow public read access"         ON public.%I', t);
+      EXECUTE format('DROP POLICY IF EXISTS "Allow authenticated insert"       ON public.%I', t);
+      EXECUTE format('DROP POLICY IF EXISTS "Allow authenticated delete"       ON public.%I', t);
+      EXECUTE format('DROP POLICY IF EXISTS "Allow authenticated read access"  ON public.%I', t);
+      EXECUTE format('DROP POLICY IF EXISTS "TAMTAM full access"               ON public.%I', t);
+
+      EXECUTE format(
+        'CREATE POLICY "TAMTAM full access" ON public.%I AS PERMISSIVE FOR ALL TO public USING (true) WITH CHECK
+  (true)',
+        t
+      );
+
+      BEGIN
+        EXECUTE format('ALTER PUBLICATION supabase_realtime ADD TABLE public.%I', t);
+      EXCEPTION WHEN duplicate_object THEN NULL;
+      END;
+    END LOOP;
+  END $$;
+
+  -- =============================================================
+  -- VERIFICATION QUERIES — run after the block above
+  -- =============================================================
+
+  -- A. SMS pipeline check (your requested query)
+  SELECT id, user_id, sender, decision, confidence, parsed_amount, parsed_merchant, processed_at
+  FROM sms_inbox
+  ORDER BY received_at DESC LIMIT 5;
+
+  -- B. Confirm realtime publication has every TAMTAM table (~50 rows)
+  SELECT tablename FROM pg_publication_tables
+  WHERE pubname = 'supabase_realtime' AND schemaname = 'public'
+  ORDER BY tablename;
+
+  -- C. Confirm every table has a permissive RLS policy
+  SELECT tablename, polname AS policy, cmd, roles
+  FROM pg_policies
+  WHERE schemaname = 'public'
+  ORDER BY tablename;
+
+  -- D. Schema sanity — finance columns
+  SELECT column_name FROM information_schema.columns
+  WHERE table_name = 'finances'
+    AND column_name IN ('transaction_date','source','bank_ref','trip_id','split_from')
+  ORDER BY column_name;
+
+  -- E. Schema sanity — audience columns
+  SELECT table_name, column_name FROM information_schema.columns
+  WHERE column_name = 'for_user' AND table_schema = 'public';
+
+  -- F. Schema sanity — sms_inbox hash trigger
+  SELECT trigger_name FROM information_schema.triggers
+  WHERE event_object_table = 'sms_inbox';
+
+
+
+
+
+
+  

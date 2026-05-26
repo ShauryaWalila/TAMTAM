@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, ScrollView, Pressable, View, Dimensions, ActivityIndicator, Alert, TouchableOpacity, TextInput, DeviceEventEmitter } from 'react-native';
+import { StyleSheet, ScrollView, Pressable, View, Dimensions, ActivityIndicator, Alert, TouchableOpacity, TextInput, DeviceEventEmitter, RefreshControl } from 'react-native';
 import { Text, View as ThemedView } from '@/components/Themed';
 import { MotiView, AnimatePresence } from 'moti';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -7,7 +7,7 @@ import Colors from '@/constants/Colors';
 import { Calendar, Clock, ChevronDown, Save, Repeat, Star, X, CalendarDays, CalendarRange } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { db, queueSyncOperation, generateUUID } from '@/lib/db';
-import { processSyncQueue } from '@/lib/syncEngine';
+import { processSyncQueue, refreshAllNow } from '@/lib/syncEngine';
 import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { BlurView } from 'expo-blur';
@@ -48,6 +48,7 @@ export default function NextMeetScreen() {
   
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [currentUserName, setCurrentUserName] = useState<string | null>(null);
   const [meetingId, setMeetingId] = useState<string | null>(null);
 
@@ -177,7 +178,19 @@ export default function NextMeetScreen() {
       >
         <X color={theme.text} size={24} />
       </TouchableOpacity>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl
+          refreshing={isRefreshing}
+          onRefresh={async () => {
+            setIsRefreshing(true);
+            try { await refreshAllNow(); } catch {}
+            setIsRefreshing(false);
+          }}
+          tintColor={theme?.tint || '#5856D6'}
+        />}
+      >
         <View style={styles.header}>
           <Text style={[styles.title, { color: theme.text }]}>Next Reunion</Text>
           <Text style={[styles.subtitle, { color: theme.tabIconDefault }]}>Design your next shared moment</Text>

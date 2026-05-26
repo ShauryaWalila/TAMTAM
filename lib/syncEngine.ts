@@ -12,7 +12,7 @@ let isSyncing = false;
  */
 export const startSyncEngine = () => {
   console.log('🔄 Sync Engine Started...');
-  
+
   // Watch for connection changes
   NetInfo.addEventListener(state => {
     if (state.isConnected && state.isInternetReachable) {
@@ -21,9 +21,21 @@ export const startSyncEngine = () => {
     }
   });
 
-  // Periodic check every 60 seconds just in case
+  // Outbound queue flush every 60s.
   setInterval(() => {
     processSyncQueue();
+  }, 60000);
+
+  // ── Inbound 60s fallback pull ──
+  // Global realtime is the primary path for partner-side updates. This tick
+  // is a belt-and-suspenders backup for:
+  //   * brief realtime drops (channel re-subscribing)
+  //   * the day you hit Supabase free-tier realtime caps
+  //   * iOS aggressively backgrounding the WebSocket
+  // initialFullSync is idempotent (INSERT OR REPLACE everywhere) so calling
+  // it repeatedly is safe.
+  setInterval(() => {
+    initialFullSync(false).catch(() => {});
   }, 60000);
 };
 
@@ -254,6 +266,27 @@ export const initialFullSync = async (shouldClear = false) => {
         n => db.runSync(`INSERT OR REPLACE INTO study_routines (id, user_id, title, description, start_time, end_time, date, is_completed, for_user, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [n.id, n.user_id, n.title, n.description, n.start_time, n.end_time, n.date, n.is_completed || 0, n.for_user || null, n.created_at]));
 
+      // ── Tables previously relying on per-screen realtime only — now in fallback pull too.
+      await syncTable('tasks', supabase.from('tasks').select('*'),
+        n => db.runSync(`INSERT OR REPLACE INTO tasks (id, created_at, title, description, is_completed, due_date, category) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [n.id, n.created_at, n.title, n.description, n.is_completed ? 1 : 0, n.due_date, n.category]));
+
+      await syncTable('anniversaries', supabase.from('anniversaries').select('*'),
+        n => db.runSync(`INSERT OR REPLACE INTO anniversaries (id, created_at, name, date, created_by) VALUES (?, ?, ?, ?, ?)`,
+          [n.id, n.created_at, n.name, n.date, n.created_by]));
+
+      await syncTable('study_naps', supabase.from('study_naps').select('*'),
+        n => db.runSync(`INSERT OR REPLACE INTO study_naps (id, user_id, start_time, end_time, duration_minutes, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
+          [n.id, n.user_id, n.start_time, n.end_time, n.duration_minutes, n.created_at]));
+
+      await syncTable('diet_goals', supabase.from('diet_goals').select('*'),
+        n => db.runSync(`INSERT OR REPLACE INTO diet_goals (id, user_id, metric_name, daily_target, created_at) VALUES (?, ?, ?, ?, ?)`,
+          [n.id, n.user_id, n.metric_name, n.daily_target, n.created_at]));
+
+      // user_balances: no local cache table — finance.tsx reads directly from
+      // Supabase via fetchBalances(). Global realtime upsert will no-op
+      // silently for it. Adding it to the explicit pull would just throw.
+
       console.log('Background lazy sync complete.');
       initialFullSyncDone = true;
       // Let anyone listening know data is fresh — Study Hub, Journal, etc.
@@ -268,6 +301,111 @@ export const initialFullSync = async (shouldClear = false) => {
   };
 
   backgroundSync();
+};
+
+// ── GLOBAL REALTIME ─────────────────────────────────────────────────────────
+// One Supabase channel that listens to ALL INSERT / UPDATE / DELETE on every
+// table in the public schema. Each event upserts (or deletes) the row in the
+// local SQLite mirror, then emits DATA_REFRESH so any screen on top re-fetches.
+//
+// Setup requirements:
+//   1. The Postgres table must be in `supabase_realtime` publication.
+//      See setup-and-build.md / one-shot-rls-and-realtime.sql.
+//   2. RLS policy must allow `anon` SELECT on the table (already enabled
+//      across TAMTAM by the open-RLS pattern).
+//
+// Edge handling:
+//   * If a row references a column that doesn't exist locally yet, the
+//     dynamic upsert silently drops keys whose binding fails. Worst case the
+//     row appears on next `initialFullSync`.
+//   * If the row's id is tombstoned (pending local DELETE), the event is
+//     ignored so we don't resurrect a row mid-sync.
+
+let realtimeChannelRef: any = null;
+
+function dynamicUpsertRow(table: string, row: any) {
+  if (!row || typeof row !== 'object') return;
+  const cleaned: Record<string, any> = {};
+  for (const [k, v] of Object.entries(row)) {
+    if (v === true) cleaned[k] = 1;
+    else if (v === false) cleaned[k] = 0;
+    else if (v === undefined) continue;
+    else cleaned[k] = v;
+  }
+  const cols = Object.keys(cleaned);
+  if (cols.length === 0) return;
+  const placeholders = cols.map(() => '?').join(', ');
+  const sql = `INSERT OR REPLACE INTO ${table} (${cols.join(', ')}) VALUES (${placeholders})`;
+  try {
+    db.runSync(sql, cols.map(c => cleaned[c]));
+  } catch (e) {
+    // Likely: local table is missing a column the server has. Don't crash —
+    // just log; next initialFullSync handles via the explicit storeFn.
+    console.warn(`realtime upsert skipped (${table}):`, (e as Error).message);
+  }
+}
+
+export const setupGlobalRealtime = () => {
+  // Idempotent — kill any previous channel before re-subscribing (hot reload safe).
+  try { if (realtimeChannelRef) supabase.removeChannel(realtimeChannelRef); } catch {}
+
+  realtimeChannelRef = supabase
+    .channel('tamtam-global-realtime')
+    .on(
+      'postgres_changes' as any,
+      { event: '*', schema: 'public' } as any,
+      (payload: any) => {
+        try {
+          const table: string = payload.table;
+          const evt: string = payload.eventType;
+          if (!table) return;
+
+          if (evt === 'DELETE') {
+            const oldId = payload.old?.id;
+            if (!oldId) return;
+            try { db.runSync(`DELETE FROM ${table} WHERE id = ?`, [oldId]); } catch {}
+          } else {
+            const row = payload.new;
+            if (!row) return;
+            const rid = row.id ? String(row.id) : null;
+            // Skip if this row is locally tombstoned (we deleted it but the
+            // delete hasn't reached the server yet).
+            if (rid && isTombstoned(table, rid)) return;
+            dynamicUpsertRow(table, row);
+          }
+
+          // Notify screens to re-fetch — debounced naturally by the rapid-fire
+          // nature of realtime events. Listeners use this to call their
+          // own fetchFromSQLite() routines.
+          try {
+            const RN = require('react-native');
+            RN?.DeviceEventEmitter?.emit?.('DATA_REFRESH', { table, eventType: evt });
+            RN?.DeviceEventEmitter?.emit?.('refresh-dashboard');
+          } catch {}
+        } catch (err) {
+          console.warn('Global realtime handler failed:', err);
+        }
+      }
+    )
+    .subscribe((status: string) => {
+      console.log('Global realtime status:', status);
+    });
+};
+
+// Public manual-pull entry point — call from any screen's <RefreshControl
+// onRefresh={...}>. Returns a Promise so the spinner can wait.
+export const refreshAllNow = async () => {
+  try { await processSyncQueue(); } catch {}
+  try { await initialFullSync(false); } catch {}
+  try {
+    const RN = require('react-native');
+    RN?.DeviceEventEmitter?.emit?.('DATA_REFRESH', { table: '*', eventType: 'MANUAL' });
+  } catch {}
+};
+
+export const teardownGlobalRealtime = () => {
+  try { if (realtimeChannelRef) supabase.removeChannel(realtimeChannelRef); } catch {}
+  realtimeChannelRef = null;
 };
 
 export const processSyncQueue = async () => {
