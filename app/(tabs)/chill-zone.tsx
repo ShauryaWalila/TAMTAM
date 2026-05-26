@@ -185,7 +185,8 @@ export default function ChillZoneScreen() {
   };
 
   const addItem = async () => {
-    if (!newItemTitle.trim() || !selectedCategory) return;
+    if (!selectedCategory) { Alert.alert('Pick a category first'); return; }
+    if (!newItemTitle.trim()) { Alert.alert('Title needed', 'Type something in the title field first.'); return; }
     let content: any = { chat: [] };
     if (newItemType === 'reminder') content = { ...content, remType, start_at: startDate.toISOString(), end_at: endDate ? endDate.toISOString() : null, location: selectedLoc, active: true };
     else if (newItemType === 'mood') content = { ...content, mood: '😊', last_updated: new Date().toISOString() };
@@ -205,11 +206,14 @@ export default function ChillZoneScreen() {
       db.runSync(`INSERT INTO chill_items (id, category_id, type, title, content, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
         [payload.id, payload.category_id, payload.type, payload.title, JSON.stringify(payload.content), payload.created_by, payload.created_at]);
       queueSyncOperation('chill_items', payload.id, 'INSERT', payload);
-      setIsItemModalVisible(false); setNewItemTitle(''); setNewItemOptions(['', '']); setEndDate(null); setSelectedLoc(null); 
+      setIsItemModalVisible(false); setNewItemTitle(''); setNewItemOptions(['', '']); setEndDate(null); setSelectedLoc(null);
       syncAllNotifications();
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); 
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       refreshFromSQLite();
-    } catch (e) {}
+    } catch (e: any) {
+      console.warn('addItem failed', e);
+      Alert.alert('Could not add', String(e?.message || e));
+    }
   };
 
   const updateItem = async () => {
@@ -399,11 +403,11 @@ export default function ChillZoneScreen() {
                   <TouchableOpacity onPress={() => { setIsItemModalVisible(false); setEditItem(null); }} style={styles.modalCloseAbs}><X size={20} color={theme.text} /></TouchableOpacity>
                   <View style={styles.modalHeader}><Text style={[styles.modalTitle, { color: theme.text }]}>{editItem ? 'Edit' : 'New'} Shared Experience</Text></View>
                   {!editItem && (selectedCategory?.id !== FIXED_CATEGORIES[0].id ? (
-                    <View style={styles.typePicker}>{ITEM_TYPES.filter(t => t.id !== 'reminder').map(t => (<TouchableOpacity key={t.id} onPress={() => setNewItemType(t.id)} style={[styles.typeChip, newItemType === t.id && { backgroundColor: selectedCategory?.color + '20', borderColor: selectedCategory?.color, borderWidth: 1 }]}><t.icon size={18} color={newItemType === t.id ? selectedCategory?.color : theme.tabIconDefault} /><Text style={[styles.typeText, { color: newItemType === t.id ? selectedCategory?.color : theme.tabIconDefault }]}>{t.label}</Text></TouchableOpacity>))}</View>
+                    <View style={styles.typePicker}>{ITEM_TYPES.filter(t => t.id !== 'reminder').map(t => (<TouchableOpacity key={t.id} onPress={() => setNewItemType(t.id)} style={[styles.typeChip, newItemType === t.id && { backgroundColor: selectedCategory?.color + '20', borderColor: selectedCategory?.color, borderWidth: 1 }]}><t.icon size={18} color={newItemType === t.id ? selectedCategory?.color : '#fff'} /><Text style={[styles.typeText, { color: newItemType === t.id ? selectedCategory?.color : '#fff' }]}>{t.label}</Text></TouchableOpacity>))}</View>
                   ) : (
-                    <View style={styles.remTypeToggle}><TouchableOpacity onPress={() => setRemType('time')} style={[styles.remToggleBtn, remType === 'time' && { backgroundColor: theme.tint }]}><Clock size={16} color={remType === 'time' ? 'white' : '#888'} /><Text style={[styles.remToggleText, remType === 'time' && { color: 'white' }]}>TIME BASED</Text></TouchableOpacity><TouchableOpacity onPress={() => setRemType('location')} style={[styles.remToggleBtn, remType === 'location' && { backgroundColor: theme.tint }]}><MapPin size={16} color={remType === 'location' ? 'white' : '#888'} /><Text style={[styles.remToggleText, remType === 'location' && { color: 'white' }]}>LOCATION BASED</Text></TouchableOpacity></View>
+                    <View style={styles.remTypeToggle}><TouchableOpacity onPress={() => setRemType('time')} style={[styles.remToggleBtn, remType === 'time' && { backgroundColor: theme.tint }]}><Clock size={16} color={remType === 'time' ? 'white' : '#fff'} /><Text style={[styles.remToggleText, { color: 'white' }]}>TIME BASED</Text></TouchableOpacity><TouchableOpacity onPress={() => setRemType('location')} style={[styles.remToggleBtn, remType === 'location' && { backgroundColor: theme.tint }]}><MapPin size={16} color={remType === 'location' ? 'white' : '#fff'} /><Text style={[styles.remToggleText, { color: 'white' }]}>LOCATION BASED</Text></TouchableOpacity></View>
                   ))}
-                  <TextInput style={[styles.modalInput, { color: theme.text, backgroundColor: theme.background }]} placeholder={"What's the task?"} value={newItemTitle} onChangeText={setNewItemTitle} />
+                  <TextInput style={[styles.modalInput, { color: '#fff', backgroundColor: theme.background }]} placeholderTextColor="#FFFFFF99" placeholder={"What's the task?"} value={newItemTitle} onChangeText={setNewItemTitle} />
                   {(newItemType === 'reminder' || (editItem && editItem.type === 'reminder')) && (
                     <View style={{ gap: 15 }}>
                       {remType === 'time' ? (
@@ -419,7 +423,7 @@ export default function ChillZoneScreen() {
                   )}
                   {['match', 'checklist', 'poll', 'list', 'roulette'].includes(newItemType) && !editItem && (
                     <View style={{ gap: 8 }}>
-                      {newItemOptions.map((opt, idx) => (<TextInput key={idx} style={[styles.modalInput, { color: theme.text, backgroundColor: theme.background, height: 44 }]} placeholder={`Option ${idx+1}`} value={opt} onChangeText={(v) => { const n = [...newItemOptions]; n[idx] = v; setNewItemOptions(n); }} />))}
+                      {newItemOptions.map((opt, idx) => (<TextInput key={idx} style={[styles.modalInput, { color: '#fff', backgroundColor: theme.background, height: 44 }]} placeholderTextColor="#FFFFFF99" placeholder={`Option ${idx+1}`} value={opt} onChangeText={(v) => { const n = [...newItemOptions]; n[idx] = v; setNewItemOptions(n); }} />))}
                       <TouchableOpacity onPress={() => setNewItemOptions([...newItemOptions, ''])}><Text style={{ color: selectedCategory?.color, fontWeight: '900' }}>+ Add Option</Text></TouchableOpacity>
                     </View>
                   )}
